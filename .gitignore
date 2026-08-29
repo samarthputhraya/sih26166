@@ -18,6 +18,12 @@ weights/*
 *.zip
 *.JP2
 *.mp4
+
+# Large binaries that no rule covered: the ISRO instrument user guides (tens of
+# MB) and the SIH .pptx template (~0.9 MB). Both belong in Drive, not in history.
+*.pdf
+*.pptx
+*.docx
 *.ckpt
 *.pt
 *.pth
