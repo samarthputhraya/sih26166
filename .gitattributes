@@ -1,0 +1,14 @@
+# Six people on Windows. Normalise in the repo, check out native, so nobody sees
+# a whole-file diff caused only by line endings.
+* text=auto
+
+*.py   text diff=python
+*.md   text
+*.csv  text
+*.json text
+
+*.png  binary
+*.jpg  binary
+*.tif  binary
+*.pt   binary
+*.ckpt binary

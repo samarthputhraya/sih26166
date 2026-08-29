@@ -1,0 +1,37 @@
+# ---------------------------------------------------------------------------
+# Big data lives in Google Drive, never in git. GitHub hard-rejects >100 MB and
+# the OHRC ZIPs are ~750 MB. Folders are kept, contents are not.
+# ---------------------------------------------------------------------------
+data/raw/*
+!data/raw/.gitkeep
+data/pairs/*
+!data/pairs/.gitkeep
+demo_cache/*
+!demo_cache/.gitkeep
+weights/*
+!weights/.gitkeep
+
+*.IMG
+*.img
+*.tif
+*.tiff
+*.zip
+*.JP2
+*.mp4
+*.ckpt
+*.pt
+*.pth
+
+# Python
+venv/
+.venv/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.pytest_cache/
+
+# OS / editor
+Thumbs.db
+desktop.ini
+.DS_Store
+.vscode/
