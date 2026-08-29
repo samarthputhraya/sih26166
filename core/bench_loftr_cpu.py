@@ -167,7 +167,9 @@ def verify_weights() -> dict:
     if not WEIGHTS.exists():
         raise SystemExit(
             f"missing {WEIGHTS}\n"
-            "Run the one-off weight cache step first (needs network + the certifi CA bundle)."
+            "weights/ is gitignored, so a fresh clone has to rebuild it. Run once, with network:\n"
+            "    python core/fetch_weights.py\n"
+            "Or copy weights/loftr_outdoor.pt from the Drive folder."
         )
     n, digest = _sha256(WEIGHTS)
     if (n, digest) != (WEIGHTS_BYTES, WEIGHTS_SHA256):
