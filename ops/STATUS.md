@@ -79,8 +79,14 @@ pointing Python at the certifi CA bundle.
 
 ## Per person
 
-**Nobody except Samartha has pushed anything.** `app/`, `evaluation/`, `baselines/`, `data/` and
-`presentation/` contain only `.gitkeep`.
+**Rohan has pushed — the first teammate commit of the project** (`b1e6372`, 30 Aug ~18:45,
+`data/DATASET_CARD.md`). One row: LROC NAC EDR `M108587604RE.IMG`, real source URL, product ID,
+download date; `tier` and `licence` correctly left blank rather than guessed. The `.IMG` itself is
+on his machine only — it is gitignored and there is still no Drive folder, so **no route exists for
+it to reach anyone else.** Samartha fetched the same product independently from the public URL to
+validate the loader against real data (MD5 in the label matched).
+
+`app/`, `evaluation/`, `baselines/` and `presentation/` still contain only `.gitkeep`.
 
 | Person | GitHub | Access | Pushed | Blocked on |
 |---|---|---|---|---|
@@ -108,9 +114,14 @@ Nothing mid-edit. Working tree clean, remote in sync.
 round-trip, GeoTIFF geo tags, LZW-via-Pillow, five degrade-don't-crash cases, four raise-don't-lie
 cases). It exports `load`, `dump_label`, `plan_overlap`, `crop_to_overlap`, `as_cv_safe`.
 
-**Nothing in it has met a real lunar product.** The metadata field names in `CANDIDATES` at the top
-of the file are candidate spellings, not confirmed ones. **The hour Rohan's first CH-2 `.xml` and
-first LROC `.IMG` land, run this:**
+**It has now met one real lunar product.** Rohan's `M108587604RE.IMG` (LROC NAC EDR, 5,190,600
+bytes) loads end to end in 0.26 s to `(1024, 5064)` float32, and the image bytes match the
+`MD5_CHECKSUM` recorded in the product's own label. Two real bugs came out of that and are fixed —
+see Known issues 00 and 0a. `INSTRUMENT_NAME` and `PRODUCT_ID` resolved from the real label without
+changes to `CANDIDATES`.
+
+**No PDS4 / CH-2 product has been seen yet**, so the PDS4 branch is still untested against reality
+and its field names remain candidate spellings. **The hour the first CH-2 `.xml` lands, run this:**
 
 ```
 python -c "from core.io_loader import dump_label; dump_label('<the file>')"
@@ -155,6 +166,26 @@ the branch stubbed with a clear `NotImplementedError`.
 ## Known issues / traps already found
 
 Recorded so `daily-reviewer` does not re-report them.
+
+00. **🔴 A NAC EDR CARRIES NO ILLUMINATION GEOMETRY. THIS BREAKS TIER A AS WRITTEN.**
+   Confirmed against Rohan's own first product, `M108587604RE.IMG`, by reading its real label.
+   The label has **no incidence angle, no sun azimuth, no sun elevation, no emission, no phase and
+   no map scale** — 62 keywords, and not one of them is geometry. An EDR is raw: geometry needs
+   SPICE, or a map-projected product.
+   **Tier A is defined as "LROC NAC ↔ LROC NAC, same site, incidence differs ≥15°".** You cannot
+   select pairs on an angle the file does not contain, and you cannot report the sun-angle result
+   without it. **Rohan must switch to the map-projected RDR** — `00_CANONICAL_FACTS.md` §3 already
+   lists it: ODE dataset `LRO-L-LROC-5-RDR-V1.0`, product type **`SDRPHO`**, georeferenced, no
+   login — **or** pull incidence from ODE's product metadata / the CUMINDEX table alongside each
+   EDR. Either is fine; picking neither means Tier A quietly has no numbers on Day 6.
+   `io_loader` reports these as `None`, which is the honest answer and must not be filled in.
+
+0a. **LROC NAC EDR mislabels its own signedness.** `SAMPLE_TYPE = LSB_INTEGER` at `SAMPLE_BITS = 8`
+   is signed per PDS3, but the values are `UNIT = "RAW_INSTRUMENT_COUNT"`, unsigned DN 0..255. Read
+   strictly, the real product returns range **[-107, 51]** — every pixel above DN 127 wrapped
+   negative — on data whose own MD5 verifies. Corrected to **[32, 199]**. `io_loader` reinterprets
+   only when unambiguous (8-bit, declared signed, negatives present) and sets
+   `dn_signedness_corrected` in the metadata so it is never a silent fix.
 
 0. **⚠️ THE BIG-ENDIAN TRAP — the worst thing found this session.** OpenCV 5.0.0.93 accepts a
    big-endian numpy array **without raising** and returns garbage. Measured max abs difference vs

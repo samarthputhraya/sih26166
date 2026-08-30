@@ -64,7 +64,19 @@ call that did not exist (`pip install magsac`, `cv2.AKAZE_create`).
    so a handler must catch Exception and must never read the message. We validate
    that the keys we need are present rather than trusting the parse.
 
-7. pds4_tools SURPRISES. `Structure.is_array` is a METHOD, not a property, so a
+7. LROC NAC EDR LIES ABOUT SIGNEDNESS, and the real product proves it. Its label
+   says `SAMPLE_TYPE = LSB_INTEGER` at `SAMPLE_BITS = 8`, which PDS3 defines as
+   signed; the values are `UNIT = "RAW_INSTRUMENT_COUNT"`, i.e. unsigned DN
+   0..255. Read strictly, every pixel brighter than 127 wraps negative - the real
+   M108587604RE.IMG comes back as [-107, 51] instead of [0, 216], on data whose
+   own MD5 verifies. We reinterpret only when it is unambiguous (8-bit, declared
+   signed, negatives actually present) and set `dn_signedness_corrected` in the
+   metadata so the correction is visible rather than silent.
+   Also worth knowing: that label carries NO illumination geometry and NO map
+   scale at all. sun_azimuth, incidence and gsd_mpp are genuinely absent from a
+   NAC EDR - they need a map-projected RDR or SPICE. None here means None.
+
+8. pds4_tools SURPRISES. `Structure.is_array` is a METHOD, not a property, so a
    bare `if s.is_array:` is always true - it is a bound method. `quiet=True` is
    sticky for the life of the process. read() replaces sys.excepthook. And
    scaling_factor/value_offset silently change the returned dtype, so we read
@@ -371,6 +383,22 @@ def _load_pds3(path: pathlib.Path) -> tuple[np.ndarray, dict[str, Any]]:
     # we ever need every pixel resident.
     arr = np.memmap(data_path, dtype=dtype, mode="r", offset=offset, shape=(lines, samples) if bands == 1 else (bands, lines, samples))
 
+    # LROC NAC EDR declares SAMPLE_TYPE = LSB_INTEGER at SAMPLE_BITS = 8, which
+    # PDS3 defines as SIGNED - but the values are RAW_INSTRUMENT_COUNT, i.e.
+    # unsigned DN 0..255. Read strictly, DN 149 comes back as -107 and every
+    # bright pixel in the image wraps negative. Verified on the real product
+    # M108587604RE.IMG: strict reading gives range [-107, 51] for data whose own
+    # MD5 checks out; reinterpreted it gives [0, 216].
+    #
+    # We correct this, but only where it is unambiguous - 8-bit, declared
+    # signed, and negative values actually present - and we RECORD that we did.
+    # A silent fix here would be indistinguishable from a bug, and Samrudh's
+    # metrics would inherit it with no way to notice.
+    signedness_fixed = False
+    if dtype.itemsize == 1 and dtype.kind == "i" and int(np.asarray(arr).min()) < 0:
+        arr = np.asarray(arr).view(np.uint8)
+        signedness_fixed = True
+
     meta = dict(_EMPTY_META)
     meta.update(
         gsd_mpp=_first_number(_pds3_pick(label, "gsd_mpp")),
@@ -384,6 +412,8 @@ def _load_pds3(path: pathlib.Path) -> tuple[np.ndarray, dict[str, Any]]:
         format="PDS3",
         path=str(path),
         stored_dtype=str(dtype),
+        unit=_walk(img, "UNIT"),
+        dn_signedness_corrected=signedness_fixed,
     )
     return arr, meta
 
