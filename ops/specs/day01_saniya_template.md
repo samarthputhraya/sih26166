@@ -47,7 +47,8 @@ template's own instructions slide says, verbatim:
 So the cap **includes** the title page → **five content slides, not six.** Consequences to state in chat:
 
 - Your Day 2 task "Draft Slide 1 (Problem Statement)" targets a slide that does not exist. Day 2
-  becomes: fill the Title Page metadata, and start **Slide 2 (Proposed Solution)**.
+  becomes: fill the Title Page metadata, and start **Slide 2 (IDEA TITLE)** — "Proposed Solution" is
+  its first bullet prompt, not the heading. Do not retitle the slide.
 - The problem framing lives inside Slide 2's "How it addresses the problem" bullet, or in the spoken
   script — not on its own slide.
 - Days 2–7 re-map to: Title Page + Proposed Solution → Technical Approach → Feasibility → Impact →
@@ -84,8 +85,12 @@ Transcribed by opening the file, not from any guide.
 ## Do not
 - **Do not download `SIH2025-...`.** Both years link from the same page and the filenames differ by
   two characters. The 2026 one is under `/letters/2026/`. Check the byte count: 924,505.
-- **Do not commit the `.pptx` today.** `.gitignore` does not exclude it and it is ~0.9 MB of binary.
-  Commit `TEMPLATE_HEADINGS.md` (text) now; the binary goes to Drive once it exists.
+- **Do not commit the `.pptx`.** `.gitignore` **already blocks it** — line 25 is `*.pptx`, added in
+  commit `e8a4e84`, verified with `git check-ignore -v presentation/deck.pptx`. So `git add` silently
+  skips it and you get no error. Do **not** reach for `git add -f`. Commit `TEMPLATE_HEADINGS.md`
+  (text) now; the binary lives in Drive. (An earlier version of this line claimed `.gitignore` does
+  *not* exclude it. That was wrong — recalled instead of run, which is the exact failure mode that
+  put `pip install magsac` in our docs.)
 - **Do not add a seventh slide, rename a heading, or delete the template's bullet prompts.** Clarity
   in the prescribed format is a scored criterion, and the file itself forbids changing the pointers.
 - **Do not start writing slide content today.** Confirming and propagating the headings is the whole

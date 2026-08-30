@@ -104,7 +104,10 @@ desktop.ini
 
 **3. Create the Google Drive folder**
 - One Drive account (yours) → new folder `SIH26166_DATA`
-- Inside it: `raw_samples/`, `pairs/`, `demo_cache/`, `weights/`
+- Inside it: `raw_samples/`, `pairs/`, `demo_cache/`, `weights/`, `isro_user_guides/`
+- `weights/` is how the other five get `loftr_outdoor.pt` (46 MB). It is gitignored, so Drive is the
+  **only** route. Upload it the moment the folder exists.
+- `isro_user_guides/` holds the ISRO PDFs Rohan downloads on Day 1 — `*.pdf` is gitignored too.
 - Share → add all 5 → **Editor**
 - Send the link once, in the WhatsApp group, pinned
 
@@ -257,7 +260,7 @@ project, exactly as his role requires.
 | `demo_cache/` | ❌ | ✅ | needed on Samartha's laptop for Gate 4 |
 | Failure gallery JPEGs | ✅ | ❌ | small, and Saniya needs them in the deck |
 | Backup demo video | ❌ | ✅ | plus a local copy on a phone |
-| Deck `.pptx` | ✅ | ❌ | Saniya's folder, small |
+| Deck `.pptx` | ❌ | ✅ | `.gitignore:25` blocks `*.pptx` — `git add` silently skips it. The *text* (`TEMPLATE_HEADINGS.md`, `demo_script.md`, `qa_bank.md`) is in git. |
 
 **Rule of thumb: under 5 MB and text-ish → Git. Over that, or binary → Drive.**
 

@@ -401,7 +401,7 @@ read from `results_log.csv`. Never rehearse a number that doesn't exist yet.
 |---|---|
 | LoFTR / kornia API | kornia docs, `kornia.feature.LoFTR` |
 | MAGSAC++ | `cv2.USAC_MAGSAC` — OpenCV USAC tutorial. **Not `pip install magsac`, it doesn't exist.** |
-| PDS4 parsing | `pds4_tools` docs + the ISRO OHRC user guide in `data/docs/` |
+| PDS4 parsing | `pds4_tools` docs + the ISRO OHRC user guide in Drive `isro_user_guides/` (Rohan, Day 1) |
 | CH-2 ingestion reference | Ames Stereo Pipeline CH-2 tutorial — real product IDs and commands |
 | Phase congruency | `phasepack`, or Kovesi's MATLAB reference |
 | Streamlit reruns / state | Streamlit `session_state` docs — read this before Day 9 |

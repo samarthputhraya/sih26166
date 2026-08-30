@@ -9,11 +9,15 @@
 
 ## 🔴 FIVE THINGS THE OLD GUIDE GOT WRONG
 
-**1. The six slides were the wrong six.** It listed *Problem · Solution · Tech Approach · Results ·
-Demo/Application · Future/Team*. Three of those are invented. The official format is different —
-§2 below. *"Clarity and detail in the prescribed format"* is a **scored criterion**, so this was
-free marks thrown away. It also listed six slides in one place and then added three more later
-(Literature Review, Results/Metrics, Future Scope + Team) — nine slides in a six-slide format.
+**1. The six slides were the wrong six — and so was the first correction.** The original guide listed
+*Problem · Solution · Tech Approach · Results · Demo/Application · Future/Team*. Three of those are
+invented. It also listed six slides in one place and then added three more later (Literature Review,
+Results/Metrics, Future Scope + Team) — nine slides in a six-slide format. **The replacement list was
+also wrong**: it opened with "Problem Statement" and "Proposed Solution", neither of which is a slide
+in the real 2026 template, and it counted six *content* slides when the cap includes the title page.
+The real structure is in DAY 1 below, transcribed from the file itself.
+*"Clarity and detail in the prescribed format"* is a **scored criterion** — this was free marks
+thrown away twice.
 
 **2. The Q&A bank contained invented results.** *"0.7–1.2px on 10 cross-orbit pairs"*,
 *"SIFT: 12 matches, 8px error. Ours: 142 matches, 0.7px"*. Nothing was measured when those were
@@ -25,17 +29,19 @@ Intel integrated GPU; Rohan has an AMD card 30 km away. **Stating specific false
 judge is the kind of thing that gets checked.**
 
 **4. Q&A answer 7 was factually false.** *"LROC-LROC cross-orbit is same problem (different
-geometry, public data)."* Same sensor is not the same problem as cross-sensor. Corrected in §5.
+geometry, public data)."* Same sensor is not the same problem as cross-sensor. The correct wording
+is in `00_CANONICAL_FACTS.md` §2 — the validation ladder.
 
 **5. Impact got one bullet.** Impact and Benefits is a whole official slide and one of the
 highest-weighted criteria — and it is structurally the weakest area for a registration project.
-It now gets a full day (Day 6).
+It now gets **two days (Days 5–6)**. The re-count below frees a day, and this is where it goes.
 
 ---
 
 ## 🎯 YOUR MISSION
 
-1. A **six-slide deck in the official SIH template**, exactly as prescribed
+1. A **six-slide deck in the official SIH template** — the title page plus **five content
+   slides** — exactly as prescribed
 2. A **3-minute demo script** where **all six people speak**
 3. A **Q&A bank** where every answer is true and every number traces to the CSV
 4. **Three rehearsals**
@@ -50,23 +56,34 @@ You are also the team's **fact-checker**. If a number appears in a slide and not
 
 ### DAY 1 — ⚠️ THE TEMPLATE. This blocks the whole deck.
 
-**Download the official SIH 2026 idea-presentation template** from sih.gov.in or your SPOC.
+**Download the official SIH 2026 idea-presentation template** —
+`sih.gov.in/letters/2026/SIH2026-IDEA-Presentation-Format.pptx`, **924,505 bytes**. The 2025
+filename differs by two characters, so check the size. Note `sih.gov.in` returns **403** to
+non-browser user agents — download it through a browser, not `curl`.
 **Open it. Read the actual slide headings. Post them in team chat.**
 
-Expected (from guidance, **not yet confirmed against the file**):
+**Confirmed by opening the real file** (924,505 bytes, sha256 `ce3e5dee…`, 7 slides — the 6 below
+plus an instructions slide we delete from our deck):
 
-| # | Slide |
-|---|---|
-| 1 | Problem Statement |
-| 2 | Proposed Solution |
-| 3 | Technical Approach |
-| 4 | **Feasibility and Viability** |
-| 5 | **Impact and Benefits** |
-| 6 | **Research and References** |
+| # | Real heading | Prompts on the slide |
+|---|---|---|
+| 1 | **TITLE PAGE** | PS ID · PS Title · Theme · PS Category · Team ID · Team Name. **Metadata only — not a content slide.** |
+| 2 | **IDEA TITLE** | Proposed Solution · Detailed explanation · How it addresses the problem · Innovation and uniqueness |
+| 3 | **TECHNICAL APPROACH** | Technologies to be used · Methodology and process for implementation |
+| 4 | **FEASIBILITY AND VIABILITY** | Analysis of feasibility · Potential challenges and risks · Strategies for overcoming them |
+| 5 | **IMPACT AND BENEFITS** | Potential impact on the target audience · Benefits (social, economic, environmental) |
+| 6 | **RESEARCH AND REFERENCES** | Details / links of reference and research work |
 
-**If the real template differs, the real template wins** — tell everyone immediately, because
-Days 2–7 are one slide per day against these headings. Guidance says use the template
-**unaltered**: don't add slides, don't rename headings, don't restyle.
+> **There is no "Problem Statement" slide and no "Proposed Solution" slide.** "Proposed Solution" is
+> the first bullet prompt *inside* IDEA TITLE, not a heading — don't retitle the slide. The
+> instructions slide says verbatim: *"Kindly keep the maximum slides limit up to six (6).
+> (Including the title slide)"* — the cap includes the title page, so we have **five content slides**.
+
+**If your copy of the file differs, the file wins** — tell everyone immediately. Days 2–7 are six
+days for six slides, but only five of them carry content: slide 1 is metadata you can fill in
+minutes. That spare capacity goes to **Impact and Benefits (Days 5–6)**, our weakest scored area.
+Guidance says use the template **unaltered**: don't add slides, don't rename headings, don't delete
+the bullet prompts, don't restyle.
 
 **Also on Day 1 — the reading list.** Corrections from the old version:
 
@@ -85,9 +102,19 @@ Days 2–7 are one slide per day against these headings. Guidance says use the t
 
 ---
 
-### DAY 2 — Slide 1: Problem Statement
+### DAY 2 — Slide 1 (TITLE PAGE metadata) + Slide 2 (IDEA TITLE)
 
-Read the full PS text first. Then write to what it actually says.
+**Slide 1 is metadata and takes ten minutes:** PS ID `SIH26166` · the PS title exactly as the portal
+words it · theme · PS category (Software) · team ID · team name as registered. Copy these from the
+portal, don't retype from memory. Then spend the rest of the day on Slide 2.
+
+**Slide 2 is IDEA TITLE.** Its four bullet prompts are *Proposed Solution · Detailed explanation ·
+How it addresses the problem · Innovation and uniqueness*. Keep those prompts — do not retitle the
+slide "Proposed Solution".
+
+Read the full PS text first. Then write to what it actually says. The framing below belongs in the
+**"How it addresses the problem"** bullet and in the spoken script — there is no Problem Statement
+slide to put it on.
 
 - **What:** Chandrayaan-2 images must be aligned to reference imagery to sub-pixel accuracy.
 - **Why it's hard — the PS's own three:** illumination variation (sun azimuth/elevation change how
@@ -99,22 +126,11 @@ Read the full PS text first. Then write to what it actually says.
 
 > **Remember who is judging the internal round: faculty, not domain experts.** Lead with the
 > picture — the same crater under two lightings, side by side, visibly unmatched. Then the words.
-> If Slide 1 needs computer-vision background to follow, it has failed.
+> If Slide 2 needs computer-vision background to follow, it has failed.
 
----
-
-### DAY 3 — Slide 2: Proposed Solution
-
-The pipeline, as a diagram (Excalidraw or draw.io):
-
-```
-Input pair → resample to common GSD → illumination normalisation
-           → LoFTR dense matching → MAGSAC++ outlier rejection
-           → sub-pixel NCC refinement → 8×8 grid distribution → aligned output + metrics
-```
-
-**Name the innovation precisely** — and be careful here, because *novelty* is the
-highest-weighted criterion and "we used a pretrained model" is not novel. What is actually ours:
+**The "Innovation and uniqueness" bullet is also Slide 2's**, and it is the one that scores.
+Be careful here, because *novelty* is the highest-weighted criterion and "we used a pretrained
+model" is not novel. What is actually ours:
 
 1. **Illumination normalisation before matching**, so features come from structure rather than
    brightness — with an ablation proving how much it contributes on its own (Risheeth's Config 2).
@@ -129,9 +145,18 @@ That list is defensible. "We used LoFTR" is not.
 
 ---
 
-### DAY 4 — Slide 3: Technical Approach
+### DAY 3 — Slide 3: TECHNICAL APPROACH
 
-Stack, methods, data. **Hardware — say this, and only this:**
+The pipeline, as a diagram (Excalidraw or draw.io) — this answers the slide's "Methodology and
+process for implementation" prompt:
+
+```
+Input pair → resample to common GSD → illumination normalisation
+           → LoFTR dense matching → MAGSAC++ outlier rejection
+           → sub-pixel NCC refinement → 8×8 grid distribution → aligned output + metrics
+```
+
+Then the stack, methods and data. **Hardware — say this, and only this:**
 
 > "Runs on a standard laptop, CPU only, no discrete GPU required."
 
@@ -144,10 +169,13 @@ That is true, verifiable, and a genuine deployment virtue. **Do not name a GPU m
 
 ---
 
-### DAY 5 — Slide 4: Feasibility and Viability
+### DAY 4 — Slide 4: FEASIBILITY AND VIABILITY
 
 This slide was **entirely missing** from the old plan. It asks: can you actually build it, and does
 it hold up?
+
+> Note this moved off Day 5 deliberately. Day 5 is Gate 1 and Samartha's busiest day of the
+> project — your lightest task should not sit there.
 
 - **Feasibility:** all data is public and already downloaded; all libraries are open-source and
   permissively licensed; the whole pipeline runs on CPU on a laptop.
@@ -161,11 +189,14 @@ it hold up?
 
 ---
 
-### DAY 6 — Slide 5: Impact and Benefits ⭐ GIVE THIS THE WHOLE DAY
+### DAYS 5–6 — Slide 5: IMPACT AND BENEFITS ⭐ THIS NOW GETS TWO DAYS
 
 **This is our structurally weakest scored area.** Image registration has no user, no beneficiary
 count, no cost saving. The old draft gave impact one bullet and 15 seconds. It is a full official
 slide and one of the heaviest-weighted criteria.
+
+Day 5 drafts it, Day 6 finishes it. The second day exists because slide 1 is metadata rather than a
+content slide, which frees capacity — and this is the best place to spend it.
 
 **Frame impact as what registration unlocks, not what registration is:**
 
@@ -186,7 +217,7 @@ such slide): DEM-assisted orthorectification · polar-region optimisation · onb
 
 ---
 
-### DAY 7 — Slide 6: Research and References
+### DAY 7 — Slide 6: RESEARCH AND REFERENCES
 
 Also missing from the old plan. Papers and data sources, cited properly. **List the archives with
 their licences** — CC0 for Kaguya, ISRO open data, NASA PDS. It demonstrates you understand data
@@ -215,14 +246,14 @@ for his own module cold. Everyone speaks.
 ```
 TIME  | SPEAKER  | CONTENT                                                      | SCREEN
 ------|----------|--------------------------------------------------------------|--------
-0:00  | Saniya   | "Team [Name], SIH26166 for ISRO. Chandrayaan-2 carries three | Slide 1
+0:00  | Saniya   | "Team [Name], SIH26166 for ISRO. Chandrayaan-2 carries three | Slide 1→2
       |          |  optical instruments that differ in resolution by up to      |
       |          |  285 times, and the same crater looks completely different   |
       |          |  under different sunlight. Aligning them is unsolved."       |
-0:25  | Rohan    | "Our data is real and public: Chandrayaan-2 OHRC at 28 cm,   | Slide 1
+0:25  | Rohan    | "Our data is real and public: Chandrayaan-2 OHRC at 28 cm,   | Slide 2
       |          |  LROC NAC, Kaguya, and Chandrayaan-1's infrared             |
       |          |  spectrometer. Four missions, every file documented."        |
-0:45  | Samartha | "Two things before matching: resample to a common ground     | Slide 2
+0:45  | Samartha | "Two things before matching: resample to a common ground     | Slide 3
       |          |  scale, and normalise illumination so features come from     |
       |          |  structure. Then dense matching, outlier rejection,          |
       |          |  sub-pixel refinement, and a grid constraint for coverage."  |
@@ -240,6 +271,12 @@ TIME  | SPEAKER  | CONTENT                                                      
 ```
 
 **Time it. Cut words, not speakers.** Every person speaking once is what Gate 5 is really testing.
+
+> ⚠️ **The screen cues above show slides 1, 2, 3 and 5 — slides 4 (Feasibility) and 6 (Research)
+> never appear.** That is a real gap: the judges read the deck, but the two slides carrying our
+> licensing argument and our sources get no spoken airtime. Either give Risheeth's or Samrudh's line
+> a cue on Slide 4, or accept it deliberately and be ready when a judge asks. Decide at Rehearsal 1,
+> not on the day.
 
 ---
 
@@ -341,14 +378,22 @@ Deck final in the official template. Print copies.
 ## 📁 YOUR FILES
 
 ```
-presentation/
-├── deck.pptx            # official template, 6 slides, unaltered
-├── demo_script.md       # timed, all six speak
-├── qa_bank.md           # 20 Q&As, each assigned by name
-├── demo_video.mp4       # recorded after Rehearsal 2, offline, local copy on a phone
+presentation/                  <- IN GIT (text only)
+├── TEMPLATE_HEADINGS.md  # the real headings, transcribed from the file (Day 1)
+├── demo_script.md        # timed, all six speak
+├── qa_bank.md            # 20 Q&As, each assigned by name
 ├── paper_summaries.md
 └── rehearsal_log.md
+
+Google Drive SIH26166_DATA/    <- NOT IN GIT
+├── deck.pptx             # official template, 6 slides (title page + 5 content), unaltered
+└── demo_video.mp4        # after Rehearsal 2, offline, plus a local copy on a phone
 ```
+
+> ⚠️ **`deck.pptx` and `demo_video.mp4` cannot go in the repo.** `.gitignore` blocks `*.pptx` and
+> `*.mp4`, so `git add deck.pptx` **silently does nothing** — no error, no file, and you would only
+> find out on Day 12. Put both in Drive. Do **not** reach for `git add -f`; the rule exists because
+> a binary deck re-committed daily bloats the repo permanently for all six of us.
 
 ---
 
@@ -371,11 +416,11 @@ presentation/
 ## ✅ DELIVERABLES
 
 - [ ] Official template **downloaded and its real headings confirmed to the team on Day 1**
-- [ ] `deck.pptx` — 6 slides, official headings, unaltered template
+- [ ] `deck.pptx` — 6 slides (title page + 5 content), official headings, unaltered template — **in Drive, not git**
 - [ ] Every number traced to `results_log.csv`; zero unfilled `[TBD]` at Day 12
 - [ ] `demo_script.md` — 3:00, **all six speak**
 - [ ] `qa_bank.md` — 20 answers, all true, each assigned by name
-- [ ] `demo_video.mp4` — offline, post-Rehearsal-2, local copy on a phone
+- [ ] `demo_video.mp4` — offline, post-Rehearsal-2, local copy on a phone — **in Drive, not git**
 - [ ] 3 rehearsals logged
 - [ ] Gate 5: all six answer cold
 - [ ] Three numbers audits done (Day 8, post-Rehearsal 1, Day 12)

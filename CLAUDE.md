@@ -62,6 +62,14 @@ how six people avoid merge conflicts and keep Gate 5 answerable.
 **6. Gates cut scope, never extend time.** Gates at Days 5, 8, 10, 11, 12 — criteria in
 `00_CANONICAL_FACTS.md` §11. A failed gate means dropping features, not adding days.
 
+**7. Slide format.** The SIH 2026 template is TITLE PAGE · IDEA TITLE · TECHNICAL APPROACH ·
+FEASIBILITY AND VIABILITY · IMPACT AND BENEFITS · RESEARCH AND REFERENCES. **There is no "Problem
+Statement" slide and no "Proposed Solution" slide** — "Proposed Solution" is the first bullet
+*prompt* inside IDEA TITLE, not a heading. The six-slide cap **includes** the title page, so we have
+**five content slides**. Confirmed against the real file (924,505 bytes, sha256 `ce3e5dee…`).
+Slides 3–6 keep the numbers our docs already used — a blind "shift everything by one" breaks four
+correct things.
+
 ---
 
 ## Layout
@@ -85,4 +93,3 @@ demo_cache/   demo inputs — gitignored
 ## Open, every session until resolved
 
 - **Internal hackathon date** — still unknown. Reshapes the schedule when known.
-- **SIH 2026 template headings** — assumed, not confirmed against the file.

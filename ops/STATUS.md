@@ -104,20 +104,26 @@ evidence, nothing reviewable, and nothing that survives his laptop dying. **Firs
 
 Nothing mid-edit. Working tree clean, remote in sync.
 
-**Resume here:** `core/io_loader.py`. Nothing exists yet. It is Samartha's Day-1 afternoon task,
-carried to next session, and it is on the critical path twice over — Rohan's Day-5 catalogue needs
-`crop_to_overlap` from it, and Gate 1 on Day 5 needs it under `pipeline.py`.
+**`core/io_loader.py` is written and tested** — 31/31 synthetic checks pass (PDS3 attached-label
+round-trip, GeoTIFF geo tags, LZW-via-Pillow, five degrade-don't-crash cases, four raise-don't-lie
+cases). It exports `load`, `dump_label`, `plan_overlap`, `crop_to_overlap`, `as_cv_safe`.
 
-```python
-def load(path) -> tuple[np.ndarray, dict]:
-    """Returns (grayscale float32 array, metadata dict).
-    metadata keys: gsd_mpp, instrument, sun_azimuth, sun_elevation, incidence, crs, transform
-    Dispatch on extension: .xml -> pds4_tools | .IMG -> pvl (+ raw numpy) | .tif -> rasterio
-    """
+**Nothing in it has met a real lunar product.** The metadata field names in `CANDIDATES` at the top
+of the file are candidate spellings, not confirmed ones. **The hour Rohan's first CH-2 `.xml` and
+first LROC `.IMG` land, run this:**
+
+```
+python -c "from core.io_loader import dump_label; dump_label('<the file>')"
 ```
 
-Write the **format abstraction now**, even though only one format is testable today. CH-2 is PDS4,
-LROC is PDS3, Kaguya is GeoTIFF. Hardcoding one format costs two days on Day 9.
+It prints every label leaf and marks the ones matching a candidate. Copy the true spellings into
+`CANDIDATES`. That is a one-line change per field. Guessing them is how a wrong sun angle reaches a
+slide.
+
+**Resume here next:** `core/scale.py :: to_common_gsd`. Two constraints already fixed by the
+io_loader work — it must return **effective** `out_size/in_size` factors, not the nominal GSD ratio,
+and those factors must be **per-axis** (width and height round independently, and one scalar
+reintroduces a ~2 m error on one axis).
 
 ⚠️ **The `.tif` branch cannot use rasterio** — see Known issues. Either resolve that first or leave
 the branch stubbed with a clear `NotImplementedError`.
@@ -127,12 +133,18 @@ the branch stubbed with a clear `NotImplementedError`.
 ## Open questions
 
 1. **Internal hackathon date** — still unknown. Reshapes the schedule. Chase the SPOC.
-2. ~~SIH 2026 template headings~~ — **CLOSED.** Real file downloaded and parsed: 924,505 bytes,
-   sha256 `ce3e5dee…`, 7 slides. See Known issues #3 for the correction it forces.
-3. **`rasterio` is unusable on the demo machine** — see Known issues #1. **Samartha's to resolve,
-   needed by Day 3.**
-4. **Google Drive `SIH26166_DATA` does not exist.** Blocks Rohan, and blocks distributing
-   `weights/loftr_outdoor.pt` (46 MB) to five people. Needs a browser session.
+2. ~~SIH 2026 template headings~~ — **CLOSED and propagated.** Real file: 924,505 bytes, sha256
+   `ce3e5dee…`, 7 slides. All six affected documents corrected this session — `00_CANONICAL_FACTS`
+   §10, `TEAM_TASK_GUIDE` (Saniya Days 1–7), `SANIYA_NARRATIVE_GUIDE` (14 edits incl. the day-by-day
+   restructure), `day01_saniya_template`, `01_HOW_WE_WORK_TOGETHER`, and `CLAUDE.md` (now
+   **Invariant 7**, so no future session re-derives the wrong list).
+3. ~~`rasterio` unusable~~ — **CLOSED. Decision: GDAL-free.** See Known issues #1 for the decision
+   and its one real cost (no Kaguya-over-HTTP).
+4. **⚠️ Google Drive `SIH26166_DATA` STILL DOES NOT EXIST — the top blocker.** Rohan has nowhere to
+   put OHRC, and `weights/loftr_outdoor.pt` (46 MB, gitignored) exists on **exactly one laptop**.
+   Needs a browser session; no Google Drive desktop mount on this machine, so it cannot be scripted.
+   Folder list, now including the two additions made this session:
+   `raw_samples/ pairs/ demo_cache/ weights/ isro_user_guides/`
 5. **Chandrayaan-3 landing-site NAC product IDs** — still `[VERIFY]`, never confirmed. Rishabh needs
    them ~Day 6. **Terminology warning:** these are **LROC NAC images OF the CH-3 landing site**, not
    "Chandrayaan-3 imagery". CH-3's own cameras are surface cameras and are useless for this. Rishabh
@@ -144,7 +156,36 @@ the branch stubbed with a clear `NotImplementedError`.
 
 Recorded so `daily-reviewer` does not re-report them.
 
-1. **`rasterio` imports but its DLLs are blocked.** Exact error:
+0. **⚠️ THE BIG-ENDIAN TRAP — the worst thing found this session.** OpenCV 5.0.0.93 accepts a
+   big-endian numpy array **without raising** and returns garbage. Measured max abs difference vs
+   the identical native-order array: **34935**, and `3.99e-41` where `450.0` was expected in float32.
+   LROC NAC EDR is `MSB_INTEGER`; PDS4 arrays are commonly `UnsignedMSB2`. **Both of our real
+   sources are big-endian.** On Day 9 this would have presented as *"LoFTR finds no matches on real
+   lunar data"* with no exception and nothing to grep for. `io_loader.as_cv_safe()` now normalises
+   to native order + float32 before anything else sees the array; every `core/` module may assume
+   this has happened. Related: `cv2.resize` cannot resize int32/uint32/int64 at all.
+   **Second-order trap:** numpy arithmetic does **not** preserve byte order —
+   `np.arange(n, dtype=">u2") * 37` returns a *native*-order array. This bit the test fixture for
+   this very feature. Cast after the arithmetic, never before.
+
+0b. **`imagecodecs` is NOT installed, and that is a sharper blocker than rasterio.** Without it
+   `tifffile` cannot decode **LZW**, PACKBITS or JPEG2000 — and LZW is the commonest GeoTIFF
+   compression, i.e. quite possibly Kaguya TC. **Resolved:** `io_loader` reads geo tags with
+   tifffile and falls back to **Pillow** for the pixels. Verified — a Pillow-written LZW TIFF fails
+   in tifffile and loads exactly through `io_loader`. DEFLATE and uncompressed work in tifffile
+   directly. Do not `pip install imagecodecs` without re-pinning for all six people.
+   Also: `tifffile.geotiff_metadata` returns **None** unless GeoKeyDirectoryTag (34735) is present,
+   even when a valid pixel scale and tie point are. Read tags 33550/33922 by number instead.
+
+1. **`rasterio` imports but its DLLs are blocked.** ✅ **DECIDED: go GDAL-free, do not fight it.**
+   Smart App Control blocks **by content hash**; exactly one file is blocked; being unsigned is not
+   the discriminator, and `Unblock-File` is irrelevant (different mechanism). Nothing that once
+   loaded has ever become blocked, so this is not expected to move — but a **fresh `pip install`
+   mints unrated hashes**, so nobody should install packages on demo morning or expect a teammate's
+   machine to behave identically. **Cost, and it is real:** `/vsicurl` is gone, so the plan in
+   `00_CANONICAL_FACTS.md` §3 / `ROHAN_DATA_GUIDE.md` to read Kaguya COGs over HTTP with
+   `rasterio.open()` is dead — **Kaguya must be downloaded like everything else.** Tell Rohan.
+   Exact error:
    `ImportError: DLL load failed while importing _base: An Application Control policy has blocked this file.`
    Windows Application Control is blocking its bundled GDAL DLLs. **This threatens Tier B+**:
    `00_CANONICAL_FACTS.md` §3 calls Kaguya TC "the cheapest win in the set" because `rasterio.open()`

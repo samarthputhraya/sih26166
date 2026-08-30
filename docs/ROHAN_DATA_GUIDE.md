@@ -63,7 +63,10 @@ TMC-2, IIRS, DFSAR and CHACE2.
 
 1. Download **one** OHRC ZIP (start it, do other work while it runs).
 2. Download the **OHRC and TMC-2 Data Products User Guides** — these are the format specification
-   Samartha needs to write the loader. Put them in `data/docs/`.
+   Samartha needs to finish the PDS4 branch of the loader, and he is blocked on them.
+   **Put them in Drive, `SIH26166_DATA/isro_user_guides/` — not in the repo.** They are PDFs of tens
+   of MB and `.gitignore` blocks `*.pdf`, so dropping them in `data/docs/` means git silently ignores
+   them, nobody else ever sees them, and Samartha is still blocked. Post the Drive link in chat.
 3. Unzip. You should see `.img` files paired with `.xml` PDS4 labels.
 4. **Do not rename anything.** Ames Stereo Pipeline's CH-2 tutorial warns:
    *"Keep the original ISRO filenames; a rename can break isisimport."* Same applies to us.
@@ -92,7 +95,7 @@ One row per file, from the very first download. Retrofitting provenance on Day 8
 | ch2_ohr_ncp_20200229T0739312111_d_img_d18.img | B | CH-2 OHRC | archive.org/details/chandrayaan-2-... | 2026-08-30 | ISRO open data | ch2_ohr_ncp_20200229T0739312111_d_img_d18 |
 ```
 
-**Day 1 deliverable:** CH-2 OHRC on disk + user guides in `data/docs/` + registration result posted
+**Day 1 deliverable:** CH-2 OHRC on disk + user guides in Drive `isro_user_guides/` + registration result posted
 + `DATASET_CARD.md` started.
 
 ---
@@ -333,7 +336,7 @@ driver may not handle ISRO's local data dictionary. **`pds4_tools` is the safe p
 - [ ] `data/pairs/` — cropped pairs, `pair_NN_source.tif` / `pair_NN_ref.tif`
 - [ ] `data/pairs_catalogue.csv` — **with the `tier` column populated**
 - [ ] `data/DATASET_CARD.md` — every file: URL, date, licence, product ID + reproduction paragraph
-- [ ] `data/docs/` — ISRO OHRC and TMC-2 user guides
+- [ ] Drive `isro_user_guides/` — ISRO OHRC and TMC-2 user guides (**not** the repo; `*.pdf` is gitignored)
 - [ ] ≥6 Tier A · ≥2 Tier B · ≥1 Tier B+ · **≥1 Tier C** · 1 Tier D site
 - [ ] chmapbrowse/PRADAN registration attempted, result posted
 - [ ] All `demo_cache/` files verified to open offline

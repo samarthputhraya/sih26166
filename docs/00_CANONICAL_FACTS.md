@@ -288,19 +288,35 @@ Q&A round. **If you catch a bare number anywhere in these documents that is not 
 - Grand Finale: **December 2026**, 36 hours, at a nodal centre.
 - Eligibility, all satisfied: team of 6 ✅, ≥1 female member (Saniya) ✅, all from one institution ✅.
 
-### The official 6-slide idea format
+### The official idea format — six slides INCLUDING the title page
 
-1. Problem Statement
-2. Proposed Solution
-3. Technical Approach
-4. **Feasibility and Viability**
-5. **Impact and Benefits**
-6. **Research and References**
+1. **TITLE PAGE** — metadata only: PS ID · PS title · theme · PS category (Software/Hardware) ·
+   team ID · team name (as registered on the portal). Not a content slide.
+   **There is no "Problem Statement" slide.**
+2. **IDEA TITLE** — prompts: Proposed Solution · Detailed explanation · How it addresses the
+   problem · Innovation and uniqueness. The problem framing lives in the third bullet here, or in
+   the spoken script. It does not get a slide of its own.
+3. **TECHNICAL APPROACH** — Technologies used · Methodology and process for implementation.
+4. **FEASIBILITY AND VIABILITY** — Analysis of feasibility · Potential challenges and risks ·
+   Strategies for overcoming them.
+5. **IMPACT AND BENEFITS** — Potential impact on the target audience · Benefits (social, economic,
+   environmental).
+6. **RESEARCH AND REFERENCES** — Details / links of reference and research work.
 
-> ⚠️ **Saniya must download the real SIH 2026 template and confirm these headings before writing
-> anything.** The above is from guidance, not from the file. The first draft invented a different
-> six ("Results", "Demo/Application", "Future/Team") which would have cost marks on the
-> "clarity and detail in the prescribed format" criterion. Use the template unaltered.
+The template's own instructions slide says, verbatim: *"Kindly keep the maximum slides limit up to
+six (6). (Including the title slide)"* — so the cap **includes** the title page.
+**We have five content slides, not six.**
+
+> ✅ **Confirmed against the real file** — `SIH2026-IDEA-Presentation-Format.pptx`, 924,505 bytes,
+> sha256 `ce3e5dee…`, 7 slides (the 6 above plus an instructions slide we delete from our deck).
+> Two earlier drafts of this section were wrong. The first invented "Results", "Demo/Application"
+> and "Future/Team". The second — the one this replaces — listed "Problem Statement" and "Proposed
+> Solution" as slides 1 and 2, and counted six *content* slides. Neither heading exists; "Proposed
+> Solution" is a bullet prompt inside IDEA TITLE. Use the template unaltered: do not add slides,
+> rename headings, or delete the bullet prompts.
+>
+> ⚠️ Slides 3–6 keep the numbers our docs already used. A blind "shift everything by one" breaks
+> four things that are already correct.
 
 ### What the internal round is
 
