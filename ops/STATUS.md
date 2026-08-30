@@ -9,175 +9,214 @@
 
 | | |
 |---|---|
-| **Day** | 0 of 12 — planning complete, build not started |
+| **Day** | 1 of 12 — repo live, Samartha's Day 1 done, five teammates have not started |
 | **Repo path** | `C:\Users\samar\OneDrive\Documents\SIH26166` |
-| **Git** | ⚠️ **NOT INITIALISED YET** — first task of next session |
-| **Internal hackathon** | ⚠️ **DATE UNKNOWN — chase the SPOC** |
+| **Git** | ✅ live — `https://github.com/samarthputhraya/sih26166` (private, branch `main`) |
+| **venv** | `C:\Users\samar\venvs\sih26166` — deliberately OUTSIDE the OneDrive folder |
+| **Internal hackathon** | ⚠️ **DATE STILL UNKNOWN — chase the SPOC** |
 | **Next gate** | Gate 1, Day 5 — pipeline runs end to end on a real lunar pair |
 | **Gates passed** | none |
 | **Deadlines** | SIH26166 closes 20 Sep 2026 · SPOC portal upload 30 Sep 2026 · Finale Dec 2026 |
 
 ---
 
-## Last session (29 Aug 2026) — planning and harness build
+## Last session (30 Aug 2026, Day 1) — environment, benchmark, repo, specs
 
-No code written. The session audited a pre-existing set of seven AI-drafted planning documents,
-found critical defects, rewrote all of them, and built the Claude Code harness.
+**Smoke test, run this session — exit codes observed, not inferred:**
 
-**Smoke:** `pytest` NOT RUN (no tests exist) · `core.pipeline` NOT RUN (no code exists)
+| Command | Exit | Meaning |
+|---|---|---|
+| `pytest evaluation/ -q` | **5** | "no tests collected" — `evaluation/` is empty. Samrudh writes `test_metrics.py` on Day 4. Not a regression. |
+| `import core.pipeline` | **1** | `ModuleNotFoundError` — `pipeline.py` is Day 3 work. Not a regression. |
+| `import core.bench_loftr_cpu`, `core.fetch_weights` | **0** | Everything that exists imports cleanly. |
 
-### What now exists
+Working tree clean, everything pushed. Three commits, all Samartha's:
+`7644b4c` repo init · `15b91ec` fetch_weights · `e8a4e84` Day-1 specs.
+
+### What landed
 
 ```
-docs/   00_CANONICAL_FACTS         <- single source of truth, read first
-        01_HOW_WE_WORK_TOGETHER    <- git + Drive workflow, OneDrive warnings
-        02_DAILY_REVIEW_PROTOCOL   <- findings-not-fixes, why
-        TEAM_TASK_GUIDE            <- 12-day schedule, all 6 people
-        + one guide per person (Rohan, Samrudh, Risheeth, Rishabh, Saniya, Samartha)
-.claude/ agents/   daily-reviewer, spec-writer, demo-medic, claim-checker  (none can write files)
-         commands/ /next, /wrap, /review
-         hooks/    session_brief.py (SessionStart)
-         settings.json
-CLAUDE.md
-ops/STATUS.md
+core/bench_loftr_cpu.py          LoFTR CPU benchmark harness
+core/bench_loftr_cpu_results.csv 10 measured rows
+core/fetch_weights.py            one-off weight fetch + sha256 verify, offline-safe
+weights/loftr_outdoor.pt         46 MB, gitignored, NOT YET ON DRIVE
+ops/specs/day01_*.md             6 files: shared setup + one per teammate
+.gitignore .gitattributes requirements.txt README.md
++ the §14 folder skeleton (.gitkeep so folders survive a clone)
 ```
-
-Nothing else. No `core/`, no `evaluation/`, no `requirements.txt`, no repo.
 
 ---
 
-## Verified this session — do NOT re-verify
+## Measured this session — do NOT re-measure
 
-Checked against live sources. Treat as settled.
+**LoFTR CPU latency**, demo laptop, lunar-like synthetic relief, 14 threads.
+Logged in `core/bench_loftr_cpu_results.csv`. **Not yet in `results_log.csv`, so not quotable.**
 
-**Hardware**
-- Samartha's laptop = **demo machine**: Intel Core Ultra 5 125H, 14C/18T, **Intel Arc iGPU with
-  0 MB dedicated VRAM**, 15.4 GB RAM, 785 GB free. **No discrete GPU. No CUDA.**
-- Rohan's PC: i7-14700K, **RX 9060 XT 16 GB (AMD, gfx1200)**, 32 GB DDR5, 1 TB SSD + 2 TB HDD.
-  ~30 km away. Data server, never on the demo path.
-- Python 3.12.10 at `C:\Users\samar\AppData\Local\Programs\Python\Python312\`. torch NOT installed.
-- `python3` fails on Windows (Store alias). Use `python` or `py`.
+| | |
+|---|---|
+| 480² | 2.73 s (sd 0.20), 1618 matches, peak RSS 1.18 GB |
+| **640²** | **5.50 s cold / 7.54 s warm steady-state** (+24% thermal drift), 2824 matches, peak RSS 1.84 GB |
+| 1024² | **NOT VIABLE** — needs ~3.6 GB of activations |
 
-**Data — all public, all confirmed reachable**
-- **CH-2 OHRC imagery + all ISRO instrument user guides: `archive.org/details/chandrayaan-2-high-resolution-images-of-the-moon` — NO ACCOUNT.** This dissolved the PRADAN blocker.
-- ISRO's own SIH guidance names `chmapbrowse.issdc.gov.in` + `pds4_tools`. Registration required
-  there and at `pradan.issdc.gov.in`, but **no email-domain rule is stated anywhere** — untested.
-- LROC: `pds.lroc.im-ldi.com` open directory · ODE anonymous · `quickmap.lroc.im-ldi.com`
-- Kaguya TC: `s3://astrogeo-ard/moon/kaguya/terrain_camera/monoscopic/uncontrolled/`
-  `--no-sign-request`, **Cloud-Optimized GeoTIFF, CC0**
-- Chandrayaan-1 M3 (the multi-modal leg): PDS Imaging Node, no login
-- SLDEM2015 (ground truth): PDS Geosciences, 59 m/px
+**DECISION: tile size 640. Live inference with a progress bar, narrated.** Quote the **warm** number
+(7.5 s) — by demo time the machine has been warm for minutes, and the cold number is the optimistic
+direction Invariant 1 forbids.
 
-**Licences**
-- LoFTR = **Apache-2.0** (LICENSE file read directly) → our matcher
-- **SuperPoint = non-commercial research only** — LightGlue's own README says so. **Rejected.**
-- DISK / ALIKED = permissive, if a sparse matcher is ever needed
+Three measurement traps, already paid for:
+- **`torch.rand` under-reports latency by ~13%** and exercises the fine stage on 139 matches instead
+  of 2824. LoFTR's runtime is content-dependent. Never benchmark on noise.
+- **Thermal drift is +24%** across 18 back-to-back passes, smooth and monotonic.
+- **Memory pressure is a separate effect** that looks similar and is not. Below ~2 GB free the
+  machine thrashes: isolated 3–4× spikes that snap back. A first attempt conflated the two and
+  produced a wrong reading. The harness now separates them statistically.
 
-**Packages**
-- `pip install magsac` **DOES NOT EXIST**. Use `cv2.USAC_MAGSAC`.
-- Available: `pds4_tools` 1.4 · `pvl` 1.3.2 · `rasterio` 1.5.1 · `kornia` 0.8.3 ·
-  `opencv-contrib-python` 5.0.0.93 · `streamlit` 1.62.0 · `pymagsac` 0.2.3
-
-**SIH**
-- College SPOC registered before the 14 Aug deadline ✅ · team registered, SIH26166 submitted ✅
-- Internal round is **in person, live demo, faculty judges (not domain experts)**
-- 226 PS total / 172 software — matches the original brief
-- ⚠️ "Level 1" difficulty label does **not** appear in the PS listing. Never say it to a judge.
-- OHRC is **~28 cm/px** per ISRO's own portal — not 0.25 m
-
----
-
-## Decisions made, with reasons
-
-1. **12-day plan, not 15.** Internal round is likely Day 10–12. Days 13–15 are buffer.
-2. **Validation ladder replaces loose "cross-sensor" talk.** Tier A sun-angle (same sensor) ·
-   B cross-sensor · B+ 20× scale · C **multi-modal** · D ground truth. The old docs called
-   LROC↔LROC "cross-sensor", which is false and was the likeliest Q&A kill shot.
-3. **CPU-only demo.** Follows from the hardware. Tile size comes from a Day-1 measurement.
-4. **Numbers discipline.** Nothing enters a slide until it is in `evaluation/results_log.csv`.
-   The old drafts carried invented figures ("0.7 px", "SIFT 4.2 px", "RTX 3080") through four files.
-5. **Agents cannot write files.** Protects Gate 5 — each person must be able to explain their own
-   module, so reviews produce findings, not fixes.
-6. **Direct commits to `main`**, one folder per person. Branch+PR would make Samartha a bottleneck
-   on five people's 2-hour days.
-7. **Code in git, images in Google Drive.** GitHub rejects >100 MB; OHRC ZIPs are ~750 MB.
-8. **Gate 2-alt added.** The old Gate 1 fallback ("drop the learned matcher") made the old Gate 2
-   ("3× better than classical") unpassable — it would have been classical vs classical.
+**Weights:** kornia fetches LoFTR weights over **plaintext HTTP from a researcher's personal CVUT
+page**, with no integrity check, unpickled with `weights_only=False`. Both files are now sha256-pinned
+in `bench_loftr_cpu.py`; `fetch_weights.py` reproduces them exactly. SSL fails on this network without
+pointing Python at the certifi CA bundle.
 
 ---
 
 ## Per person
 
-Nobody has started. All six need the Day-1 setup from `docs/01_HOW_WE_WORK_TOGETHER.md`.
+**Nobody except Samartha has pushed anything.** `app/`, `evaluation/`, `baselines/`, `data/` and
+`presentation/` contain only `.gitkeep`.
 
-| Person | Status | Day 1 task |
-|---|---|---|
-| Samartha | not started | Repo + `.gitignore` first + **CPU benchmark of LoFTR** |
-| Rohan | not started | CH-2 OHRC from archive.org + test registration with personal Gmail |
-| Samrudh | not started | Install, `shaded_relief.py` stub, get an SLDEM tile |
-| Risheeth | not started | SIFT/ORB/AKAZE on a **self-made** shifted pair — depends on nobody |
-| Rishabh | not started | `detect_changes` on a **self-made** pair — depends on nobody |
-| Saniya | not started | **Download the SIH template and confirm the six real headings** |
+| Person | GitHub | Access | Pushed | Blocked on |
+|---|---|---|---|---|
+| Samartha | `samarthputhraya` | owner | 3 commits | nothing |
+| Rohan | `rohanshahare` | ✅ accepted | nothing | Drive folder (Samartha) for anywhere to put OHRC |
+| Samrudh | `SamrudhNandakumar` | ✅ accepted | nothing | nothing — spec is self-contained |
+| Rishabh | `rizzhub3118` | ✅ accepted | nothing | nothing — spec is self-contained |
+| Saniya | `ssaniyabi` | ✅ accepted | nothing | nothing — needs no repo, no Python |
+| Risheeth | `risheeth26233` | ⚠️ **INVITE STILL PENDING** | nothing | cannot clone until he accepts |
+
+**Rishabh reported at 15:31 IST that change detection is "complete with automated tests, robustness
+checks and README".** None of it is in the repo. He accepted his repo invite at 16:54 IST — 83
+minutes *after* declaring completion — and has not pushed since. The work may exist; there is no
+evidence, nothing reviewable, and nothing that survives his laptop dying. **First ask tomorrow: push.**
+
+**Day-1 specs remain live and unexecuted.** No Day-2 specs were issued — see Sequencing below.
 
 ---
 
 ## In flight
 
-Nothing mid-edit. The document set and harness are complete and internally consistent
-(verified: no surviving fabricated numbers, gate days consistent at 5/8/10/11/12, no
-`pip install magsac`, no branch/PR contradictions, all cross-references resolve).
+Nothing mid-edit. Working tree clean, remote in sync.
+
+**Resume here:** `core/io_loader.py`. Nothing exists yet. It is Samartha's Day-1 afternoon task,
+carried to next session, and it is on the critical path twice over — Rohan's Day-5 catalogue needs
+`crop_to_overlap` from it, and Gate 1 on Day 5 needs it under `pipeline.py`.
+
+```python
+def load(path) -> tuple[np.ndarray, dict]:
+    """Returns (grayscale float32 array, metadata dict).
+    metadata keys: gsd_mpp, instrument, sun_azimuth, sun_elevation, incidence, crs, transform
+    Dispatch on extension: .xml -> pds4_tools | .IMG -> pvl (+ raw numpy) | .tif -> rasterio
+    """
+```
+
+Write the **format abstraction now**, even though only one format is testable today. CH-2 is PDS4,
+LROC is PDS3, Kaguya is GeoTIFF. Hardcoding one format costs two days on Day 9.
+
+⚠️ **The `.tif` branch cannot use rasterio** — see Known issues. Either resolve that first or leave
+the branch stubbed with a clear `NotImplementedError`.
 
 ---
 
 ## Open questions
 
 1. **Internal hackathon date** — still unknown. Reshapes the schedule. Chase the SPOC.
-2. **SIH 2026 template headings** — assumed (Problem Statement · Proposed Solution · Technical
-   Approach · Feasibility and Viability · Impact and Benefits · Research and References), **not
-   confirmed against the actual file.** Saniya Day 1. Blocks deck work Days 2–7.
-3. **LoFTR CPU latency on Samartha's laptop** — Day 1 hour 1. Determines tile size, UI design, and
-   what the demo script can promise. Everything downstream waits on this number.
-4. **Does chmapbrowse/PRADAN accept a personal Gmail?** Rohan tests Day 1, 10 minutes.
-5. **Chandrayaan-3 landing-site NAC product IDs** — `[VERIFY]`. LROC imaged the site before and
-   after Aug 2023 and Vikram is visible. If Rohan finds these, Rishabh's change-detection demo
-   becomes the best 20 seconds in the pitch.
+2. ~~SIH 2026 template headings~~ — **CLOSED.** Real file downloaded and parsed: 924,505 bytes,
+   sha256 `ce3e5dee…`, 7 slides. See Known issues #3 for the correction it forces.
+3. **`rasterio` is unusable on the demo machine** — see Known issues #1. **Samartha's to resolve,
+   needed by Day 3.**
+4. **Google Drive `SIH26166_DATA` does not exist.** Blocks Rohan, and blocks distributing
+   `weights/loftr_outdoor.pt` (46 MB) to five people. Needs a browser session.
+5. **Chandrayaan-3 landing-site NAC product IDs** — still `[VERIFY]`, never confirmed. Rishabh needs
+   them ~Day 6. **Terminology warning:** these are **LROC NAC images OF the CH-3 landing site**, not
+   "Chandrayaan-3 imagery". CH-3's own cameras are surface cameras and are useless for this. Rishabh
+   used the wrong phrasing in chat on Day 1; correct it before it reaches a slide.
 
 ---
 
 ## Known issues / traps already found
 
-Recorded so `daily-reviewer` does not re-report them:
+Recorded so `daily-reviewer` does not re-report them.
 
-- **OneDrive + git.** Repo sits in a synced folder. Set "Always keep on this device" on the folder
-  (Files On-Demand placeholders would break Gate 4). Pause sync during big git operations.
-  See `docs/01_HOW_WE_WORK_TOGETHER.md`.
-- **Streamlit nested buttons.** `st.button()` inside `if st.button():` can never fire — Streamlit
-  reruns the script on every interaction. Use `st.session_state`.
-- **ORB/AKAZE need `BFMatcher(NORM_HAMMING)`**, not FLANN KD-tree — binary descriptors.
-- **SIFT ratio test crashes** when `knnMatch` returns a single match; guard with `len(pair)==2`.
-  Also guard `des is None`, which is normal on dark mare regions.
-- **`cv2.medianBlur` requires uint8.** Lunar products arrive uint16/float.
-- **Model weights download on first use.** Cache to `weights/` or Gate 4 fails with wifi off.
-- **A silently dead hook** was found and fixed this session: Windows cp1252 console + em-dashes in
-  STATUS.md → `UnicodeEncodeError` swallowed by `try/except` → hook printed nothing, exit 0. Now
-  transliterates. **Lesson: after adding any hook, run it once and confirm you see output.**
+1. **`rasterio` imports but its DLLs are blocked.** Exact error:
+   `ImportError: DLL load failed while importing _base: An Application Control policy has blocked this file.`
+   Windows Application Control is blocking its bundled GDAL DLLs. **This threatens Tier B+**:
+   `00_CANONICAL_FACTS.md` §3 calls Kaguya TC "the cheapest win in the set" because `rasterio.open()`
+   reads COGs over HTTP, and that is Rohan's Day 3. Note that **disabling Smart App Control is a
+   one-way door** — it cannot be re-enabled without an OS reinstall. Try a different GDAL wheel, or
+   read the COG bytes directly (as Samrudh now does for SLDEM), before touching the OS setting.
+2. **`cv2.AKAZE_create()` does not exist in opencv-contrib-python 5.0.0.93.** AKAZE, KAZE and BRISK
+   moved into `cv2.xfeatures2d`. `RISHEETH_BASELINE_GUIDE.md` has the old call. The natural "fix"
+   (downgrading OpenCV) desynchronises the team's pins and loses SIFT. Verified present:
+   `cv2.SIFT_create`, `cv2.ORB_create`, `cv2.xfeatures2d.AKAZE_create`, `cv2.USAC_MAGSAC` (=38).
+   AKAZE descriptors are `uint8 (N,61)` → Hamming; SIFT's are `float32` → FLANN is fine.
+   `cv2.findContours` returns **2** values in OpenCV 5.
+3. **The SIH 2026 template has NO "Problem Statement" slide.** Slide 1 is a metadata **TITLE PAGE**
+   (PS ID, title, theme, category, team ID, team name). The instructions slide says verbatim:
+   *"Kindly keep the maximum slides limit up to six (6). (Including the title slide)"* — so the cap
+   **includes** the title page and we have **five content slides, not six**.
+   `00_CANONICAL_FACTS.md` §10 and `TEAM_TASK_GUIDE.md` both assume otherwise and **still need
+   correcting.** Saniya's Day-2 row ("Draft Slide 1 — Problem Statement") is not executable.
+   Real order: TITLE PAGE · IDEA TITLE · TECHNICAL APPROACH · FEASIBILITY AND VIABILITY ·
+   IMPACT AND BENEFITS · RESEARCH AND REFERENCES.
+4. **sih.gov.in returns 403 to non-browser user agents.** Download the template through a browser,
+   or send a browser `User-Agent` header.
+5. **`.gitignore` had no rule for PDFs or Office files.** Fixed — `*.pdf`, `*.pptx`, `*.docx` added
+   before Rohan's ISRO guides or Saniya's template could be committed.
+6. **Windows `num_page_faults` counts SOFT faults.** A legitimate 1.4 GB LoFTR pass reports ~1.3 M
+   faults. Useless for detecting swapping; use a statistical outlier rule instead.
+7. **OneDrive + git.** Repo sits in a synced folder. `attrib +P -U` has been applied recursively —
+   verified **0 cloud-only placeholders**. Re-check before Gate 4. Pause sync during big git ops.
+8. **Streamlit nested buttons.** `st.button()` inside `if st.button():` can never fire. Use
+   `st.session_state`.
+9. **SIFT ratio test crashes** when `knnMatch` returns a single match — guard `len(pair)==2`. Also
+   guard `des is None`, normal on dark mare regions.
+10. **`cv2.medianBlur` requires uint8.** Lunar products arrive uint16/float.
+11. **A silently dead hook** was found on Day 0: Windows cp1252 console + em-dashes → swallowed
+    `UnicodeEncodeError`. Now transliterates. **After adding any hook, run it once and confirm output.**
+
+---
+
+## Sequencing risks — fix these before they land
+
+- **No Day-2 specs were issued, deliberately.** Zero of the five Day-1 specs were executed. Issuing
+  Day-2 on top would double five people's backlog and guarantee both fail. **The Day-1 specs in
+  `ops/specs/` stand as tomorrow's specs.** Re-issue Day 2 only once Day 1 is actually pushed.
+- **Rohan Day 5 needs `core.io_loader.crop_to_overlap`**, which does not exist. Must land by end of
+  Day 4 or his catalogue slips — and the catalogue gates Risheeth Day 4, Rishabh Day 5 and Gate 1.
+- **Rishabh Day 5 needs `data/pairs_catalogue.csv`; Rohan does not deliver it until end of Day 5.**
+  Same-day collision. Cheap fix: ask Rohan to post `source_gsd_mpp` for his two primary pairs in chat
+  by end of Day 4.
+- **Risheeth Day 3 wants to log via the harness; `evaluation/metrics.py` does not exist until
+  Samrudh's Day 3.** Tell him to write his own two-column CSV on Days 1–2 and adapt later.
+- **Samrudh's hillshade has no cast shadows.** `np.clip(shade, 0, 1)` is Lambertian *self*-shading.
+  Any claim that "the shadows are physically real" is an overclaim. Either ray-trace cast shadows or
+  say "shaded relief at two sun positions". Flag to `claim-checker` before Day 8.
+- **`docs/01_HOW_WE_WORK_TOGETHER.md` §Setup step 5 says `pip install -r requirements.txt`.** That
+  now pulls ~250 MB of torch nobody needs on Day 1 plus the broken rasterio. The Day-1 specs give
+  minimal per-person install lines instead; the doc still needs updating.
 
 ---
 
 ## Next session — do these in order
 
-1. `git init`, create `.gitignore` **first** (contents in `01_HOW_WE_WORK_TOGETHER.md` §Setup),
-   then the folder skeleton from `00_CANONICAL_FACTS.md` §14.
-2. Create the private GitHub repo, add 5 collaborators, push.
-3. Create + share the Google Drive `SIH26166_DATA` folder.
-4. Set OneDrive "Always keep on this device" on the project folder.
-5. `pip install torch --index-url https://download.pytorch.org/whl/cpu` then **run the LoFTR CPU
-   benchmark** (code in `docs/SAMARTHA_INTEGRATION_GUIDE.md`, Day 1). Post the number to the team.
-6. Send the five Day-1 specs as GitHub Issues.
-7. Chase the SPOC for the hackathon date.
+1. **`core/io_loader.py`** — the format abstraction. Highest-value solo work; unblocks Rohan Day 5
+   and Gate 1. Leave the `.tif` branch stubbed if rasterio is still blocked.
+2. **Resolve rasterio**, or decide formally that Kaguya (Tier B+) reads raw bytes instead. Day-3 blocker.
+3. **Create the Google Drive folder**, share to five, upload `weights/loftr_outdoor.pt`.
+4. **Chase Risheeth's invite acceptance**, and chase Rishabh to push what he says exists.
+5. **Correct `00_CANONICAL_FACTS.md` §10 and the Saniya rows in `TEAM_TASK_GUIDE.md`** to the real
+   six template headings.
+6. **Chase the SPOC** for the internal hackathon date.
 
 ---
 
 ## Reviewed through
 
-No commits exist yet.
+`e8a4e84`. No teammate commits exist yet, so `daily-reviewer` has nothing to review.
