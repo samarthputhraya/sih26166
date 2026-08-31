@@ -24,7 +24,34 @@ honestly how many of its detections are real changes versus registration artifac
 
 ---
 
-## Step 1 — Get a real lunar image (15 min)
+## 🔴 Step 0 FIRST — install what the pipeline needs (~25 min)
+
+**This step was missing from the first version of this spec. You would have hit it at Step 3 and
+been stuck.** Step 3 calls `core.pipeline.run_all()`, which uses the LoFTR matcher — that needs
+PyTorch, kornia, and a 46 MB weights file you don't have. Day-1 setup deliberately told you *not*
+to install torch, so you don't have it.
+
+```bash
+pip install torch --index-url https://download.pytorch.org/whl/cpu
+pip install kornia certifi
+python core/fetch_weights.py
+```
+
+`fetch_weights.py` downloads the model weights and checks them against a known fingerprint. It is
+self-contained — you don't need the Google Drive folder for this.
+
+⚠️ **Use that exact CPU index URL.** The default `pip install torch` pulls ~2 GB of NVIDIA GPU code
+that is useless here — there is no CUDA anywhere on this project.
+
+**If `fetch_weights.py` fails, or LoFTR is unbearably slow on your machine, say so in chat within
+30 minutes — don't burn your afternoon on it.** Fallback: you already know the transform `H`, so
+skip `run_all` entirely and warp directly with
+`cv2.warpPerspective(src, H, (640, 640), flags=cv2.INTER_CUBIC)`. You lose "aligned by the real
+pipeline", but the whole change-detection exercise still works.
+
+---
+
+## Step 1 — Get a real lunar image (10 min)
 
 Public, no login, 22.6 MB. Verified working on 31 Aug 2026:
 
