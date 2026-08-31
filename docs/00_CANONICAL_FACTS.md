@@ -81,7 +81,20 @@ account at all.**
 | CH-2 OHRC / TMC-2 / IIRS (full archive) | `chmapbrowse.issdc.gov.in` — ISRO's own recommended route | Registration | PDS4 |
 | CH-2 (alternate portal) | `pradan.issdc.gov.in/ch2/` | Registration (Keycloak SSO) | PDS4 |
 | LROC NAC / WAC | `pds.lroc.im-ldi.com/data/LRO-L-LROC-2-EDR-V1.0/` — open directory | **No** | PDS3 |
-| LROC map-projected NAC | ODE, dataset `LRO-L-LROC-5-RDR-V1.0`, product type `SDRPHO` | **No** | PDS3, georeferenced |
+| LROC map-projected NAC | ODE, dataset `LRO-L-LROC-5-RDR-V1.0`, product type **`SDPPHO`** | **No** | PDS3, georeferenced |
+| **LROC NAC + illumination geometry** | **ODE REST API, product type `EDRNAC4` or `CDRNAC4`** — returns `Incidence_angle` per product | **No** | PDS3 + JSON metadata |
+
+> ⚠️ **`SDRPHO` does not exist — the code is `SDPPHO`** (P, not R). An earlier version of this table
+> had the typo and it propagated into `DATASET_CARD.md`. Verified 31 Aug 2026 against ODE's own
+> `query=iipy` product-type listing.
+>
+> **For Tier A, do not use `SDPPHO`.** ODE reports `ValidIncidenceAngles = F` for it, but **`T` for
+> `EDRNAC4` and `CDRNAC4`** — so ordinary NAC EDRs come back from the ODE REST API *with their
+> incidence angle attached*, which is exactly what "same site, incidence differs ≥15°" needs. A NAC
+> EDR **label** carries no illumination geometry (verified on a real product); ODE's metadata does.
+> Query shape:
+> `oderest.rsl.wustl.edu/live2/?target=moon&query=product&results=fmp&output=JSON&pt=EDRNAC4&iid=LROC&ihid=LRO&minlat=..&maxlat=..&westlon=..&eastlon=..`
+> Only use incidence **20–80°**; above 90° is the night side.
 | Search front-end | `ode.rsl.wustl.edu/moon` — "You are an anonymous user" | **No** | — |
 | Browse UI | `quickmap.lroc.im-ldi.com` | **No** | — |
 | **Kaguya TC** | `s3://astrogeo-ard/moon/kaguya/terrain_camera/monoscopic/uncontrolled/` | **No AWS account** | **Cloud-Optimized GeoTIFF, CC0 1.0** |

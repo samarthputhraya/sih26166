@@ -245,12 +245,24 @@ Recorded so `daily-reviewer` does not re-report them.
 
 00. **🔴 A NAC EDR CARRIES NO ILLUMINATION GEOMETRY. THIS BREAKS TIER A AS WRITTEN.**
    ✅ **Rohan has acted on this** (`e8ebd75`): `DATASET_CARD.md` now records the policy — EDRs are
-   source/reference data only, Tier A moves to **SDRPHO** (`LRO-L-LROC-5-RDR-V1.0`), which carries
-   incidence/emission/phase as separate bands. He also recorded that Kaguya will be downloaded
-   locally rather than read over HTTP/GDAL. Both of last night's findings closed by the owner.
-   ⚠️ One thing for him to confirm against a real SDRPHO label: `DATASET_CARD.md` lists incidence as
-   **Band 2**, while `docs/LROC_CANDIDATE_ANALYSIS.md` line 57 says **Channel 3**. One of the two is
-   wrong. Read the band order off the label, do not assume it.
+   source/reference data only, and Tier A moves off EDRs. He also recorded that Kaguya will be
+   downloaded locally rather than read over HTTP/GDAL. Both of last night's findings closed by the
+   owner.
+
+   🔴 **But his replacement plan needs correcting, and so did our own docs.** Verified 31 Aug
+   against ODE's `query=iipy` product-type listing:
+   - **`SDRPHO` DOES NOT EXIST.** The real code is **`SDPPHO`** (P, not R).
+     `00_CANONICAL_FACTS.md` §3 carried the typo and `DATASET_CARD.md` inherited it. Canonical
+     Facts and `ROHAN_DATA_GUIDE.md` are now fixed; his card is his to fix.
+   - **`SDPPHO` has `ValidIncidenceAngles = F`** in ODE — it will not give him incidence anyway.
+   - ✅ **`EDRNAC4` and `CDRNAC4` have `ValidIncidenceAngles = T`.** So ordinary NAC EDRs come back
+     from the **ODE REST API** *with* `Incidence_angle` attached. The EDR *label* has no
+     illumination geometry (confirmed on a real product) but ODE's metadata does. **That is the
+     Tier A route.**
+   - Two ready-made Tier A pairs already found and handed to him, both far exceeding the ≥15°
+     requirement: Apollo 15 (**25.2° vs 79.3°, Δ54.1°**) and Copernicus (**22.2° vs 78.1°, Δ55.8°**).
+   - ⚠️ Filter to incidence **20–80°**. ODE returns products at 139° and 164°, which are night-side
+     and useless.
    ⚠️ And for Samartha: `io_loader.as_cv_safe()` takes **band 0** of a multi-band product and
    `_load_pds3` assumes **band-sequential** storage. Neither is verified against a real SDRPHO —
    check `BAND_STORAGE_TYPE` the hour one lands.

@@ -162,8 +162,16 @@ directory. No login, no cart.
 5. Record product IDs (like `M123456789LE`) in the dataset card as you go.
 
 > 💡 **Prefer map-projected products where you can get them** — ODE dataset
-> `LRO-L-LROC-5-RDR-V1.0`, product type **SDRPHO**. Georeferenced means the map coordinates give
+> `LRO-L-LROC-5-RDR-V1.0`, product type **`SDPPHO`** (P, not R — `SDRPHO` does not exist; this
+> guide and Canonical Facts both had the typo). Georeferenced means the map coordinates give
 > Samrudh approximate ground truth for free. Raw EDRs need much more work.
+>
+> 🔴 **But for TIER A specifically, use ordinary NAC EDRs and the ODE REST API instead.** ODE
+> reports no incidence angles for `SDPPHO`, but it *does* carry them for **`EDRNAC4`**. A NAC EDR
+> label contains no illumination geometry at all (verified on a real product), so the sun angle has
+> to come from ODE's metadata. That query returns each image *with its `Incidence_angle`*, which is
+> precisely how you select "same site, incidence differs ≥15°". Full worked steps, with two
+> ready-made pairs, are in `ops/specs/ROHAN_DO_THIS_NOW.md`.
 
 **Day 2 deliverable:** 6 Tier A candidate pairs identified and downloading, dataset card updated.
 
