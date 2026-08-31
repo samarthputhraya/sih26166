@@ -9,7 +9,7 @@
 
 | | |
 |---|---|
-| **Day** | 1 of 12 — repo live, Samartha's Day 1 done, five teammates have not started |
+| **Day** | 2 of 12 — Gate-1 chain built and running; Rohan and Rishabh have pushed |
 | **Repo path** | `C:\Users\samar\OneDrive\Documents\SIH26166` |
 | **Git** | ✅ live — `https://github.com/samarthputhraya/sih26166` (private, branch `main`) |
 | **venv** | `C:\Users\samar\venvs\sih26166` — deliberately OUTSIDE the OneDrive folder |
@@ -131,10 +131,33 @@ It prints every label leaf and marks the ones matching a candidate. Copy the tru
 `CANDIDATES`. That is a one-line change per field. Guessing them is how a wrong sun angle reaches a
 slide.
 
-**Resume here next:** `core/scale.py :: to_common_gsd`. Two constraints already fixed by the
-io_loader work — it must return **effective** `out_size/in_size` factors, not the nominal GSD ratio,
-and those factors must be **per-axis** (width and height round independently, and one scalar
-reintroduces a ~2 m error on one axis).
+**THE GATE-1 CHAIN IS BUILT AND RUNS** (`3cbb722`): `core/scale.py`, `core/matcher.py`,
+`core/ransac.py`, `core/pipeline.py`.
+
+```
+python -m core.pipeline <pair dir or prefix>     # exit 0
+load -> to_common_gsd -> illumination -> LoFTR -> MAGSAC++ -> warp -> metrics
+```
+
+Dry run on a **self-made** pair cut from the real NAC EDR (known homography: 12 px translation,
+1.5° rotation, 1.03× scale) — 5262 matches, 100% inliers, **RMSE 0.0392 px** over 576 check points,
+6.0 s.
+
+> ⚠️ **0.0392 px is NOT quotable.** It is not in `results_log.csv`, and the pair is two crops of
+> **one** LROC NAC frame — not cross-sensor, not multi-modal, **not even Tier A**. It proves the
+> plumbing and the geometry and nothing whatever about performance. Do not let it near a slide.
+
+Two seams are deliberately empty and announce themselves at runtime: `illumination.py` (Day 5–6)
+and `evaluation/metrics.py` (Samrudh, Day 3). **`pipeline.py` computes no metrics of its own** — a
+second implementation in `core/` would give this project two sources of truth for its headline
+accuracy number. The held-out 20% split stays in Samrudh's `evaluate()` for the same reason;
+`filter_matches` fits on everything because its output is the operational warp.
+
+**Resume here next:** Gate 1 needs a **real pair**, which is Rohan's. Until one exists the chain
+cannot be exercised for real. Meanwhile the honest next builds are `core/illumination.py` (Day 5–6)
+and then `subpixel.py` + `distribution.py` (Day 8). Do **not** tune anything against the self-made
+pair — it has no illumination difference and no scale difference, so it cannot tell you anything
+about the two problems those modules exist to solve.
 
 ⚠️ **The `.tif` branch cannot use rasterio** — see Known issues. Either resolve that first or leave
 the branch stubbed with a clear `NotImplementedError`.
@@ -167,7 +190,37 @@ the branch stubbed with a clear `NotImplementedError`.
 
 Recorded so `daily-reviewer` does not re-report them.
 
+000. **🔴🔴 LoFTR NEEDS [0,1]. RAW DN RETURNS ZERO MATCHES, SILENTLY.** The single most
+   dangerous behaviour found so far, because there is no exception — just an empty result that
+   reads as *"the matcher does not work on lunar imagery"*. Measured on real NAC texture, two
+   640² crops with a known (24, 17) shift:
+
+   | input | matches | confidence |
+   |---|---|---|
+   | `[0,1]` normalised | **5402** | 0.996 |
+   | raw DN `[32..199]` | **0** | — (no error) |
+   | per-tile min–max | 5402 | 1.000 |
+
+   `io_loader.load()` deliberately returns **raw DN** — a loader must not silently rescale science
+   data. So `core/matcher.py` normalises **once**, internally, where it is documented. Wiring the
+   two together the obvious way would have produced a Day-2-checkpoint "LoFTR fails on lunar data"
+   verdict and could have cost us the entire approach. **Never pass raw DN to LoFTR.**
+   We use fixed `/255`, not per-tile min–max: per-tile makes each tile's normalisation depend on
+   its own content, so the same crater normalises differently depending on where the tile boundary
+   fell — a correctness hazard in a tiled matcher, not a tuning choice.
+   Also confirmed by sign and axis: **keypoints are `(x, y)`, not `(row, col)`.**
+
 00. **🔴 A NAC EDR CARRIES NO ILLUMINATION GEOMETRY. THIS BREAKS TIER A AS WRITTEN.**
+   ✅ **Rohan has acted on this** (`e8ebd75`): `DATASET_CARD.md` now records the policy — EDRs are
+   source/reference data only, Tier A moves to **SDRPHO** (`LRO-L-LROC-5-RDR-V1.0`), which carries
+   incidence/emission/phase as separate bands. He also recorded that Kaguya will be downloaded
+   locally rather than read over HTTP/GDAL. Both of last night's findings closed by the owner.
+   ⚠️ One thing for him to confirm against a real SDRPHO label: `DATASET_CARD.md` lists incidence as
+   **Band 2**, while `docs/LROC_CANDIDATE_ANALYSIS.md` line 57 says **Channel 3**. One of the two is
+   wrong. Read the band order off the label, do not assume it.
+   ⚠️ And for Samartha: `io_loader.as_cv_safe()` takes **band 0** of a multi-band product and
+   `_load_pds3` assumes **band-sequential** storage. Neither is verified against a real SDRPHO —
+   check `BAND_STORAGE_TYPE` the hour one lands.
    Confirmed against Rohan's own first product, `M108587604RE.IMG`, by reading its real label.
    The label has **no incidence angle, no sun azimuth, no sun elevation, no emission, no phase and
    no map scale** — 62 keywords, and not one of them is geometry. An EDR is raw: geometry needs
