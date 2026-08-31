@@ -3,6 +3,16 @@
 Implements run_orb(img1, img2, nfeatures=5000) returning (src_pts, ref_pts)
 as (N, 2) float32 arrays in (x, y) order.
 Uses BFMatcher with NORM_HAMMING for binary descriptors.
+
+Ratio test threshold: 0.75 (standard for ORB with BFMatcher).
+This is more permissive than SIFT's 0.7 because binary descriptors
+have a different distance distribution (Hamming vs L2).
+Higher threshold = more matches but more outliers, leading to higher
+residual_px after RANSAC. This is expected behavior, not a bug.
+
+Residual_px note: ORB typically shows higher residual_px than SIFT
+on the synthetic test pair because the looser ratio test admits more
+outliers that RANSAC must reject. The median offset remains accurate.
 """
 import cv2
 import numpy as np
@@ -11,7 +21,15 @@ from baselines.sift_baseline import EMPTY, _to_points
 
 
 def _run_binary(det, img1: np.ndarray, img2: np.ndarray, ratio: float = 0.75):
-    """Internal runner for binary descriptor detectors (ORB, AKAZE)."""
+    """Internal runner for binary descriptor detectors (ORB, AKAZE).
+
+    Args:
+        det: Feature detector (ORB or AKAZE)
+        img1, img2: Grayscale images
+        ratio: Lowe's ratio test threshold. Default 0.75 for binary
+               descriptors (ORB, AKAZE). Higher than SIFT's 0.7 because
+               Hamming distance distribution differs from L2.
+    """
     kp1, des1 = det.detectAndCompute(img1, None)
     kp2, des2 = det.detectAndCompute(img2, None)
 

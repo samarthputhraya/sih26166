@@ -2,6 +2,10 @@
 
 Implements run_sift(img1, img2, nfeatures=0) returning (src_pts, ref_pts)
 as (N, 2) float32 arrays in (x, y) order.
+
+Ratio test threshold: 0.7 (Lowe's ratio test for SIFT).
+This is the standard threshold for SIFT with FLANN matcher.
+Lower = stricter matching, fewer outliers, fewer total matches.
 """
 import cv2
 import numpy as np
@@ -38,6 +42,7 @@ def run_sift(img1: np.ndarray, img2: np.ndarray, nfeatures: int = 0) -> tuple[np
     flann = cv2.FlannBasedMatcher(dict(algorithm=1, trees=5), dict(checks=50))
     knn = flann.knnMatch(des1, des2, k=2)
 
+    # Lowe's ratio test: 0.7 is standard for SIFT
     good = [p[0] for p in knn if len(p) == 2 and p[0].distance < 0.7 * p[1].distance]
     return _to_points(kp1, kp2, good) if good else EMPTY
 

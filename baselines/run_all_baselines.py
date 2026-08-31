@@ -10,7 +10,6 @@ This script handles Configs 1 and 2 for SIFT, ORB, AKAZE.
 """
 import csv
 import sys
-import time
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -27,10 +26,11 @@ from baselines.akaze_baseline import run_akaze
 from core.io_loader import load
 
 try:
-    from evaluation.metrics import evaluate
+    from evaluation.metrics import evaluate, INLIER_THRESH_PX
     HAS_EVALUATE = True
 except ImportError:
     HAS_EVALUATE = False
+    INLIER_THRESH_PX = 3.0
     print("WARNING: evaluation.metrics not available. Logging basic stats only.", file=sys.stderr)
 
 try:
@@ -56,7 +56,7 @@ RESULTS_LOG.parent.mkdir(parents=True, exist_ok=True)
 
 # CSV header from SAMRUDH_EVALUATION_GUIDE.md
 CSV_FIELDS = [
-    "timestamp", "pair_id", "tier", "method", "config",
+    "timestamp", "pair_id", "tier", "method", "config", "config_name",
     "rmse_gt_px", "residual_px", "inlier_count", "inlier_ratio",
     "grid_coverage_fraction", "distribution_cv", "n_matches", "gsd_mpp"
 ]
@@ -110,60 +110,6 @@ def _run_config(method_name: str, run_fn, src_img, ref_img, config: int):
     else:
         raise ValueError(f"Unknown config: {config}")
     return src_pts, ref_pts
-
-
-def _compute_basic_metrics(src_pts, ref_pts, ref_shape):
-    """Compute basic metrics without evaluation.metrics."""
-    n = len(src_pts)
-    if n < 4:
-        return {
-            "inlier_count": 0,
-            "inlier_ratio": 0.0,
-            "grid_coverage_fraction": 0.0,
-            "distribution_cv": None,
-            "n_matches": n,
-        }
-
-    # Run RANSAC to get inliers
-    H, mask = cv2.findHomography(
-        src_pts, ref_pts,
-        method=cv2.USAC_MAGSAC,
-        ransacReprojThreshold=3.0,
-        confidence=0.999
-    )
-
-    if H is None or mask is None:
-        return {
-            "inlier_count": 0,
-            "inlier_ratio": 0.0,
-            "grid_coverage_fraction": 0.0,
-            "distribution_cv": None,
-            "n_matches": n,
-        }
-
-    inlier_mask = mask.ravel().astype(bool)
-    inlier_count = int(inlier_mask.sum())
-    inlier_ratio = inlier_count / max(n, 1)
-
-    # Grid coverage (8x8)
-    GRID = 8
-    h, w = ref_shape
-    cells = np.zeros((GRID, GRID), dtype=int)
-    for (x, y) in ref_pts[inlier_mask]:
-        r = min(int(y / h * GRID), GRID - 1)
-        c = min(int(x / w * GRID), GRID - 1)
-        cells[r, c] += 1
-
-    grid_coverage_fraction = float((cells > 0).sum() / (GRID * GRID))
-    distribution_cv = float(cells.std() / cells.mean()) if cells.mean() > 0 else None
-
-    return {
-        "inlier_count": inlier_count,
-        "inlier_ratio": inlier_ratio,
-        "grid_coverage_fraction": grid_coverage_fraction,
-        "distribution_cv": distribution_cv,
-        "n_matches": n,
-    }
 
 
 def _load_tiers_from_catalogue():
@@ -234,7 +180,7 @@ def run_all_baselines(pair_ids=None, tiers=None):
                 src_pts, ref_pts = result
                 n_matches = len(src_pts)
 
-                # Get metrics
+                # Get metrics - always use evaluate() when available
                 if HAS_EVALUATE and n_matches >= 4:
                     metrics = evaluate(
                         ref_shape=ref_shape,
@@ -245,16 +191,24 @@ def run_all_baselines(pair_ids=None, tiers=None):
                         seed=42
                     )
                 else:
-                    metrics = _compute_basic_metrics(src_pts, ref_pts, ref_shape)
-                    metrics["rmse_gt_px"] = None
-                    metrics["residual_px"] = None
+                    metrics = {
+                        "rmse_gt_px": None,
+                        "residual_px": None,
+                        "inlier_count": 0,
+                        "inlier_ratio": 0.0,
+                        "grid_coverage_fraction": 0.0,
+                        "distribution_cv": None,
+                        "n_matches": n_matches,
+                    }
 
+                config_name = CONFIGS.get(config_num, f"config_{config_num}")
                 row = {
                     "timestamp": datetime.now(timezone.utc).isoformat(),
                     "pair_id": pair_id,
                     "tier": tiers.get(pair_id, "unknown"),
                     "method": method_name,
                     "config": config_num,
+                    "config_name": config_name,
                     "rmse_gt_px": metrics.get("rmse_gt_px"),
                     "residual_px": metrics.get("residual_px"),
                     "inlier_count": metrics.get("inlier_count", 0),
