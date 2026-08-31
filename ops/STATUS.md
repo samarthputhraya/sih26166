@@ -95,7 +95,7 @@ validate the loader against real data (MD5 in the label matched).
 | Rishabh | `rizzhub3118` | ✅ accepted | **2 commits + PR #1** — `app/change_detection.py`, 7 passing tests, README | nothing |
 | Samrudh | `SamrudhNandakumar` | ✅ accepted | **nothing** | nothing — spec is self-contained. **Gate 1 needs his `evaluate()`** |
 | Saniya | `ssaniyabi` | ✅ accepted | **nothing** | nothing — needs no repo, no Python |
-| Risheeth | `risheeth26233` | ⚠️ **INVITE STILL PENDING** | **nothing** | cannot clone until he accepts |
+| Risheeth | `risheeth26233` | ✅ **accepted** | **1 commit** (`5067ffb`) — all 3 baselines + failure gallery + runner, 759 lines | nothing |
 
 **Rishabh delivered.** He declared change detection complete on Day 1 before anything was in the
 repo; it is now pushed, reviewable, and its 7 tests pass. He also avoided both OpenCV 5 traps
@@ -104,7 +104,14 @@ No hardcoded paths.
 
 **Rohan closed both findings raised against his own work** within hours, without being asked twice.
 
-⚠️ **Two people have now been silent for two days: Samrudh and Risheeth.** That is the Gate-5 risk
+**Risheeth delivered, and delivered well.** `5067ffb` — `sift/orb/akaze_baseline.py`,
+`make_test_pair.py`, `run_all_baselines.py` and `draw_failure_gallery.py`, 759 lines, more than
+Day 1 asked for. Verified by running his own acceptance test: **all three recover the known shift
+exactly** — SIFT 1424 matches, ORB 3657, AKAZE 1922, every one at median `(-7.00, -5.00)`.
+He avoided all three known traps unprompted: `cv2.xfeatures2d.AKAZE_create()` (and documented why),
+the `des is None` guard, and the `len(p) == 2` ratio-test guard.
+
+⚠️ **One person has now been silent for two days: Samrudh.** That is the Gate-5 risk
 the protocol says to flag by name — someone who stops working stops understanding, and cannot answer
 for their module cold on Day 12. Risheeth still has not accepted the repo invite, which is a
 one-click blocker nobody has cleared in 48 hours. **Samrudh is now on the critical path**: Gate 1
