@@ -156,13 +156,29 @@ python -m core.pipeline <pair dir or prefix>     # exit 0
 load -> to_common_gsd -> illumination -> LoFTR -> MAGSAC++ -> warp -> metrics
 ```
 
-Dry run on a **self-made** pair cut from the real NAC EDR (known homography: 12 px translation,
-1.5° rotation, 1.03× scale) — 5262 matches, 100% inliers, **RMSE 0.0392 px** over 576 check points,
-6.0 s.
+> 🔴 **CORRECTION — an earlier entry in this file and commit `3cbb722` reported
+> "RMSE 0.0392 px on real lunar texture". That was wrong and flattering by 10×.**
+> `M108587604RE.IMG` **contains no scene content**: 98.1% of the frame sits in DN 32–46, the
+> 400×400 crop has std 1.42 and only 15 distinct DN values, and there are no craters anywhere in
+> it. The chain was matching a warped copy of *sensor noise*, which is the EASIEST possible target —
+> fine-grained noise is a unique high-frequency fingerprint at every pixel. Same chain, same known
+> homography, on content with actual structure:
+>
+> | content | std | matches | inliers | RMSE |
+> |---|---|---|---|---|
+> | `M108587604RE` (no scene content) | 1.42 | 5264 | 100% | **0.0370 px** |
+> | synthetic lunar relief (`lunar_tile`) | 4.63 | 4075 | 90% | **0.3716 px** |
+>
+> **Use ~0.37 px as the working expectation, not 0.04.** Both remain **NOT quotable** — neither is
+> in `results_log.csv`, and both are self-made pairs, so neither is cross-sensor, multi-modal, or
+> even Tier A. This is exactly the error the Day-1 spec's "**Display it**" step exists to catch:
+> the loader was provably correct (MD5 matched, and the masked columns 5056/5057 land as exact
+> full-height columns, which a wrong stride would smear diagonally) while the *image* was useless.
+> **Numbers can pass every test while the picture is empty. Always look at the picture.**
 
-> ⚠️ **0.0392 px is NOT quotable.** It is not in `results_log.csv`, and the pair is two crops of
-> **one** LROC NAC frame — not cross-sensor, not multi-modal, **not even Tier A**. It proves the
-> plumbing and the geometry and nothing whatever about performance. Do not let it near a slide.
+What the dry run does still prove, because these are content-independent geometric facts: the chain
+runs end to end unattended, keypoints are `(x, y)`, the homography is recovered in the right
+orientation, and the coordinate round-trip through resampling is exact.
 
 Two seams are deliberately empty and announce themselves at runtime: `illumination.py` (Day 5–6)
 and `evaluation/metrics.py` (Samrudh, Day 3). **`pipeline.py` computes no metrics of its own** — a
@@ -238,6 +254,20 @@ Recorded so `daily-reviewer` does not re-report them.
    ⚠️ And for Samartha: `io_loader.as_cv_safe()` takes **band 0** of a multi-band product and
    `_load_pds3` assumes **band-sequential** storage. Neither is verified against a real SDRPHO —
    check `BAND_STORAGE_TYPE` the hour one lands.
+
+0c. **🔴 ROHAN'S ONLY IMAGE PRODUCT IS EMPTY. WE STILL HAVE NO USABLE LUNAR IMAGE.**
+   `M108587604RE.IMG` decodes perfectly and shows nothing: 98.1% of pixels in DN 32–46, std 1.42
+   over a 400×400 crop, 15 distinct DN values, no craters at any stretch. The only bright pixels in
+   the entire frame are columns 5056 and 5057 — the NAC's masked reference columns, which is a
+   detector artefact, not terrain. Its label fits: `RATIONALE_DESC = "TARGET OF OPPORTUNITY"`,
+   `LINE_EXPOSURE_DURATION = 0.678933 ms`, only 1024 lines (a real imaging strip is tens of
+   thousands). This is a short, dark, low-signal acquisition.
+   **The loader is not at fault and is proven correct** — see the CORRECTION note under In flight.
+   **Rohan needs to download a frame with actual terrain**, and the check is one line, before the
+   product ever goes in the catalogue:
+   `python -c "from core.io_loader import load; a,_=load('<file>'); print(a.std(), len(__import__('numpy').unique(a)))"`
+   A std of ~1 and a handful of distinct values means an empty frame. Real terrain is std ≳ 10.
+   Better still, look at it. **Every product entering `pairs_catalogue.csv` needs eyes on it once.**
    Confirmed against Rohan's own first product, `M108587604RE.IMG`, by reading its real label.
    The label has **no incidence angle, no sun azimuth, no sun elevation, no emission, no phase and
    no map scale** — 62 keywords, and not one of them is geometry. An EDR is raw: geometry needs

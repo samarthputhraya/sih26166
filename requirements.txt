@@ -25,7 +25,24 @@ opencv-contrib-python==5.0.0.93
 # Planetary data formats: CH-2 is PDS4, LROC is PDS3, Kaguya is GeoTIFF.
 pds4_tools==1.4
 pvl==1.3.2
-rasterio==1.5.1
+tifffile==2026.8.23          # GeoTIFF reader + geo tags. core/io_loader.py imports it
+                             # DIRECTLY - it arrives as a scikit-image dependency too, but
+                             # relying on that means one upstream change breaks the .tif branch.
+certifi==2026.7.22           # core/fetch_weights.py imports it directly. The LoFTR weights host
+                             # does not validate against the Windows cert store on our network.
+
+# rasterio==1.5.1            # DELIBERATELY NOT INSTALLED. On the demo laptop `import rasterio`
+#                            # dies with "DLL load failed while importing _io: An Application
+#                            # Control policy has blocked this file" - Smart App Control blocks
+#                            # its unsigned bundled GDAL DLLs by content hash, and it cannot be
+#                            # disabled without reinstalling Windows. We went GDAL-free instead:
+#                            # tifffile for tags, Pillow for pixels when tifffile has no codec.
+#                            #
+#                            # Do NOT re-add it "because it works on my machine". That is the
+#                            # failure mode this line exists to prevent: a teammate whose laptop
+#                            # allows rasterio writes code against it, and it dies at Gate 4 on
+#                            # the only machine that matters. What we lose is /vsicurl, so Kaguya
+#                            # COGs get downloaded rather than streamed.
 
 streamlit==1.62.0
 psutil==7.2.2
