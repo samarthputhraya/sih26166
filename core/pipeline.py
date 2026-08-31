@@ -103,10 +103,13 @@ def _normalise_illumination(img, meta):
     intend to make to a judge and it must not be made before it is true.
     """
     try:
-        from core.illumination import normalize
+        from core.illumination import DEFAULT_METHOD, normalize
     except ImportError:
         return img, "none (core/illumination.py not written yet)"
-    return normalize(img), "applied"
+    # Report the METHOD, not just "applied". "We normalise illumination" is a
+    # claim a judge can follow up on, and the only useful follow-up is "with
+    # what?" - which the A/B in core/bench_illumination.py answers by number.
+    return normalize(img), DEFAULT_METHOD
 
 
 def _evaluate(ref_shape, src_pts, ref_pts, H_true=None):
