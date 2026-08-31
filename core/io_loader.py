@@ -230,6 +230,26 @@ def _pick(leaves: list[tuple[str, str]], key: str) -> Any:
     return None
 
 
+def _instrument_name(root) -> str | None:
+    """Find the INSTRUMENT's name, not the mission's.
+
+    A CH-2 label carries several `<name>` elements. `Investigation_Area/name` is
+    "Chandrayaan-2" and appears FIRST, so a plain first-match search returns the
+    mission and quietly labels every OHRC frame with the spacecraft. Verified on
+    the real label of ch2_ohr_ncp_20200229T0739312111_d_img_d18.
+
+    The instrument is the `<name>` whose sibling `<type>` says "Instrument", so
+    match on that pairing and fall back to the generic search only if it is
+    absent.
+    """
+    for el in root.iter():
+        kids = {c.tag.rpartition("}")[2].lower(): (c.text or "").strip()
+                for c in el if len(list(c)) == 0}
+        if kids.get("type", "").lower() == "instrument" and kids.get("name"):
+            return kids["name"]
+    return None
+
+
 def _load_pds4(path: pathlib.Path) -> tuple[np.ndarray, dict[str, Any]]:
     try:
         import pds4_tools
@@ -257,11 +277,12 @@ def _load_pds4(path: pathlib.Path) -> tuple[np.ndarray, dict[str, Any]]:
     if arr is None:
         raise LoaderError(f"{path.name} contains no 2-D array structure")
 
-    leaves = _leaves(sl.label.getroot())
+    root = sl.label.getroot()
+    leaves = _leaves(root)
     meta = dict(_EMPTY_META)
     meta.update(
         gsd_mpp=_first_number(_pick(leaves, "gsd_mpp")),
-        instrument=_pick(leaves, "instrument"),
+        instrument=_instrument_name(root) or _pick(leaves, "instrument"),
         sun_azimuth=_first_number(_pick(leaves, "sun_azimuth")),
         sun_elevation=_first_number(_pick(leaves, "sun_elevation")),
         incidence=_first_number(_pick(leaves, "incidence")),
