@@ -205,3 +205,24 @@ Returns:
 &#x20; - `area\_m2`
 
 &#x20; - `classification`
+
+
+## Real Kaguya Validation
+
+A real Kaguya Terrain Camera test pair was processed through the team's
+alignment pipeline before running change detection.
+
+- Matches: 5544
+- RANSAC inliers: 5544
+- Aligned image: 640 × 640
+- Total detections: 1
+- Real changes: 1
+- Alignment artefacts: 0
+- Shadow/lighting detections: 0
+- Classification: `new bright`
+- Detected area: 83,054.09 m²
+- Expected planted-circle area: 89,364 m²
+- Result: PASS
+
+The planted change was successfully detected within the expected
+area tolerance of 67,000–112,000 m².
