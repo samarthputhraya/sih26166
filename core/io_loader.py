@@ -146,6 +146,24 @@ PDS3_SAMPLE_TYPES: dict[str, tuple[str, str]] = {
     "REAL": (">", "f"),
 }
 
+# PDS4 Element_Array/data_type -> numpy dtype, byte order included. PDS4 names the
+# endianness explicitly, which is why these are unambiguous where PDS3's are not.
+PDS4_DTYPES: dict[str, str] = {
+    "UnsignedByte": "u1", "SignedByte": "i1",
+    "UnsignedMSB2": ">u2", "UnsignedMSB4": ">u4", "UnsignedMSB8": ">u8",
+    "SignedMSB2": ">i2", "SignedMSB4": ">i4", "SignedMSB8": ">i8",
+    "UnsignedLSB2": "<u2", "UnsignedLSB4": "<u4", "UnsignedLSB8": "<u8",
+    "SignedLSB2": "<i2", "SignedLSB4": "<i4", "SignedLSB8": "<i8",
+    "IEEE754MSBSingle": ">f4", "IEEE754MSBDouble": ">f8",
+    "IEEE754LSBSingle": "<f4", "IEEE754LSBDouble": "<f8",
+}
+
+# Refuse to materialise more than this as float32 without an explicit window.
+# A CH-2 OHRC strip is 93693 x 12000 = 1.12 GB of uint8, i.e. 4.5 GB as float32,
+# on a laptop that had 2.7 GB free when this limit was chosen. Failing loudly with
+# instructions beats thrashing the machine for ten minutes and then dying.
+MAX_PIXELS_WITHOUT_WINDOW = 64_000_000        # 256 MB as float32
+
 _EMPTY_META: dict[str, Any] = {
     "gsd_mpp": None, "instrument": None, "sun_azimuth": None,
     "sun_elevation": None, "incidence": None, "crs": None, "transform": None,
@@ -250,6 +268,63 @@ def _instrument_name(root) -> str | None:
     return None
 
 
+def _pds4_array_spec(root, path: pathlib.Path) -> dict[str, Any] | None:
+    """Locate the raw array inside a PDS4 product so it can be memory-mapped.
+
+    A PDS4 Array_2D_Image is a flat binary blob with a detached label - it names
+    the file, the byte offset, the element counts per axis and the exact data
+    type including byte order. That is everything numpy needs, so we can map a
+    tile without materialising the whole image. Returns None if the label does
+    not describe a plain 2-D array, in which case the caller falls back to
+    pds4_tools and accepts the memory cost.
+    """
+    for fa in root.iter():
+        if fa.tag.rpartition("}")[2] != "File_Area_Observational":
+            continue
+        kids = {c.tag.rpartition("}")[2]: c for c in fa}
+        arr = kids.get("Array_2D_Image")
+        fil = kids.get("File")
+        if arr is None or fil is None:
+            continue
+
+        def text(parent, name):
+            for c in parent.iter():
+                if c.tag.rpartition("}")[2] == name and c.text:
+                    return c.text.strip()
+            return None
+
+        name = text(fil, "file_name")
+        dt = text(arr, "data_type")
+        if not name or dt not in PDS4_DTYPES:
+            continue
+        axes = []
+        for ax in arr:
+            if ax.tag.rpartition("}")[2] == "Axis_Array":
+                n = text(ax, "elements")
+                seq = text(ax, "sequence_number")
+                if n:
+                    axes.append((int(seq or len(axes) + 1), int(n)))
+        if len(axes) != 2:
+            continue
+        axes.sort()
+        data = path.parent / name
+        if not data.exists():
+            raise LoaderError(
+                f"{path.name} references {name}, which is not beside it. PDS4 "
+                "labels are detached - keep the .xml and .img together, and "
+                "never rename either (it breaks the label association)."
+            )
+        order = (text(arr, "axis_index_order") or "Last Index Fastest")
+        return {
+            "path": data, "dtype": np.dtype(PDS4_DTYPES[dt]),
+            "shape": (axes[0][1], axes[1][1]),
+            "offset": int(text(arr, "offset") or 0),
+            "order": order, "declared_type": dt,
+            "md5": text(fil, "md5_checksum"),
+        }
+    return None
+
+
 def _load_pds4(path: pathlib.Path) -> tuple[np.ndarray, dict[str, Any]]:
     try:
         import pds4_tools
@@ -258,26 +333,39 @@ def _load_pds4(path: pathlib.Path) -> tuple[np.ndarray, dict[str, Any]]:
 
     hook = sys.excepthook            # read() replaces it; put it back afterwards
     try:
+        # lazy_load=True: we want the LABEL, not the pixels. pds4_tools has no
+        # windowed read, so letting it load a 1.12 GB CH-2 strip here would cost
+        # 4.5 GB as float32 before we even choose a tile.
         # no_scale=True: scaling_factor/value_offset silently change the returned
         # dtype. We want the raw stored values plus the scaling reported honestly
         # in the metadata, so a caller can apply it and know that it did.
-        sl = pds4_tools.read(str(path), quiet=True, lazy_load=False, no_scale=True)
+        sl = pds4_tools.read(str(path), quiet=True, lazy_load=True, no_scale=True)
     except Exception as e:
         raise LoaderError(f"pds4_tools could not read {path.name}: {e}") from e
     finally:
         sys.excepthook = hook
 
-    arr = None
-    for s in sl:
-        # is_array is a METHOD. `if s.is_array:` is a bound method and always
-        # truthy, which would pick up tables and headers as images.
-        if s.is_array() and getattr(s.data, "ndim", 0) >= 2:
-            arr = np.asarray(s.data)
-            break
-    if arr is None:
-        raise LoaderError(f"{path.name} contains no 2-D array structure")
-
     root = sl.label.getroot()
+    spec = _pds4_array_spec(root, path)
+    if spec is not None:
+        # Memory-map the detached blob. Nothing is read until a slice is taken,
+        # so a caller can pull a 640x640 tile out of a 93693x12000 strip for the
+        # cost of that tile.
+        arr = np.memmap(spec["path"], dtype=spec["dtype"], mode="r",
+                        offset=spec["offset"], shape=spec["shape"])
+        if "First Index Fastest" in spec["order"]:
+            arr = arr.T          # column-major on disk; present it row-major
+    else:
+        arr = None
+        for s in sl:
+            # is_array is a METHOD. `if s.is_array:` is a bound method and always
+            # truthy, which would pick up tables and headers as images.
+            if s.is_array() and getattr(s.data, "ndim", 0) >= 2:
+                arr = np.asarray(s.data)
+                break
+        if arr is None:
+            raise LoaderError(f"{path.name} contains no 2-D array structure")
+
     leaves = _leaves(root)
     meta = dict(_EMPTY_META)
     meta.update(
@@ -563,8 +651,20 @@ _DISPATCH = {
 }
 
 
-def load(path: str | pathlib.Path) -> tuple[np.ndarray, dict[str, Any]]:
+def load(path: str | pathlib.Path,
+         window: tuple[int, int, int, int] | None = None
+         ) -> tuple[np.ndarray, dict[str, Any]]:
     """Read any supported lunar product.
+
+    `window` is an optional (x, y, w, h) tile in the product's own pixel
+    coordinates. Use it for anything large: a CH-2 OHRC strip is 93693 x 12000,
+    which is 1.12 GB as stored and **4.5 GB as float32**. The PDS4 and PDS3
+    branches memory-map, so a windowed read costs only the tile.
+
+    Without a window, an image over MAX_PIXELS_WITHOUT_WINDOW raises rather than
+    quietly consuming every byte of RAM on the machine. That is deliberate: the
+    demo laptop had 2.7 GB free when this was written, and a silent 4.5 GB
+    allocation does not fail cleanly - it thrashes for minutes first.
 
     Returns (float32 2-D array in native byte order, metadata dict).
 
@@ -585,6 +685,26 @@ def load(path: str | pathlib.Path) -> tuple[np.ndarray, dict[str, Any]]:
             f"unsupported extension {p.suffix!r}. Known: {sorted(_DISPATCH)}"
         )
     arr, meta = fn(p)
+    meta["full_shape"] = tuple(arr.shape[:2])
+
+    if window is not None:
+        x, y, w, h = (int(v) for v in window)
+        H, W = arr.shape[:2]
+        if x < 0 or y < 0 or w <= 0 or h <= 0 or x >= W or y >= H:
+            raise LoaderError(
+                f"window {window} is outside the {W}x{H} image {p.name}")
+        # Slice the memmap BEFORE as_cv_safe, so only the tile is ever read.
+        arr = arr[y:min(y + h, H), x:min(x + w, W)]
+        meta["window"] = (x, y, arr.shape[1], arr.shape[0])
+    elif arr.size > MAX_PIXELS_WITHOUT_WINDOW:
+        H, W = arr.shape[:2]
+        raise LoaderError(
+            f"{p.name} is {W}x{H} = {arr.size/1e6:.0f} Mpx, which is "
+            f"{arr.size*4/1e9:.1f} GB as float32 and will not fit in RAM.\n"
+            f"  Pass a window: load(path, window=(x, y, w, h))\n"
+            f"  e.g. load(r'{p.name}', window=(0, 0, 640, 640))\n"
+            f"  The file is memory-mapped, so a windowed read costs only the tile."
+        )
     return as_cv_safe(arr), meta
 
 
