@@ -2,21 +2,24 @@
 # Big data lives in Google Drive, never in git. GitHub hard-rejects >100 MB and
 # the OHRC ZIPs are ~750 MB. Folders are kept, contents are not.
 # ---------------------------------------------------------------------------
-# Each person's own path to the shared Drive folder. Six machines, six values.
-# 01_HOW_WE_WORK_TOGETHER.md has always TOLD people this file is ignored; until
-# now it was not, so the first person to commit theirs would have broken the
-# other five and made a merge conflict out of the one file designed to differ.
+
+# Each person's own path to the shared Drive folder.
+# This file is intentionally ignored because every machine has its own path.
 data_path.txt
 
 data/raw/*
 !data/raw/.gitkeep
+
 data/pairs/*
 !data/pairs/.gitkeep
+
 demo_cache/*
 !demo_cache/.gitkeep
+
 weights/*
 !weights/.gitkeep
 
+# Large / raw data files
 *.IMG
 *.img
 *.tif
@@ -25,8 +28,7 @@ weights/*
 *.JP2
 *.mp4
 
-# Large binaries that no rule covered: the ISRO instrument user guides (tens of
-# MB) and the SIH .pptx template (~0.9 MB). Both belong in Drive, not in history.
+# Large documents / model files
 *.pdf
 *.pptx
 *.docx
@@ -48,14 +50,12 @@ desktop.ini
 .DS_Store
 .vscode/
 
+# Generated baseline evaluation outputs
+baselines/failure_gallery/*.jpg
+evaluation/results_log.csv
+
+# LROC generated outputs
 lroc_coverage/
-
 lroc_preview.png
-
 data/lroc_analysis/M124545845LE_preview.png
-
-data/lroc_analysis/M124545845LE_enhanced.png
-
-# Raw range-fetched DEM windows (ops/fetch_lola_dem.py)
-*.raw
-*.npy
+data/lroc_analysis/M124545845LE_enhanced.png	
