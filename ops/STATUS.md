@@ -90,19 +90,36 @@ validate the loader against real data (MD5 in the label matched).
 
 | Person | GitHub | Access | Pushed | Blocked on |
 |---|---|---|---|---|
-| Samartha | `samarthputhraya` | owner | 3 commits | nothing |
-| Rohan | `rohanshahare` | ✅ accepted | nothing | Drive folder (Samartha) for anywhere to put OHRC |
-| Samrudh | `SamrudhNandakumar` | ✅ accepted | nothing | nothing — spec is self-contained |
-| Rishabh | `rizzhub3118` | ✅ accepted | nothing | nothing — spec is self-contained |
-| Saniya | `ssaniyabi` | ✅ accepted | nothing | nothing — needs no repo, no Python |
-| Risheeth | `risheeth26233` | ⚠️ **INVITE STILL PENDING** | nothing | cannot clone until he accepts |
+| Samartha | `samarthputhraya` | owner | 7 commits — io_loader + full Gate-1 chain | nothing |
+| Rohan | `rohanshahare` | ✅ accepted | **3 commits** — DATASET_CARD, provenance policy, LROC crater analysis | Drive folder (Samartha) |
+| Rishabh | `rizzhub3118` | ✅ accepted | **2 commits + PR #1** — `app/change_detection.py`, 7 passing tests, README | nothing |
+| Samrudh | `SamrudhNandakumar` | ✅ accepted | **nothing** | nothing — spec is self-contained. **Gate 1 needs his `evaluate()`** |
+| Saniya | `ssaniyabi` | ✅ accepted | **nothing** | nothing — needs no repo, no Python |
+| Risheeth | `risheeth26233` | ⚠️ **INVITE STILL PENDING** | **nothing** | cannot clone until he accepts |
 
-**Rishabh reported at 15:31 IST that change detection is "complete with automated tests, robustness
-checks and README".** None of it is in the repo. He accepted his repo invite at 16:54 IST — 83
-minutes *after* declaring completion — and has not pushed since. The work may exist; there is no
-evidence, nothing reviewable, and nothing that survives his laptop dying. **First ask tomorrow: push.**
+**Rishabh delivered.** He declared change detection complete on Day 1 before anything was in the
+repo; it is now pushed, reviewable, and its 7 tests pass. He also avoided both OpenCV 5 traps
+unprompted — `cv2.findContours` unpacked as 2 values, and uint8 conversion before `cv2.medianBlur`.
+No hardcoded paths.
 
-**Day-1 specs remain live and unexecuted.** No Day-2 specs were issued — see Sequencing below.
+**Rohan closed both findings raised against his own work** within hours, without being asked twice.
+
+⚠️ **Two people have now been silent for two days: Samrudh and Risheeth.** That is the Gate-5 risk
+the protocol says to flag by name — someone who stops working stops understanding, and cannot answer
+for their module cold on Day 12. Risheeth still has not accepted the repo invite, which is a
+one-click blocker nobody has cleared in 48 hours. **Samrudh is now on the critical path**: Gate 1
+prints "metrics unavailable" until `evaluation/metrics.py :: evaluate()` exists.
+
+⚠️ **Rohan committed ~3.9 MB of PNGs** to `data/lroc_analysis/` (12 files, largest 2.2 MB). Invariant
+5 says nothing binary goes in the repo; `.gitignore` has no `*.png` rule, so git accepted them
+silently. Git history now carries them permanently — deleting the files does not shrink the repo.
+Finding for Rohan, not a silent fix: plots belong in Drive, and the analysis `.md` can reference
+them. Decide whether to add `*.png` with a `!baselines/failure_gallery/` exception.
+
+⚠️ Rohan also wrote `ops/lroc/analyze_candidate.py` (620 lines) and `docs/LROC_CANDIDATE_ANALYSIS.md`
+(593 lines). `ops/` and `docs/` are Samartha's under Invariant 4. The work looks genuinely good —
+this is a boundary question, not a quality one, and the honest fix may be to widen his folder rather
+than move his files.
 
 ---
 
