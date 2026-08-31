@@ -117,7 +117,16 @@ Verify: your shifted pair should give matches whose average offset is ≈ (7, 5)
 
 Copy the file twice:
 - `orb_baseline.py` → `cv2.ORB_create(nfeatures=5000)`
-- `akaze_baseline.py` → `cv2.AKAZE_create()`
+- `akaze_baseline.py` → **`cv2.xfeatures2d.AKAZE_create()`**
+
+> 🔴 **`cv2.AKAZE_create()` DOES NOT EXIST in our pinned OpenCV.** Re-verified on the demo machine
+> against `opencv-contrib-python 5.0.0.93`:
+> `AttributeError: module 'cv2' has no attribute 'AKAZE_create'`.
+> In OpenCV 5, AKAZE, KAZE and BRISK moved into `cv2.xfeatures2d`. All three of
+> `cv2.xfeatures2d.AKAZE_create()`, `.KAZE_create()` and `.BRISK_create()` are confirmed working;
+> `cv2.SIFT_create()` and `cv2.ORB_create()` are still top-level.
+> **Do not "fix" this by downgrading OpenCV** — that desynchronises the whole team's pins and loses
+> SIFT.
 
 > ⚠️ **ORB and AKAZE need a different matcher.** They produce **binary** descriptors; FLANN's
 > KD-tree is for float descriptors like SIFT's. Use:
