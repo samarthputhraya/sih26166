@@ -57,9 +57,49 @@ the same instrument. Different orbit changes viewpoint and lighting, not modalit
 
 Open `https://archive.org/details/chandrayaan-2-high-resolution-images-of-the-moon`
 
-No account. No login. It contains real OHRC image ZIPs (~750 MB each, named like
-`ch2_ohr_ncp_20200229T0739312111_d_img_d18.zip`) **plus the official ISRO user guides** for OHRC,
-TMC-2, IIRS, DFSAR and CHACE2.
+> 🔴 **THE PAGE WILL LOOK EMPTY. THE DATA IS THERE — 5.39 GB OF IT.**
+> The uploader tagged this item `mediatype = texts`, so archive.org renders it with the **book
+> reader** instead of a file list. The item actually contains ZIPs, so the reader displays nothing
+> and the page appears blank. This is a display quirk, not a missing item — verified 31 Aug 2026:
+> the item is live, has 125 files, and a direct byte-range request returns `PK\x03\x04` (a valid
+> ZIP).
+>
+> **Two ways through it:**
+> 1. In the right-hand sidebar click **DOWNLOAD OPTIONS → SHOW ALL**, or
+> 2. go straight to the file list:
+>    `https://archive.org/download/chandrayaan-2-high-resolution-images-of-the-moon/`
+>
+> The OHRC files sit in a folder whose name contains **spaces and brackets** —
+> `Optical High Resolution Camera (OHRC)/` — so a hand-typed URL fails unless they are
+> percent-encoded (`%20` and `%28` `%29`). Use the links below rather than typing them.
+
+**The six OHRC image ZIPs, verified present with these exact sizes:**
+
+| size | file |
+|---|---|
+| 791.0 MB | `ch2_ohr_ncp_20200229T0739312111_d_img_d18.zip` |
+| 844.7 MB | `ch2_ohr_ncp_20200229T0938004033_d_img_d32.zip` |
+| 854.5 MB | `ch2_ohr_ncp_20200824T1003365280_d_img_d18.zip` |
+| 775.7 MB | `ch2_ohr_nrp_20200229T0739312111_d_img_d18.zip` |
+| 828.8 MB | `ch2_ohr_nrp_20200229T0938004033_d_img_d32.zip` |
+| 840.7 MB | `ch2_ohr_nrp_20200824T1003365280_d_img_d18.zip` |
+
+Working direct link (this exact URL was tested and returns HTTP 206):
+
+```
+https://archive.org/download/chandrayaan-2-high-resolution-images-of-the-moon/Optical%20High%20Resolution%20Camera%20%28OHRC%29/ch2_ohr_ncp_20200229T0739312111_d_img_d18.zip
+```
+
+The **OHRC user guide** — the format spec Samartha needs — is at:
+
+```
+https://archive.org/download/chandrayaan-2-high-resolution-images-of-the-moon/OtherDownloads/OHRC/ch2_ohrc_data_products_user_guide.pdf
+```
+
+(1.8 MB. TMC-2's guide is beside it at `OtherDownloads/TMC-2/`, 2.1 MB.)
+
+Note there are two variants of each acquisition, `ncp` and `nrp`. Check the user guide for which
+processing level each is before choosing — do not guess, and record the answer in `DATASET_CARD.md`.
 
 1. Download **one** OHRC ZIP (start it, do other work while it runs).
 2. Download the **OHRC and TMC-2 Data Products User Guides** — these are the format specification
