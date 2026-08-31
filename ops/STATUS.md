@@ -255,7 +255,51 @@ Recorded so `daily-reviewer` does not re-report them.
    `_load_pds3` assumes **band-sequential** storage. Neither is verified against a real SDRPHO —
    check `BAND_STORAGE_TYPE` the hour one lands.
 
+0d. **✅ DAY-2 CHECKPOINT PASSED ON REAL CHANDRAYAAN-2 OHRC DATA.**
+   Product `ch2_ohr_ncp_20200229T0739312111_d_img_d18` downloaded from archive.org (791 MB zip →
+   1.12 GB `.img`), **MD5 verified against the label's own `md5_checksum`**. 93693 × 12000 at
+   **0.22977 m/px**. Two 640² tiles read with the new windowed loader in **0.01 s**, tile std 20.7
+   (real terrain — compare the dud LROC frame at 1.42).
+
+   | | |
+   |---|---|
+   | matches | 5186, mean confidence 0.998 |
+   | inliers | 5183 (99.9%) |
+   | recovered offset | (−40.00, −24.98) vs known (−40, −25) |
+   | offset error | median **0.117 px** = 2.7 cm on the ground |
+   | latency | 6.1 s (Day-1 benchmark: 5.5 cold / 7.5 warm) |
+   | RSS delta | 1.41 GB |
+
+   > ⚠️ **Read the caveats before this number goes anywhere.** The two tiles are an **integer**-pixel
+   > offset crop of the *same* frame, so they contain literally identical pixels — no resampling, no
+   > sub-pixel shift, no rotation, no scale change and **no illumination difference**. That is the
+   > easiest possible real-data case and 0.117 px reflects that. On synthetic lunar relief *with* a
+   > rotation and scale change the same chain gives 0.37 px. Expect real Tier A/B pairs to be worse
+   > than both. **Not quotable** until it is in `results_log.csv`, and it is **not cross-sensor, not
+   > multi-modal, not Tier A** — it is one OHRC frame matched against itself.
+   >
+   > What it *does* prove: LoFTR works on real OHRC lunar texture at an affordable CPU latency, the
+   > windowed loader works, and the whole chain is wired correctly. That was the Day-2 question.
+
+0e. **🔴 CHANDRAYAAN-2 OHRC SHIPS NO ILLUMINATION GEOMETRY. ANYWHERE.**
+   Not in the PDS4 label, and **not in the geometry file either** — the 3.9 MB
+   `..._g_grd_d18.csv` has exactly four columns: `Longitude, Lattitude, Pixel, Scan`
+   (113,499 rows). No sun azimuth, no incidence, no emission, no phase. Confirmed against the real
+   product, so this is settled, not suspected. Consequences:
+   - **Tier B (CH-2 OHRC ↔ LROC NAC) is unaffected** — cross-sensor does not need sun angles.
+   - **Any sun-angle claim about CH-2 is not supportable from the product.** Sun-angle work must
+     ride on LROC SDRPHO (which carries incidence per pixel), or the angles must be computed from
+     acquisition time + lat/lon via SPICE, which is out of scope for 12 days. **Do not let a
+     "we handle illumination variation" claim about Chandrayaan-2 reach a slide unqualified.**
+   - **The upside:** those 113,499 `(Pixel, Scan) → (Lon, Lat)` points ARE georeferencing. That is
+     what will make `crop_to_overlap` work for CH-2, and it is the route to a real GSD/footprint.
+   - ⚠️ **Trap:** the CSV header spells it **`Lattitude`** (two t's) while the label's own
+     `<name>` element says `Latitude`. A parser keyed to the label will silently find nothing.
+
 0c. **🔴 ROHAN'S ONLY IMAGE PRODUCT IS EMPTY. WE STILL HAVE NO USABLE LUNAR IMAGE.**
+   *(Superseded for Samartha's purposes by 0d — a good CH-2 frame now exists locally. Rohan still
+   needs terrain-bearing LROC frames for Tier A, and the check below still applies to every product
+   he catalogues.)*
    `M108587604RE.IMG` decodes perfectly and shows nothing: 98.1% of pixels in DN 32–46, std 1.42
    over a 400×400 crop, 15 distinct DN values, no craters at any stretch. The only bright pixels in
    the entire frame are columns 5056 and 5057 — the NAC's masked reference columns, which is a
