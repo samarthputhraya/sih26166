@@ -1,262 +1,215 @@
-"""Run all classical baselines across configurations and log to evaluation/results_log.csv.
-
-Configs:
-  1: Raw images (no illumination normalization)
-  2: Illumination-normalized images (using core.illumination.normalize when available)
-  3: LoFTR alone (handled by Samartha's pipeline, not here)
-  4: Full pipeline (illumination + LoFTR, handled by Samartha's pipeline)
-
-This script handles Configs 1 and 2 for SIFT, ORB, AKAZE.
-"""
+from pathlib import Path
 import csv
 import sys
-from datetime import datetime, timezone
-from pathlib import Path
-
 import cv2
 import numpy as np
 
-# Add repo root to path for imports
-REPO_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(REPO_ROOT))
+
+# Allow imports from the project root.
+ROOT = Path(__file__).resolve().parents[1]
+
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
 
 from baselines.sift_baseline import run_sift
 from baselines.orb_baseline import run_orb
 from baselines.akaze_baseline import run_akaze
-from core.io_loader import load
-
-try:
-    from evaluation.metrics import evaluate, INLIER_THRESH_PX
-    HAS_EVALUATE = True
-except ImportError:
-    HAS_EVALUATE = False
-    INLIER_THRESH_PX = 3.0
-    print("WARNING: evaluation.metrics not available. Logging basic stats only.", file=sys.stderr)
-
-try:
-    from core.illumination import normalize as illum_normalize
-    HAS_ILLUM = True
-except ImportError:
-    HAS_ILLUM = False
-    print("WARNING: core.illumination.normalize not available. Config 2 will be skipped.", file=sys.stderr)
-
-METHODS = {
-    "SIFT": run_sift,
-    "ORB": run_orb,
-    "AKAZE": run_akaze,
-}
-
-CONFIGS = {
-    1: "raw",
-    2: "illum_normalized",
-}
-
-RESULTS_LOG = REPO_ROOT / "evaluation" / "results_log.csv"
-RESULTS_LOG.parent.mkdir(parents=True, exist_ok=True)
-
-# CSV header from SAMRUDH_EVALUATION_GUIDE.md
-CSV_FIELDS = [
-    "timestamp", "pair_id", "tier", "method", "config", "config_name",
-    "rmse_gt_px", "residual_px", "inlier_count", "inlier_ratio",
-    "grid_coverage_fraction", "distribution_cv", "n_matches", "gsd_mpp"
-]
 
 
-def _ensure_csv_header():
-    if not RESULTS_LOG.exists():
-        with open(RESULTS_LOG, "w", newline="", encoding="utf-8") as f:
-            writer = csv.DictWriter(f, fieldnames=CSV_FIELDS)
-            writer.writeheader()
+PAIR_SOURCE = ROOT / "data" / "pairs" / "pair_test_source.tif"
+PAIR_REFERENCE = ROOT / "data" / "pairs" / "pair_test_ref.tif"
+
+OUTPUT = ROOT / "baselines" / "results.csv"
 
 
-def _load_pair(pair_id: str):
-    """Load source and reference images for a pair_id."""
-    pairs_dir = REPO_ROOT / "data" / "pairs"
-    src_path = pairs_dir / f"{pair_id}_source.tif"
-    ref_path = pairs_dir / f"{pair_id}_ref.tif"
+def load_gray(path):
+    img = cv2.imread(str(path), cv2.IMREAD_GRAYSCALE)
 
-    if not src_path.exists() or not ref_path.exists():
-        raise FileNotFoundError(f"Pair {pair_id} not found in {pairs_dir}")
+    if img is None:
+        raise FileNotFoundError(
+            f"Could not read image: {path}"
+        )
 
-    src_img, src_meta = load(str(src_path))
-    ref_img, ref_meta = load(str(ref_path))
-
-    # io_loader.load returns float32; convert to uint8 for classical detectors
-    # Scale from float32 [0, 1] or [0, 255] to uint8
-    def to_uint8(img):
-        if img.dtype == np.float32 or img.dtype == np.float64:
-            if img.max() <= 1.0:
-                img = (img * 255).clip(0, 255)
-            else:
-                img = img.clip(0, 255)
-            return img.astype(np.uint8)
-        return img.astype(np.uint8)
-
-    return to_uint8(src_img), to_uint8(ref_img), src_meta, ref_meta
+    return img
 
 
-def _run_config(method_name: str, run_fn, src_img, ref_img, config: int):
-    """Run a single method on a single config."""
-    if config == 1:
-        # Raw images
-        src_pts, ref_pts = run_fn(src_img, ref_img)
-    elif config == 2:
-        if not HAS_ILLUM:
-            return None
-        # Illumination normalized
-        src_norm = illum_normalize(src_img)
-        ref_norm = illum_normalize(ref_img)
-        src_pts, ref_pts = run_fn(src_norm, ref_norm)
-    else:
-        raise ValueError(f"Unknown config: {config}")
-    return src_pts, ref_pts
-
-
-def _load_tiers_from_catalogue():
-    """Load tier mapping from data/pairs_catalogue.csv if it exists."""
-    catalogue_path = REPO_ROOT / "data" / "pairs_catalogue.csv"
-    if not catalogue_path.exists():
-        return None
-    try:
-        import pandas as pd
-        df = pd.read_csv(catalogue_path)
-        if "pair_id" in df.columns and "tier" in df.columns:
-            return dict(zip(df["pair_id"], df["tier"]))
-    except Exception:
-        pass
-    return None
-
-
-def run_all_baselines(pair_ids=None, tiers=None):
-    """Run all baseline methods on all configs for given pairs.
-
-    Args:
-        pair_ids: List of pair IDs to process (e.g., ["pair_01", "pair_02"])
-        tiers: Dict mapping pair_id to tier (A, B, B+, C, D)
-
-    If pair_ids is None, discovers all pairs in data/pairs/.
-    If tiers is None, attempts to load from data/pairs_catalogue.csv.
+def calculate_offset(src_pts, ref_pts):
     """
-    _ensure_csv_header()
+    For the known synthetic pair:
 
-    pairs_dir = REPO_ROOT / "data" / "pairs"
-    if pair_ids is None:
-        # Discover pairs from _source.tif files
-        pair_ids = []
-        for f in pairs_dir.glob("*_source.tif"):
-            pair_ids.append(f.stem.replace("_source", ""))
+        source = reference shifted by approximately
+        (+7, +5)
 
-    if not pair_ids:
-        print("No pairs found in data/pairs/. Run with test pair generator instead.")
-        return
+    Calculate mean source-reference displacement.
+    """
 
-    # Load tiers from catalogue if not provided
-    if tiers is None:
-        tiers = _load_tiers_from_catalogue()
-    if tiers is None:
-        tiers = {pid: "unknown" for pid in pair_ids}
+    if len(src_pts) == 0:
+        return 0.0, 0.0
+
+    delta = src_pts - ref_pts
+
+    dx = float(np.mean(delta[:, 0]))
+    dy = float(np.mean(delta[:, 1]))
+
+    return dx, dy
+
+
+def calculate_spread(src_pts, ref_pts):
+    """
+    Calculate the standard deviation of displacement.
+    Lower means the estimated translation is more consistent.
+    """
+
+    if len(src_pts) == 0:
+        return 0.0
+
+    delta = src_pts - ref_pts
+
+    distances = np.sqrt(
+        np.sum(delta ** 2, axis=1)
+    )
+
+    return float(np.std(distances))
+
+
+def run_method(name, function, img1, img2):
+    print()
+    print("=" * 70)
+    print(name)
+    print("=" * 70)
+
+    src, ref, confidence, elapsed = function(
+        img1,
+        img2
+    )
+
+    n_matches = len(src)
+
+    mean_confidence = (
+        float(np.mean(confidence))
+        if len(confidence)
+        else 0.0
+    )
+
+    dx, dy = calculate_offset(src, ref)
+
+    spread = calculate_spread(src, ref)
+
+    print(f"matches:          {n_matches}")
+    print(f"mean confidence:  {mean_confidence:.6f}")
+    print(f"mean dx:          {dx:.3f}")
+    print(f"mean dy:          {dy:.3f}")
+    print(f"offset spread:    {spread:.3f}")
+    print(f"time:             {elapsed:.4f} s")
+
+    return {
+        "pair_id": "pair_test",
+        "tier": "TEST",
+        "config": "raw",
+        "method": name,
+        "n_matches": n_matches,
+        "mean_confidence": mean_confidence,
+        "dx_px": dx,
+        "dy_px": dy,
+        "offset_spread_px": spread,
+        "runtime_s": elapsed,
+    }
+
+
+def main():
+
+    print("=" * 70)
+    print("SIH26166 — DAY 2 CLASSICAL BASELINE RUN")
+    print("=" * 70)
+
+    print(f"source: {PAIR_SOURCE}")
+    print(f"reference: {PAIR_REFERENCE}")
+
+    img1 = load_gray(PAIR_SOURCE)
+    img2 = load_gray(PAIR_REFERENCE)
+
+    print()
+    print(f"source shape:    {img1.shape}")
+    print(f"reference shape: {img2.shape}")
+
+    methods = [
+        ("SIFT", run_sift),
+        ("ORB", run_orb),
+        ("AKAZE", run_akaze),
+    ]
 
     rows = []
-    for pair_id in pair_ids:
-        print(f"\nProcessing {pair_id} (tier: {tiers.get(pair_id, 'unknown')})...")
-        try:
-            src_img, ref_img, src_meta, ref_meta = _load_pair(pair_id)
-        except FileNotFoundError as e:
-            print(f"  SKIP: {e}")
-            continue
 
-        ref_shape = ref_img.shape[:2]
-        gsd_mpp = ref_meta.get("gsd_mpp")
+    for name, function in methods:
 
-        for method_name, run_fn in METHODS.items():
-            for config_num, config_name in CONFIGS.items():
-                print(f"  {method_name} config={config_num} ({config_name})...")
-                result = _run_config(method_name, run_fn, src_img, ref_img, config_num)
+        row = run_method(
+            name,
+            function,
+            img1,
+            img2
+        )
 
-                if result is None:
-                    print(f"    SKIP (illumination not available)")
-                    continue
+        rows.append(row)
 
-                src_pts, ref_pts = result
-                n_matches = len(src_pts)
+    OUTPUT.parent.mkdir(
+        parents=True,
+        exist_ok=True
+    )
 
-                # Get metrics - always use evaluate() when available
-                if HAS_EVALUATE and n_matches >= 4:
-                    metrics = evaluate(
-                        ref_shape=ref_shape,
-                        matches_src=src_pts,
-                        matches_ref=ref_pts,
-                        H_true=None,  # No ground truth for real pairs
-                        holdout_frac=0.2,
-                        seed=42
-                    )
-                else:
-                    metrics = {
-                        "rmse_gt_px": None,
-                        "residual_px": None,
-                        "inlier_count": 0,
-                        "inlier_ratio": 0.0,
-                        "grid_coverage_fraction": 0.0,
-                        "distribution_cv": None,
-                        "n_matches": n_matches,
-                    }
+    fieldnames = [
+        "pair_id",
+        "tier",
+        "config",
+        "method",
+        "n_matches",
+        "mean_confidence",
+        "dx_px",
+        "dy_px",
+        "offset_spread_px",
+        "runtime_s",
+    ]
 
-                config_name = CONFIGS.get(config_num, f"config_{config_num}")
-                row = {
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
-                    "pair_id": pair_id,
-                    "tier": tiers.get(pair_id, "unknown"),
-                    "method": method_name,
-                    "config": config_num,
-                    "config_name": config_name,
-                    "rmse_gt_px": metrics.get("rmse_gt_px"),
-                    "residual_px": metrics.get("residual_px"),
-                    "inlier_count": metrics.get("inlier_count", 0),
-                    "inlier_ratio": metrics.get("inlier_ratio", 0.0),
-                    "grid_coverage_fraction": metrics.get("grid_coverage_fraction", 0.0),
-                    "distribution_cv": metrics.get("distribution_cv"),
-                    "n_matches": metrics.get("n_matches", 0),
-                    "gsd_mpp": gsd_mpp,
-                }
-                rows.append(row)
-                print(f"    matches={row['n_matches']}, inliers={row['inlier_count']}, "
-                      f"coverage={row['grid_coverage_fraction']:.2%}")
+    with open(
+        OUTPUT,
+        "w",
+        newline="",
+        encoding="utf-8"
+    ) as f:
 
-    # Append to CSV
-    with open(RESULTS_LOG, "a", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=CSV_FIELDS)
-        for row in rows:
-            writer.writerow(row)
+        writer = csv.DictWriter(
+            f,
+            fieldnames=fieldnames
+        )
 
-    print(f"\nLogged {len(rows)} rows to {RESULTS_LOG}")
+        writer.writeheader()
 
+        writer.writerows(rows)
 
-def run_test_pair():
-    """Run baselines on the synthetic test pair (Day 1 verification)."""
-    from baselines.make_test_pair import make_pair
+    print()
+    print("=" * 70)
+    print("DAY 2 RESULTS")
+    print("=" * 70)
 
-    print("Running baselines on synthetic test pair (dx=7, dy=5)...")
-    src, ref, H_true = make_pair(dx=7, dy=5, seed=0)
+    for row in rows:
+        print(
+            f"{row['method']:6s} | "
+            f"matches={row['n_matches']:5d} | "
+            f"dx={row['dx_px']:8.3f} | "
+            f"dy={row['dy_px']:8.3f} | "
+            f"time={row['runtime_s']:.4f}s"
+        )
 
-    for method_name, run_fn in METHODS.items():
-        src_pts, ref_pts = run_fn(src, ref)
-        n = len(src_pts)
-        if n > 0:
-            offset = np.median(ref_pts - src_pts, axis=0)
-            print(f"  {method_name}: {n} matches, median(ref-src)={offset}")
-        else:
-            print(f"  {method_name}: NO MATCHES")
+    print()
+    print(f"CSV written to:")
+    print(OUTPUT)
+
+    print()
+    print("KNOWN TEST ANSWER:")
+    print("Expected source-reference offset ≈ (+7, +5) pixels.")
+    print()
+    print("Day 2 baseline run complete.")
 
 
 if __name__ == "__main__":
-    import argparse
-
-    parser = argparse.ArgumentParser(description="Run classical baselines")
-    parser.add_argument("--test", action="store_true", help="Run on synthetic test pair")
-    parser.add_argument("--pairs", nargs="+", help="Pair IDs to process")
-    args = parser.parse_args()
-
-    if args.test:
-        run_test_pair()
-    else:
-        run_all_baselines(pair_ids=args.pairs)
+    main()
