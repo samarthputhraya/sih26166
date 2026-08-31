@@ -45,7 +45,7 @@ def run_sift(img1: np.ndarray, img2: np.ndarray, nfeatures: int = 0) -> tuple[np
 if __name__ == "__main__":
     from baselines.make_test_pair import make_pair
 
-    src, ref = make_pair(dx=7, dy=5, seed=0)
+    src, ref, H_true = make_pair(dx=7, dy=5, seed=0)
     src_pts, ref_pts = run_sift(src, ref)
 
     print(f"Matches: {len(src_pts)}")

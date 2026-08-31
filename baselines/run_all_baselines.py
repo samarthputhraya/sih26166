@@ -11,7 +11,7 @@ This script handles Configs 1 and 2 for SIFT, ORB, AKAZE.
 import csv
 import sys
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 import cv2
@@ -166,6 +166,21 @@ def _compute_basic_metrics(src_pts, ref_pts, ref_shape):
     }
 
 
+def _load_tiers_from_catalogue():
+    """Load tier mapping from data/pairs_catalogue.csv if it exists."""
+    catalogue_path = REPO_ROOT / "data" / "pairs_catalogue.csv"
+    if not catalogue_path.exists():
+        return None
+    try:
+        import pandas as pd
+        df = pd.read_csv(catalogue_path)
+        if "pair_id" in df.columns and "tier" in df.columns:
+            return dict(zip(df["pair_id"], df["tier"]))
+    except Exception:
+        pass
+    return None
+
+
 def run_all_baselines(pair_ids=None, tiers=None):
     """Run all baseline methods on all configs for given pairs.
 
@@ -174,6 +189,7 @@ def run_all_baselines(pair_ids=None, tiers=None):
         tiers: Dict mapping pair_id to tier (A, B, B+, C, D)
 
     If pair_ids is None, discovers all pairs in data/pairs/.
+    If tiers is None, attempts to load from data/pairs_catalogue.csv.
     """
     _ensure_csv_header()
 
@@ -188,7 +204,9 @@ def run_all_baselines(pair_ids=None, tiers=None):
         print("No pairs found in data/pairs/. Run with test pair generator instead.")
         return
 
-    # Default tier mapping if not provided
+    # Load tiers from catalogue if not provided
+    if tiers is None:
+        tiers = _load_tiers_from_catalogue()
     if tiers is None:
         tiers = {pid: "unknown" for pid in pair_ids}
 
@@ -232,7 +250,7 @@ def run_all_baselines(pair_ids=None, tiers=None):
                     metrics["residual_px"] = None
 
                 row = {
-                    "timestamp": datetime.utcnow().isoformat(),
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
                     "pair_id": pair_id,
                     "tier": tiers.get(pair_id, "unknown"),
                     "method": method_name,
@@ -264,7 +282,7 @@ def run_test_pair():
     from baselines.make_test_pair import make_pair
 
     print("Running baselines on synthetic test pair (dx=7, dy=5)...")
-    src, ref = make_pair(dx=7, dy=5, seed=0)
+    src, ref, H_true = make_pair(dx=7, dy=5, seed=0)
 
     for method_name, run_fn in METHODS.items():
         src_pts, ref_pts = run_fn(src, ref)

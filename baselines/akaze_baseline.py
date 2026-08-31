@@ -47,7 +47,7 @@ def run_akaze(img1: np.ndarray, img2: np.ndarray) -> tuple[np.ndarray, np.ndarra
 if __name__ == "__main__":
     from baselines.make_test_pair import make_pair
 
-    src, ref = make_pair(dx=7, dy=5, seed=0)
+    src, ref, H_true = make_pair(dx=7, dy=5, seed=0)
     src_pts, ref_pts = run_akaze(src, ref)
 
     print(f"Matches: {len(src_pts)}")
