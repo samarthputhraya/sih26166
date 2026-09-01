@@ -58,6 +58,7 @@ def _load_pair(pair_id: str):
 def _compute_metrics(src_pts, ref_pts, ref_shape):
     """Compute metrics matching evaluation.metrics.evaluate() output."""
     n = len(src_pts)
+
     if n < 4:
         return {
             "n_matches": n,
@@ -66,13 +67,16 @@ def _compute_metrics(src_pts, ref_pts, ref_shape):
             "residual_px": None,
             "grid_coverage_fraction": 0.0,
             "distribution_cv": None,
+            "inlier_mask": np.zeros(n, dtype=bool),
+            "H": None,
         }
 
     H, mask = cv2.findHomography(
-        src_pts, ref_pts,
+        src_pts,
+        ref_pts,
         method=cv2.USAC_MAGSAC,
         ransacReprojThreshold=INLIER_THRESH_PX,
-        confidence=0.999
+        confidence=0.999,
     )
 
     if H is None or mask is None:
@@ -83,6 +87,8 @@ def _compute_metrics(src_pts, ref_pts, ref_shape):
             "residual_px": None,
             "grid_coverage_fraction": 0.0,
             "distribution_cv": None,
+            "inlier_mask": np.zeros(n, dtype=bool),
+            "H": None,
         }
 
     inlier_mask = mask.ravel().astype(bool)
@@ -98,16 +104,29 @@ def _compute_metrics(src_pts, ref_pts, ref_shape):
 
     if len(fit_idx) >= 4:
         H_fit, _ = cv2.findHomography(
-            src_pts[fit_idx], ref_pts[fit_idx],
+            src_pts[fit_idx],
+            ref_pts[fit_idx],
             method=cv2.USAC_MAGSAC,
             ransacReprojThreshold=INLIER_THRESH_PX,
-            confidence=0.999
+            confidence=0.999,
         )
+
         if H_fit is not None:
             proj = cv2.perspectiveTransform(
-                src_pts[hold_idx].reshape(-1, 1, 2), H_fit
+                src_pts[hold_idx].reshape(-1, 1, 2),
+                H_fit,
             ).reshape(-1, 2)
-            residual_px = float(np.sqrt(np.mean(np.sum((proj - ref_pts[hold_idx]) ** 2, axis=1))))
+
+            residual_px = float(
+                np.sqrt(
+                    np.mean(
+                        np.sum(
+                            (proj - ref_pts[hold_idx]) ** 2,
+                            axis=1,
+                        )
+                    )
+                )
+            )
         else:
             residual_px = None
     else:
@@ -116,13 +135,21 @@ def _compute_metrics(src_pts, ref_pts, ref_shape):
     # Grid coverage
     h, w = ref_shape
     cells = np.zeros((GRID, GRID), dtype=int)
+
     for (x, y) in ref_pts[inlier_mask]:
         r = min(int(y / h * GRID), GRID - 1)
         c = min(int(x / w * GRID), GRID - 1)
         cells[r, c] += 1
 
-    grid_coverage_fraction = float((cells > 0).sum() / (GRID * GRID))
-    distribution_cv = float(cells.std() / cells.mean()) if cells.mean() > 0 else None
+    grid_coverage_fraction = float(
+        (cells > 0).sum() / (GRID * GRID)
+    )
+
+    distribution_cv = (
+        float(cells.std() / cells.mean())
+        if cells.mean() > 0
+        else None
+    )
 
     return {
         "n_matches": n,
@@ -137,91 +164,184 @@ def _compute_metrics(src_pts, ref_pts, ref_shape):
 
 
 def draw_failure_gallery(pair_id: str, max_images: int = 3):
-    """Generate failure gallery images for a pair.
-
-    Args:
-        pair_id: Pair identifier (e.g., "pair_01")
-        max_images: Maximum number of failure images to generate per pair
-    """
+    """Generate failure gallery images for a pair."""
     print(f"Generating failure gallery for {pair_id}...")
+
     src_img, ref_img, src_meta, ref_meta = _load_pair(pair_id)
 
     # Run all methods on raw images (config 1)
     results = {}
+
     for method_name, run_fn in METHODS.items():
-        src_pts, ref_pts = run_fn(src_img, ref_img)
-        metrics = _compute_metrics(src_pts, ref_pts, ref_img.shape[:2])
+
+        # Some baseline functions return more than two values.
+        # The first two values are the source and reference points.
+        match_result = run_fn(src_img, ref_img)
+
+        if not isinstance(match_result, (tuple, list)):
+            raise TypeError(
+                f"{method_name} returned "
+                f"{type(match_result).__name__}, expected tuple/list"
+            )
+
+        if len(match_result) < 2:
+            raise ValueError(
+                f"{method_name} returned fewer than 2 values"
+            )
+
+        src_pts = np.asarray(match_result[0])
+        ref_pts = np.asarray(match_result[1])
+
+        metrics = _compute_metrics(
+            src_pts,
+            ref_pts,
+            ref_img.shape[:2],
+        )
+
         metrics["src_pts"] = src_pts
         metrics["ref_pts"] = ref_pts
-        results[method_name] = metrics
-        print(f"  {method_name}: {metrics['n_matches']} matches, "
-              f"inliers={metrics['inlier_count']}, "
-              f"residual={metrics['residual_px']}, "
-              f"coverage={metrics['grid_coverage_fraction']:.2%}")
 
-    # Sort by residual_px (worst first) or by inlier_ratio (lowest first)
-    # Filter to methods that actually produced matches
-    valid_results = {k: v for k, v in results.items() if v["n_matches"] > 0}
+        results[method_name] = metrics
+
+        print(
+            f"  {method_name}: "
+            f"{metrics['n_matches']} matches, "
+            f"inliers={metrics['inlier_count']}, "
+            f"residual={metrics['residual_px']}, "
+            f"coverage={metrics['grid_coverage_fraction']:.2%}"
+        )
+
+    # Sort by residual_px (worst first)
+    valid_results = {
+        k: v
+        for k, v in results.items()
+        if v["n_matches"] > 0
+    }
+
     if not valid_results:
         print("  No valid results to visualize")
         return
 
-    # Sort: worst residual_px first, then lowest inlier_ratio
     sorted_methods = sorted(
         valid_results.items(),
-        key=lambda kv: (kv[1]["residual_px"] or float('inf'), kv[1]["inlier_ratio"])
+        key=lambda kv: (
+            kv[1]["residual_px"]
+            if kv[1]["residual_px"] is not None
+            else float("inf"),
+            kv[1]["inlier_ratio"],
+        ),
     )
 
     # Take worst N
     for method_name, metrics in sorted_methods[:max_images]:
+
         src_pts = metrics["src_pts"]
         ref_pts = metrics["ref_pts"]
         inlier_mask = metrics["inlier_mask"]
 
         # Create side-by-side visualization
         vis = np.hstack([src_img, ref_img])
-        vis = cv2.cvtColor(vis, cv2.COLOR_GRAY2BGR)
+
+        if len(vis.shape) == 2:
+            vis = cv2.cvtColor(vis, cv2.COLOR_GRAY2BGR)
+
         offset = src_img.shape[1]
 
         # Draw match lines
-        for (x1, y1), (x2, y2), ok in zip(src_pts, ref_pts, inlier_mask):
-            color = (0, 255, 0) if ok else (0, 0, 255)  # Green inlier, Red outlier
-            cv2.line(vis, (int(x1), int(y1)), (int(x2) + offset, int(y2)), color, 1)
+        for (x1, y1), (x2, y2), ok in zip(
+            src_pts,
+            ref_pts,
+            inlier_mask,
+        ):
+            color = (0, 255, 0) if ok else (0, 0, 255)
 
-        # Draw keypoints as small circles
+            cv2.line(
+                vis,
+                (int(x1), int(y1)),
+                (int(x2) + offset, int(y2)),
+                color,
+                1,
+            )
+
+        # Draw source keypoints
         for (x1, y1), ok in zip(src_pts, inlier_mask):
             color = (0, 255, 0) if ok else (0, 0, 255)
-            cv2.circle(vis, (int(x1), int(y1)), 2, color, -1)
+
+            cv2.circle(
+                vis,
+                (int(x1), int(y1)),
+                2,
+                color,
+                -1,
+            )
+
+        # Draw reference keypoints
         for (x2, y2), ok in zip(ref_pts, inlier_mask):
             color = (0, 255, 0) if ok else (0, 0, 255)
-            cv2.circle(vis, (int(x2) + offset, int(y2)), 2, color, -1)
 
-        # Caption with real metrics
-        residual_str = f"{metrics['residual_px']:.1f}px" if metrics['residual_px'] is not None else "N/A"
+            cv2.circle(
+                vis,
+                (int(x2) + offset, int(y2)),
+                2,
+                color,
+                -1,
+            )
+
+        # Caption
+        residual_str = (
+            f"{metrics['residual_px']:.1f}px"
+            if metrics["residual_px"] is not None
+            else "N/A"
+        )
+
         caption = (
             f"{method_name} | {pair_id} | "
             f"{metrics['n_matches']} matches | "
             f"residual {residual_str} | "
             f"inliers {metrics['inlier_ratio']:.0%} | "
-            f"coverage {metrics['grid_coverage_fraction']:.0%}"
+            f"coverage "
+            f"{metrics['grid_coverage_fraction']:.0%}"
         )
 
-        # Add caption background
-        cv2.rectangle(vis, (5, 5), (vis.shape[1] - 5, 35), (0, 0, 0), -1)
-        cv2.putText(vis, caption, (10, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+        cv2.rectangle(
+            vis,
+            (5, 5),
+            (vis.shape[1] - 5, 35),
+            (0, 0, 0),
+            -1,
+        )
 
-        out_path = GALLERY_DIR / f"{pair_id}_{method_name}_failure.jpg"
+        cv2.putText(
+            vis,
+            caption,
+            (10, 25),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.6,
+            (255, 255, 255),
+            2,
+        )
+
+        out_path = (
+            GALLERY_DIR
+            / f"{pair_id}_{method_name}_failure.jpg"
+        )
+
         cv2.imwrite(str(out_path), vis)
+
         print(f"  Saved: {out_path}")
 
 
 def draw_all_galleries(pair_ids=None, max_per_pair: int = 3):
     """Generate failure galleries for all pairs."""
     pairs_dir = REPO_ROOT / "data" / "pairs"
+
     if pair_ids is None:
         pair_ids = []
+
         for f in pairs_dir.glob("*_source.tif"):
-            pair_ids.append(f.stem.replace("_source", ""))
+            pair_ids.append(
+                f.stem.replace("_source", "")
+            )
 
     if not pair_ids:
         print("No pairs found in data/pairs/")
@@ -229,7 +349,10 @@ def draw_all_galleries(pair_ids=None, max_per_pair: int = 3):
 
     for pair_id in pair_ids:
         try:
-            draw_failure_gallery(pair_id, max_images=max_per_pair)
+            draw_failure_gallery(
+                pair_id,
+                max_images=max_per_pair,
+            )
         except FileNotFoundError as e:
             print(f"SKIP {pair_id}: {e}")
 
@@ -237,9 +360,26 @@ def draw_all_galleries(pair_ids=None, max_per_pair: int = 3):
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="Generate failure gallery images")
-    parser.add_argument("--pairs", nargs="+", help="Pair IDs to process")
-    parser.add_argument("--max-per-pair", type=int, default=3, help="Max images per pair")
+    parser = argparse.ArgumentParser(
+        description="Generate failure gallery images"
+    )
+
+    parser.add_argument(
+        "--pairs",
+        nargs="+",
+        help="Pair IDs to process",
+    )
+
+    parser.add_argument(
+        "--max-per-pair",
+        type=int,
+        default=3,
+        help="Max images per pair",
+    )
+
     args = parser.parse_args()
 
-    draw_all_galleries(pair_ids=args.pairs, max_per_pair=args.max_per_pair)
+    draw_all_galleries(
+        pair_ids=args.pairs,
+        max_per_pair=args.max_per_pair,
+    )
