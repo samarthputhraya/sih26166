@@ -178,8 +178,21 @@ from baselines.orb_baseline import run_orb
 from baselines.akaze_baseline import run_akaze
 from core.illumination import normalize
 
-x, y = np.mgrid[-200:200, -200:200]
-dem = np.sin(np.sqrt(x**2 + y**2)/13.0)*70 + np.cos(x/19.0)*30 + np.sin(y/27.0)*20
+def crater_dem(n=420, seed=3, ncr=90):
+    """Non-repetitive crater terrain. A smooth or repeating surface will NOT work - see below."""
+    rng = np.random.default_rng(seed)
+    dem = rng.normal(0, 3, (n, n))
+    yy, xx = np.mgrid[0:n, 0:n]
+    for _ in range(ncr):
+        cx, cy = rng.integers(20, n-20, 2)
+        rad = rng.integers(8, 34)
+        depth = rad * rng.uniform(0.4, 1.0)
+        d = np.sqrt((xx-cx)**2 + (yy-cy)**2)
+        dem += np.where(d < rad, -depth*(1-(d/rad)**2), 0.0)
+        dem += np.where((d >= rad) & (d < rad*1.25), depth*0.28*(1-(d-rad)/(rad*0.25)), 0.0)
+    return dem
+
+dem = crater_dem()
 
 def u8(i):
     i = np.asarray(i, np.float32)
@@ -187,15 +200,15 @@ def u8(i):
         i = i * 255.0
     return np.clip(i, 0, 255).astype(np.uint8)
 
-for sun_b, label in (((75, 25), "30 deg"), ((135, 25), "90 deg"), ((225, 25), "180 deg")):
-    s, r, H_true, meta = make_pair(dem, pixel_size_m=10.0, sun_a=(45, 25), sun_b=sun_b,
+for d, label in ((0, "0 deg"), (30, "30 deg"), (90, "90 deg"), (180, "180 deg")):
+    s, r, H_true, meta = make_pair(dem, pixel_size_m=10.0, sun_a=(45, 25), sun_b=(45+d, 25),
                                    rotation_deg=0.0, scale=1.0, shift_px=(10.0, -6.0))
     s8, r8 = u8(s), u8(r)
     sn, rn = u8(normalize(s8)), u8(normalize(r8))
     for name, fn in (("SIFT", run_sift), ("ORB", run_orb), ("AKAZE", run_akaze)):
         raw, _ = fn(s8, r8)
         nrm, _ = fn(sn, rn)
-        print(f"{label:>8} {name:6} raw={len(raw):4d}  illum_norm={len(nrm):4d}")
+        print(f"{label:>8} {name:6} raw={len(raw):5d}  illum_norm={len(nrm):5d}")
 ```
 
 > 🔴 **You MUST pass `scale=1.0` and `rotation_deg=0.0` explicitly.** If you leave them out,
@@ -203,26 +216,46 @@ for sun_b, label in (((75, 25), "30 deg"), ((135, 25), "90 deg"), ((225, 25), "1
 > 6.1×, 19.1×, 6.7× and 5.5×. At 19× your baselines fail because of the zoom, not the sun — and
 > your failure gallery would be showing the wrong failure. Change one thing at a time.
 
+> 🔴 **And always run the 0° point as a control.** At 0° the two images are identical apart from the
+> shift, so every method should find *hundreds* of matches. My first attempt used a smooth ripple
+> surface and SIFT found **5 matches at 0°** — repetitive terrain defeats the ratio test, so I was
+> measuring the pattern, not the sun. **If your 0° row is not in the hundreds, the terrain is wrong
+> and nothing below it means anything.** That is why `crater_dem` above is built from random craters
+> rather than a wave.
+
 **Here is what I got, so you know whether yours is working:**
 
 ```
-  30 deg SIFT   raw=   3  illum_norm=   6
-  30 deg ORB    raw=  14  illum_norm=  76
-  30 deg AKAZE  raw=  12  illum_norm=  13
-  90 deg SIFT   raw=   1  illum_norm=   2
-  90 deg ORB    raw=   6  illum_norm=  39
-  90 deg AKAZE  raw=   9  illum_norm=   3
- 180 deg SIFT   raw=   5  illum_norm=  29
- 180 deg ORB    raw=  11  illum_norm= 316
- 180 deg AKAZE  raw=  13  illum_norm=  93
+   0 deg SIFT    raw=  488  illum_norm=  988      <- control: both find plenty
+   0 deg ORB     raw= 2399  illum_norm= 1677
+   0 deg AKAZE   raw=  213  illum_norm=    5
+
+  30 deg SIFT    raw=   10  illum_norm=    0
+  30 deg ORB     raw=  142  illum_norm=    2
+  30 deg AKAZE   raw=   20  illum_norm=    2
+
+  90 deg SIFT    raw=    0  illum_norm=    0
+  90 deg ORB     raw=   31  illum_norm=    0
+  90 deg AKAZE   raw=    3  illum_norm=    0
+
+ 180 deg SIFT    raw=    2  illum_norm=  203
+ 180 deg ORB     raw=   48  illum_norm=  218
+ 180 deg AKAZE   raw=    7  illum_norm=    0
 ```
 
-**This is your headline result.** On the easy same-frame pair these same methods find 260–740
-matches. Move the sun, and they find **1 to 14**. Classical feature matching does not survive a sun
-angle change on the Moon — and you now have the measurement, not the assertion.
+**This is your headline result, and it has two halves — report both.**
 
-That is *your* contribution to the whole project's argument. Everything the team claims about why a
-learned matcher is needed rests on this table.
+**Half one: classical matching collapses when the sun moves.** SIFT goes from **488 matches to 10**
+with only 30° of sun movement, and to **zero** by 90°. That is the measured evidence for why this
+project uses a learned matcher. Everything the team claims on that point rests on this table.
+
+**Half two, and do not hide it: illumination normalisation often makes things WORSE here.** AKAZE
+goes 213 → 5 at 0°. ORB goes 142 → 2 at 30°. It only helps dramatically at 180° (SIFT 2 → 203). So
+the honest sentence is *"normalisation helps when the lighting is reversed, and hurts when the
+lighting is already similar"* — not *"normalisation helps"*.
+
+That second half is more valuable than the first. Any team can show a method failing. Showing that
+your own preprocessing has a cost, and knowing when it applies, is what a judge remembers.
 
 **What to do with it:**
 
@@ -286,10 +319,12 @@ Do `pair_01` plus Part 2, and say in chat that Tier A is still outstanding so it
 
 You now have genuine failures to draw, which you did not have last week. **The best three:**
 
-1. **SIFT at 90° sun difference — 1 match.** A near-total collapse.
-2. **AKAZE at 180° with normalisation — 3 matches, *worse* than raw's 13.** Honest and interesting:
-   the preprocessing is not free, and it does not help every method.
-3. **ORB at 180° — 11 raw → 316 normalised.** The success case, for contrast.
+1. **SIFT at 90° sun difference — 0 matches, against 488 at 0°.** A total collapse, with the 0°
+   panel beside it as the control. This is the single clearest picture in the project.
+2. **AKAZE at 0° — 213 raw, but only 5 after normalisation.** The preprocessing is not free. Show
+   the case where our own step *hurts*; it is the most credible panel in the gallery.
+3. **SIFT at 180° — 2 raw → 203 normalised.** The success case, for contrast, and the reason we keep
+   the step despite panel 2.
 
 For each: source and reference side by side, matches drawn between them, and a one-line caption in
 plain English — *"SIFT finds one match when the sun moves 90°."*
@@ -311,9 +346,12 @@ five seconds. That is the whole job of a failure gallery.
 3. Write one paragraph at the top of `baselines/README.md` that answers the Gate 5 question:
 
 > *"Classical methods work well when two images differ only by a shift — they recover a 40-pixel
-> offset exactly. They break down when the illumination changes, finding 1–14 matches instead of
-> hundreds. Illumination normalisation recovers some of that, unevenly: it helped ORB a lot, SIFT
-> a little, and AKAZE not at all in one case. This is why the project uses a learned matcher."*
+> offset exactly, with hundreds of matches. They break down when the sun moves: SIFT drops from 488
+> matches to 10 with 30° of sun change, and to zero by 90°. Illumination normalisation helps only
+> when the lighting is strongly reversed — at 180° it took SIFT from 2 matches back up to 203 — and
+> it actively hurts when the lighting is already similar, cutting AKAZE from 213 to 5. That is why
+> the project uses a learned matcher, and why we apply the normalisation selectively rather than
+> always."*
 
 Write it in your own words. If you can say that paragraph out loud without notes, you have passed
 your part of Gate 5.
