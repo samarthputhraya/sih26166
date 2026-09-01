@@ -148,7 +148,8 @@ rename a downloaded product.
 **Do not say "0.25 m" for OHRC.** ISRO's own portal says 28 cm. If asked, say
 *"about 25–30 centimetres; ISRO quotes 28."*
 
-**Scale ratios that matter:** OHRC↔TMC ≈ 18×. OHRC↔Kaguya TC ≈ 36×. OHRC↔IIRS ≈ 285×.
+**Scale ratios that matter:** OHRC↔TMC ≈ 18×. OHRC↔Kaguya TC ≈ 40.8×
+(OHRC ≈ 0.22977 m/px; Kaguya TC = 9.3698731836556 m/px). OHRC↔IIRS ≈ 285×.
 This is why a naive matcher fails and why we need a pyramid — see §6.
 
 ⚠️ **UNVERIFIED — do not repeat as fact:** the "Level 1" difficulty label. It does not appear in
