@@ -77,12 +77,34 @@ def fetch_window(lat_min, lat_max, lon_min, lon_max, pad_px=40, cache_dir=None):
     raw = cache_dir / f"ldem_60s_60m_{l0}_{l1}.raw"
 
     if not raw.exists():
+        byte_start = l0 * ROW_BYTES
+        byte_end = l1 * ROW_BYTES - 1
+        expected_bytes = byte_end - byte_start + 1
         req = urllib.request.Request(
             BASE + ".img",
-            headers={"Range": f"bytes={l0 * ROW_BYTES}-{l1 * ROW_BYTES - 1}"},
+            headers={"Range": f"bytes={byte_start}-{byte_end}"},
         )
-        with urllib.request.urlopen(req, timeout=600) as r, open(raw, "wb") as f:
-            f.write(r.read())
+        with urllib.request.urlopen(req, timeout=600) as r:
+            status = getattr(r, "status", r.getcode())
+            content_range = r.headers.get("Content-Range", "")
+            expected_range = f"bytes {byte_start}-{byte_end}/"
+            if status != 206 or not content_range.startswith(expected_range):
+                raise RuntimeError(
+                    "LOLA server did not honor the requested byte range; refusing a possible "
+                    f"full {N * ROW_BYTES / 1e9:.2f} GB download "
+                    f"(status={status}, Content-Range={content_range!r})"
+                )
+            content_length = r.headers.get("Content-Length")
+            if content_length is not None and int(content_length) != expected_bytes:
+                raise RuntimeError(
+                    f"LOLA range response length is {content_length}, expected {expected_bytes}"
+                )
+            payload = r.read(expected_bytes + 1)
+        if len(payload) != expected_bytes:
+            raise RuntimeError(
+                f"LOLA range payload is {len(payload)} bytes, expected {expected_bytes}"
+            )
+        raw.write_bytes(payload)
 
     band = np.fromfile(raw, dtype="<i2").reshape(l1 - l0, N)
     return band[:, s0:s1].astype(np.float32) * ELEV_SCALE, (l0, s0)
