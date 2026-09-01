@@ -138,8 +138,26 @@ def _evaluate(ref_shape, src_pts, ref_pts, H_true=None):
     return evaluate(ref_shape, src_pts, ref_pts, H_true=H_true), "ok"
 
 
-def run_all(src_path, ref_path, H_true=None, progress=None) -> dict:
-    """Register one pair. Returns a result dict; never raises on a bad pair."""
+def _refine_subpixel(src_pts, ref_pts, a_n, b_n):
+    """Optional NCC sub-pixel refinement. OFF by default, and that is a measurement.
+
+    `core/bench_subpixel_results.csv`: NCC refinement converges on ~0.16-0.43 px
+    whatever it is handed, so it helps a matcher worse than that floor and hurts
+    one that is already better. LoFTR's worst case here is 0.336 px raw and
+    0.431 px refined - switching this on would make our headline number worse
+    while sounding like an improvement. ORB goes 0.722 -> 0.437, so it belongs on
+    Gate 1's classical fallback path instead.
+    """
+    from core.subpixel import refine
+    return refine(src_pts, ref_pts, a_n, b_n)
+
+
+def run_all(src_path, ref_path, H_true=None, progress=None, subpixel=False) -> dict:
+    """Register one pair. Returns a result dict; never raises on a bad pair.
+
+    subpixel: run NCC refinement on the matches. Default False - see
+        `_refine_subpixel`. Turn it on for the classical fallback, not for LoFTR.
+    """
     t0 = time.perf_counter()
     a, meta_a = load(src_path)
     b, meta_b = load(ref_path)
@@ -153,6 +171,10 @@ def run_all(src_path, ref_path, H_true=None, progress=None) -> dict:
     # Back to ORIGINAL pixel coordinates before anything is measured or reported.
     # Metrics are defined in reference-image pixels (Sec.7); reporting them in
     # resampled pixels would silently change what the number means.
+    subpixel_info = None
+    if subpixel and len(src_pts):
+        src_pts, ref_pts, subpixel_info = _refine_subpixel(src_pts, ref_pts, a_n, b_n)
+
     src_full = to_original(src_pts, factors["a"]) if len(src_pts) else src_pts
     ref_full = to_original(ref_pts, factors["b"]) if len(ref_pts) else ref_pts
 
@@ -168,6 +190,7 @@ def run_all(src_path, ref_path, H_true=None, progress=None) -> dict:
         "shape_source": a.shape, "shape_reference": b.shape,
         "gsd_mpp": gsd, "scale_note": factors["note"], "scale_factors": factors,
         "illumination": illum,
+        "subpixel": subpixel_info,
         "n_matches": int(len(src_pts)), "ransac": info,
         "H": H, "warped": warped,
         "src_inliers": src_in, "ref_inliers": ref_in,
