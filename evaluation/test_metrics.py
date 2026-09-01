@@ -14,13 +14,13 @@ def test_perfect_matches():
     assert res["rmse_gt_px"] < 1e-4
 
 def test_known_offset():
-    # Shift by (2,3) -> residual ~ sqrt(4+9) = 3.6055
+    # A pure translation is fit exactly by a homography -> held-out residual ~ 0
     src = np.random.rand(100, 2) * 1000
     ref = src + np.array([2.0, 3.0])
-    
+
     res = evaluate((1024, 1024), src.astype(np.float32), ref.astype(np.float32))
     assert res is not None
-    assert np.isclose(res["residual_px"], 3.6055, atol=1e-2)
+    assert res["residual_px"] < 1e-3, "a pure translation should be fit exactly"
 
 def test_clustered_matches():
     # All matches in one corner (e.g., top-left 10x10 area of a 1024x1024 image)
@@ -58,3 +58,15 @@ def test_reports_none_without_ground_truth():
     res = evaluate((1024, 1024), src.astype(np.float32), ref.astype(np.float32), H_true=None)
     assert res is not None
     assert res["rmse_gt_px"] is None
+
+def test_inlier_ratio_reflects_garbage_in_the_input():
+    # half the matches are wrong -> ratio must be near 0.5, NOT near 1.0
+    rng = np.random.default_rng(7)
+    good = (rng.random((100, 2)) * 900 + 50).astype(np.float32)
+    good_r = (good + np.array([12.0, -8.0])).astype(np.float32)
+    bad = (rng.random((100, 2)) * 1000).astype(np.float32)
+    bad_r = (rng.random((100, 2)) * 1000).astype(np.float32)
+    src = np.vstack([good, bad]).astype(np.float32)
+    ref = np.vstack([good_r, bad_r]).astype(np.float32)
+    res = evaluate((1024, 1024), src, ref, seed=1)
+    assert 0.4 < res["inlier_ratio"] < 0.6, "inlier_ratio is not seeing the bad matches"

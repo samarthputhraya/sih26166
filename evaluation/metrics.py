@@ -4,12 +4,18 @@ import cv2
 GRID = 8
 INLIER_THRESH_PX = 3.0
 
+def _failed(reason, n):
+    return {"rmse_gt_px": None, "residual_px": None, "inlier_count": 0,
+            "inlier_ratio": 0.0, "grid_coverage_fraction": 0.0,
+            "distribution_cv": None, "n_matches": n, "status": reason}
+
 def evaluate(ref_shape, matches_src, matches_ref, H_true=None, holdout_frac=0.2, seed=0):
     """Score one registration.
 
+    matches_src/matches_ref MUST be the RAW matcher output, BEFORE any RANSAC filtering.
+
     matches_src, matches_ref : (N,2) float arrays of (x, y), same order.
     H_true : ground-truth homography if known (synthetic / DEM pairs), else None.
-
     ALL pixel units are REFERENCE-image pixels.
     """
     rng = np.random.default_rng(seed)
@@ -17,7 +23,7 @@ def evaluate(ref_shape, matches_src, matches_ref, H_true=None, holdout_frac=0.2,
     
     # We need at least 4 points to compute a homography
     if n < 4:
-        return None
+        return failed("too_few_matches", n)
         
     idx = rng.permutation(n)
     n_hold = max(4, int(holdout_frac * n))
@@ -35,7 +41,7 @@ def evaluate(ref_shape, matches_src, matches_ref, H_true=None, holdout_frac=0.2,
                                  confidence=0.999)
                                  
     if H is None:
-        return None  # RANSAC failed to find a valid transform
+        return _failed("ransac_failed", n)
 
     # --- residual on the HELD-OUT set (real pairs) -------------------------
     if len(hold) > 0:
@@ -76,6 +82,7 @@ def evaluate(ref_shape, matches_src, matches_ref, H_true=None, holdout_frac=0.2,
         "grid_coverage_fraction": float((cells > 0).sum() / (GRID*GRID)),
         "distribution_cv":        float(cells.std() / cells.mean()) if cells.mean() > 0 else None,
         "n_matches":              n,
+        "status":                 "ok",
     }
 
 if __name__ == "__main__":

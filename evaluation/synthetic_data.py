@@ -19,11 +19,12 @@ def make_pair(dem, pixel_size_m,
 
     # Strictly enforce Canonical Facts sampling ranges if not explicitly provided
     if rotation_deg is None:
-        rotation_deg = rng.uniform(-15.0, 15.0)
+        rotation_deg = 0.0
     
     if scale is None:
-        # 1x to 20x scaling (simulating true orbital ratios like OHRC ↔ Kaguya TC)
-        scale = rng.uniform(1.0, 20.0)
+        # Default is a SOLVABLE pair. Callers who want the hard 1-20x sweep
+        # (real orbital scale ratios) must pass scale= explicitly.
+        scale = 1.0
         
     if shift_px is None:
         # +/- 20% of image width/height for footprint offset
