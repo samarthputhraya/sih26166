@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 
 
-def classify(cnt, img_a, img_b, cx, cy):
+def classify(cnt, img_a, img_b):
     """
     Classify a detected region.
 
@@ -12,33 +12,38 @@ def classify(cnt, img_a, img_b, cx, cy):
 
     x, y, w, h = cv2.boundingRect(cnt)
 
-    # Measure how elongated the region is
+    # Measure how elongated the region is.
     elong = max(w, h) / max(min(w, h), 1)
 
-    # Pixel intensity at the centre
-    a_val = int(img_a[cy, cx])
-    b_val = int(img_b[cy, cx])
+    # Measure the average intensity INSIDE the detected region.
+    # This is more reliable than sampling one centroid pixel,
+    # especially for crescent/ring-shaped regions.
+    region = np.zeros(img_a.shape, np.uint8)
+    cv2.drawContours(region, [cnt], -1, 255, -1)
 
-    # Long, thin regions are likely to be shadows
+    a_val = float(cv2.mean(img_a, mask=region)[0])
+    b_val = float(cv2.mean(img_b, mask=region)[0])
+
+    # Long, thin regions are likely to be shadows.
     if elong > 4:
         return "shadow?", (0, 200, 200)
 
-    # Region became significantly brighter
+    # Region became significantly brighter.
     if b_val > a_val + 40:
         return "new bright", (0, 255, 0)
 
-    # Region became significantly darker
+    # Region became significantly darker.
     if a_val > b_val + 40:
         return "disappeared", (255, 80, 0)
 
-    # Cannot confidently classify
+    # Cannot confidently classify.
     return "uncertain", (160, 160, 160)
 
 
 def detect_changes(
     img_a,
     img_b,
-    gsd_mpp=0.5,
+    gsd_mpp,
     thresh=30,
     min_area_px=50,
     edge_margin_frac=0.05
@@ -49,7 +54,7 @@ def detect_changes(
     Parameters:
         img_a: First aligned grayscale image.
         img_b: Second aligned grayscale image.
-        gsd_mpp: Metres per pixel.
+        gsd_mpp: Ground sample distance in metres per pixel.
         thresh: Difference threshold.
         min_area_px: Minimum detected area in pixels.
         edge_margin_frac: Fraction of the image edge to ignore.
@@ -64,13 +69,31 @@ def detect_changes(
     # ---------------------------------------------------------
 
     if img_a is None or img_b is None:
-        raise ValueError("One or both input images could not be loaded.")
+        raise ValueError(
+            "One or both input images could not be loaded."
+        )
 
     if len(img_a.shape) != 2 or len(img_b.shape) != 2:
-        raise ValueError("Input images must be grayscale.")
+        raise ValueError(
+            "Input images must be grayscale."
+        )
 
     # ---------------------------------------------------------
-    # 2. Convert non-uint8 images using a common scale
+    # 2. Check GSD
+    # ---------------------------------------------------------
+
+    if gsd_mpp is None:
+        raise ValueError(
+            "gsd_mpp is required - get it from the catalogue"
+        )
+
+    if gsd_mpp <= 0:
+        raise ValueError(
+            "gsd_mpp must be greater than zero"
+        )
+
+    # ---------------------------------------------------------
+    # 3. Convert non-uint8 images using a common scale
     # ---------------------------------------------------------
 
     if img_a.dtype != np.uint8 or img_b.dtype != np.uint8:
@@ -99,7 +122,7 @@ def detect_changes(
             img_b = img_b.astype(np.uint8)
 
     # ---------------------------------------------------------
-    # 3. Make sure both images have the same size
+    # 4. Make sure both images have the same size
     # ---------------------------------------------------------
 
     if img_a.shape != img_b.shape:
@@ -109,19 +132,19 @@ def detect_changes(
         )
 
     # ---------------------------------------------------------
-    # 4. Calculate absolute difference
+    # 5. Calculate absolute difference
     # ---------------------------------------------------------
 
     diff = cv2.absdiff(img_a, img_b)
 
     # ---------------------------------------------------------
-    # 5. Remove small noise
+    # 6. Remove small noise
     # ---------------------------------------------------------
 
     smooth = cv2.medianBlur(diff, 5)
 
     # ---------------------------------------------------------
-    # 6. Threshold the difference
+    # 7. Threshold the difference
     # ---------------------------------------------------------
 
     _, mask = cv2.threshold(
@@ -132,7 +155,7 @@ def detect_changes(
     )
 
     # ---------------------------------------------------------
-    # 7. Morphological cleanup
+    # 8. Morphological cleanup
     # ---------------------------------------------------------
 
     kernel = cv2.getStructuringElement(
@@ -153,7 +176,7 @@ def detect_changes(
     )
 
     # ---------------------------------------------------------
-    # 8. Remove image-border regions
+    # 9. Remove image-border regions
     # ---------------------------------------------------------
 
     h, w = mask.shape
@@ -162,13 +185,17 @@ def detect_changes(
         edge_margin_frac * min(h, w)
     )
 
-    mask[:margin, :] = 0
-    mask[-margin:, :] = 0
-    mask[:, :margin] = 0
-    mask[:, -margin:] = 0
+    # IMPORTANT:
+    # When margin == 0, mask[-0:, :] would mean the entire image.
+    # Only perform border cleanup when there is an actual margin.
+    if margin > 0:
+        mask[:margin, :] = 0
+        mask[-margin:, :] = 0
+        mask[:, :margin] = 0
+        mask[:, -margin:] = 0
 
     # ---------------------------------------------------------
-    # 9. Find contours
+    # 10. Find contours
     # ---------------------------------------------------------
 
     contours, _ = cv2.findContours(
@@ -178,7 +205,7 @@ def detect_changes(
     )
 
     # ---------------------------------------------------------
-    # 10. Create colour overlay
+    # 11. Create colour overlay
     # ---------------------------------------------------------
 
     overlay = cv2.cvtColor(
@@ -189,21 +216,21 @@ def detect_changes(
     changes = []
 
     # ---------------------------------------------------------
-    # 11. Process every detected region
+    # 12. Process every detected region
     # ---------------------------------------------------------
 
     for cnt in contours:
 
         area_px = cv2.contourArea(cnt)
 
-        # Ignore tiny regions
+        # Ignore tiny regions.
         if area_px < min_area_px:
             continue
 
-        # Bounding box
+        # Bounding box.
         x, y, bw, bh = cv2.boundingRect(cnt)
 
-        # Centroid
+        # Centroid.
         M = cv2.moments(cnt)
 
         if M["m00"]:
@@ -213,19 +240,17 @@ def detect_changes(
             cx = x + bw // 2
             cy = y + bh // 2
 
-        # Classify the region
+        # Classify the region.
         label, colour = classify(
             cnt,
             img_a,
-            img_b,
-            cx,
-            cy
+            img_b
         )
 
-        # Calculate real-world area
+        # Calculate real-world area.
         area_m2 = area_px * (gsd_mpp ** 2)
 
-        # Store result
+        # Store result.
         changes.append({
             "bbox": [x, y, bw, bh],
             "centroid_px": [cx, cy],
@@ -234,7 +259,7 @@ def detect_changes(
             "classification": label
         })
 
-        # Draw bounding box
+        # Draw bounding box.
         cv2.rectangle(
             overlay,
             (x, y),
@@ -243,7 +268,7 @@ def detect_changes(
             2
         )
 
-        # Draw label
+        # Draw label.
         cv2.putText(
             overlay,
             label,
