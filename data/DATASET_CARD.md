@@ -80,6 +80,24 @@ This is the pair that **proves scale invariance**, which the problem statement d
 | acquired | 2020-02-29T07:39:31Z | 2008-07-20T14:48:03Z |
 | footprint (lon) | 43.3595 … 43.9577 | 41.1047 … 45.4980 |
 | footprint (lat) | −74.3661 … −73.5168 | −75.3535 … −73.7750 |
+| incidence angle | *(none in product)* | **86.548°** |
+| sun azimuth | *(none in product)* | **284.901°** |
+| sun elevation | *(none in product)* | **16.98°** |
+| emission / phase | *(none in product)* | 15.650° / 90.612° |
+
+> ✅ **Kaguya DOES carry sun geometry — added 1 Sep.** Known issue #5 records that CH-2 OHRC has
+> no illumination geometry anywhere in its product, and that stands. But nobody had checked
+> Kaguya, and it has the full set: `INCIDENCE_ANGLE`, `SOLAR_AZIMUTH_ANGLE`, `EMISSION_ANGLE` and
+> `PHASE_ANGLE` in the PDS label, plus `view:sun_elevation` in the STAC sidecar. Both files are
+> now on the Drive at `SIH26166_DATA/raw/`.
+>
+> **This means Rohan can fill the sun-angle columns of `pairs_catalogue.csv` for the Kaguya side**
+> (they stay blank for CH-2), and Samrudh has one real measured sun geometry rather than only
+> synthetic ones.
+>
+> ⚠️ **Incidence 86.5° is a grazing sun** — 3.5° off the horizon. That is why the scene is a polar
+> one with long shadows, and it is worth saying out loud rather than quoting "86.5°" as if it were
+> ordinary. It also explains why 51.82% of the frame is NoData.
 
 **Measured overlap: 0.598° longitude × 0.591° latitude.** Both footprints were read from the
 products themselves — OHRC from its 113,498-row geometry CSV, Kaguya from its STAC `bbox`.
@@ -90,6 +108,12 @@ products themselves — OHRC from its 113,498-row geometry CSV, Kaguya from its 
 > common-GSD resampling works, or it does not work at all.
 
 ### Kaguya scene — the two things that will mislead you
+
+**0. The PDS label lists DIFFERENT invalid values, and they are not the ones to mask.**
+The JAXA label declares `INVALID_VALUE = (-20000, -21000, -22000, -23000)`. Those apply to the
+original `.img`, **not** to the GeoTIFF we use. Checked 1 Sep: **none of the four appears in the
+`.tif`** — the only sentinel present is `−32768`, at exactly 51.82%, which the STAC sidecar states
+outright (`"nodata": -32768.0`, `"valid_percent": 48.18`). **Mask −32768 and nothing else.**
 
 **1. 51.82% of the scene is NoData, fill value `−32768`.**
 An unmasked `img.std()` returns **16440**, which measures the fill, not the Moon. Masked, the valid
@@ -275,6 +299,11 @@ img[valid].std()           # 230.8   (unmasked: 16440 - meaningless)
 
 - **One row per file, filled at download time.** Blank means "not known" — never guess.
 - **Every new product must clear `std > 10` (masked) and be looked at** before it is added.
+- **The Drive now has `SIH26166_DATA/raw/`** with the Kaguya `.lbl` and `.stac.json` (the two
+  provenance sidecars) plus a `README_raw.md` giving the exact one-line commands to re-fetch the
+  three large files. The `.tif` (22.6 MB) and the LOLA window (34 MB) are **not** uploaded — both
+  are reproducible in under a minute from a public URL, and `ops/fetch_lola_dem.py` fetches only
+  the DEM rows we need rather than the full 1.93 GB.
 - **Data lives outside the repo.** The Kaguya scene is at
   `C:\Users\samar\sih26166_data\raw\` — *not* in `data/raw/`, because this clone sits inside
   OneDrive and OneDrive ignores `.gitignore`. Each machine's path is in `data_path.txt`.

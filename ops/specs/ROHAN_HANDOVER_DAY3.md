@@ -154,6 +154,9 @@ I do not list below, **leave the cell blank** — never invent one:
 - tier `B+`, status `identified`
 - source: `CH2_OHRC`, gsd `0.22977000623605362`
 - ref: `Kaguya_TC`, file `TC1S2B0_01_03482S746E0433.tif`, gsd `9.3698731836556`
+- **ref sun angles — these ARE known, fill them in:** incidence `86.548`, sun azimuth `284.911`,
+  sun elevation `16.98` (from the JAXA label and STAC sidecar, both now on the Drive at
+  `SIH26166_DATA/raw/`)
 - scale ratio `40.78`, overlap `0.598` lat × `0.591` lon
 - notes: `"cross-sensor, 40.8x scale. Kaguya NoData = -32768, 51.8% of scene. Use window x=5120 y=2240"`
 
@@ -171,9 +174,13 @@ I do not list below, **leave the cell blank** — never invent one:
 
 ### 🔴 Three rules while you fill it in
 
-1. **Leave sun angle and incidence BLANK for Chandrayaan-2.** OHRC's label carries no illumination
-   geometry at all, and neither does its geometry CSV. A guessed sun angle would silently corrupt
-   Samrudh's entire illumination analysis. Blank is the correct, honest answer.
+1. **Leave sun angle and incidence BLANK for Chandrayaan-2 — but FILL THEM for Kaguya.** I checked
+   both on 1 Sep. OHRC's label carries no illumination geometry at all, and neither does its
+   geometry CSV. **Kaguya's label carries the full set** (incidence 86.548°, sun azimuth 284.911°,
+   sun elevation 16.98°), so those cells are real numbers, not guesses.
+   ⚠️ Incidence 86.5° means the sun is 3.5° above the horizon — a grazing polar sun. Worth knowing
+   before you quote it. A *guessed* sun angle, by contrast, would silently corrupt Samrudh's entire
+   illumination analysis — so for the CH-2 cells, blank is the correct and honest answer.
 2. **`pair_01` is not Tier A.** It is two crops of the *same photograph*. Calling it a sun-angle
    test would be false, and it is the likeliest question an ISRO judge asks.
 3. **The `tier` letter is a claim about what the pair proves**, not a label. Same sensor = A.
