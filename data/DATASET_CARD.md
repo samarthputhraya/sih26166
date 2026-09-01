@@ -40,15 +40,33 @@ demo laptop by Windows Smart App Control and cannot be enabled without reinstall
 | `ldem_60s_60m.img` (windowed) | **D** | LRO LOLA (elevation) | **60.0** | — | `https://pds-geosciences.wustl.edu/lro/lro-l-lola-3-rdr-v1/lrolol_1xxx/data/lola_gdr/polar/img/ldem_60s_60m.img` | 2026-09-01 | PDS public domain | `LRO-L-LOLA-3-RDR-V1.0` |
 | ~~`M108587604RE.IMG`~~ | ❌ **REJECTED** | LROC NAC | — | — | `https://pds.lroc.im-ldi.com/data/LRO-L-LROC-2-EDR-V1.0/LROLRC_0001/DATA/MAP/2009269/NAC/M108587604RE.IMG` | 2026-08-30 | PDS public domain | `nacr0000bc48` |
 
-### Why `M108587604RE.IMG` is rejected
+### Why `M108587604RE.IMG` is rejected — and why the stated reason was wrong
 
-It decodes perfectly and contains **nothing**: 98.1% of its pixels sit in DN 32–46, std **1.42**,
-no visible craters. Every numeric check passed while the image was empty, and it made an early
-dry-run figure look ~10× better than reality.
+The rejection **stands**, but the reason first recorded for it does not, and the correction matters
+more than the rejection.
 
-**Do not use it, and do not delete it** — it is our worked example of Known Issue #6, *"a green
-pipeline says nothing about whether its input is real."* Any new product must clear **std > 10**
-and be **looked at** before it goes in the table above.
+| | `M108587604RE` | a good Tier A frame |
+|---|---|---|
+| raw std | 1.5 | 4.4 |
+| DN span | **14** | **51** |
+| **row-to-row correlation** | **0.352** | **0.973** |
+| length | 1024 lines (a short non-science frame) | 52,224 lines |
+
+🔴 **`std > 10` is the wrong test for LROC NAC, and it nearly cost us Tier A.** That threshold was
+calibrated on **calibrated** imagery — CH-2 OHRC is `data_calibrated` and has std 32.4. **NAC EDR
+is raw and companded**: good frames sit at std 4–6 with ~93% of pixels inside a 16-DN band.
+Applied to raw EDR, `std > 10` **rejected all six of the best Tier A pairs** on the first pass.
+
+🔴 **And stretching proves nothing.** A 2–98% percentile stretch takes `M108587604RE` from std 1.5
+to **59.8** and produces a picture that looks like terrain. It is amplified noise. The stretch is
+for *looking*; it is not evidence.
+
+**The test that actually works is row-to-row correlation** — terrain is spatially coherent, sensor
+noise is not. 0.352 versus 0.973 separates them cleanly where every intensity statistic fails.
+Implemented as `looks_like_terrain()` in [`ops/find_tier_a_pairs.py`](../ops/find_tier_a_pairs.py).
+
+**Do not use `M108587604RE`, and do not delete it** — it is our worked example of Known Issue #6,
+*"a green pipeline says nothing about whether its input is real."*
 
 ---
 
@@ -134,13 +152,51 @@ tested (25.4 at 25°, 28.1 at 10°).
 
 ---
 
+## Tier A — route solved, 47 candidate pairs
+
+**The planned route does not work.** `oderest.rsl.wustl.edu` — the ODE REST host our policy note
+points at — **does not resolve** (checked 1 Sep 2026). `ode.rsl.wustl.edu` resolves but serves no
+`/live2/` endpoint. There is no live API to query.
+
+**The PDS cumulative index carries the same geometry and cannot go down.**
+`LRO-L-LROC-2-EDR-V1.0/LROLRC_0003/INDEX/CUMINDEX.TAB` is 225,950 rows × 901 fixed bytes with
+`PRODUCT_ID`, `CENTER_LATITUDE/LONGITUDE`, `INCIDENCE/EMISSION/PHASE_ANGLE` and the file path.
+Streaming it and filtering to incidence 20–80° leaves **130,398 usable frames**.
+
+Requiring centres within 0.02° (~0.6 km) and incidence differing ≥15°, from standard LE/RE frames:
+**47 candidate pairs.** Top of the list:
+
+| Δ incidence | separation | A | inc | B | inc | lat | lon |
+|---|---|---|---|---|---|---|---|
+| **47.9°** | 0.3 km | `M118064253RE` | 75.0° | `M122787393RE` | 27.1° | −18.06 | 271.80 |
+| 40.1° | 0.3 km | `M119292791RE` | 60.7° | `M126378315LE` | 20.6° | 2.33 | 85.30 |
+| 39.2° | 0.4 km | `M119326702LE` | 60.7° | `M126405425LE` | 21.4° | 1.17 | 80.56 |
+| 39.0° | 0.2 km | `M109807869RE` | 39.4° | `M118057027RE` | 78.4° | −40.32 | 273.25 |
+
+Reproduce with [`ops/find_tier_a_pairs.py`](../ops/find_tier_a_pairs.py).
+
+> 🔴 **The two candidates previously recorded in STATUS are NOT a Tier A pair.**
+> `M124545845LE` (inc 25.2°) and `M102128467RE` (inc 79.3°) have the right 54° of sun-angle
+> difference, but their centres are **0.696° apart — about 21 km**. They are different sites.
+> A sun-angle test needs the *same ground*.
+
+**A NAC EDR is 264 MB, but you do not download it.** It is uncompressed 8-bit with fixed
+5064-byte records and the server sends `Accept-Ranges: bytes`, so a 640-line crop is a
+**3.2 MB range request**. `crop()` in that module does it.
+
+⚠️ **Pick by texture, not by incidence difference alone.** The 47.9° pair above sits on
+low-contrast mare and is a poor matching target. Rank candidates with `looks_like_terrain()`
+before committing to one.
+
+---
+
 ## Still outstanding — Rohan's queue
 
 1. 🔴 **Tier C (multi-modal) has no data and no owner.** It is in the problem-statement *title* and
    is a hard Gate-2 criterion on Day 8. Candidates: Chandrayaan-1 M3 (imaging spectrometer) or an
    LRO Diviner / Mini-RF product. **An owner must be decided by Day 5.**
-2. **Tier A pairs do not exist yet.** Route is `EDRNAC4` with incidence filtered to 20–80° — see the
-   policy note above. Needed by Risheeth (Day 4) and Samrudh (Day 6).
+2. ~~**Tier A pairs do not exist yet.**~~ ✅ **Route solved 1 Sep — 47 candidate pairs found.**
+   See "Tier A" below. What remains is picking one and cutting the crops, which is ~1 hour.
 3. **SLDEM tile for the demo site** — Samrudh's synthetic generator currently runs on a made-up
    crater surface. A real DEM tile would let the swept-illumination curve use real terrain.
 4. **CH-3 landing-site NAC product IDs** — unverified. Rishabh needs them ~Day 6.
