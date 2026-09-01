@@ -120,7 +120,7 @@ including `weights/loftr_outdoor.pt`.
 
 **Read this before reacting to the commit log. Two of the three pushes are not what they look like.**
 
-### 🔴 Samrudh's four commits are all EMPTY FILES
+### 🔴 Samrudh's SIX commits are all EMPTY FILES
 
 | commit | file | size on disk |
 |---|---|---|
@@ -128,10 +128,19 @@ including `weights/loftr_outdoor.pt`.
 | `28f9cd4` synthetic_data: pair generator with exact H_true… | `evaluation/synthetic_data.py` | **0 bytes** |
 | `4ce10ad` metrics: evaluate() with held-out residual split… | `evaluation/metrics.py` | **0 bytes** |
 | `0e847e4` test_metrics: 5 test incl. holdout and no-GT… | `evaluation/test_metrics.py` | **0 bytes** |
+| `ac1179a` results_log: define CSV schema, tier column mandatory | `evaluation/results_log.csv` | **0 bytes** |
+| `2b33734` evaluation/README: document metrics, usage and GT vs residual | `evaluation/README.md` | **0 bytes** |
 
-The messages describe exactly the right work. The files contain nothing. Verified three ways:
-`git cat-file -s` on each blob returns `0`; `pytest evaluation/` still exits **5** with all four
-present; `from evaluation.metrics import evaluate` raises **ImportError**.
+Six commits over 42 minutes (21:12–21:54), six empty files. The messages describe exactly the right
+work — the schema decision, the GT-vs-residual distinction, the holdout split. The files contain
+nothing. Verified three ways: `git cat-file -s` on each blob returns `0`; `pytest evaluation/` still
+exits **5** with all six present; `from evaluation.metrics import evaluate` raises **ImportError**.
+
+**That it is all six, consistently, is the useful clue** — this is not one slip. Something in his
+setup is committing paths that were never written to: files created with `touch`/`New-Item`, or an
+editor saving somewhere other than the repo. **Ask him to run `git show --stat HEAD` and
+`wc -c evaluation/metrics.py` before he does anything else** — one line each and they will show him
+the same thing.
 
 **Gate 1 is therefore still blocked and the blocker is unchanged.** This is most likely `git add` of
 files created but never saved from the editor — an easy and very recoverable mistake. **Ask him to
