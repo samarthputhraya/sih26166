@@ -23,7 +23,7 @@ def evaluate(ref_shape, matches_src, matches_ref, H_true=None, holdout_frac=0.2,
     
     # We need at least 4 points to compute a homography
     if n < 4:
-        return failed("too_few_matches", n)
+        return _failed("too_few_matches", n)
         
     idx = rng.permutation(n)
     n_hold = max(4, int(holdout_frac * n))
