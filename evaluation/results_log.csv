@@ -1,1 +1,1 @@
-timestamp,pair_id,tier,method,config,rmse_gt_px,residual_px,inlier_count,inlier_ratio,grid_coverage_fraction,distribution_cv,n_matches,gsd_mpp
+timestamp,pair_id,tier,method,config,rmse_gt_px,residual_px,inlier_count,inlier_ratio,grid_coverage_fraction,distribution_cv,n_matches,gsd_mpp,status,notes
