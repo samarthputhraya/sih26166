@@ -18,6 +18,32 @@ There are four things to fix, one of which is serious and is **half mine**.
 
 ---
 
+---
+
+# 🔴 READ THIS BEFORE ANYTHING ELSE — you and Risheeth have both written `metrics.py`
+
+Risheeth has an unmerged branch, `risheeth-baseline-pipeline`, which **rewrites
+`evaluation/metrics.py` (156 lines changed) and `evaluation/test_metrics.py` (157 lines)**. Those
+are your files. He wrote his version while yours was still empty, so this is not him overstepping —
+it is the empty-files episode still causing damage a day later.
+
+**If he merges that branch as-is, it will collide head-on with the version you pushed this morning,
+and one of you will lose a day's work.**
+
+His version is good, and on one point it is **ahead of yours**: he already returns a dict instead of
+`None` when there are too few matches — which is exactly Fix 3 below. So the resolution is not
+"whose is better", it is:
+
+1. **You keep ownership of `evaluation/`.** Your version on `main` is the one that survives.
+2. **Take his dict-return idea** — it is Fix 3, and you were getting that instruction anyway.
+3. **Ask him to drop `evaluation/*` from his branch** before merging, keeping only `baselines/*`
+   and the `.gitignore` line.
+
+**Message him about this today, before he merges.** Samartha has been told too. This is a
+five-minute conversation now and a two-hour merge conflict tomorrow.
+
+---
+
 # PART 1 · Fix these first (~1 hr, today)
 
 ## Fix 1 🔴 — the most important bug in the project right now, and it is half mine

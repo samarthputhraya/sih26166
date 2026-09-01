@@ -14,6 +14,38 @@ There are two bugs, and they are both in the part you have never been able to ru
 
 ---
 
+---
+
+# 🔴 READ THIS BEFORE YOU MERGE ANYTHING
+
+Your branch `risheeth-baseline-pipeline` changes **`evaluation/metrics.py` (156 lines) and
+`evaluation/test_metrics.py` (157 lines)**. Those are **Samrudh's files**, and he pushed his own
+version of both to `main` this morning at 09:18.
+
+**If you merge that branch as it stands, the two versions collide and somebody loses a day.**
+
+To be clear: **this is not your mistake.** You wrote yours when his files were empty and there was
+nothing to build against. You did the right thing at the time.
+
+But now there are two, and only one can survive. Your version is genuinely good — and on one point
+it is **better than his**: you return a dict when there are too few matches instead of a bare
+`None`, which means a failed pair still gets logged instead of vanishing. I have told him to adopt
+that from you, with the credit.
+
+**What to do:**
+
+1. **Take `evaluation/metrics.py` and `evaluation/test_metrics.py` out of your branch.** Keep
+   everything under `baselines/` and your `.gitignore` line:
+   ```bash
+   git checkout origin/main -- evaluation/metrics.py evaluation/test_metrics.py
+   ```
+2. **Message Samrudh** and tell him the dict-instead-of-None idea is yours and he should take it.
+3. Then merge, and do Part 1 below on top.
+
+Five minutes now, or a two-hour merge conflict tomorrow on the one file the whole project depends on.
+
+---
+
 # PART 1 · Fix these two first (~45 min, today)
 
 Both bugs are in the "real data" path. Neither shows up in `--test` mode, which is why your Day-1
