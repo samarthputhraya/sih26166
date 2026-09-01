@@ -186,7 +186,49 @@ Reproduce with [`ops/find_tier_a_pairs.py`](../ops/find_tier_a_pairs.py).
 
 ⚠️ **Pick by texture, not by incidence difference alone.** The 47.9° pair above sits on
 low-contrast mare and is a poor matching target. Rank candidates with `looks_like_terrain()`
-before committing to one.
+before committing to one. ⚠️ **And match resolution**: LRO's orbit ranges ~20–165 km, so two NAC
+frames of the same ground can differ several-fold in scale. `find_pairs()` enforces ≤1.25×;
+ignoring it drops 47 pairs to 30 and silently turns a sun-angle test into a scale test.
+
+### 🔴 Selecting a pair is solved. **Cutting one is not.** — attempted 1 Sep, honest negative
+
+Best candidate: `M118790149LE` (inc 69.3°) ↔ `M125868733LE` (inc 30.9°), 38.4° apart, 0.55 vs
+0.56 m/px, farside highlands at lat −25.39 lon 162.14, both frames `row_corr` > 0.97.
+
+**Crops cut from it do not overlap, and I could not make them.** What was tried:
+
+| attempt | result |
+|---|---|
+| cut 640² from each frame's middle | LoFTR 221 matches → **7 inliers**, residual 132 px |
+| cut 2048² from each middle | SIFT 3 matches, 0 inliers at all four rotations |
+| cut at the four-corner common ground | 283 matches → **7 inliers** |
+| best-textured window in the overlap | 283 matches → **7 inliers** |
+| all four orientations of the reference | **7, 8, 8, 8 inliers** — none jumps |
+
+That last row is the verdict: if the crops overlapped, *one* orientation would jump to dozens.
+
+**Two traps found on the way, both worth knowing:**
+
+1. **Frame centres 0.41 km apart is NOT "the same crop position".** At 0.55 m/px that is
+   **745 pixels** — wider than a 640 px crop, so middle-vs-middle crops miss each other entirely.
+2. **`NORTH_AZIMUTH` differs by 185°** between the two frames (87.05° vs 272.47°), and their
+   corner longitudes run in opposite directions. They are not in the same orientation.
+3. ⚠️ **SIFT finding zero matches proves nothing here.** Failing across 38° of incidence is the
+   *expected* Tier A result — it is what the tier exists to demonstrate. Only a matcher robust to
+   illumination (LoFTR) can be used to test overlap, and it must be run at several orientations.
+
+**Why it cannot be fixed with what we have:** a NAC frame is a 52,224-line pushbroom strip. Four
+corner coordinates cannot model ground-track curvature and attitude variation along it, and the
+residual error exceeds a 640 px crop. The EDR carries no map projection.
+
+**The route that will work — needs ~2 hrs, not yet done:** use **map-projected** products from
+`LRO-L-LROC-5-RDR-V1.0` (reachable, HTTP 200), where both frames can be cut at identical map
+coordinates the way the Kaguya↔LOLA pair already is. Checked and ruled out: the `astrogeo-ard` S3
+bucket that served Kaguya carries only LOLA under `moon/lro/`, no LROC.
+
+> **Do not hand anyone a Tier A pair until crops from it produce a coherent inlier set.** A pair
+> that does not overlap reads as "our method fails on cross-illumination" — the exact opposite of
+> what it would actually mean.
 
 ---
 

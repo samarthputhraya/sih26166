@@ -46,10 +46,21 @@ CUMINDEX = PDS + "LRO-L-LROC-2-EDR-V1.0/LROLRC_0003/INDEX/CUMINDEX.TAB"
 REC = 901
 
 # name: (START_BYTE as printed in CUMINDEX.LBL, BYTES)
+#
+# `resolution` is m/px and it is NOT optional. LRO's orbit ranges roughly 20-165 km, so two NAC
+# frames of the same ground can differ several-fold in scale. A pair with mismatched resolution
+# is a scale test wearing a sun-angle costume -- you would be measuring two things at once.
 FIELDS = {
     "file_spec": (16, 75), "product_id": (122, 13), "emission": (725, 5),
     "incidence": (731, 6), "phase": (738, 6), "sub_solar_az": (752, 6),
     "lat": (806, 6), "lon": (813, 6),
+    "scaled_px_width": (702, 7), "resolution": (717, 7), "altitude": (876, 7),
+    "north_azimuth": (745, 6),
+    # Four footprint corners. These are what let you cut the SAME GROUND out of two frames --
+    # see `ground_to_pixel`. Frame centres being close is NOT enough: two frames whose centres
+    # are 0.41 km apart still miss each other completely in a 640 px crop at 0.55 m/px.
+    "ul_lat": (862, 6), "ul_lon": (869, 6), "ur_lat": (820, 6), "ur_lon": (827, 6),
+    "ll_lat": (848, 6), "ll_lon": (855, 6), "lr_lat": (834, 6), "lr_lon": (841, 6),
 }
 
 
@@ -86,12 +97,21 @@ def scan_index(out_csv, inc_range=(20.0, 80.0)):
     return total, kept
 
 
-def find_pairs(catalogue_csv, min_inc_diff=15.0, max_sep_deg=0.02, modes=("LE", "RE")):
-    """Co-located frames whose incidence differs enough to be a sun-angle test."""
+def find_pairs(catalogue_csv, min_inc_diff=15.0, max_sep_deg=0.02, modes=("LE", "RE"),
+               max_res_ratio=1.25):
+    """Co-located frames whose incidence differs enough to be a sun-angle test.
+
+    `max_res_ratio` keeps the two frames at a comparable pixel scale, so the pair isolates
+    illumination. Raise it deliberately if you want a combined scale+illumination pair.
+    """
     rows = []
     for r in csv.DictReader(open(catalogue_csv)):
         if r["product_id"][-2:] not in modes:
             continue
+        try:
+            r["res"] = float(r["resolution"])
+        except (KeyError, ValueError):
+            r["res"] = float("nan")
         r["latf"], r["lonf"] = float(r["lat"]), float(r["lon"])
         r["inc"] = float(r["incidence"])
         rows.append(r)
@@ -114,12 +134,75 @@ def find_pairs(catalogue_csv, min_inc_diff=15.0, max_sep_deg=0.02, modes=("LE", 
                                  (a["lonf"] - b["lonf"]) * math.cos(math.radians(a["latf"])))
                 if sep > max_sep_deg:
                     continue
+                ra, rb = a["res"], b["res"]
+                ratio = max(ra, rb) / min(ra, rb) if ra > 0 and rb > 0 else float("inf")
+                if ratio > max_res_ratio:
+                    continue
                 pairs.append({"a": a["product_id"], "b": b["product_id"],
                               "inc_a": a["inc"], "inc_b": b["inc"], "d_inc": d_inc,
+                              "res_a": ra, "res_b": rb, "res_ratio": ratio,
                               "sep_km": sep * 30.3, "lat": a["latf"], "lon": a["lonf"],
                               "file_a": a["file_spec"], "file_b": b["file_spec"]})
     pairs.sort(key=lambda p: (-p["d_inc"], p["sep_km"]))
     return pairs
+
+
+def ground_to_pixel(row, lat, lon, lines, samples):
+    """Where does (lat, lon) fall in this frame? Returns (line, sample).
+
+    Bilinear inverse of the four footprint corners.
+
+    🔴 **THIS IS NOT ACCURATE ENOUGH TO CUT A CO-REGISTERED PAIR.** Measured 1 Sep 2026: crops
+    cut with it from two frames of the same site gave <=8 RANSAC inliers under LoFTR in all four
+    orientations -- the signature of two crops that are not showing the same ground. A NAC frame
+    is a 52,224-line pushbroom strip; four corners cannot model the ground-track curvature and
+    attitude variation along it, and the residual error exceeds a 640 px crop.
+
+    Use it to pick a *region of interest*, never to claim two crops overlap. Cutting a genuine
+    Tier A pair needs map-projected products (`LRO-L-LROC-5-RDR-V1.0`) or SPICE/ISIS
+    georeferencing. See the Tier A section of `data/DATASET_CARD.md`.
+
+    Corner convention: UL = (line 0, sample 0), UR = (0, samples-1),
+    LL = (lines-1, 0), LR = (lines-1, samples-1).
+    """
+    ul = (float(row["ul_lat"]), float(row["ul_lon"]))
+    ur = (float(row["ur_lat"]), float(row["ur_lon"]))
+    ll = (float(row["ll_lat"]), float(row["ll_lon"]))
+    lr = (float(row["lr_lat"]), float(row["lr_lon"]))
+
+    # Solve for (u, v) in [0,1]^2 with Gauss-Newton on the bilinear surface.
+    u = v = 0.5
+    for _ in range(60):
+        top = (ul[0] + u * (ur[0] - ul[0]), ul[1] + u * (ur[1] - ul[1]))
+        bot = (ll[0] + u * (lr[0] - ll[0]), ll[1] + u * (lr[1] - ll[1]))
+        cur = (top[0] + v * (bot[0] - top[0]), top[1] + v * (bot[1] - top[1]))
+        r_lat, r_lon = lat - cur[0], lon - cur[1]
+        d_du = ((ur[0] - ul[0]) * (1 - v) + (lr[0] - ll[0]) * v,
+                (ur[1] - ul[1]) * (1 - v) + (lr[1] - ll[1]) * v)
+        d_dv = (bot[0] - top[0], bot[1] - top[1])
+        det = d_du[0] * d_dv[1] - d_du[1] * d_dv[0]
+        if abs(det) < 1e-12:
+            break
+        du = (r_lat * d_dv[1] - r_lon * d_dv[0]) / det
+        dv = (d_du[0] * r_lon - d_du[1] * r_lat) / det
+        u, v = u + du, v + dv
+        if abs(du) < 1e-9 and abs(dv) < 1e-9:
+            break
+    return v * (lines - 1), u * (samples - 1)
+
+
+def common_ground(row_a, row_b):
+    """Centre of the two frames' overlapping footprint, as (lat, lon)."""
+    def box(r):
+        lats = [float(r[k]) for k in ("ul_lat", "ur_lat", "ll_lat", "lr_lat")]
+        lons = [float(r[k]) for k in ("ul_lon", "ur_lon", "ll_lon", "lr_lon")]
+        return min(lats), max(lats), min(lons), max(lons)
+    a, b = box(row_a), box(row_b)
+    lat_lo, lat_hi = max(a[0], b[0]), min(a[1], b[1])
+    lon_lo, lon_hi = max(a[2], b[2]), min(a[3], b[3])
+    if lat_lo >= lat_hi or lon_lo >= lon_hi:
+        return None
+    return (lat_lo + lat_hi) / 2.0, (lon_lo + lon_hi) / 2.0
 
 
 def _label(url):
