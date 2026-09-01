@@ -1,0 +1,7 @@
+pair,case,method,matches,inliers,inlier_ratio,recovered_dx,recovered_dy,seconds
+pair_01,identical,off,5184,5183,0.9998,-39.9865,-24.9151,5.79
+pair_01,identical,gradient_orientation,5185,5183,0.9996,-40.0145,-24.9568,5.17
+pair_01,identical,phase_congruency,4938,4936,0.9996,-40.0070,-24.9390,5.89
+pair_01,intensity_transform,off,336,115,0.3423,-41.3135,-24.9644,4.32
+pair_01,intensity_transform,gradient_orientation,5023,5023,1.0000,-39.9960,-24.9611,5.35
+pair_01,intensity_transform,phase_congruency,4886,4883,0.9994,-39.9818,-24.9499,6.02
