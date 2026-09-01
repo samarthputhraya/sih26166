@@ -106,7 +106,7 @@ CANDIDATES: dict[str, tuple[str, ...]] = {
     ),
     "incidence": (
         "incidence_angle", "incidence", "solar_incidence_angle",
-        "sub_solar_incidence", "incidence_angle_degrees",
+        "sub_solar_incidence", "solar_incidence", "incidence_angle_degrees",
     ),
     "emission": ("emission_angle", "emission"),
     "phase": ("phase_angle", "phase"),
@@ -373,7 +373,7 @@ def _load_pds4(path: pathlib.Path) -> tuple[np.ndarray, dict[str, Any]]:
         instrument=_instrument_name(root) or _pick(leaves, "instrument"),
         sun_azimuth=_first_number(_pick(leaves, "sun_azimuth")),
         sun_elevation=_first_number(_pick(leaves, "sun_elevation")),
-        incidence=_first_number(_pick(leaves, "incidence")),
+        incidence=_first_number(_pick(leaves, "incidence") or _pick(leaves, "solar_incidence")),
         emission=_first_number(_pick(leaves, "emission")),
         phase=_first_number(_pick(leaves, "phase")),
         product_id=_pick(leaves, "product_id"),
