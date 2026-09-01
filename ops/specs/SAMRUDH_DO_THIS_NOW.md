@@ -67,7 +67,10 @@ this project twice.
 
 **Two halves to the fix:**
 
-- **Mine:** `pipeline.py` must pass the raw matches, not `src_in, ref_in`. I am fixing that.
+- **Mine:** ✅ **Done, 1 Sep.** `pipeline.py` now passes the raw matcher output. On `pair_01`
+  `inlier_ratio` went from exactly `1.0000` to `0.9996` — a small change there only because that
+  pair is trivially easy and RANSAC rejected just 2 of 5185. Guarded by two tests in
+  `core/test_pipeline_contract.py`, which I verified **fail** when the old line is put back.
 - **Yours:** the contract belongs to you, because you own the definition. Please:
   1. Put one line at the top of the `evaluate()` docstring in capitals:
      `matches_src/matches_ref MUST be the RAW matcher output, BEFORE any RANSAC filtering.`

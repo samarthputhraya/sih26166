@@ -31,6 +31,22 @@ Four design decisions worth defending.
    transform from the matches and then measuring error on those same matches is
    circular - that exact bug is recorded in Canonical Facts Sec.7.
 
+   THEREFORE `evaluate()` GETS THE RAW MATCHER OUTPUT, NEVER `filter_matches`'
+   SURVIVORS. This was wrong until 1 Sep 2026 and it silently inflated our
+   headline number. Passing the post-RANSAC inliers makes `inlier_ratio` ask
+   "of the points RANSAC accepted, how many does a second RANSAC accept?", whose
+   answer is always about 1.0. Measured on a pair built with exactly half its
+   matches deliberate garbage:
+
+       evaluate(RAW matches)      inlier_ratio = 0.500   <- the truth
+       evaluate(FILTERED inliers) inlier_ratio = 1.000   <- what we reported
+
+   Gate 2 requires `inlier_ratio > 0.60`. We would have passed that criterion
+   automatically, on a pair where half the matches were wrong. A held-out split
+   cannot rescue an input that has already been filtered by a RANSAC which saw
+   all of it. `src_in`/`ref_in` remain in the result dict, for warping and for
+   drawing - they are the operational transform, not the measurement.
+
 4. `illumination.py` DOES NOT EXIST YET (Day 5-6) and the chain must run without
    it, so the hook is a no-op that reports itself as absent. Same for a missing
    `evaluate()`. Gate 1 must not depend on work that is not due until after it.
@@ -142,7 +158,10 @@ def run_all(src_path, ref_path, H_true=None, progress=None) -> dict:
 
     src_in, ref_in, H, info = filter_matches(src_full, ref_full)
     warped = warp(a, H, b.shape[:2]) if H is not None else None
-    metrics, metrics_note = _evaluate(b.shape[:2], src_in, ref_in, H_true)
+
+    # RAW matches, not `src_in`/`ref_in`. See design note 3: handing `evaluate()` the
+    # points RANSAC already accepted makes `inlier_ratio` measure nothing.
+    metrics, metrics_note = _evaluate(b.shape[:2], src_full, ref_full, H_true)
 
     return {
         "source": str(src_path), "reference": str(ref_path),
