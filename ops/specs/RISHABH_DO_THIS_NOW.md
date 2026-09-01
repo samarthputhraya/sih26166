@@ -270,7 +270,11 @@ Short version of that spec:
    pip install torch --index-url https://download.pytorch.org/whl/cpu
    pip install kornia certifi
    ```
-2. Download the Kaguya scene (public, no login, 22.6 MB) into `data/raw/` — **do not commit it.**
+2. **The Kaguya scene is already downloaded** (1 Sep) — you do not need to fetch it. It is on the
+   Drive and at `C:\Users\samar\sih26166_data\raw\TC1S2B0_01_03482S746E0433.tif` on Samartha's
+   machine. Copy it to your own data root (the path in your `data_path.txt`), **not** into the repo:
+   this clone lives inside OneDrive, and OneDrive uploads files regardless of `.gitignore`.
+   Its verified numbers are in [data/DATASET_CARD.md](../../data/DATASET_CARD.md).
 3. ⚠️ **Half that file is empty "NoData" with the value −32768.** Mask it first
    (`img = np.where(img == -32768, 0, img)`) or it will read as one giant change.
 4. Use the window `x=5120, y=2240` — I checked the scene for you, it is well-lit and full of
