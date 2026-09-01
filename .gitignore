@@ -55,3 +55,7 @@ lroc_preview.png
 data/lroc_analysis/M124545845LE_preview.png
 
 data/lroc_analysis/M124545845LE_enhanced.png
+
+# Raw range-fetched DEM windows (ops/fetch_lola_dem.py)
+*.raw
+*.npy

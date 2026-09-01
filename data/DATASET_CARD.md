@@ -37,6 +37,7 @@ demo laptop by Windows Smart App Control and cannot be enabled without reinstall
 |---|---|---|---|---|---|---|---|---|
 | `ch2_ohr_ncp_20200229T0739312111_d_img_d18.img` | source (CH-2) | Chandrayaan-2 OHRC | **0.22977000623605362** | — | ISRO PDS4 / archive.org mirror | 2026-08-31 | ISRO open data | `urn:isro:isda:ch2_cho.ohr:data_calibrated:ch2_ohr_ncp_20200229t0739312111_d_img_d18` |
 | `TC1S2B0_01_03482S746E0433.tif` | **B+** | Kaguya/SELENE Terrain Camera (TC) | **9.3698731836556** | **−32768** | `https://astrogeo-ard.s3.us-west-2.amazonaws.com/moon/kaguya/terrain_camera/monoscopic/uncontrolled/TC1S2B0_01_03482S746E0433/TC1S2B0_01_03482S746E0433.tif` | 2026-09-01 | **CC0-1.0** | `TC1S2B0_01_03482S746E0433` |
+| `ldem_60s_60m.img` (windowed) | **D** | LRO LOLA (elevation) | **60.0** | — | `https://pds-geosciences.wustl.edu/lro/lro-l-lola-3-rdr-v1/lrolol_1xxx/data/lola_gdr/polar/img/ldem_60s_60m.img` | 2026-09-01 | PDS public domain | `LRO-L-LOLA-3-RDR-V1.0` |
 | ~~`M108587604RE.IMG`~~ | ❌ **REJECTED** | LROC NAC | — | — | `https://pds.lroc.im-ldi.com/data/LRO-L-LROC-2-EDR-V1.0/LROLRC_0001/DATA/MAP/2009269/NAC/M108587604RE.IMG` | 2026-08-30 | PDS public domain | `nacr0000bc48` |
 
 ### Why `M108587604RE.IMG` is rejected
@@ -94,6 +95,42 @@ produces no matches, and that is a false negative, not a finding.
 | `x=3200, y=640` | 96.3% | 28.1 | ❌ avoid — nearly all shadow |
 
 **Everyone use `x=5120, y=2240`** so Samartha, Samrudh and Rishabh are all measuring the same ground.
+
+---
+
+---
+
+## 🔴 SLDEM2015 does not cover our demo site
+
+**Verified 1 Sep 2026.** `SLDEM2015` is named as the Tier D source in Canonical Facts §2, listed in
+§3 as **"±60° lat"**, and scheduled as Rohan's Day-4 deliverable. **Our demo site is at −74°.**
+The southernmost tile that exists is `sldem2015_256_60s_0s_*`. There is no tile for our site and
+there never will be.
+
+**The product that does cover us is LOLA `ldem_60s_60m`** — 60°S to 90°S at **60 m/px**, which is
+effectively the same resolution as SLDEM2015's 59 m/px, so nothing is lost.
+
+| | value |
+|---|---|
+| coverage | −60° to −90° latitude, all longitudes |
+| resolution | 60 m/px (`MAP_SCALE`), 505.389 pix/deg |
+| projection | south polar stereographic, sphere radius 1737.4 km |
+| format | raw 31040 × 31040 `LSB_INTEGER`, 16-bit, **no header** (detached `.lbl`) |
+| elevation | `height_m = DN × 0.5`, relative to a 1737.4 km sphere |
+| full size | 1.93 GB — **do not download it whole** |
+
+**Use [`ops/fetch_lola_dem.py`](../ops/fetch_lola_dem.py)**, which range-fetches only the rows it
+needs (~34 MB for our site) and carries the verified projection. Run it directly to self-test.
+
+> 🔴 **The sign trap.** `line = OFFSET − Y/scale`, **minus**, not plus. Getting it the wrong way
+> round lands you **180° away in longitude at the same latitude** — and it still returns
+> plausible-looking lunar elevations, so nothing warns you. This happened while preparing this
+> card: the first window fetched showed 332 m of relief and looked believable; the correct window
+> shows **3238 m**. `self_test()` in that module reproduces the trap deliberately.
+
+**Measured at our site** (OHRC footprint, from the corrected window): elevation −1078 … +2160 m,
+**relief 3238 m**, and shaded relief passes the `std > 10` texture check at every sun elevation
+tested (25.4 at 25°, 28.1 at 10°).
 
 ---
 
