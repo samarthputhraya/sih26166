@@ -3,8 +3,7 @@
 > Rewritten by `/wrap` at the end of every session. Read by `/next` at the start of the next one.
 > **Rewrite, never append.** This must be true as of right now.
 >
-> Last wrap: **31 Aug 2026, 21:30 IST** (second session of Day 2 — an evening block after the
-> 20:03 wrap).
+> Last wrap: **2 Sep 2026, evening — end of Day 4.**
 
 ---
 
@@ -12,15 +11,15 @@
 
 | | |
 |---|---|
-| **Day** | **2 of 12, COMPLETE.** Tomorrow is **Day 3 (1 Sep)** |
-| **Next gate** | **Gate 1, Day 5 — 3 days away.** `python -m core.pipeline data/pairs/pair_01` end to end, five metrics |
-| **Gates passed** | none yet (Gate 1 is the first) |
-| **Gate 1 outlook** | ⚠️ **ONE thing missing, and it is not ours.** `evaluation/metrics.py`. Everything else now runs. See Gate check |
+| **Day** | **4 of 12, COMPLETE.** Tomorrow is **Day 5 (3 Sep)** |
+| **Next gate** | 🚪 **GATE 1 IS TOMORROW.** `python -m core.pipeline data/pairs/pair_01`, five metrics |
+| **Gate 1 outlook** | ✅ **PASSES.** Verified three consecutive runs, exit 0, bit-identical output. One blocker found and fixed tonight — see below |
+| **Gate 2 (Day 8)** | 🔴 **AT RISK. Zero of seven criteria met on evidence that counts.** Four days out |
+| **Gates passed** | none yet |
 | **Internal hackathon** | ⚠️ **DATE STILL UNKNOWN — chase the SPOC.** Open since Day 0 |
-| **Repo** | `https://github.com/samarthputhraya/sih26166` · branch `main` |
+| **Repo** | `github.com/samarthputhraya/sih26166` · branch `main` |
 | **venv** | `C:\Users\samar\venvs\sih26166` — outside OneDrive, deliberately |
-| **Data root** | `C:\Users\samar\sih26166_data` — outside OneDrive. Path is in `data_path.txt` (gitignored) |
-| **Deadlines** | SIH26166 closes 20 Sep 2026 · SPOC upload 30 Sep 2026 · Finale Dec 2026 |
+| **Data root** | `C:\Users\samar\sih26166_data` — path in `data_path.txt` (gitignored) |
 
 ---
 
@@ -28,136 +27,62 @@
 
 | Command | Exit | Meaning |
 |---|---|---|
-| `pytest core/ -q` | **0** | **15 passed** — ⬆ **was 5 (no tests) this morning** |
-| `pytest app/ -q` | **0** | **7 passed** — Rishabh's suite |
-| `pytest evaluation/ -q` | **5** | no tests — Samrudh hasn't started. Not a regression |
-| `pytest baselines/ -q` | **5** | no tests — Risheeth wrote modules, no test file yet |
-| `import core.pipeline` | **0** | ✅ chain imports clean |
-| `python -m core.pipeline data/pairs/pair_01` | **0** | ✅ **runs end to end on REAL CH-2 data** |
-| `from evaluation.metrics import evaluate` | **ImportError** | 🔴 **`metrics.py` is 0 bytes.** See "Late pushes" below |
+| `pytest core/ -q` | **0** | **99 passed** ⬆ was 15 on Day 2 |
+| `pytest evaluation/ -q` | **0** | 6 passed (Samrudh) |
+| `pytest app/ -q` | **0** | 9 passed (Rishabh) |
+| `pytest baselines/ -q` | **5** | 🔴 **no tests collected** (Risheeth — tests exist only on his unmerged branch) |
+| `import core.pipeline` | **0** | chain imports clean |
+| `python -m core.pipeline data/pairs/pair_01` | **0** | ✅ **Gate 1 command, all five metrics** |
 
-> Re-run **after** rebasing onto the six commits that landed 20:12–21:33. The `evaluation/` exit
-> code is still **5** *with all four of Samrudh's files present*, because they are empty.
+Gate 1 output, reproduced three times bit-identically:
+```
+matches 5185 · inliers 5183 (100.0%) · residual_px 0.19452325191421008
+inlier_ratio 0.9996 · grid_coverage 1.0 · distribution_cv 0.363 · rmse_gt_px n/a
+```
 
 ---
 
-## What landed this evening (session 2 of Day 2)
+## 🔴 A Gate-1 blocker found AND FIXED tonight — read this first
 
-Three things, in order of how much they change the picture.
+**The shared data root held the discredited synthetic fixture under the name `pair_01`.** Any
+teammate who synced from the Drive and ran the Gate 1 command got **exit 0 and
+`residual_px 87.09`** — a silent false pass, on gate day.
 
-### 1. 🔴 `data/pairs/pair_01` was NOT real data. It is now.
+Verified by hash: the data-root files were **byte-identical** to `pair_00_dryrun`
+(`d7010f6eb753e541` / `9ad5e7b423f338ee`, float32, ref with 15 distinct values, std 1.40).
+The real pair is uint8, 248 levels, std 34.46.
 
-The `pair_01` the Gate-1 command pointed at was a **synthetic dry-run fixture**, not lunar imagery:
+**Fixed:** real `pair_01` copied into the data root; the fixture moved to
+`pair_00_dryrun_DO_NOT_USE/` with a README explaining the trap. Re-ran the gate on the corrected
+root: `residual_px 0.19452325191421008`. ✅
 
-| | old `pair_01_source` | old `pair_01_ref` |
-|---|---|---|
-| distinct values | 329,763 (continuous float, **incl. negatives**) | **15** (integers 35–49) |
-| std | 10.56 | **1.40** |
-| metadata | none | none |
-
-Two crops of one frame cannot have 329,763 and 15 distinct values. The timestamps close it: the
-fixture was written **09:34**, the CH-2 image downloaded **10:37** — it predates the real data by an
-hour. And the pipeline reported **100.0% inliers** on it, the same flattering-number failure as the
-`0.0392 px` correction in `0ee11d2`.
-
-**Rebuilt** with new `core/make_demo_pair.py` from the real CH-2 strip (region scanned for texture,
-x=2000 y=64000, std 32.4):
-
-```
-pair_01_{source,ref}.tif   640x640 uint8   DN [7, 255]  std 34.5   known offset (40, 25)
-python -m core.pipeline data/pairs/pair_01
-  -> 5185 matches, 5183 inliers (100.0%), illumination gradient_orientation, 5.6 s, exit 0
-```
-
-Old fixture preserved at `data/pairs/pair_00_dryrun/`, not deleted.
-
-> ⚠️ **Still not a validation tier.** Same frame, same exposure, integer offset — identical pixels,
-> no illumination difference. Gate-1 wiring fixture and known-answer check only. Log it as
-> `same-frame offset crop`. Not cross-sensor, not cross-illumination, not multi-modal.
-
-### 2. `core/illumination.py` — built, tested, and A/B'd
-
-Both methods Canonical Facts §6.4 names, behind one contract. **15 tests, all passing.**
-
-> 🔴 **`normalize()` returns [0, 255], NOT [0, 1].** `matcher._to_tensor` divides by 255
-> unconditionally. Returning unit range puts every pixel in [0, 0.004] → zero matches, **no
-> exception**. `core/test_illumination.py::test_output_is_dn_range_not_unit_range` guards this.
-
-**The A/B — run twice, bit-identical both times** → `core/bench_illumination_results.csv`:
-
-| case | method | matches | ratio | recovered shift (truth −40, −25) |
-|---|---|---|---|---|
-| identical | off | 5184 | 1.000 | (−39.99, −24.92) |
-| identical | **gradient_orientation** | **5185** | 1.000 | (−40.01, −24.96) |
-| identical | phase_congruency | 4938 | 1.000 | (−40.01, −24.94) |
-| inverted+gamma+ramp | off | **336** | **0.342** | **(−41.31, −24.96)** ← 1.31 px error |
-| inverted+gamma+ramp | **gradient_orientation** | **5023** | **1.000** | **(−40.00, −24.96)** |
-| inverted+gamma+ramp | phase_congruency | 4886 | 0.999 | (−39.98, −24.95) |
-
-**Decision: `gradient_orientation` is the default**, on measurement. It costs nothing on the easy
-case, fully restores the hard one, and is ~15% faster than phase congruency (which also loses 5% of
-matches on the easy case). Both are kept — "we tried both, here is the comparison" is the Q&A answer.
-
-> ⚠️ **Case 2 is an INTENSITY transform, not a sun-angle change.** Shadows flip polarity but do not
-> **move**. Under a real sun-angle change they move. This result is necessary, not sufficient, and
-> says **nothing** about cross-illumination performance. Written to
-> `core/bench_illumination_results.csv`, deliberately **not** `evaluation/results_log.csv` —
-> Samrudh owns that file and its schema.
-
-`pipeline.py` now prints the method name rather than `applied` — "we normalise illumination" invites
-"with what?", and the answer should be in the output.
-
-### 3. Data rescued out of a temp folder that Windows deletes
-
-The **only** copy of the CH-2 data was in a dead session's `%LOCALAPPDATA%\Temp` scratchpad. Moved to
-`C:\Users\samar\sih26166_data\`, **MD5 re-verified against the `md5_checksum` in ISRO's own PDS4
-label** (`8a566034bdc1cdd2e59bb2b33984c5e7`, match). Drive `SIH26166_DATA` is now populated
-including `weights/loftr_outdoor.pt`.
+> ⚠️ **Still to do before the gate:** push the corrected `pair_01` to the Drive, and have **one
+> teammate run the command and read their number aloud.** If they say 87, their sync is stale.
 
 ---
 
-## Late pushes — six commits landed 20:12–21:33, during this session
+## Gate 2 (Day 8) — the honest position
 
-**Read this before reacting to the commit log. Two of the three pushes are not what they look like.**
+**Zero of seven criteria are met on evidence that counts.** Not "behind" — not started, for most.
 
-### 🔴 Samrudh's SIX commits are all EMPTY FILES
+| Criterion | State |
+|---|---|
+| `rmse_gt_px` < 0.5 on synthetic | 🔴 **never computed by any code path.** `run_all` accepts `H_true`; `main()` never passes it. Nothing in the repo does |
+| ≥2× best classical on Tier A | 🔴 **unmeasurable.** No Tier A pair exists; `baselines/` finds zero pairs and exits 0 |
+| `inlier_ratio` > 0.60 | ⚠️ met **only on `pair_01`**, which its own PROVENANCE disqualifies as a validation tier |
+| `grid_coverage_fraction` ≥ 0.80 | ⚠️ same. On Tier D it is 0.109 — and **structurally unreachable**: the 101×101 reference gives 12.6 px cells, so 0.80 needs ≥52 inliers from 19 matches |
+| `distribution_cv` < 1.0 | ⚠️ same. Tier D is 3.24 |
+| runs on ≥1 **Tier B** pair | 🔴 **no Tier B pair is even catalogued.** Tier B is OHRC↔LROC NAC; we have B+ (OHRC↔Kaguya), which is a different row |
+| matches on ≥1 multi-modal pair | ✅ **the one that is met.** Tier D produces 19 matches, 10 inliers |
 
-| commit | file | size on disk |
-|---|---|---|
-| `4d89928` shaded_relief: DEM hillshade at arbitary sun azimuth/elevation | `evaluation/shaded_relief.py` | **0 bytes** |
-| `28f9cd4` synthetic_data: pair generator with exact H_true… | `evaluation/synthetic_data.py` | **0 bytes** |
-| `4ce10ad` metrics: evaluate() with held-out residual split… | `evaluation/metrics.py` | **0 bytes** |
-| `0e847e4` test_metrics: 5 test incl. holdout and no-GT… | `evaluation/test_metrics.py` | **0 bytes** |
-| `ac1179a` results_log: define CSV schema, tier column mandatory | `evaluation/results_log.csv` | **0 bytes** |
-| `2b33734` evaluation/README: document metrics, usage and GT vs residual | `evaluation/README.md` | **0 bytes** |
+**All four catalogue rows are `status=identified`. None is `ready`.**
 
-Six commits over 42 minutes (21:12–21:54), six empty files. The messages describe exactly the right
-work — the schema decision, the GT-vs-residual distinction, the holdout split. The files contain
-nothing. Verified three ways: `git cat-file -s` on each blob returns `0`; `pytest evaluation/` still
-exits **5** with all six present; `from evaluation.metrics import evaluate` raises **ImportError**.
-
-**That it is all six, consistently, is the useful clue** — this is not one slip. Something in his
-setup is committing paths that were never written to: files created with `touch`/`New-Item`, or an
-editor saving somewhere other than the repo. **Ask him to run `git show --stat HEAD` and
-`wc -c evaluation/metrics.py` before he does anything else** — one line each and they will show him
-the same thing.
-
-**Gate 1 is therefore still blocked and the blocker is unchanged.** This is most likely `git add` of
-files created but never saved from the editor — an easy and very recoverable mistake. **Ask him to
-re-save and re-push; do not assume he has to start over, and do not treat this as him not
-delivering.** He started, at 21:12, after three quiet days.
-
-### ⚠️ Rohan committed ~18 MB of binaries — permanent, Invariant 5
-
-`e31f444` added 1,391 lines plus PNGs including **`data/lroc_analysis/ch2_ohr_preview.png` at
-9.96 MB**, `ohrc_preview.png` (2.30 MB) and `ch2_ohr_full_preview.png` (2.30 MB). Also
-`find_lroc_matches.py`, `lroc_coverage.html`, `lroc_ohrc_matches.csv` and two JPGs **at the repo
-root**, not under `data/`. Git keeps all of it permanently — **deleting them will not shrink the
-repo.** This is Known issue #9 happening a second time, larger. The *analysis* looks genuinely
-useful (LROC↔OHRC footprint matching, 998 rows) — this is a placement problem, not a quality one.
-**He needs telling tonight, kindly, before Day 3 adds more.**
-
-### ✅ Rishabh — `app/README.md`, Kaguya change-detection validation notes (21 lines)
+> ⚠️ **Correction to a claim I made on Day 4.** I called the Tier D result "Gate 2's multi-modal
+> criterion, met". It **produces matches**, which is what the criterion literally says — but the
+> matches are wrong. Ground truth is derivable from the two GeoTIFF affines (both are
+> south-polar stereographic in the same CRS), and against it **`rmse_gt_px` ≈ 13 reference pixels
+> ≈ 788 m on the ground.** It registers *something*, not the right thing. Quote it as
+> "produces matches, does not yet register" and nothing stronger.
 
 ---
 
@@ -165,151 +90,151 @@ useful (LROC↔OHRC footprint matching, 998 rows) — this is a placement proble
 
 | Person | Last push | Delivered | Blocked on |
 |---|---|---|---|
-| **Samartha** | today | Gate-1 chain · illumination + A/B · real `pair_01` · **first 15 tests in `core/`** | nothing |
-| **Risheeth** | today | 3 baselines + failure gallery + runner, 759 lines | nothing |
-| **Rishabh** | **today 20:32** | `change_detection.py`, 7 passing tests, README + Kaguya notes | nothing |
-| **Rohan** | **today 20:12** | `DATASET_CARD.md` · LROC↔OHRC footprint analysis · **Drive populated** | nothing — but see binaries above |
-| **Samrudh** | **today 21:12–21:33** | 4 commits, **all four files 0 bytes** | nothing. **Still the sole Gate-1 blocker** |
-| **Saniya** | ❌ **never — 3 days** | nothing. `presentation/` is empty | nothing |
-
-🔴 **Gate 1 still hangs on `evaluation/metrics.py` having content.** His spec with exact expected
-test values is in `ops/specs/day_3.md`. **If it is not in by Day 4 evening, Gate 1 fails on Day 5** —
-escalate then, not on Day 5 morning when there is no night left.
-
-🔴 **Saniya has not pushed in three days** and is now the only person who has delivered nothing.
-2-hour task, blocks the whole deck from Day 3 on. ⚠️ **Gate 5 risk** — Gate 5 is all six explaining
-their own module cold, and someone who has not started cannot.
-
-⚠️ **Both are also a Gate 5 risk.** Gate 5 is all six explaining their own module cold. Someone who
-has not started cannot.
+| **Samartha** | 2 Sep 10:06 | Gate-1 chain · illumination + A/B · subpixel (measured, off by default) · distribution · 99 tests · Tier C→D decision · LOLA route | nothing |
+| **Rohan** | 1 Sep 23:15 | `pairs_catalogue.csv` · **`build_tier_d_pair.py` — works, I ran it** · Canonical Facts 36×→40.8× fix | nothing. Needs to verify his own rows |
+| **Samrudh** | 1 Sep 16:47 | `metrics.py` · `logger.py` · 6 tests | nothing |
+| **Rishabh** | 1 Sep 22:10 | 3 bug fixes · 9 tests · Day-4 discriminator write-up | nothing |
+| **Risheeth** | 31 Aug 11:45 **on `main`** — but **11 commits on `origin/risheeth-baseline-pipeline`**, last 1 Sep 22:58 | baselines + tests + a very good LoFTR benchmark, **none of it merged** | needs to rebase and land it |
+| **Saniya** | ❌ **never — 5 days, zero commits on any branch** | nothing. `presentation/` is a `.gitkeep` | nothing. 🔴 Gate 5 risk |
 
 ---
 
-## In flight — resume here
+## In flight — Samartha resumes here
 
-**Nothing is half-written.** Working tree committed and pushed.
+`core/` is **complete as a module set**: all 8 modules CLAUDE.md lists exist, 99 tests pass.
+Days 5, 6 and half of 8 are already done. **What remains is not new modules — it is wiring.**
 
-### Next build: `core/subpixel.py` (Canonical Facts §6.6)
+**Three Gate-2 levers are built but not connected:**
 
-NCC on an 11×11 patch per match + quadratic peak fit. Two core modules from the layout still do not
-exist — `subpixel.py` and `distribution.py` — and both are pure Samartha work blocked by nobody.
+1. 🔴 **`rmse_gt_px` has no code path.** `run_all(src, ref, H_true=None)` — `main()` never passes
+   `H_true`, and nothing calls `synthetic_data.make_pair` from the pipeline. **This is Gate 2's
+   first criterion and it has never once been produced outside a unit test.** Wire a
+   `--synthetic` mode that generates a pair with known `H_true` and passes it through.
+2. 🔴 **`core/distribution.py` is fully built, tested, and never imported by `pipeline.py`.**
+   It is the only lever on `grid_coverage_fraction`, which Gate 2 needs at ≥0.80.
+3. 🔴 **`log_result()` has zero callers.** `pipeline.py` never writes to `results_log.csv`.
 
-**Take `subpixel.py` first, because it is the one that can be measured without Samrudh.** `pair_01`
-has a known *integer* offset; cut a companion fixture at a known **fractional** shift and endpoint
-error against a known answer is a real number, computed the way `bench_illumination.py` already
-reports recovered shift — without borrowing any of `evaluate()`'s definitions.
+**Also missing:**
+- **`app/streamlit_app.py` does not exist.** No file matching `*streamlit*` anywhere. Gate 3
+  (Day 10) needs a stranger to operate a UI unaided.
+- **`scale.py` has no pyramid.** §6.5 locks "explicit image pyramid + resample-to-common-GSD";
+  only the GSD half is written. Zero hits for "pyramid" in `core/`.
+- **`crop_to_overlap` and `plan_overlap` are defined but never called.** `matcher.match` raises on
+  two >640 px images and points at `crop_to_overlap` as the remedy — so the Tier B/B+ path has
+  never been exercised.
+- **`demo_cache/` is empty** in the repo and at the data root. Gate 4 (Day 11) needs cached inputs
+  with wifi off. `weights/loftr_outdoor.pt` **is** present and verified (46,348,591 bytes).
 
-It also earns the project's headline claim: at CH-2's **0.22977 m/px**, half a pixel is **11.5 cm**.
-Invariant 2 requires a sub-pixel claim to name the grid and give the metres. We currently have
-neither the module nor the number.
-
-> **Hold `distribution.py`.** Judging coverage and CV means using `evaluate()`'s definitions, and
-> computing our own in the meantime is exactly the substitution `pipeline.py` refuses to make.
-
-### The real illumination test is still outstanding
-
-Tonight's A/B used a synthetic intensity transform. The **honest** sun-angle number needs real data.
-Two LROC NAC images, same site, **54° of sun-angle difference** — verified downloadable, HTTP 206,
-264.5 MB each (529 MB total):
-
-```
-inc 25.2°  https://pds.lroc.im-ldi.com/data/LRO-L-LROC-2-EDR-V1.0/LROLRC_0003/DATA/MAP/2010088/NAC/M124545845LE.IMG
-inc 79.3°  https://pds.lroc.im-ldi.com/data/LRO-L-LROC-2-EDR-V1.0/LROLRC_0001/DATA/COM/2009194/NAC/M102128467RE.IMG
-```
-
-⚠️ **Check each has `std > 10` before using it** — see Known issue #6. **This is LROC NAC ↔ LROC NAC
-= same sensor = Tier A cross-illumination. It is NOT cross-sensor** (Invariant 2).
-
-### Also free to build, needs nobody
-`core/distribution.py` (§6.7) · `app/streamlit_app.py` (Gate 3 is Day 10) · `io_loader` tests.
-
-### Blocked
-Integrating `evaluate()` (Samrudh) · multi-modal Tier C (no infrared data, and it is in the PS title).
+⚠️ **`core/pipeline.py`'s docstring is stale** — design note 4 still says `illumination.py` does
+not exist. It has existed since Day 2.
 
 ---
 
 ## Open questions
 
-1. **Internal hackathon date** — unknown since Day 0. Chase the SPOC. Reshapes everything.
-2. **Multi-modal (Tier C) has no data and no owner action.** It is in the PS *title* and a hard
-   Gate-2 criterion. Nobody has infrared imagery. **Decide the owner by Day 5.**
-3. **CH-3 landing-site NAC product IDs** — still unverified. Rishabh needs them ~Day 6.
-   ⚠️ These are **LROC NAC images of the CH-3 site**, not "Chandrayaan-3 imagery".
-4. **`fetch_weights.py` has never been run on a teammate's machine.** Drive now carries the 46 MB
-   checkpoint, so there are two routes — but **test one of them before Day 5, not at Gate 4.**
-5. **`data/pairs/*` is gitignored, so `PROVENANCE.md` for `pair_01` is not in git.** The recipe is
-   reproducible from `core/make_demo_pair.py` (defaults are the exact coordinates used), which is
-   arguably better. Flagged so nobody hunts for a missing file.
+1. **Internal hackathon date** — unknown since Day 0. Chase the SPOC.
+2. **Does Tier A survive?** The ODE route is open again (see Known issues #11). If it does not
+   produce a pair by end of Day 6, **drop Tier A** rather than fake it — a failed gate cuts scope.
+3. **Tier B (OHRC↔LROC NAC) has no owner and no row.** Gate 2 names it explicitly. Decide by Day 6
+   whether we pursue it or formally drop it and say so.
+4. **Saniya.** Five days, nothing, on any branch. This needs a conversation, not another spec.
 
 ---
 
-## Known issues / traps already found
+## Known issues / traps
 
-*Recorded so `daily-reviewer` does not re-report them.*
+*Recorded so `daily-reviewer` does not re-report them. Entries 1–10 carried forward; 11–17 are new
+on Days 3–4.*
 
-**1. 🔴 LoFTR needs `[0,1]`. Raw DN returns ZERO matches, silently.** No exception — just an empty
-result reading as "the matcher doesn't work on lunar imagery". Measured on real NAC texture:
-`[0,1]` → **5402 matches**; raw DN `[32..199]` → **0**. `io_loader` deliberately returns raw DN (a
-loader must not rescale science data), so `matcher.py` normalises once, internally, with a fixed
-`/255`. **Never pass raw DN to LoFTR.** Keypoints are `(x, y)`, not `(row, col)` — confirmed by sign.
+**1. 🔴 LoFTR needs `[0,1]`. Raw DN returns ZERO matches, silently.** `io_loader` returns raw DN by
+design; `matcher.py` divides by 255 once, internally. Keypoints are `(x, y)`, not `(row, col)`.
 
-**1b. 🔴 The same trap, in reverse, now applies to `illumination.normalize()`.** It must return
-**[0, 255]**, because the matcher divides by 255 downstream. A "tidy-up" that makes it return
-[0, 1] gives zero matches with no error. Guarded by a test that says so in its failure message.
+**1b. 🔴 `illumination.normalize()` must return `[0, 255]`, not `[0,1]`** — the matcher divides
+downstream. Returning unit range gives zero matches with no error. Guarded by a test.
 
-**2. 🔴 Big-endian silently corrupts OpenCV.** cv2 5.0.0.93 accepts a big-endian array without
-raising and returns garbage — max abs difference **34935**. LROC NAC is `MSB_INTEGER`, PDS4 is often
-`UnsignedMSB2`. `io_loader.as_cv_safe()` normalises before anything else sees the array; all `core/`
-may assume it. Second-order: **numpy arithmetic does not preserve byte order** —
-`np.arange(n, dtype=">u2") * 37` returns native order. Cast *after* arithmetic.
+**2. 🔴 Big-endian silently corrupts OpenCV.** `io_loader.as_cv_safe()` normalises first. numpy
+arithmetic does not preserve byte order — cast *after* arithmetic.
 
-**3. `rasterio` is unusable — DECIDED: GDAL-free.** Smart App Control blocks its DLLs by content
-hash; disabling it needs an OS reinstall. Cost: no `/vsicurl`, so **Kaguya must be downloaded, not
-streamed**. `imagecodecs` is absent so tifffile cannot decode **LZW** — `io_loader` falls back to
-Pillow for pixels while keeping tifffile's tags. **Verified on the real Kaguya file, which is LZW.**
-Also: `tifffile.geotiff_metadata` returns `None` without tag 34735 — read tags 33550/33922 by number.
+**3. `rasterio` is unusable — DECIDED: GDAL-free.** Blocked by Smart App Control. `imagecodecs`
+absent so tifffile cannot decode LZW; `io_loader` falls back to Pillow for pixels, keeps tifffile
+tags.
 
-**4. LROC NAC EDR mislabels its own signedness.** Declares `LSB_INTEGER` at 8 bits (signed) for
-`RAW_INSTRUMENT_COUNT` (unsigned 0–255). Read strictly, everything above DN 127 wraps negative.
-`io_loader` corrects only when unambiguous and sets `dn_signedness_corrected`.
+**4. LROC NAC EDR mislabels its own signedness.** Declares `LSB_INTEGER` at 8 bits for unsigned
+data. `io_loader` corrects only when unambiguous.
 
-**5. 🔴 Illumination geometry is not where you'd expect.**
-- **CH-2 OHRC has none at all** — not in the label, and not in the geometry CSV either (that has
-  only `Longitude, Lattitude, Pixel, Scan`, 113,499 rows). Sun-angle claims about CH-2 are **not
-  supportable from the product**. The upside: those points *are* georeferencing.
-  ⚠️ The CSV header spells it **`Lattitude`** (two t's) while the label says `Latitude`.
-- **LROC NAC EDR labels have none either** — but **ODE's metadata does**. `SDRPHO` **does not
-  exist** (it is **`SDPPHO`**, P not R), and `SDPPHO` has `ValidIncidenceAngles = F` anyway.
-  **`EDRNAC4` has `T`.** **That is the Tier A route.** Filter to **20–80°**; ODE returns 139° and
-  164°, which are night-side.
+**5. 🔴 Illumination geometry is not where you'd expect.** **CH-2 OHRC has none at all** — not in
+the label, not in the geometry CSV (whose header is spelled `Lattitude`, two t's).
+**Amended Day 3: Kaguya DOES have it** — `INCIDENCE_ANGLE` 86.548, `SOLAR_AZIMUTH_ANGLE` 284.911,
+plus STAC `sun_elevation` 16.98.
 
-**6. 🔴 Always look at the picture.** Rohan's `M108587604RE.IMG` decodes perfectly and contains
-**nothing** — 98.1% of pixels in DN 32–46, std 1.42, no craters. Every numeric test passed while the
-image was empty, and it made a dry-run figure look **10× better than reality**. **Check `std > 10`
-and view every product before cataloguing it.** The `pair_01` finding above is the same lesson a
-second time: *a green pipeline says nothing about whether its input is real.*
+**6. 🔴 Always look at the picture.** `M108587604RE.IMG` decodes perfectly and contains nothing
+(std 1.42). ⚠️ **Amended Day 4: the `std > 10` rule is WRONG for raw NAC EDR**, which is companded
+— good frames sit at std 4–6. Use **row-to-row correlation** instead (`ops/find_tier_a_pairs.py`).
+A live test still asserts the old rule.
 
-**6b. Tonight's corollary — a fixture can be fake even when the pipeline is honest.** Nothing in
-`core/` was wrong; the input was. When a result looks too good (100% inliers), **check the input's
-histogram before believing the output.**
+**7. Findings handed to Rishabh** — all three fixed on Day 3 ✅.
 
-**7. Findings handed to Rishabh (his to fix, not ours).**
-`mask[-margin:, :] = 0` erases the **whole mask** when margin is 0 (`-0` is `0`) → silent zero
-detections for `edge_margin_frac=0` or any image under 20px · `gsd_mpp=0.5` default is wrong for
-every camera we use (350× off on Kaguya) · `classify()` reads a single pixel at the centroid ·
-**absolute difference cannot separate "sun moved" from "something changed"** — 8 false positives on
-identical terrain with only brightness changed. That last one is his Day-4 task, not a bug.
+**8. Environment.** `cv2.AKAZE_create()` does not exist — it is `cv2.xfeatures2d.AKAZE_create()`.
+Windows console is cp1252, so use `PYTHONIOENCODING=utf-8`. The repo is inside OneDrive, which
+ignores `.gitignore`.
 
-**8. Environment.** `cv2.AKAZE_create()` does not exist — it is `cv2.xfeatures2d.AKAZE_create()` ·
-Windows console is **cp1252**, so use `PYTHONIOENCODING=utf-8` for any script printing em-dashes or
-arrows · the repo is inside **OneDrive**, which ignores `.gitignore` — keep large downloads outside
-it · `.gitignore` covers `data_path.txt`, `*.pdf`, `*.pptx`, `*.mp4`, `data/pairs/*`.
+**9. Binaries already in history.** `data/lroc_analysis/ch2_ohr_preview.png` is **10.44 MB** —
+double Invariant 5's ceiling, and that folder is ~98% of the repo's tracked payload. Permanent.
 
-**9. Binaries already in history.** Rohan committed 12 PNGs (~3.9 MB) to `data/lroc_analysis/`.
-Git keeps them permanently — deleting won't shrink the repo. Future plots go to Drive.
+**10. A green suite says nothing about the case it does not cover.** `io_loader` had 23 passing
+tests while a `KeyError` broke **every Chandrayaan-2 load** — none of them loaded a PDS4 product
+lacking incidence. Fixed in `55c5cb7`.
 
-**10. A STATUS claim was wrong and is corrected here.** The previous STATUS said Samartha had
-delivered "`io_loader` (41 tests)". **Those tests existed only in a scratchpad and were never
-committed** — `core/` had **zero** tests in the repo until tonight. `io_loader.py` (874 lines, the
-most trap-laden module we have) **still has none**, and Day 4's row schedules a refactor of it.
-Write tests before that refactor, not after.
+**11. 🔴 NEW — ODE is NOT dead. My commit `2b4cad5` is wrong.** It records
+`oderest.rsl.wustl.edu does not resolve` and abandons the documented Tier A route on that basis.
+**Re-checked tonight: it resolves to 128.252.144.24 and the API answers.** A bounded query with
+`ihid=LRO&iid=LROC&pt=EDRNAC4` over our site returns `Status: Success` and real NAC product IDs.
+My earlier DNS failure was transient and I generalised from it. **The Tier A route is open**, and
+it is a much better path than scraping the 203 MB PDS index.
+
+**12. 🔴 NEW — `logger.py` corrupts `results_log.csv` on its very first call.** The file is 155
+bytes with **no trailing newline**, and `log_result` only writes a header when size is 0. So the
+first row concatenates onto the header: one 30-field line, and `csv.DictReader` parses **zero data
+rows**. Reproduced on a copy tonight. **One newline fixes it — Samrudh's file, Samrudh's fix.**
+
+**13. 🔴 NEW — `pair_01` is labelled Tier A with a 26° sun difference in two of our own guides.**
+`docs/RISHEETH_BASELINE_GUIDE.md:234` and `docs/ROHAN_DATA_GUIDE.md:227`. It is two crops of ONE
+frame — same sensor, same exposure, **zero** sun-angle difference. `pairs_catalogue.csv` and
+`DATASET_CARD.md` have it right; the guides do not. This is exactly the Invariant-2 violation that
+loses a Q&A round, and it is sitting in the guides teammates read.
+
+**14. 🔴 NEW — the SLDEM correction never reached Canonical Facts.**
+`docs/00_CANONICAL_FACTS.md:46` still names SLDEM as the Tier D source and `:102` still lists
+SLDEM2015 with no warning, although SLDEM stops at ±60° and our site is at −74°.
+`ROHAN_DATA_GUIDE.md:200` and `SAMRUDH_EVALUATION_GUIDE.md:50` still schedule the impossible task.
+
+**15. ⚠️ NEW — the 180° sun-difference result is a trap number.** A 180° azimuth flip is a near-exact
+contrast inversion (Pearson −0.9936), and `gradient_orientation` is *designed* to be invariant to
+exactly that. It is not evidence of sun-angle invariance. Middle of the range is where it hurts:
+`rmse_gt_px` by azimuth difference measured **0° → 0.058, 15° → 0.355, 30° → 1.097, 45° → 2.295**.
+**Gate 2's 0.5 px threshold passes only below ~15°.** Choosing the sun difference chooses whether
+the gate passes — say which you chose.
+
+**16. ⚠️ NEW — `shaded_relief.py` cannot model a real incidence difference.** It is a pure
+Lambertian hillshade with no cast-shadow / ray-occlusion term, so sweeping sun *elevation* changes
+brightness but never moves a shadow. Azimuth sweeps are meaningful; elevation sweeps are not.
+
+**17. ⚠️ NEW — the 13-vs-15 column collision is still live.** `evaluation/logger.py` declares 15
+fields; `baselines/run_all_baselines.py` declares its own 13 and writes with its own `DictWriter`,
+bypassing `log_result()` and both guards Samrudh built into it (mandatory tier, failure status).
+
+---
+
+## Tonight's audit — how it was produced, and its limits
+
+A 13-agent workflow audited six dimensions. **8 of the 13 agents died on network errors
+(`ENOTFOUND`)** — including **every adversarial-verification agent** and both spec-drafting agents.
+
+So the findings above are **single-source audit claims, not adversarially verified.** I personally
+re-verified the four that drive action — the data-root fixture, the logger corruption, the ODE
+route, and the `pair_01`-as-Tier-A mislabelling — and all four reproduced. **The rest are
+unconfirmed and should be treated as leads, not facts.**
+
+**Not produced tonight, and still owed:** Day 5–8 specs for **Samrudh** and **Saniya** (both agents
+died). Risheeth, Rohan and Rishabh have theirs, written earlier today and left **uncommitted at the
+user's request**: `ops/specs/{RISHEETH,ROHAN,RISHABH}_DAY5_TO_8.md`.
