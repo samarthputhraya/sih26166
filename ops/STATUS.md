@@ -210,10 +210,29 @@ SLDEM2015 with no warning, although SLDEM stops at ±60° and our site is at −
 
 **15. ⚠️ NEW — the 180° sun-difference result is a trap number.** A 180° azimuth flip is a near-exact
 contrast inversion (Pearson −0.9936), and `gradient_orientation` is *designed* to be invariant to
-exactly that. It is not evidence of sun-angle invariance. Middle of the range is where it hurts:
-`rmse_gt_px` by azimuth difference measured **0° → 0.058, 15° → 0.355, 30° → 1.097, 45° → 2.295**.
-**Gate 2's 0.5 px threshold passes only below ~15°.** Choosing the sun difference chooses whether
-the gate passes — say which you chose.
+exactly that. It is not evidence of sun-angle invariance. Middle of the range is where it hurts.
+
+> **UPDATED Day 5, and the old numbers here were unsourced.** This entry used to record
+> `0° → 0.058, 15° → 0.355, 30° → 1.097, 45° → 2.295`. Those were never in `results_log.csv` and
+> no committed script produced them — an Invariant 1 violation sitting in our own handoff.
+> They are now **replaced by 20 logged rows** from
+> `python -m core.pipeline --synthetic --dem <dem> --pixel-size 60 --sweep 0,15,30,45 --repeats 5 --log`
+> on the real LOLA site DEM (375×364 @ 60 m/px), 5 off-grid shifts per angle:
+>
+> | Δazimuth | n | min | **median** | max | Gate 2 C1 (< 0.5 px) |
+> |---|---|---|---|---|---|
+> | 0° | 5 | 0.10457 | **0.11992** | 0.14126 | PASS |
+> | 15° | 5 | 0.20491 | **0.32230** | 0.40369 | PASS |
+> | 30° | 5 | 0.71244 | **0.93134** | 1.65310 | **FAIL** |
+> | 45° | 5 | 1.74957 | **2.58557** | 4.72013 | **FAIL** |
+>
+> Same conclusion as before — **the 0.5 px threshold holds to ~15°, not beyond** — but now it is
+> evidence. **Report the median, never the minimum.** A single run at 30° can return 0.71 or 1.65
+> depending only on the sub-pixel offset chosen, and an *integer* shift returns a flattering 0.41
+> because `warpPerspective` does not interpolate one — the truth then lands on the matcher's
+> integer query grid and nothing sub-pixel is being measured at all.
+
+**Choosing the sun difference chooses whether the gate passes — say which you chose.**
 
 **16. ⚠️ NEW — `shaded_relief.py` cannot model a real incidence difference.** It is a pure
 Lambertian hillshade with no cast-shadow / ray-occlusion term, so sweeping sun *elevation* changes
@@ -221,7 +240,27 @@ brightness but never moves a shadow. Azimuth sweeps are meaningful; elevation sw
 
 **17. ⚠️ NEW — the 13-vs-15 column collision is still live.** `evaluation/logger.py` declares 15
 fields; `baselines/run_all_baselines.py` declares its own 13 and writes with its own `DictWriter`,
-bypassing `log_result()` and both guards Samrudh built into it (mandatory tier, failure status).
+bypassing `log_result()` and **its one guard** (mandatory tier).
+⚠️ **Corrected Day 5:** this entry used to say "both guards … (mandatory tier, failure status)".
+`log_result` has only the tier check — a `status='ransac_failed'` dict is accepted and written
+without complaint. The failure guard lives in `core/pipeline.py`, not in the logger.
+
+**18. 🔴 NEW (Day 5) — `results_log.csv` now holds TWO sets of `tier=synthetic` rows that are NOT
+comparable, sitting next to each other.** This is the likeliest way we quote a wrong number now.
+
+| | rows | gsd_mpp | config column | DEM |
+|---|---|---|---|---|
+| `method=SIFT` (Samrudh) | 7 | **10.0** | **EMPTY** | not recorded |
+| `method=ours_loftr` (Samartha) | 20 | **60.0** | full | `dem_site_60m.npy` (375×364) |
+
+Different DEM, different ground scale, different geometry — **a 6× pixel-size difference alone
+makes the two `rmse_gt_px` columns mean different things.** At Δazimuth 0° SIFT logs `0.00355`
+and ours logs a median `0.11992`, which reads as "SIFT is 34× better than our method" and is not
+a comparison at all. Gate 2 criterion 2 needs `ours` vs classical **on the same pair, same
+scale** — we do not have that yet, on any tier.
+**Two things needed:** Samrudh's rows need their `config` filled in (they are currently
+unreproducible), and one of us must re-run the other's geometry before anything is compared.
+Until then, never put those two numbers in the same sentence.
 
 ---
 
