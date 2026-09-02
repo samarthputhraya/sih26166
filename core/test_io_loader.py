@@ -175,3 +175,35 @@ def test_the_gate_one_pair_loads_as_real_lunar_data():
     assert img.dtype == np.float32 and img.ndim == 2
     assert img.std() > 10, "Known issue #6: a product under std 10 has no texture in it"
     assert meta["full_shape"] == img.shape
+
+
+def test_pick_is_called_with_keys_not_alias_values():
+    """Regression guard for a KeyError that broke loading every CH-2 product.
+
+    `_pick(leaves, key)` does `CANDIDATES[key]`. Passing one of the *alias values*
+    instead of a key raises KeyError. On 1 Sep an edit did exactly that with
+    "solar_incidence", and because it sat behind an `or`, it only fired when
+    incidence was ABSENT - which is every Chandrayaan-2 OHRC product, our primary
+    data source. The 23 tests here did not catch it because none loads a real PDS4
+    product without incidence.
+    """
+    from core.io_loader import CANDIDATES, _pick
+
+    # Every alias value that is not also a key would crash if passed to _pick.
+    for key, aliases in CANDIDATES.items():
+        assert _pick([], key) is None, f"_pick must accept the key {key!r}"
+        for alias in aliases:
+            if alias not in CANDIDATES:
+                with pytest.raises(KeyError):
+                    _pick([], alias)
+                break
+
+
+def test_pds4_without_incidence_loads_instead_of_crashing():
+    """CH-2 OHRC carries no illumination geometry (Known issue #5). That is not an error."""
+    import xml.etree.ElementTree as ET
+    from core.io_loader import _pick
+
+    leaves = [("product_id", "x"), ("instrument", "OHRC")]
+    assert _pick(leaves, "incidence") is None
+    assert _pick(leaves, "sun_azimuth") is None

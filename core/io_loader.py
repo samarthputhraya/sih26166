@@ -373,7 +373,12 @@ def _load_pds4(path: pathlib.Path) -> tuple[np.ndarray, dict[str, Any]]:
         instrument=_instrument_name(root) or _pick(leaves, "instrument"),
         sun_azimuth=_first_number(_pick(leaves, "sun_azimuth")),
         sun_elevation=_first_number(_pick(leaves, "sun_elevation")),
-        incidence=_first_number(_pick(leaves, "incidence") or _pick(leaves, "solar_incidence")),
+        # `_pick` takes a CANDIDATES *key*, never one of its alias values.
+        # "solar_incidence" is an alias inside CANDIDATES["incidence"], so
+        # `_pick(leaves, "solar_incidence")` raises KeyError - and it did, on the
+        # exact case it was added for: a PDS4 product with no incidence at all,
+        # which is every Chandrayaan-2 OHRC product (Known issue #5).
+        incidence=_first_number(_pick(leaves, "incidence")),
         emission=_first_number(_pick(leaves, "emission")),
         phase=_first_number(_pick(leaves, "phase")),
         product_id=_pick(leaves, "product_id"),
