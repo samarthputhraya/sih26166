@@ -1,3 +1,5 @@
+On this Tier-D pair we found 35 changes. Of those, 0 look like genuine surface changes, 31 are shadow/illumination effects, and 4 are alignment artifacts.
+
 \# Lunar Change Detection
 
 
