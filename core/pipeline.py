@@ -70,7 +70,7 @@ from core.scale import to_common_gsd, to_original
 
 SOURCE_HINTS = ("_source", "_src", "_a")
 REF_HINTS = ("_ref", "_reference", "_b")
-EXTENSIONS = (".tif", ".tiff", ".IMG", ".img", ".xml", ".lbl")
+EXTENSIONS = (".tif", ".tiff", ".IMG", ".img", ".png", ".PNG", ".xml", ".lbl")
 
 
 def resolve_pair(target: str | pathlib.Path) -> tuple[pathlib.Path, pathlib.Path]:
