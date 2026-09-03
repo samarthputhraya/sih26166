@@ -2,8 +2,10 @@ import cv2
 import numpy as np
 import time
 
+from baselines.settings import RATIO_TEST
 
-def run_sift(img1, img2, nfeatures=0, ratio=0.7):
+
+def run_sift(img1, img2, nfeatures=0, ratio=RATIO_TEST):
     """
     SIFT + FLANN baseline.
 

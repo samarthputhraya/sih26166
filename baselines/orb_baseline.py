@@ -2,8 +2,10 @@ import cv2
 import numpy as np
 import time
 
+from baselines.settings import RATIO_TEST
 
-def run_orb(img1, img2, nfeatures=5000, ratio=0.75):
+
+def run_orb(img1, img2, nfeatures=5000, ratio=RATIO_TEST):
     """
     ORB + BFMatcher/Hamming baseline.
 
