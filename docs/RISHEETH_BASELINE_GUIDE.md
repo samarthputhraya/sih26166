@@ -231,12 +231,22 @@ Safe now: the algorithm froze at Gate 2 on Day 8, so the "Ours" column is stable
 
 | Pair | Tier | Sun Δ | Scale | SIFT | SIFT+illum | ORB | AKAZE | LoFTR | **Ours (full)** |
 |---|---|---|---|---|---|---|---|---|---|
-| pair_01 | A | 26° | 1× | [TBD] | [TBD] | [TBD] | [TBD] | [TBD] | [TBD] |
+| pair_01 | same-frame offset crop | 0° | 1× | [TBD] | [TBD] | [TBD] | [TBD] | [TBD] | [TBD] |
 | pair_07 | B | — | 1.8× | [TBD] | … | | | | |
 | pair_09 | B+ | — | 36× | [TBD] | … | | | | |
 | pair_11 | **C** | — | — | [TBD] | … | | | | |
 
 **Leave `[TBD]` until the CSV has the value.** A blank cell is honest; an invented one is fatal.
+
+> ⚠️ **`pair_01` is NOT Tier A, and its sun difference is 0°.** It is two crops of ONE
+> Chandrayaan-2 OHRC frame — same sensor, same moment, a known 40×25 px offset. Its tier string in
+> `data/pairs_catalogue.csv` is literally `same-frame offset crop`. It is a wiring fixture, not a
+> validation tier, and **no result measured on it proves anything about registration across
+> different lighting or different cameras.**
+>
+> This row said `A | 26°` until Day 5 2026 and that was wrong on both counts. Copy the `tier`
+> string from the catalogue, never from memory — "cross-sensor" means *different instruments*, and
+> LROC NAC ↔ LROC NAC is the same sensor too.
 
 Save as `baselines/results_table.csv` plus a formatted version for Saniya.
 

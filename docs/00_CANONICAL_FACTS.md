@@ -348,11 +348,66 @@ A failed gate means **cut scope, never extend time.** These supersede any gate l
 | Gate | Day | Pass criteria | If it fails |
 |---|---|---|---|
 | **1** | 5 | `python -m core.pipeline data/pairs/pair_01` runs end to end on a real lunar pair, no manual steps, prints all five metrics | Drop LoFTR. Ship classical + illumination normalisation + sub-pixel + uniformity. **Then use Gate 2-alt below.** |
-| **2** | 8 | `rmse_gt_px` < 0.5 on synthetic · ≥2× better than best classical baseline on Tier A · `inlier_ratio` > 0.60 · `grid_coverage_fraction` ≥ 0.80 · `distribution_cv` < 1.0 · runs on ≥1 Tier B pair · **produces matches on ≥1 Tier C (multi-modal) pair, with degradation honestly quantified** | Freeze the algorithm. Everything moves to UI and demo. |
+| **2** | 8 | **RE-SCOPED Day 5 — see below.** On the synthetic pair with exact ground truth, at a stated sun-azimuth difference ≤ 15°: `rmse_gt_px` < 0.5 · `inlier_ratio` > 0.60 · `grid_coverage_fraction` ≥ 0.80 · `distribution_cv` < 1.0 · **≥2× better than the best of SIFT/ORB/AKAZE on the *same pair at the same scale*** · **produces matches on ≥1 multi-modal (Tier D, optical↔elevation) pair with degradation quantified in metres** | Freeze the algorithm. Everything moves to UI and demo. |
 | **2-alt** | 8 | *(only if Gate 1 failed)* Same, except the comparison baseline is **plain SIFT/ORB/AKAZE without illumination normalisation**, and the claim becomes "classical + our preprocessing beats classical alone" | Freeze and move to UI |
 | **3** | 10 | A stranger operates the UI and explains the output with nobody speaking | Fix UX until they can — **this is before code freeze, so you can** |
 | **4** | 11 | Demo runs 3× consecutively on **Samartha's laptop, CPU only, wifi OFF**, cached weights and data, no crashes | Debug until stable |
 | **5** | 12 | All 6 answer cold: what problem · why hard · what does my module do · how do we know it works · what next | Extra prep for weak members |
+
+### Gate 2 was re-scoped on Day 5 (2 Sep 2026), and what it used to say
+
+**It used to say**, and this is kept so nobody re-adds it by accident:
+
+> `rmse_gt_px` < 0.5 on synthetic · ≥2× better than best classical baseline **on Tier A** ·
+> `inlier_ratio` > 0.60 · `grid_coverage_fraction` ≥ 0.80 · `distribution_cv` < 1.0 ·
+> **runs on ≥1 Tier B pair** · produces matches on ≥1 **Tier C** (multi-modal) pair
+
+**Three of those could not be met, and none of the three was a code problem:**
+
+1. **Tier A never existed.** `pairs_catalogue.csv` row `tier_a_01` is `status=identified` — we
+   know which two NAC products we want; no pair has ever been cut. `DATASET_CARD.md` records an
+   honest negative after five cropping attempts.
+2. **Tier B has no catalogue row at all.** Tier B is CH-2 OHRC ↔ LROC NAC (§2). We have B+
+   (OHRC ↔ Kaguya), which is a different rung. No data, no owner, no route.
+3. **`grid_coverage_fraction` ≥ 0.80 is arithmetically unreachable on Tier D.** The reference is
+   101×101; an 8×8 grid needs ≥52 of 64 cells occupied; the pair yields **10 inliers**. Ceiling
+   is 10/64 = **0.156**. No algorithm change moves it.
+
+Also: the old wording said **"Tier C (multi-modal)"**, but the multi-modal leg was moved to
+**Tier D (optical ↔ elevation)** on 1 Sep — `ops/specs/TIER_C_DECISION.md`. The row above now
+says Tier D, which is what we actually own.
+
+**What changed, and why it is not a retreat.** The substance of the old criterion 2 is *"are we
+better than classical, and by how much?"* That needs **ground truth**, not a Tier A pair — and as
+of Day 5 `core/pipeline.py --synthetic` produces exact ground truth on demand. Measuring the
+ratio across a swept sun angle is a **curve**, which is a stronger claim than a single real point
+would have been. Tier A, if Rohan lands it, is now a bonus arm rather than a blocker.
+
+**Tier B is dropped.** Not deferred — dropped. It is written here so that no slide, README or
+Q&A answer implies we ran on it.
+
+**What we may no longer claim, under Invariant 2 (§2):** we have **no cross-sensor validation**
+and will have none by Day 8. `pair_01` is two crops of ONE CH-2 OHRC frame — same sensor, zero
+sun difference, tier string `same-frame offset crop`. Any sentence containing "cross-sensor",
+or any comparison against classical methods **on real lunar data**, is unsupported today.
+
+**Evidence for the re-scope** (all in `evaluation/results_log.csv`, 5 off-grid shifts per angle,
+medians):
+
+| Δazimuth | `rmse_gt_px` | `inlier_ratio` | `grid_coverage` | `distribution_cv` |
+|---|---|---|---|---|
+| 0° | 0.11992 ✅ | 1.0000 ✅ | 1.0000 ✅ | 0.3662 ✅ |
+| **15°** | **0.32230** ✅ | **0.9757** ✅ | **1.0000** ✅ | **0.4145** ✅ |
+| 30° | 0.93134 ❌ | 0.7404 ✅ | 0.8281 ✅ | 0.9141 ✅ |
+| 45° | 2.58557 ❌ | 0.3484 ❌ | 0.4062 ❌ | 1.8419 ❌ |
+
+**The sun-angle difference we choose decides the gate**, so it is stated on the slide and the
+whole curve is shown, including where it breaks. **We choose 15°.** Report the *median* of
+several shifts, never the best one: a single 30° run returns anywhere from 0.71 to 1.65 on the
+sub-pixel offset alone, and a whole-pixel shift returns a flattering 0.41 because the warp does
+no interpolation and the truth lands on the matcher's own integer grid.
+
+Full reasoning and the per-person actions: `ops/specs/GATE2_SCOPE_CUT.md`.
 
 ### Two traps the first draft walked into
 
@@ -360,8 +415,10 @@ A failed gate means **cut scope, never extend time.** These supersede any gate l
 classical baseline" means comparing classical to classical. That is why **Gate 2-alt** exists.
 
 **Gate 2 used to require a real cross-sensor pair while the data fallback was "LROC-only."** That
-fallback could never satisfy that gate. It is fixed because we now have actual CH-2 data with no
-login, plus Kaguya and M3.
+fallback could never satisfy that gate. Having CH-2 data without a login removed the *access*
+problem — but ⚠️ **as of Day 5 it is still not solved**: no cross-sensor pair has ever been cut,
+which is precisely why Gate 2 was re-scoped above. Do not read this paragraph as saying we have
+one.
 
 **Gate 3 used to sit on code-freeze day** with the remedy "fix UX until they can" — which would
 break the freeze. It is now Day 10, before freeze.
