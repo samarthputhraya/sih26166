@@ -8,7 +8,11 @@ Smart India Hackathon 2026 · ISRO problem statement SIH26166.
 ## Start here
 
 `docs/00_CANONICAL_FACTS.md` is the single source of truth — every definition, number and data
-source. `docs/TEAM_TASK_GUIDE.md` is the 12-day schedule. If they disagree, Canonical Facts wins.
+source. `docs/TEAM_TASK_GUIDE.md` is the schedule. If they disagree, Canonical Facts wins.
+
+**The internal hackathon is 9 September 2026 = Day 11.** Confirmed by the SPOC on Day 5. Gates run
+2 → 5 on Days 7 → 10; the full table is Canonical Facts §11, and the approved plan for Days 5–10 is
+`ops/PLAN_TO_9_SEP.md`.
 
 ## Setup
 
@@ -21,6 +25,12 @@ pip install -r requirements.txt
 ```
 
 `python3` fails on Windows (Store alias) — use `python` or `py`.
+
+**Activate the venv in every new terminal.** Without it, `python` on this machine resolves to a bare
+3.12 install that has none of these packages, and the failure looks like a missing dependency
+(`ModuleNotFoundError: No module named 'numpy'`) rather than a missing venv. Check with
+`python -c "import numpy, torch; print('ok')"` before trusting a green or red test run —
+**that mistake will read as "a teammate broke the build."**
 
 ## Layout
 

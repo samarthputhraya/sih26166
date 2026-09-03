@@ -1,8 +1,9 @@
 # SIH26166 — Lunar Image Registration
 
-Smart India Hackathon 2026, ISRO problem statement SIH26166. Six-person team, ~12 working days to
-the college internal round. Full context is in `docs/00_CANONICAL_FACTS.md` — **read it before
-answering anything substantive.**
+Smart India Hackathon 2026, ISRO problem statement SIH26166. Six-person team. **The college
+internal round is 9 September 2026 = Day 11** (Day 1 was 30 Aug); confirmed by the SPOC on Day 5.
+Full context is in `docs/00_CANONICAL_FACTS.md` — **read it before answering anything
+substantive.** The approved plan for Days 5–10 is `ops/PLAN_TO_9_SEP.md`.
 
 ---
 
@@ -92,4 +93,8 @@ demo_cache/   demo inputs — gitignored
 
 ## Open, every session until resolved
 
-- **Internal hackathon date** — still unknown. Reshapes the schedule when known.
+- **The college's actual grading rubric and its weights.** We are optimising against *inferred*
+  weights from other institutions (Innovation ~25%, Relevance ~25%, Feasibility ~20%). If Impact or
+  Presentation outrank Novelty, the effort split should shift. One message to the SPOC closes it.
+
+*(Resolved Day 5: the internal hackathon date. It is 9 Sep 2026 = Day 11.)*

@@ -334,8 +334,21 @@ six (6). (Including the title slide)"* — so the cap **includes** the title pag
 
 ### What the internal round is
 
-**In-person, live demo, faculty judges — not domain experts.** Two implications:
-- The demo must survive on Samartha's laptop with wifi off.
+🔴 **9 SEPTEMBER 2026 = Day 11.** Confirmed by the SPOC on Day 5 (3 Sep). This was the last open
+variable in the plan; it is now closed. Every schedule in this document set is anchored to it.
+
+**In-person, faculty judges — not domain experts.** The SPOC also confirmed two format facts that
+change what "done" means:
+
+- **A live demo is NOT compulsory** for software projects. We carry one anyway because it
+  differentiates us — but **the deck must score on its own.** Capabilities need to reach *"a
+  measured result plus one figure on a slide"*, not polished-UI standard.
+- **There is no prior upload.** We present on the day. Nothing is submitted in advance.
+
+Three implications:
+- The deck is the deliverable. It is the thing that cannot slip.
+- The demo must still survive on Samartha's laptop with wifi off — see Gate 4. Precompute and cache
+  the demo results; a live 15-second align inside a 3-minute pitch is risk with no upside.
 - The pitch must be legible to someone who does not know what a homography is. Lead with the
   picture, not the method.
 
@@ -345,14 +358,30 @@ six (6). (Including the title slide)"* — so the cap **includes** the title pag
 
 A failed gate means **cut scope, never extend time.** These supersede any gate list elsewhere.
 
-| Gate | Day | Pass criteria | If it fails |
-|---|---|---|---|
-| **1** | 5 | `python -m core.pipeline data/pairs/pair_01` runs end to end on a real lunar pair, no manual steps, prints all five metrics | Drop LoFTR. Ship classical + illumination normalisation + sub-pixel + uniformity. **Then use Gate 2-alt below.** |
-| **2** | 8 | **RE-SCOPED Day 5 — see below.** On the synthetic pair with exact ground truth, at a stated sun-azimuth difference ≤ 15°: `rmse_gt_px` < 0.5 · `inlier_ratio` > 0.60 · `grid_coverage_fraction` ≥ 0.80 · `distribution_cv` < 1.0 · **≥2× better than the best of SIFT/ORB/AKAZE on the *same pair at the same scale*** · **produces matches on ≥1 multi-modal (Tier D, optical↔elevation) pair with degradation quantified in metres** | Freeze the algorithm. Everything moves to UI and demo. |
-| **2-alt** | 8 | *(only if Gate 1 failed)* Same, except the comparison baseline is **plain SIFT/ORB/AKAZE without illumination normalisation**, and the claim becomes "classical + our preprocessing beats classical alone" | Freeze and move to UI |
-| **3** | 10 | A stranger operates the UI and explains the output with nobody speaking | Fix UX until they can — **this is before code freeze, so you can** |
-| **4** | 11 | Demo runs 3× consecutively on **Samartha's laptop, CPU only, wifi OFF**, cached weights and data, no crashes | Debug until stable |
-| **5** | 12 | All 6 answer cold: what problem · why hard · what does my module do · how do we know it works · what next | Extra prep for weak members |
+**Re-anchored on Day 5 (3 Sep 2026), when the SPOC confirmed the internal round is 9 September.**
+Gates 4 and 5 were scheduled on Day 11 and Day 12 — which are **the event day itself and the day
+after it**. A demo gate you clear on the morning of the demo is not a gate, and a Gate 5 held after
+the round has already been judged is worth nothing. Both moved earlier; Gate 2 and Gate 3 moved with
+them so the sequence still ends in two clear rehearsal days.
+
+| Gate | Was | Now |
+|---|---|---|
+| 2 | Day 8 | **Day 7** (5 Sep) |
+| 3 | Day 10 | **Day 8** (6 Sep) |
+| 4 | Day 11 — *the event* | **Day 9** (7 Sep) |
+| 5 | Day 12 — *after the event* | **Day 10** (8 Sep) |
+
+The time was already banked: `app/streamlit_app.py` was scheduled for Day 9 and shipped on Day 5.
+**Day 11 = 9 Sep is the internal hackathon. There is no Day 12.**
+
+| Gate | Day | Date | Pass criteria | If it fails |
+|---|---|---|---|---|
+| **1** | 5 | 3 Sep | `python -m core.pipeline data/pairs/pair_01` runs end to end on a real lunar pair, no manual steps, prints all five metrics | Drop LoFTR. Ship classical + illumination normalisation + sub-pixel + uniformity. **Then use Gate 2-alt below.** |
+| **2** | 7 | 5 Sep | **RE-SCOPED Day 5 — see below.** On the synthetic pair with exact ground truth, at a stated sun-azimuth difference ≤ 15°: `rmse_gt_px` < 0.5 · `inlier_ratio` > 0.60 · `grid_coverage_fraction` ≥ 0.80 · `distribution_cv` < 1.0 · **≥2× better than the best of SIFT/ORB/AKAZE on the *same pair at the same scale*** · **produces matches on ≥1 multi-modal (Tier D, optical↔elevation) pair with degradation quantified in metres** | Freeze the algorithm. Everything moves to UI and demo. |
+| **2-alt** | 7 | 5 Sep | *(only if Gate 1 failed)* Same, except the comparison baseline is **plain SIFT/ORB/AKAZE without illumination normalisation**, and the claim becomes "classical + our preprocessing beats classical alone" | Freeze and move to UI |
+| **3** | 8 | 6 Sep | A stranger operates the UI and explains the output with nobody speaking | Fix UX until they can — **this is before code freeze, so you can** |
+| **4** | 9 | 7 Sep | Demo runs 3× consecutively on **Samartha's laptop, CPU only, wifi OFF**, cached weights and data, no crashes | Debug until stable |
+| **5** | 10 | 8 Sep | All 6 answer cold: what problem · why hard · what does my module do · how do we know it works · what next | Extra prep for weak members |
 
 ### Gate 2 was re-scoped on Day 5 (2 Sep 2026), and what it used to say
 
@@ -427,18 +456,20 @@ break the freeze. It is now Day 10, before freeze.
 
 ## 12. SCHEDULE SHAPE
 
-The plan is **12 working days**. Today is 29 Aug 2026; if the internal round lands in the second
-week of September you have roughly 10–13 days, not 15.
+**The plan is 11 working days, not 12.** Day 1 = 30 Aug 2026 · **Day 11 = 9 Sep 2026 = the internal
+hackathon.** There is no Day 12. This paragraph used to read *"12 working days... if the internal
+round lands in the second week of September"* — it landed, the date is known, and the guessing is
+over.
 
 - **Days 1–2** Kill the risks
-- **Days 3–5** Walking skeleton → **Gate 1**
-- **Days 6–8** Make it good → **Gate 2**
-- **Days 9–10** Product layer → **Gate 3**
-- **Days 11–12** Freeze and rehearse → **Gates 4, 5**
+- **Days 3–5** Walking skeleton → **Gate 1** (Day 5, passed)
+- **Days 6–7** Make it good → **Gate 2** (Day 7)
+- **Day 8** Product layer → **Gate 3** (Day 8)
+- **Days 9–10** Freeze and rehearse → **Gates 4, 5**
+- **Day 11** 🎯 **The event**
 
-**If you get extra days**, they go to Phase 2 (Days 6–8 becomes 6–11): more Tier C pairs, the
-swept-illumination curve, a second illumination method. **Never** extend Phase 4 — rehearsal
-saturates after three runs.
+**There are no extra days.** The end date is fixed and known, so the only remaining lever is scope.
+Every gate below cuts scope on failure; none of them buys time.
 
 **If you get fewer days**, cut in this order: (1) baseline comparison in the UI, (2) Tier B+
 Kaguya pairs, (3) the second illumination method. **Never cut** Gate 4 or Gate 5.

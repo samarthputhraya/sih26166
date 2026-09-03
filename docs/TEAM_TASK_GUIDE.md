@@ -1,4 +1,27 @@
-# SIH26166 — Team Task Guide (12 Days)
+# SIH26166 — Team Task Guide (11 Days)
+
+> 🔴 **RE-ANCHORED ON DAY 5 (3 Sep 2026). READ THIS BEFORE THE SCHEDULE BELOW.**
+>
+> The SPOC confirmed the internal hackathon is **9 September 2026 = Day 11.** Day 1 was 30 Aug.
+> **There is no Day 12, and there are no Days 13–15.** The buffer this guide refers to does not
+> exist.
+>
+> **The gates moved earlier**, because Gate 4 sat on the event day and Gate 5 sat after it —
+> see `00_CANONICAL_FACTS.md` §11, which is authoritative:
+>
+> | Gate | Day | Date |
+> |---|---|---|
+> | 2 | 7 | 5 Sep |
+> | 3 | 8 | 6 Sep |
+> | 4 | 9 | 7 Sep |
+> | 5 | 10 | 8 Sep |
+>
+> **The per-person rows for Days 5–10 in the table below are superseded** by
+> `ops/PLAN_TO_9_SEP.md` Part 6, which is the approved plan. Days 1–4 are history and left as
+> written. Where this guide and that plan disagree about who does what this week, **the plan wins.**
+>
+> Two lines below are also stale and are kept only so nobody re-adds them: Tier B and Tier C were
+> **formally dropped** in the Day-5 scope cut. Rohan is not downloading M3 on Day 6.
 
 **Problem:** Register Chandrayaan-2 lunar images against reference imagery across different
 sensors, sun angles and scales, to sub-pixel accuracy, with matches spread evenly across the frame.
@@ -111,14 +134,17 @@ to answer for his module cold at Gate 5. People who stop working stop understand
 | **11** | **CODE FREEZE.** Crash fixes only. Verify `weights/` + `demo_cache/` complete. **GATE 4.** | Rehearsal 1: his section + Q&A. | Rehearsal 1. Final numbers to Saniya. | Rehearsal 1. | Rehearsal 1. | **Rehearsals 1 & 2.** Record backup video after Rehearsal 2. |
 | **12** | Final rehearsal. Sleep early. | Rehearsal 3. | Rehearsal 3. | Rehearsal 3. | Rehearsal 3. | **Rehearsal 3 + GATE 5.** Deck final in official template. Print copies. |
 
-> **🚪 GATE 4 (Day 11)** — demo runs 3× consecutively on **Samartha's laptop, CPU only, wifi OFF**,
-> cached weights and cached data, no crashes.
-> **🚪 GATE 5 (Day 12)** — all six answer cold: *what problem · why hard · what does my module do ·
-> how do we know it works · what next.*
+> **🚪 GATE 4 — moved to Day 9 (7 Sep)** — demo runs 3× consecutively on **Samartha's laptop, CPU
+> only, wifi OFF**, cached weights and cached data, no crashes. *It used to sit on Day 11, which is
+> the event itself.*
+> **🚪 GATE 5 — moved to Day 10 (8 Sep)** — all six answer cold: *what problem · why hard · what
+> does my module do · how do we know it works · what next.* *It used to sit on Day 12, which is
+> after the round has already been judged.*
 
-### Days 13–15 — buffer, if you have them
-Extra Tier C pairs · the full swept-illumination curve · a second illumination method · a fourth
-rehearsal. **Never** add features. **Never** touch `core/` after Gate 2.
+### There is no buffer
+This guide used to promise "Days 13–15 — buffer, if you have them." **Day 11 is 9 Sep and it is the
+event.** Nothing follows it. The only lever left is scope: **never** add features, **never** touch
+`core/` after Gate 2, and cut in the order given in `00_CANONICAL_FACTS.md` §12.
 
 ---
 
