@@ -34,11 +34,12 @@ if __name__ == "__main__":
         s, r, H_true, meta = make_pair(dem, pixel_size_m=10.0, sun_a=(45, 25),
                                         sun_b=(45+d, 25), rotation_deg=0.0,
                                         scale=1.0, shift_px=(10.0, -6.0))
-        src_pts, ref_pts = run_sift(u8(s), u8(r))
+        src_pts, ref_pts, confidence, elapsed = run_sift(u8(s), u8(r))
         m = evaluate(r.shape, src_pts, ref_pts, H_true=H_true)
         log_result(f"synth_sun_{d:03d}", tier="synthetic", method="SIFT",
-                   metrics=m, gsd_mpp=10.0, allow_failed=True,
-                   notes=f"synthetic, DEM-rendered — sun azimuth difference {d} deg")
+                   metrics=m, gsd_mpp=10.0,
+                   notes=f"synthetic, DEM-rendered — sun azimuth difference {d} deg; sift_time={elapsed:.3f}s",
+                   allow_failed=True)
         results.append({"sun_diff": d, **m})
         print(f"{d:3d}deg  matches={m['n_matches']:4d}  "
               f"status={m.get('status', '?'):16s}  inlier_ratio={m['inlier_ratio']:.3f}  "

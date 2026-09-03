@@ -6,7 +6,7 @@ INLIER_THRESH_PX = 3.0
 
 def _failed(reason, n):
     return {"rmse_gt_px": None, "residual_px": None, "inlier_count": 0,
-            "inlier_ratio": 0.0, "grid_coverage_fraction": 0.0,
+            "inlier_ratio": 0.0, "grid_coverage_fraction": None,
             "distribution_cv": None, "n_matches": n, "status": reason}
 
 def evaluate(ref_shape, matches_src, matches_ref, H_true=None, holdout_frac=0.2, seed=0):
