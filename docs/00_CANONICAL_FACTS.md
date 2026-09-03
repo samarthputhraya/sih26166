@@ -411,11 +411,44 @@ The time was already banked: `app/streamlit_app.py` was scheduled for Day 9 and 
 | Gate | Day | Date | Pass criteria | If it fails |
 |---|---|---|---|---|
 | **1** | 5 | 3 Sep | `python -m core.pipeline data/pairs/pair_01` runs end to end on a real lunar pair, no manual steps, prints all five metrics | Drop LoFTR. Ship classical + illumination normalisation + sub-pixel + uniformity. **Then use Gate 2-alt below.** |
-| **2** | 7 | 5 Sep | **RE-SCOPED Day 5 — see below.** On the synthetic pair with exact ground truth, at a stated sun-azimuth difference ≤ 15°: `rmse_gt_px` < 0.5 · `inlier_ratio` > 0.60 · `grid_coverage_fraction` ≥ 0.80 · `distribution_cv` < 1.0 · **≥2× better than the best of SIFT/ORB/AKAZE on the *same pair at the same scale*** · **produces matches on ≥1 multi-modal (Tier D, optical↔elevation) pair with degradation quantified in metres** | Freeze the algorithm. Everything moves to UI and demo. |
+| **2** ✅ **PASSED Day 6 (4 Sep), a day early** | 7 | 5 Sep | **RE-SCOPED Day 5 — see below.** On the synthetic pair with exact ground truth, at a stated sun-azimuth difference ≤ 15°: `rmse_gt_px` < 0.5 · `inlier_ratio` > 0.60 · `grid_coverage_fraction` ≥ 0.80 · `distribution_cv` < 1.0 · **≥2× better than the best of SIFT/ORB/AKAZE on the *same pair at the same scale*** · **produces matches on ≥1 multi-modal (Tier D, optical↔elevation) pair with degradation quantified in metres** | Freeze the algorithm. Everything moves to UI and demo. |
 | **2-alt** | 7 | 5 Sep | *(only if Gate 1 failed)* Same, except the comparison baseline is **plain SIFT/ORB/AKAZE without illumination normalisation**, and the claim becomes "classical + our preprocessing beats classical alone" | Freeze and move to UI |
 | **3** | 8 | 6 Sep | A stranger operates the UI and explains the output with nobody speaking | Fix UX until they can — **this is before code freeze, so you can** |
 | **4** | 9 | 7 Sep | Demo runs 3× consecutively on **Samartha's laptop, CPU only, wifi OFF**, cached weights and data, no crashes | Debug until stable |
 | **5** | 10 | 8 Sep | All 6 answer cold: what problem · why hard · what does my module do · how do we know it works · what next | Extra prep for weak members |
+
+### ✅ Gate 2 PASSED on Day 6 (4 Sep 2026), one day early
+
+All six criteria met at the stated sun-azimuth difference of 15°, medians over 5 off-grid shifts,
+every figure in `evaluation/results_log.csv`. **Full evidence and the honest limits:
+`ops/GATE2_EVIDENCE.md`.**
+
+| # | Criterion | Required | Measured | |
+|---|---|---|---|---|
+| 1 | `rmse_gt_px` | < 0.5 | 0.0856 | ✅ |
+| 2 | `inlier_ratio` | > 0.60 | 0.9774 | ✅ |
+| 3 | `grid_coverage_fraction` | ≥ 0.80 | 1.0000 | ✅ |
+| 4 | `distribution_cv` | < 1.0 | 0.4006 | ✅ |
+| 5 | ≥2× best of SIFT/ORB/AKAZE, same pair same scale | ≥ 2.0× | **2.88×** | ✅ |
+| 6 | Tier D: matches + degradation in metres | stated | 231 m ± 216 m, matcher contradicted | ✅ |
+
+**Criterion 5 was closed by `baselines/sweep_baselines.py`**, which regenerates each pair through
+`core.pipeline._synthetic_pair` — the same function our own run calls — so both arms see
+byte-identical files and "same pair at the same scale" is true by construction.
+
+**Two results that must travel with the pass, because omitting either would misrepresent it:**
+
+1. **At 0° sun difference the classical baselines beat us** — SIFT 0.044 px against our 0.086 px.
+   With identical illumination there is no illumination problem to solve. The claim is therefore
+   *"illumination robustness that grows with the sun difference"*, **not** *"a better matcher"*.
+2. **At 180° we are at 0.080 px while SIFT is 4,972 px wrong** (62,519×). 180° is our *easiest*
+   hard case; the failure peak is 90°. A 180° azimuth flip inverts the shading and
+   gradient-orientation normalisation is invariant to contrast inversion, while 90° rotates it.
+   Classical does **not** recover at 180°, which is what attributes the recovery to our
+   normalisation rather than to the renderer.
+
+**Per the gate rule, this freezes the algorithm.** Remaining effort goes to the deck, the demo,
+and rehearsal.
 
 ### Gate 2 was re-scoped on Day 5 (2 Sep 2026), and what it used to say
 
@@ -497,7 +530,7 @@ over.
 
 - **Days 1–2** Kill the risks
 - **Days 3–5** Walking skeleton → **Gate 1** (Day 5, passed)
-- **Days 6–7** Make it good → **Gate 2** (Day 7)
+- **Days 6–7** Make it good → **Gate 2** (Day 7) — ✅ **passed early, Day 6**
 - **Day 8** Product layer → **Gate 3** (Day 8)
 - **Days 9–10** Freeze and rehearse → **Gates 4, 5**
 - **Day 11** 🎯 **The event**
