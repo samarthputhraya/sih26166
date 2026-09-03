@@ -2,6 +2,7 @@ import numpy as np
 import cv2
 import pytest
 from evaluation.metrics import evaluate
+from evaluation.logger import log_result
 
 def test_perfect_matches():
     # Identity transform -> rmse_gt_px ~ 0
@@ -70,3 +71,9 @@ def test_inlier_ratio_reflects_garbage_in_the_input():
     ref = np.vstack([good_r, bad_r]).astype(np.float32)
     res = evaluate((1024, 1024), src, ref, seed=1)
     assert 0.4 < res["inlier_ratio"] < 0.6, "inlier_ratio is not seeing the bad matches"
+
+def test_log_result_rejects_inconsistent_failure_row():
+    bad_metrics = {"status": "ransac_failed", "rmse_gt_px": 0.5, "residual_px": None,
+                "inlier_count": 0, "inlier_ratio": 0.0}
+    with pytest.raises(ValueError):
+        log_result("bad_pair", tier="synthetic", method="test", metrics=bad_metrics)
