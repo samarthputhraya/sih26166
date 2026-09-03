@@ -29,3 +29,5 @@ timestamp,pair_id,tier,method,config,rmse_gt_px,residual_px,inlier_count,inlier_
 2026-09-02T15:31:28.160762+00:00,pair_01,same-frame offset crop,ours_loftr,,,0.19452325191421008,5183,0.9996142719382836,1.0,0.36296717866529005,5185,,ok,"Gate 1 command. NOT a validation tier: two crops of ONE OHRC frame, same sensor, zero sun difference"
 2026-09-02T15:31:44.300426+00:00,pair_03_tierD,D,ours_loftr,,,37.81266287150397,10,0.5263157894736842,0.109375,3.243454948045371,19,60.0,ok,optical vs elevation. Produces matches; does NOT yet register - see rmse vs GeoTIFF affines
 2026-09-03T04:38:42.671473+00:00,pair_03_tierD,D,change_detection_absdiff,"threshold=30, min_area_px=50, edge_margin_frac=0.05",,,,,,,35,60.0,ok,"35 candidate changes: 0 likely real surface changes, 31 likely shadow/illumination effects, 4 likely registration artifacts; optical vs elevation-derived pair"
+2026-09-03T05:00:54.138919+00:00,test_pair_allowed,synthetic,test,,,,0,0.0,,,,,too_few_matches,
+2026-09-03T05:11:40.228873+00:00,test_pair_allowed,synthetic,test,,,,0,0.0,,,,,too_few_matches,

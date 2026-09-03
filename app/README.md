@@ -124,7 +124,7 @@ All current automated tests pass.
 
 
 
-\## Important Limitations
+\## Known Limitations
 
 
 
@@ -140,7 +140,7 @@ Simple image differencing can produce false positives because:
 
 
 
-A stronger future shadow filter can use mission Sun-azimuth metadata. A DEM-based shadow prediction would be a further improvement.
+On the real Tier-D optical/elevation-derived pair, 35 candidate changes were found. Manual inspection classified 0 as likely genuine surface changes, 31 as likely shadow/illumination effects, and 4 as likely registration artifacts. This means 100% of the detected candidates in this test were false positives under the manual classification used here. The current detector cannot reliably distinguish genuine surface changes from shadows, illumination differences, and registration artifacts. With another week, the next improvement would be a stronger shadow filter using mission Sun-azimuth metadata, followed by DEM-based shadow prediction.
 
 
 
@@ -228,3 +228,5 @@ alignment pipeline before running change detection.
 
 The planted change was successfully detected within the expected
 area tolerance of 67,000–112,000 m².
+
+
