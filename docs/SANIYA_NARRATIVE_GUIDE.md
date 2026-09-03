@@ -169,6 +169,19 @@ model" is not novel.
 > never wired (`redetect()` has no callers), and one is standard methodology. Saying any of them
 > as "ours" to a SAC judge is the "this already exists" failure mode.
 
+**🔴 Open the innovation bullet with the FINDING, not the feature — added Day 6 (Move 1).**
+This is free and it scores Novelty and Relevance together, because it is aimed straight at the
+problem statement's own list of deliverables:
+
+> "The problem statement asks for RMSE, inlier count and inlier ratio. We implemented all three —
+> then found a reproducible case on real lunar data where all three look acceptable and the
+> registration is **100% wrong**. Self-consistency cannot detect its own failure. So we built the
+> independent check that can, and we measured how often it works."
+
+⚠️ **Never phrase this as an attack on the SAC authors**, who very likely wrote this PS. We do not
+know their control-point procedure and we do not claim their paper is wrong. It is *our* matcher
+that failed; we are reporting what we found when we checked our own work.
+
 **The one innovation claim, in the words a judge hears:**
 
 > "Every registration tool gives you one accuracy number for the whole image. Ours tells you,
@@ -184,13 +197,46 @@ What makes it defensible, and what has to be on the slide next to it:
    cross-correlated against the reference; the cells vote. On the real optical ↔ elevation pair the
    matcher reached RANSAC consensus with **zero correct correspondences** — the pixels caught it,
    the system declared the transform contradicted, fell back to global correlation and reported
-   the disagreement between quadrants as its uncertainty. Numbers: `[TBD — results_log.csv]`
-   (rows `pair_04_tierD_native`, methods `ours_loftr` and `fft_phase_correlation (fallback)`).
+   the disagreement between quadrants as its uncertainty. **Numbers (filled Day 6, row
+   `pair_04_tierD_native`, method `ours_loftr+subpixel`, 3 Sep 15:36):** the matcher produced
+   **88 correspondences** and RANSAC kept **5** (inlier ratio 0.057); the independent area check
+   found **0% of 35 measurable cells agreed with the transform → contradicted**; the trust map read
+   **0 verified / 4 weak / 60 no-evidence of 64 cells**. The declared fallback
+   (`fft_phase_correlation (fallback)`) registered the pair at (+9, −23) px = **231 m**, peak NCC
+   +0.751, with quadrant disagreement up to 23 px = **216 m — the uncertainty we quote.**
 3. **Calibrated against exact ground truth.** Over the sun-azimuth sweep, verified cells are
-   measurably more accurate than weak cells: `[TBD — results_log.csv]` and
-   `core/reliability_calibration_summary.csv`. This is the measurement that could have killed the
-   claim; it ran first.
-4. **Cite the prior art on the same slide** — Uss et al. 2016 (per-region accuracy without ground
+   measurably more accurate than weak cells. **Numbers (filled Day 6 — use THIS figure, not the
+   pooled one):** inside the operating envelope we claim (sun-azimuth difference ≤ 30°), cells
+   marked *verified* have a median true error of **0.123 px = 7.4 m at 60 m/px, 99.0% under half a
+   pixel and 100% under one pixel, over 817 cells.** Row `reliability_calibration_pooled`
+   (4 Sep, 8-delta config) + `core/reliability_calibration_summary.csv`; derivation in
+   `ops/MOVE2_FAILURE_DETECTION_DAY6.md` §5.
+   ⚠️ **Do not quote the older "0.162 px / 92%" figure** — it pooled over sun angles outside the
+   envelope and understates the system inside it. This is the measurement that could have killed
+   the claim; it ran first.
+
+4. **🔴 The detection rate — added Day 6, and this is what turns it from a map into an
+   instrument.** Anyone can colour a picture; the question a judge asks is *"does it work once, or
+   always?"* We extended the sun sweep to 8 azimuth differences (0–180°), 40 pairs, 2,560 cells,
+   with exact ground truth at every one. **At a failure threshold of 120 m the system detects
+   77% of failed registrations with a 0% false-alarm rate** — across 27 pairs that were correct,
+   it never once cried wolf. Push the threshold to 240 m and detection is **10 of 10**, at the
+   cost of a 9% false-alarm rate. Full table: `ops/MOVE2_FAILURE_DETECTION_DAY6.md` §3.
+   **Nothing in the lunar-registration literature we surveyed reports such a rate at all.**
+
+5. **🔴 The counter-intuitive result, worth 20 seconds of the pitch.** **180° of sun difference is
+   the *easiest* hard case, not the hardest** — 0.080 px, 4.8 m, with 100% of verified cells under
+   half a pixel. The failure peak is at **90°**. Why: a 180° flip *inverts* the shading, and our
+   gradient-orientation normalisation is invariant to contrast inversion; at 90° the shading
+   *rotates*, which no invariance covers. **The hard axis is orthogonality, not magnitude.**
+   Measured, explained, and not in the literature — say it, then show the curve.
+
+6. **Say the limitation yourself, before a judge finds it.** Between 45° and 60° the system is
+   wrong and does not yet know it: at 60° the transform is **142.7 m** out, the contradiction flag
+   stays down, and cells are still labelled verified. **Naming our own blind spot is worth more
+   than hiding it** — it is the difference between a team that measured its system and a team that
+   demoed it.
+7. **Cite the prior art on the same slide** — Uss et al. 2016 (per-region accuracy without ground
    truth), Brown & Lowe 2007 (match verification from inlier counts — the test our Tier D case
    *passes* while being wrong), Wan et al. 2021 (correlation where features fail on optical ↔ DEM).
    Ours is the three-state semantics, the pixel-vs-match disagreement as the failure signal, and
@@ -384,7 +430,7 @@ TIME  | SPEAKER  | CONTENT                                                      
    for that pair and checked. The system caught it from the pixels, refused the homography,
    registered by global correlation and reported the disagreement between quadrants as the
    uncertainty. We have no optical-against-infrared pair, and we say so rather than imply it."**
-   *(numbers: `[TBD — results_log.csv]`, rows `pair_04_tierD_native`)*
+   *(numbers, filled Day 6 — row `pair_04_tierD_native`, method `ours_loftr+subpixel`: 88 correspondences, 5 RANSAC inliers, **0% of 35 measurable cells agree → contradicted**; fallback `fft_phase_correlation (fallback)` = **231 m ± 216 m**)*
 10. *"How does change detection avoid shadow false positives?"* — Rishabh: "Shape elongation,
     intensity direction, and alignment with the sun-azimuth difference from the metadata. It's
     heuristic — properly you'd predict shadows from a DEM."
