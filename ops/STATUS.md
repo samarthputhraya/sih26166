@@ -129,19 +129,54 @@ claim was wrong — it benchmarks SuperGlue (SAC ISRO authors) — and is correc
    one path use the other's preprocessing; do not "fix" it by deleting a row. Neither number is
    quoted anywhere in the deck.
 
+## After the wrap — three things happened, and they change the Day-6 order
+
+The session was wrapped at `af94228`. Three things followed and are recorded here because the
+handoff would otherwise be stale:
+
+1. **Samartha challenged the novelty framing** — *"why are we playing safe? we need full marks."*
+   The answer is written into `ops/PHASE1_NOVELTY_DECISION.md` as a dated amendment. **The bet is
+   unchanged; the pitch language was under-sold.** Three moves came out of it (reframe / measured
+   detection rate / calibrated bound). **Samartha decided: the next session starts with Move 2.**
+2. **A teaching document was published** — a from-zero primer on the whole project for Gate 5 prep
+   and for briefing anyone who has not seen the code:
+   `https://claude.ai/code/artifact/ce1b8d99-e4ed-44c5-98aa-08cfc009c49c`
+   It is an artifact, not a repo file. Every number in it was re-read from `results_log.csv` and
+   `core/reliability_calibration_summary.csv` at the time of writing, not recalled.
+3. **One figure was verified first-hand and is now quotable:** across all 20 calibration pairs
+   (1,280 rows of `core/reliability_calibration.csv`), `global_contradicted` is `False` in every
+   row and `method_used` is `loftr+magsac++` throughout — **the trust layer raised zero false
+   alarms on 20 known-good pairs, and the fallback never fired when it was not needed.** Together
+   with both real Tier D pairs contradicted, that is 2/2 caught and 0/20 false positives. Too thin
+   to quote as a *rate*; it is the seed of Move 2.
+
 ## Next session (Day 6, 4 Sep) — in order
 
-1. **`git push`** — commit `65b3224` is local-only. Deliberately deferred at the user's
-   instruction at the end of Day 5; it is the first action of Day 6, before anyone pulls.
+1. **`git push`** — three commits are local-only now (`65b3224`, `af94228`, and tonight's).
+   Deferred at the user's instruction on Day 5; it is the first action of Day 6, before anyone pulls.
 2. `/next`, pull, `pytest -q`, both Gate-1 commands.
-3. Gate 2 criterion 5: run the three classical baselines on the 20 sweep pairs and log them, or
-   assign it in writing.
-4. Deck: transcribe `docs/SANIYA_NARRATIVE_GUIDE.md` + `ops/briefs/BRIEF_SANIYA.md` into the
+3. **Move 2 — the failure-detection rate.** Extend the sun sweep to 60/90/120/180°, where ground
+   truth is still exact and the matcher fails while its self-consistency metrics stay plausible.
+   Build the detection-rate vs false-alarm-rate table with the failure threshold stated in metres,
+   and log the rows. ~Half a day. Full reasoning and kill conditions in the
+   `PHASE1_NOVELTY_DECISION.md` amendment. **This is task one by Samartha's decision.**
+4. **Move 1 — the reframe** into the deck language (free, no compute): the PS asks for RMSE, inlier
+   count and inlier ratio; we implemented all three and found the case where all three pass and the
+   answer is 100% wrong. Goes into `docs/SANIYA_NARRATIVE_GUIDE.md` slide-2 wording.
+5. Gate 2 criterion 5: **hand to Risheeth in writing** rather than doing it — the three classical
+   baselines on the 20 sweep pairs at the same scale, logged.
+6. Deck: transcribe `docs/SANIYA_NARRATIVE_GUIDE.md` + `ops/briefs/BRIEF_SANIYA.md` into the
    official template; one figure = the trust map on the Tier D pair from the app.
-5. Gate 3 rehearsal with a stranger on the cached demo; Gate 4 dry run with wifi off
+7. Gate 3 rehearsal with a stranger on the cached demo; Gate 4 dry run with wifi off
    (`ops/precompute_demo_cache.py` must be re-run after any change to `core/`).
-6. Known issue 9 (change-detection preprocessing mismatch) — one of the two paths, ~20 minutes.
-7. Optional: MiLOI (2-hour timebox to check ground truth), `redetect()` opt-in flag with logged rows.
+8. Known issue 9 (change-detection preprocessing mismatch) — one of the two paths, ~20 minutes.
+9. **Move 3 (stretch)** — the reliability diagram from the 1,280 cells already held, 2–3 h, no new
+   compute. Only if Day 6 has room after 3–8.
+10. Optional: MiLOI (2-hour timebox to check ground truth), `redetect()` opt-in flag with logged rows.
+
+⚠️ **Not yet done and not silently dropped:** the 19 teammate commits dated 2–3 Sep (Rishabh,
+Risheeth, Samrudh) are already merged into local `main` but have **not** had a `/review` pass this
+session. Run `/review` before building on `evaluation/` or `baselines/`.
 
 ## `/wrap` step 4 (nightly specs) deliberately NOT run — second night running
 

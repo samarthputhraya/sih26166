@@ -161,3 +161,91 @@ time remains. Gate 2 re-read against `results_log.csv` at the end of Day 7.
   texture. Default switched to ON; Gate 1 now prints 0.03761504064805703, `--no-subpixel`
   reproduces 0.19452325191421008.
 - M5 (MiLOI) not attempted; the dataset's ground-truth format is unverified.
+
+---
+
+## Amendment — Day 5, late night. The framing was under-sold; the bet is unchanged.
+
+**Raised by Samartha after the wrap:** *"why are we playing safe? why is the novelty partly? we
+need full marks for novelty."* The challenge was correct and the answer is recorded here so the
+next session starts from it rather than re-deriving it.
+
+### What was wrong, and what was not
+
+The **bet is not changed.** The trust layer stays the claim, the prior art stays cited, and we
+still do not claim to have invented per-region registration confidence — Uss et al. 2016 published
+that, it is on the references slide, and a judge who knows it and hears us claim it stops believing
+the rest.
+
+What was wrong was the **pitch language**, in one word. "Partly novel" is correct internal
+reasoning and a bad sentence to say out loud: hedging reads as weakness. Confident citation reads
+as scholarship — *"this builds on Uss 2016; what is ours is X; here is the measurement."* Same
+truth, different register. Note also (PHASE0 §, Boudreau et al. 2016, 2,130 evaluator-proposal
+pairs) that **maximum novelty is not maximum score** — non-expert evaluators mark down what they
+cannot place. Full marks come from a claim a faculty judge can hold in their head, cannot poke a
+hole in, and can see evidence for.
+
+### Move 1 — the reframe. Costs nothing. Do it in the deck language.
+
+The PS's own Expected Outcome names three deliverable metrics: **RMSE, inlier counts, inlier
+ratios** (§1 of `00_CANONICAL_FACTS.md`). We implemented all three. Then, on real lunar data, we
+found a case where all three are satisfied or explicable and the registration is 100% wrong
+(`pair_04_tierD_native`: 88 correspondences, RANSAC consensus, median inlier residual **0.00 px**,
+**0 of 87** correct within 10 px = 94 m).
+
+> **The sentence for slide 2:** "The problem statement asks for RMSE, inlier count and inlier
+> ratio. We implemented all three, then found a reproducible case on real lunar data where all
+> three look acceptable and the registration is 100% wrong. Self-consistency cannot detect its own
+> failure. So we built the independent check that can — and measured it."
+
+This is a **finding**, not a feature. It scores Novelty and Relevance together because it is aimed
+at the PS's own deliverable list. It does **not** attack the SAC authors — who very likely wrote
+this PS — and it must never be phrased as though it does. We do not know their control-point
+procedure and we do not claim their paper is wrong.
+
+### Move 2 — the paid upgrade. ~Half a day. Turns one anecdote into a measured capability.
+
+Today the failure detection rests on one dramatic case. The hostile third question is *"did it work
+once, or does it always work?"* — and we cannot answer it yet.
+
+**Already measured, verified from `core/reliability_calibration.csv` on Day 5:**
+- **0 false alarms on 20 known-good pairs.** `global_contradicted` is `False` in every one of the
+  1,280 rows, and `method_used` is `loftr+magsac++` throughout — the fallback never once fired on
+  a pair that did not need it.
+- **2 of 2 true failures caught** — both real Tier D pairs contradicted, both genuinely wrong.
+
+That is 2/2 detection and 0/20 false positives. Suggestive, and far too thin to quote as a rate.
+
+**What to run:** extend the sun sweep past the point where the matcher actually breaks —
+**60°, 90°, 120°, 180°** — where ground truth is still exact and the matcher fails while its own
+self-consistency metrics stay plausible. Same command, more deltas; ~10 minutes of compute plus
+the analysis. Then build the table: **detection rate** (induced failures flagged) against
+**false-alarm rate** (good registrations wrongly contradicted), with the failure threshold stated
+in metres.
+
+The claim then becomes *"we detect registration failure with a measured detection rate and a
+measured false-alarm rate"* — a capability with a number on it. Nothing in the lunar registration
+literature surveyed in `PHASE0_RESEARCH_DAY5.md` reports one. **This is the difference between a
+colour map and an instrument, and it is the highest novelty return per hour available.**
+
+*What can kill it:* if the detector turns out to raise false alarms at high deltas, log that and
+report the honest rate. A measured 70% detection rate is still an instrument; a claimed 100% with
+no measurement is not.
+
+### Move 3 — the stretch, if Day 6 has room. 2–3 h, from data already held.
+
+The 1,280 calibrated cells already support a **reliability diagram**: turn "verified" from a label
+into a *calibrated bound* — "in verified cells we promise under one pixel, and we are right 98% of
+the time" — and plot promised against achieved. Standard in forecasting, essentially absent from
+registration papers. No new compute; the data is in `core/reliability_calibration.csv`.
+
+### The honest cost — this is a scope decision, not a free win
+
+Move 2's hours are the same Day 6 hours wanted by **Gate 2 criterion 5** (same-scale classical
+comparison — still the only criterion with no evidence and no owner) and by **the deck** (still an
+empty `presentation/`, and the deck is the actual deliverable on 9 Sep, since a live demo is not
+compulsory). Recommended order: Move 1 tonight in the deck language (free) → Move 2 first thing
+Day 6 → **hand criterion 5 to Risheeth in writing rather than doing it.**
+
+**Decided by Samartha:** start the next session with Move 2, then work the remaining steps in
+order.
