@@ -43,7 +43,9 @@ Five design decisions worth defending.
 from __future__ import annotations
 
 import csv
+import json
 import pathlib
+import pickle
 import sys
 import tempfile
 import time
@@ -64,9 +66,19 @@ if str(ROOT / "app") not in sys.path:
     sys.path.insert(0, str(ROOT / "app"))
 
 from core.pipeline import resolve_pair, run_all  # noqa: E402
+from core.reliability import NO_EVIDENCE, VERIFIED, WEAK, describe, gate  # noqa: E402
 
 PAIRS_DIR = ROOT / "data" / "pairs"
 CATALOGUE = ROOT / "data" / "pairs_catalogue.csv"
+# Precomputed results for the bundled pairs (ops/precompute_demo_cache.py). A live
+# 15-second align inside a 3-minute pitch is risk with no upside; the cached result
+# is the SAME run_all() output, pickled, and the live path stays one click away.
+CACHE_DIR = ROOT / "demo_cache" / "results"
+
+# Cell tints for the reliability map. Display only - the states come from
+# core/reliability.py via run_all(); nothing is decided here.
+STATE_RGB = {VERIFIED: (40, 200, 90), WEAK: (250, 170, 30), NO_EVIDENCE: (120, 120, 120)}
+STATE_WORD = {VERIFIED: "verified", WEAK: "weak", NO_EVIDENCE: "no evidence"}
 
 # The five metrics, in the order Canonical Facts Sec.7 lists them, with the
 # Gate 2 threshold where one exists. `None` means "no threshold - report it".
@@ -195,6 +207,52 @@ def verdict(key: str, value, op: str | None, threshold) -> str:
     return f"{'PASS' if ok else 'FAIL'}  ({op} {threshold})"
 
 
+def reliability_overlay(base_u8, rel) -> np.ndarray | None:
+    """The reference image with each 8x8 cell tinted by its reliability state.
+
+    Green = verified, amber = weak, grey = no evidence. A tint, not a number:
+    the states are read straight from run_all()'s result dict.
+    """
+    if base_u8 is None or rel is None:
+        return None
+    h, w = base_u8.shape[:2]
+    rgb = np.stack([base_u8] * 3, axis=-1).astype(np.float32)
+    state = rel["state"]
+    g = state.shape[0]
+    rows = np.linspace(0, h, g + 1).astype(int)
+    cols = np.linspace(0, w, g + 1).astype(int)
+    for r in range(g):
+        for c in range(g):
+            tint = np.array(STATE_RGB.get(str(state[r, c]), (120, 120, 120)), np.float32)
+            block = rgb[rows[r]:rows[r + 1], cols[c]:cols[c + 1]]
+            block[:] = 0.55 * block + 0.45 * tint
+            # thin grid line so the cells read as cells
+            block[:1, :] = 30
+            block[:, :1] = 30
+    return np.clip(rgb, 0, 255).astype(np.uint8)
+
+
+def cached_result_path(pair_label: str | None) -> pathlib.Path | None:
+    if not pair_label:
+        return None
+    p = CACHE_DIR / f"{pair_label}.pkl"
+    return p if p.is_file() else None
+
+
+def load_cached_result(path: pathlib.Path) -> tuple[dict, dict]:
+    """(result dict, sidecar info) from ops/precompute_demo_cache.py's files."""
+    with open(path, "rb") as f:
+        result = pickle.load(f)
+    info = {}
+    side = path.with_suffix(".json")
+    if side.is_file():
+        try:
+            info = json.loads(side.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            info = {}
+    return result, info
+
+
 def reset_results() -> None:
     """Drop everything derived from a previous pair.
 
@@ -202,7 +260,8 @@ def reset_results() -> None:
     OLD alignment and the OLD metrics on screen under the NEW pair's name - a
     silent, extremely plausible way to demo the wrong number.
     """
-    for k in ("result", "changes", "overlay", "pair_label", "error"):
+    for k in ("result", "changes", "overlay", "gated", "pair_label", "error",
+              "result_origin"):
         st.session_state.pop(k, None)
 
 
@@ -288,13 +347,24 @@ with st.sidebar:
 
     st.divider()
     st.header("2 - Align")
+    cache_path = cached_result_path(pair_label) if mode == "Bundled pair" else None
+    use_cache = st.checkbox(
+        "Use the precomputed result", value=cache_path is not None,
+        disabled=cache_path is None,
+        help="The same pipeline output, computed earlier on this laptop and saved. "
+             "Untick to run the matcher live (about 15 s).",
+    )
     st.button(
         "Align", type="primary", width='stretch',
         disabled=(src_path is None or ref_path is None),
         # Buttons only ever WRITE state. See design decision 2.
         on_click=lambda: st.session_state.update(run_requested=True),
     )
-    st.caption("First run loads the matcher and takes longer than later ones.")
+    if cache_path is None:
+        st.caption("No precomputed result for this pair - Align runs live. First run "
+                   "loads the matcher and takes longer than later ones.")
+    else:
+        st.caption("Precomputed result available. Untick the box to run live.")
 
 # --- run, if asked ------------------------------------------------------------
 
@@ -302,10 +372,20 @@ if st.session_state.pop("run_requested", False) and src_path and ref_path:
     reset_results()
     st.session_state["pair_label"] = pair_label
     try:
-        with st.spinner("Aligning - this is the real pipeline, not a preview..."):
-            t0 = time.perf_counter()
-            st.session_state["result"] = run_all(src_path, ref_path)
-            st.session_state["elapsed"] = time.perf_counter() - t0
+        if use_cache and cache_path is not None:
+            result, info = load_cached_result(cache_path)
+            st.session_state["result"] = result
+            st.session_state["elapsed"] = float(info.get("seconds", result.get("seconds", 0.0)))
+            st.session_state["result_origin"] = (
+                f"precomputed on this laptop {info.get('computed_at', '(time unknown)')}, "
+                f"commit {info.get('git_commit', '?')}, {st.session_state['elapsed']:.1f} s of "
+                f"CPU at the time")
+        else:
+            with st.spinner("Aligning - this is the real pipeline, not a preview..."):
+                t0 = time.perf_counter()
+                st.session_state["result"] = run_all(src_path, ref_path)
+                st.session_state["elapsed"] = time.perf_counter() - t0
+                st.session_state["result_origin"] = "live run"
     except Exception as e:                       # a live demo must not show a traceback
         st.session_state["error"] = f"{type(e).__name__}: {e}"
 
@@ -337,10 +417,18 @@ if r is None and not st.session_state.get("error"):
 
 if r is not None:
     metrics = r.get("metrics")
-    warped = r.get("warped")
-    aligned_ok = r.get("H") is not None
+    # What the system DECLARED and used. When the matcher's homography is
+    # contradicted by the pixels, `warped_final` is the fallback alignment and the
+    # matcher's own `warped` is kept for the "what it would have shown" expander.
+    warped = r.get("warped_final", r.get("warped"))
+    declared = r.get("declared") or {}
+    fallback = r.get("fallback") or {}
+    rel = r.get("reliability")
+    aligned_ok = r.get("H_final", r.get("H")) is not None
 
     st.subheader(f"Result - {st.session_state.get('pair_label', 'pair')}")
+    if st.session_state.get("result_origin"):
+        st.caption(st.session_state["result_origin"])
 
     if not aligned_ok:
         st.error(
@@ -348,6 +436,21 @@ if r is not None:
             "anyway, because a failed registration is a result and hiding it "
             "would be the dishonest option."
         )
+    elif fallback.get("used"):
+        dx, dy = fallback["shift_px_common_grid"]
+        m_txt = f" ({fallback['shift_m']:.0f} m)" if fallback.get("shift_m") is not None else ""
+        sp = fallback.get("spread_px")
+        sp_txt = (f"; the four quadrants disagree by up to {sp} px"
+                  + (f" ({fallback['spread_m']:.0f} m)" if fallback.get("spread_m") is not None else "")
+                  if sp is not None else "")
+        st.warning(
+            f"**The matcher's result was contradicted and not used.** {declared.get('why', '')}. "
+            f"The system switched to global correlation of the pixels (no features, no RANSAC) "
+            f"and aligned the pair by a translation of ({dx:+d}, {dy:+d}) px{m_txt}{sp_txt}. "
+            f"That disagreement is the uncertainty to quote."
+        )
+    else:
+        st.success(f"**Method used: {declared.get('method', '?')}** - {declared.get('why', '')}.")
 
     c1, c2, c3 = st.columns(3)
     with c1:
@@ -358,7 +461,8 @@ if r is not None:
         st.caption(f"{r['shape_reference']} - the frame everything is measured in")
     with c3:
         st.markdown("**Source, aligned onto reference**")
-        st.caption("n/a - no transform" if warped is None else "the pipeline's output")
+        st.caption("n/a - no transform" if warped is None
+                   else f"what the system declared ({declared.get('method', '?')})")
 
     imgs = st.columns(3)
     # run_all does not return the loaded arrays, so re-read only for DISPLAY.
@@ -392,6 +496,49 @@ if r is not None:
             st.info("Reference and aligned image are different sizes - no swipe.")
         else:
             st.image(blended, width='stretch', clamp=True)
+        if fallback.get("used") and r.get("warped") is not None:
+            with st.expander("What the matcher alone would have shown"):
+                st.caption(
+                    "The homography MAGSAC++ fitted to the matcher's correspondences. "
+                    "It reached consensus - and the pixels say it is wrong. This is why "
+                    "a fit residual is not an accuracy."
+                )
+                blended_m = swipe(to_display(b_img), to_display(r["warped"]), frac)
+                if blended_m is not None:
+                    st.image(blended_m, width='stretch', clamp=True)
+
+    # --- where it can be trusted ------------------------------------------------
+    st.divider()
+    st.subheader("Where the alignment can be trusted")
+    st.caption(
+        "Each cell of the reference frame gets one of three states. **Verified**: "
+        "enough matches, they agree with the transform, and an independent check of "
+        "the pixels themselves (which never looks at the matches) agrees too. "
+        "**Weak**: matches exist but at least one test fails. **No evidence**: the "
+        "matcher measured nothing here - not a low score, an absence."
+    )
+    if rel is None:
+        st.info(f"Unavailable - {r.get('reliability_note', 'core/reliability.py did not run')}.")
+    else:
+        counts = rel["counts"]
+        k1, k2, k3 = st.columns(3)
+        k1.metric("Verified cells", f"{counts[VERIFIED]} / {rel['n_cells']}")
+        k2.metric("Weak cells", f"{counts[WEAK]} / {rel['n_cells']}")
+        k3.metric("No evidence", f"{counts[NO_EVIDENCE]} / {rel['n_cells']}")
+        ov = reliability_overlay(to_display(b_img), rel) if b_img is not None else None
+        if ov is not None:
+            st.image(ov, width='stretch', clamp=True,
+                     caption="Reference image tinted by cell: green verified, amber weak, grey no evidence")
+        for line in describe(rel):
+            if line.strip().startswith("true error"):
+                continue
+            st.caption(line)
+        gl = rel.get("global", {})
+        if gl.get("contradicted"):
+            st.error("The whole-frame check contradicts the matcher's transform, so no "
+                     "cell can be verified. Nothing measured on this pair should be quoted "
+                     "as an alignment accuracy.")
+        st.caption(f"Rule: {rel['config']}")
 
     # --- the five metrics ----------------------------------------------------
     st.divider()
@@ -479,9 +626,13 @@ if r is not None:
                 overlay, changes = detect_changes(ref_u8, war_u8, gsd_mpp=float(gsd_use))
                 st.session_state["overlay"] = overlay
                 st.session_state["changes"] = changes
+                # The gate labels; it does not alter Rishabh's detections.
+                st.session_state["gated"] = (gate(changes, rel, b_img.shape[:2])
+                                             if rel is not None else None)
             except Exception as e:
                 st.session_state["overlay"] = None
                 st.session_state["changes"] = None
+                st.session_state["gated"] = None
                 st.error(f"Change detection failed - {type(e).__name__}: {e}")
 
         changes = st.session_state.get("changes")
@@ -500,16 +651,33 @@ if r is not None:
                     f"**{len(changes)} candidates:** "
                     + ", ".join(f"{n} {k}" for k, n in sorted(buckets.items()))
                 )
+                gated = st.session_state.get("gated")
+                if gated is not None:
+                    gc = gated["counts"]
+                    st.markdown(
+                        f"**After the reliability gate:** {gc['kept']} kept (in verified cells), "
+                        f"{gc['rejected_weak']} rejected (in weak cells), "
+                        f"{gc['unassessable']} unassessable (in cells with no evidence)."
+                    )
+                    st.caption(
+                        "A difference in a region where the alignment was never verified is "
+                        "not a detection and not a false alarm - it is a hole in the evidence, "
+                        "and it is reported as one."
+                    )
+                    labelled = gated["kept"] + gated["rejected_weak"] + gated["unassessable"]
+                else:
+                    labelled = [dict(c, reliability="n/a") for c in changes]
                 st.caption(
                     "Candidates, not confirmed changes. On an optical-versus-"
                     "elevation pair most of these are expected to be artefacts of "
                     "the two images being different kinds of picture."
                 )
                 st.dataframe(
-                    [{"classification": c.get("classification"),
+                    [{"reliability": STATE_WORD.get(c.get("reliability"), c.get("reliability")),
+                      "classification": c.get("classification"),
                       "area_m2": c.get("area_m2"),
                       "area_px": c.get("area_px"),
-                      "centroid_px": c.get("centroid_px")} for c in changes],
+                      "centroid_px": c.get("centroid_px")} for c in labelled],
                     width='stretch', hide_index=True,
                 )
 

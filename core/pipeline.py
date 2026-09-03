@@ -190,24 +190,134 @@ def _distribution(ref_pts, ref_shape):
 
 
 def _refine_subpixel(src_pts, ref_pts, a_n, b_n):
-    """Optional NCC sub-pixel refinement. OFF by default, and that is a measurement.
+    """NCC sub-pixel refinement. ON by default since 3 Sep 2026 - and that is a measurement
+    that REVERSED an earlier one, which is worth being able to explain.
 
-    `core/bench_subpixel_results.csv`: NCC refinement converges on ~0.16-0.43 px
-    whatever it is handed, so it helps a matcher worse than that floor and hurts
-    one that is already better. LoFTR's worst case here is 0.336 px raw and
-    0.431 px refined - switching this on would make our headline number worse
-    while sounding like an improvement. ORB goes 0.722 -> 0.437, so it belongs on
-    Gate 1's classical fallback path instead.
+    Day 3 (`core/bench_subpixel_results.csv`, per-match endpoint error): refinement
+    converged on a ~0.16-0.43 px floor, so it helped ORB (0.722 -> 0.437 px) and hurt
+    LoFTR (0.336 -> 0.431 px). On that evidence it shipped OFF.
+
+    Day 5 evening (`evaluation/results_log.csv`, transform-level `rmse_gt_px`, the
+    metric Gate 2 is judged on): with refinement ON the fitted transform is MORE
+    accurate at every sun difference - medians over 5 off-grid shifts each,
+    0 deg 0.120 -> 0.086 px, 15 deg 0.249 -> 0.086, 30 deg 0.571 -> 0.314,
+    45 deg 1.655 -> 1.096 - and on real OHRC texture with a known half-pixel shift
+    0.156 -> 0.024 px. The 30 deg point moves from FAIL to PASS on Gate 2 C1.
+    Meanwhile `residual_px` got WORSE in the same runs (0.457 -> 0.524 px on the real
+    crop). Same data, different quantity: MAGSAC averages thousands of matches, so
+    the transform can improve while individual matches get noisier, and a held-out
+    residual measures agreement, not truth.
+
+    Both arms are in the log under `ours_loftr` (OFF) and `ours_loftr+subpixel` (ON).
+    The lesson is the one this project keeps relearning: never read a residual as an
+    accuracy, in either direction.
     """
     from core.subpixel import refine
     return refine(src_pts, ref_pts, a_n, b_n)
 
 
-def run_all(src_path, ref_path, H_true=None, progress=None, subpixel=False) -> dict:
+def _reliability(ref_shape, src_raw, ref_raw, H, src_in, ref_in, warped, ref_img,
+                 gsd_mpp, H_true):
+    """core/reliability.py: verified / weak / no-evidence per cell, plus the global
+    area check that decides whether H is contradicted. Optional hook, like the others.
+    """
+    try:
+        from core.reliability import reliability_map
+    except ImportError as e:
+        return None, f"core/reliability.py unavailable ({e})"
+    try:
+        rel = reliability_map(ref_shape, src_raw, ref_raw, H, src_in, ref_in, warped,
+                              ref_img, gsd_mpp=gsd_mpp, H_true=H_true)
+    except Exception as e:  # noqa: BLE001 - a diagnostic must never take the run down
+        return None, f"reliability map failed ({type(e).__name__}: {str(e)[:100]})"
+    return rel, "ok"
+
+
+def _fallback(a_n, b_n, factors, gsd, ref_shape, H_true, reason, a_raw=None, b_raw=None):
+    """Global phase correlation, source -> reference, with NO features and NO RANSAC.
+
+    Used when the matcher produced no transform, or when the area check says the
+    transform it produced is wrong. Returns a dict describing what was done, or
+    None if even this could not be measured. The translation is estimated on the
+    common-GSD, illumination-normalised images (what the matcher saw) and expressed
+    back in ORIGINAL reference pixels via the same `factors` the matches use.
+
+    A single global peak is not evidence on its own, so the four quadrants are
+    correlated independently and their spread is reported as the uncertainty. On the
+    real Tier D pair the top and bottom halves disagree by ~23 px (~215 m): the two
+    products are not related by one translation, and this reports that rather than
+    smoothing it over.
+    """
+    try:
+        import cv2
+        from core.reliability import best_peak
+    except ImportError:
+        return None
+
+    def _pad(x, h, w):
+        p = np.zeros((h, w), np.float32)
+        x = np.asarray(x, dtype=np.float32)
+        p[:x.shape[0], :x.shape[1]] = x
+        return p
+
+    a = np.asarray(a_n, dtype=np.float32)
+    b = np.asarray(b_n, dtype=np.float32)
+    h, w = max(a.shape[0], b.shape[0]), max(a.shape[1], b.shape[1])
+    # Two representations, same rule as the area check: what the matcher saw
+    # (illumination-normalised) and plain intensity; the stronger peak wins.
+    reps_a = [("gradient_orientation", _pad(a, h, w))]
+    reps_b = [("gradient_orientation", _pad(b, h, w))]
+    if a_raw is not None and b_raw is not None:
+        reps_a.append(("intensity", _pad(a_raw, h, w)))
+        reps_b.append(("intensity", _pad(b_raw, h, w)))
+    dx, dy, ncc, rep = best_peak(reps_a, reps_b)
+    if dx is None:
+        return {"used": False, "reason": reason, "note": "constant image, nothing to correlate"}
+    quads = []
+    hh, ww = h // 2, w // 2
+    for name, ys, xs in (("top-left", slice(0, hh), slice(0, ww)),
+                         ("top-right", slice(0, hh), slice(ww, None)),
+                         ("bottom-left", slice(hh, None), slice(0, ww)),
+                         ("bottom-right", slice(hh, None), slice(ww, None))):
+        qdx, qdy, qncc, _m = best_peak([(m, x[ys, xs]) for m, x in reps_a],
+                                       [(m, x[ys, xs]) for m, x in reps_b])
+        quads.append({"name": name, "shift_px": None if qdx is None else (qdx, qdy), "ncc": qncc})
+    devs = [max(abs(q["shift_px"][0] - dx), abs(q["shift_px"][1] - dy))
+            for q in quads if q["shift_px"] is not None]
+    spread = int(max(devs)) if devs else None
+
+    # Common-grid translation -> ORIGINAL-pixel affine, through the same resample
+    # factors the matches use. Three points, exact for any pure scale change.
+    pts = np.array([[0.0, 0.0], [100.0, 0.0], [0.0, 100.0]], np.float32)
+    src_orig = to_original(pts, factors["a"]).astype(np.float32)
+    ref_orig = to_original(pts + np.array([dx, dy], np.float32), factors["b"]).astype(np.float32)
+    A = cv2.getAffineTransform(src_orig, ref_orig)
+    H_fb = np.vstack([A, [0.0, 0.0, 1.0]])
+
+    rmse_gt = None
+    if H_true is not None:
+        from core.reliability import _true_error_grid
+        te = _true_error_grid(tuple(ref_shape), H_fb, H_true, 8)
+        rmse_gt = float(np.sqrt(np.nanmean(te ** 2)))
+    return {
+        "used": True, "reason": reason,
+        "shift_px_common_grid": (dx, dy), "gsd_mpp_common": gsd,
+        "shift_m": None if not gsd else float(np.hypot(dx, dy) * gsd),
+        "ncc": ncc, "representation": rep, "quadrants": quads,
+        "spread_px": spread, "spread_m": None if (spread is None or not gsd) else float(spread * gsd),
+        "H": H_fb, "rmse_gt_px": rmse_gt,
+        "note": (f"global FFT cross-correlation on the common-GSD images ({rep} "
+                 f"representation gave the stronger peak); no features, no RANSAC; "
+                 f"translation only"),
+    }
+
+
+def run_all(src_path, ref_path, H_true=None, progress=None, subpixel=True) -> dict:
     """Register one pair. Returns a result dict; never raises on a bad pair.
 
-    subpixel: run NCC refinement on the matches. Default False - see
-        `_refine_subpixel`. Turn it on for the classical fallback, not for LoFTR.
+    subpixel: run NCC refinement on the matches. Default True since 3 Sep 2026 -
+        see `_refine_subpixel` for the measurement that changed it. Pass False to
+        reproduce the pre-3-Sep rows (`ours_loftr`, Gate 1 residual 0.19452325191421008).
     """
     t0 = time.perf_counter()
     a, meta_a = load(src_path)
@@ -240,6 +350,33 @@ def run_all(src_path, ref_path, H_true=None, progress=None, subpixel=False) -> d
     # can depend on it. This is a picture of where the matches landed, not a score.
     dist_info, dist_note = _distribution(ref_in, b.shape[:2])
 
+    # Where can this be trusted? Three states per cell, and an INDEPENDENT area
+    # check of the whole frame that never looks at the matches. If that check says
+    # H is wrong - or there is no H - register by global correlation instead and
+    # SAY SO. The matcher's numbers above are left exactly as they are: the point
+    # is to report the disagreement, not to hide it.
+    rel, rel_note = _reliability(b.shape[:2], src_full, ref_full, H, src_in, ref_in,
+                                 warped, b, gsd, H_true)
+    contradicted = bool(rel and rel["global"].get("contradicted"))
+    fallback = None
+    if H is None:
+        fallback = _fallback(a_n, b_n, factors, gsd, b.shape[:2], H_true,
+                             reason="matcher produced no usable transform "
+                                    f"({info.get('note', '')})", a_raw=a_s, b_raw=b_s)
+    elif contradicted:
+        g = rel["global"]
+        reason = f"area check contradicts the matcher's homography: {g.get('note', '')}"
+        fallback = _fallback(a_n, b_n, factors, gsd, b.shape[:2], H_true, reason=reason,
+                             a_raw=a_s, b_raw=b_s)
+    if fallback and fallback.get("used"):
+        H_final, method_used = fallback["H"], "fft_phase_correlation (fallback)"
+        why = fallback["reason"]
+    else:
+        H_final, method_used = H, ("loftr+magsac++" if H is not None else "none")
+        why = (rel["global"].get("note", "") if rel else rel_note) if H is not None \
+            else "no transform"
+    warped_final = warp(a, H_final, b.shape[:2]) if H_final is not None else None
+
     return {
         "source": str(src_path), "reference": str(ref_path),
         "shape_source": a.shape, "shape_reference": b.shape,
@@ -249,8 +386,13 @@ def run_all(src_path, ref_path, H_true=None, progress=None, subpixel=False) -> d
         "n_matches": int(len(src_pts)), "ransac": info,
         "H": H, "warped": warped,
         "src_inliers": src_in, "ref_inliers": ref_in,
+        "src_matches": src_full, "ref_matches": ref_full,
         "metrics": metrics, "metrics_note": metrics_note,
         "distribution": dist_info, "distribution_note": dist_note,
+        "reliability": rel, "reliability_note": rel_note,
+        "fallback": fallback,
+        "declared": {"method": method_used, "why": why, "contradicted": contradicted},
+        "H_final": H_final, "warped_final": warped_final,
         "seconds": time.perf_counter() - t0,
         "meta_source": meta_a, "meta_reference": meta_b,
     }
@@ -518,6 +660,32 @@ def _print_report(r: dict) -> None:
                   f"Gate 2 number and counts a different point set)")
         else:
             print(f"  ({r['distribution_note']})")
+
+    rel = r.get("reliability")
+    print(f"\n  {'-'*60}\n  WHERE IT CAN BE TRUSTED\n  {'-'*60}")
+    if rel is None:
+        print(f"  UNAVAILABLE - {r.get('reliability_note')}")
+    else:
+        from core.reliability import ascii_map, describe
+        for line in describe(rel):
+            print(f"  {line}")
+        print("  " + ascii_map(rel).replace("\n", "\n  ") +
+              "   (V verified, w weak, . no evidence; row 0 = top)")
+    d = r.get("declared") or {}
+    print(f"\n  method used   {d.get('method')}")
+    print(f"  because       {d.get('why')}")
+    fb = r.get("fallback")
+    if fb and fb.get("used"):
+        dx, dy = fb["shift_px_common_grid"]
+        m = f" = {fb['shift_m']:.0f} m" if fb.get("shift_m") is not None else ""
+        print(f"  fallback      translation ({dx:+d},{dy:+d}) px on the common "
+              f"{fb['gsd_mpp_common'] or '?'} m/px grid{m}, peak NCC {fb['ncc']:+.3f}")
+        if fb.get("spread_px") is not None:
+            sm = f" = {fb['spread_m']:.0f} m" if fb.get("spread_m") is not None else ""
+            print(f"                quadrant disagreement up to {fb['spread_px']} px{sm} - "
+                  f"the uncertainty to quote")
+        if fb.get("rmse_gt_px") is not None:
+            print(f"                true error of the fallback: rmse_gt_px {fb['rmse_gt_px']:.3f}")
     print(f"{'='*64}\n")
 
 
@@ -551,12 +719,16 @@ def _build_parser() -> argparse.ArgumentParser:
                    help="crop the DEM to this many px per side; the matcher raises "
                         "when BOTH images exceed its 640 px tile")
     p.add_argument("--subpixel", action="store_true",
-                   help="NCC refinement - measured to HURT LoFTR, see _refine_subpixel")
+                   help="NCC refinement ON (the default since 3 Sep 2026; kept for old scripts)")
+    p.add_argument("--no-subpixel", action="store_true",
+                   help="NCC refinement OFF - reproduces the pre-3-Sep `ours_loftr` rows")
     p.add_argument("--log", action="store_true",
                    help="append the result to evaluation/results_log.csv")
     p.add_argument("--tier", help="validation tier for the logged row; mandatory with "
                                   "--log on a real pair (Invariant 2)")
-    p.add_argument("--method", default="ours_loftr", help="method name for the logged row")
+    p.add_argument("--method", default=None,
+                   help="method name for the logged row; default `ours_loftr+subpixel`, or "
+                        "`ours_loftr` with --no-subpixel")
     p.add_argument("--notes", default="", help="free text for the logged row")
     return p
 
@@ -594,11 +766,55 @@ def _run_one(src, ref, H_true, args, pair_id, tier, config, gsd_mpp):
         else:
             # A synthetic pair knows its metres from --pixel-size; a real pair only
             # from its own label, and there `run_all` is the authority.
+            rel = r.get("reliability")
+            rel_cfg = (f"; sub-pixel NCC refinement {'ON' if getattr(args, 'subpixel', True) else 'OFF'}"
+                       + (f"; {rel['config']}" if rel else ""))
+            rel_notes = ""
+            if rel:
+                c, g = rel["counts"], rel["global"]
+                rel_notes = (f" | reliability: verified {c['verified']}/weak {c['weak']}/"
+                             f"no_evidence {c['no_evidence']} of {rel['n_cells']} cells; "
+                             f"area check {g.get('note', '')}"
+                             + (f", whole-frame peak shift ({g['shift_px'][0]:+d},"
+                                f"{g['shift_px'][1]:+d}) px NCC {g['ncc']:+.2f}"
+                                if g.get("shift_px") is not None else "")
+                             + f"; method used: {r['declared']['method']}")
+                s = rel.get("summary_by_state")
+                if s:
+                    rel_notes += " | true error by state: " + "; ".join(
+                        f"{k} n={v['n']}" + (f" median {v['median_px']:.3f} px p90 {v['p90_px']:.3f}"
+                                             if v.get("n") else "")
+                        for k, v in s.items())
             logged, note = _log_row(pair_id, tier, args.method, r["metrics"],
-                                    config=config,
+                                    config=(config or "") + rel_cfg,
                                     gsd_mpp=gsd_mpp if gsd_mpp is not None else r["gsd_mpp"],
-                                    notes=args.notes)
+                                    notes=(args.notes or "") + rel_notes)
             print(("  " + note) if logged else f"\n{note}\n")
+            fb = r.get("fallback")
+            if logged and fb and fb.get("used"):
+                # The fallback is a DIFFERENT method and gets its own row. residual_px is
+                # left blank on purpose: a translation fitted by correlation has no
+                # held-out match residual, and the quadrant spread is not the same
+                # quantity. It goes in the notes under its own name.
+                dx, dy = fb["shift_px_common_grid"]
+                fb_metrics = {"rmse_gt_px": fb.get("rmse_gt_px"), "residual_px": None,
+                              "inlier_count": None, "inlier_ratio": None,
+                              "grid_coverage_fraction": None, "distribution_cv": None,
+                              "n_matches": None, "status": "ok"}
+                ok2, note2 = _log_row(
+                    pair_id, tier, "fft_phase_correlation (fallback)", fb_metrics,
+                    config=(f"{fb['note']}; triggered because {fb['reason']}"),
+                    gsd_mpp=gsd_mpp if gsd_mpp is not None else r["gsd_mpp"],
+                    notes=(f"translation ({dx:+d},{dy:+d}) px on the common "
+                           f"{fb['gsd_mpp_common']} m/px grid"
+                           + (f" = {fb['shift_m']:.0f} m" if fb.get("shift_m") is not None else "")
+                           + f", peak NCC {fb['ncc']:+.3f}; quadrant disagreement up to "
+                           f"{fb['spread_px']} px"
+                           + (f" = {fb['spread_m']:.0f} m" if fb.get("spread_m") is not None else "")
+                           + " (the uncertainty to quote). The matcher's row above is kept as-is; "
+                           "this row is what the system actually declared and used."))
+                print(("  " + note2) if ok2 else f"\n{note2}\n")
+                logged = logged and ok2
     return r["H"] is not None, logged, r["metrics"]
 
 
@@ -646,6 +862,11 @@ def _print_sweep_summary(rows) -> None:
 def main(argv: list[str]) -> int:
     parser = _build_parser()
     args = parser.parse_args(argv[1:])
+    # Refinement is on unless explicitly switched off; the method name says which,
+    # so a row can never be read without knowing whether it was refined.
+    args.subpixel = not args.no_subpixel
+    if args.method is None:
+        args.method = "ours_loftr+subpixel" if args.subpixel else "ours_loftr"
 
     if not args.pair and not args.synthetic:
         parser.print_help()

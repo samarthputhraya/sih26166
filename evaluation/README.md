@@ -3,7 +3,7 @@
 This module calculates all metrics for the lunar image registration pipeline. It acts as the single source of truth for the project's performance. All results must be logged to `results_log.csv` before being quoted in the presentation or UI.
 
 ## Core Files
-* `shaded_relief.py`: Renders accurate lunar shadows from the SLDEM2015 elevation model given specific sun angles.
+* `shaded_relief.py`: Hillshades a DEM from a stated sun azimuth (clockwise from image-up) and elevation. A local cosine law — **no cast shadows**; azimuth sweeps are an illumination test, not a shadow test. The axis-order bug that reflected the sun until 3 Sep 2026 is pinned by `test_shaded_relief.py` (a sun from the top must light a hill's top flank). A label's true-north azimuth needs the meridian correction in `ops/solar_geometry.py` before it goes in here.
 * `synthetic_data.py`: Generates evaluation pairs with exact ground-truth homographies and scales up to 20x.
 * `metrics.py`: The evaluation engine. Calculates fit, accuracy, and spatial distribution.
 * `test_metrics.py`: Anti-regression tests for the evaluation logic.

@@ -57,7 +57,28 @@ EXPECTED = {
     "core.distribution:summary": ["pts", "shape", "grid", "min_per_cell"],
 
     "core.pipeline:run_all": ["src_path", "ref_path", "H_true", "progress", "subpixel"],
+
+    # Added 3 Sep 2026 (Phase 2, M1): the trust layer. `run_all` returns its output
+    # under result["reliability"], plus "declared", "fallback", "H_final", "warped_final".
+    "core.reliability:reliability_map": ["ref_shape", "src_raw", "ref_raw", "H", "src_in",
+                                         "ref_in", "warped_img", "ref_img", "gsd_mpp", "H_true",
+                                         "grid", "min_inliers", "min_local_ratio",
+                                         "max_cell_shift_px", "min_cell_ncc",
+                                         "max_global_shift_px", "min_global_ncc",
+                                         "inlier_thresh_px"],
+    "core.reliability:gate": ["changes", "rel", "ref_shape", "keep_states"],
+    "core.reliability:xcorr_peak": ["a", "b"],
 }
+
+
+def test_run_all_result_carries_the_trust_layer_keys():
+    """The UI and the gate read these; renaming one breaks the demo silently."""
+    import inspect
+    from core import pipeline
+    src = inspect.getsource(pipeline.run_all)
+    for key in ('"reliability"', '"declared"', '"fallback"', '"H_final"', '"warped_final"',
+                '"src_matches"', '"ref_matches"'):
+        assert key in src, f"run_all no longer returns {key}"
 
 
 @pytest.mark.parametrize("target,expected", sorted(EXPECTED.items()))

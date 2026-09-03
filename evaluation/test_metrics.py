@@ -83,8 +83,15 @@ def test_log_result_refuses_failed_status_by_default():
     with pytest.raises(ValueError):
         log_result("test_pair", tier="synthetic", method="test", metrics=metrics)
 
-def test_log_result_allows_failed_status_with_explicit_flag():
+def test_log_result_allows_failed_status_with_explicit_flag(tmp_path, monkeypatch):
+    # Redirect the log to a temp file. Without this, every `pytest` run appended a
+    # `test_pair_allowed / method=test` row to the REAL evidence file
+    # (evaluation/results_log.csv) - it was hit and reverted four times on Day 5.
+    # Every other test in the repo that logs already redirects the same way.
+    import evaluation.logger as logger
+    monkeypatch.setattr(logger, "RESULTS_LOG", tmp_path / "results_log.csv")
     metrics = {"status": "too_few_matches", "rmse_gt_px": None, "residual_px": None,
                "inlier_count": 0, "inlier_ratio": 0.0}
     log_result("test_pair_allowed", tier="synthetic", method="test", metrics=metrics, allow_failed=True)
-    # confirm no exception was raised — that's the assertion here
+    # confirm no exception was raised, and that the row went to the temp file
+    assert (tmp_path / "results_log.csv").exists()

@@ -18,9 +18,9 @@ The PS names six things. We must be able to point at evidence for each:
 
 | # | PS demands | Our evidence |
 |---|---|---|
-| 1 | **Multi-modal** (genuinely different sensor modality) | Tier C pairs — optical ↔ infrared |
-| 2 | **Sun-angle invariant** | Tier A + Tier D swept-illumination curve |
-| 3 | **Scale invariant** | Tier B+ pairs at ≥20× GSD ratio |
+| 1 | **Multi-modal** (genuinely different sensor modality) | Tier D only (optical ↔ elevation). **No Tier C pair was ever cut.** On Tier D the matcher fails and the system *detects and declares* that failure — see §6.9. |
+| 2 | **Sun-angle invariant** | The synthetic swept-illumination curve (rendered DEM, exact ground truth, no cast shadows). **No real pair with a sun difference exists in the repo.** |
+| 3 | **Scale invariant** | Common-GSD resampling (built, measured on Tier D at 6.4×). **No Tier B/B+ pair was ever cut; no pyramid exists.** |
 | 4 | **Sub-pixel accuracy** | `rmse_gt_px` on synthetic with true ground truth |
 | 5 | **Uniform distribution across the image** | `grid_coverage_fraction` + `distribution_cv` |
 | 6 | **A stated evaluation metric** | All five metrics, logged to CSV every run |
@@ -62,9 +62,14 @@ lose the room in Q&A.
 
 ### The honest one-sentence summary we all use
 
-> "We validate on a ladder: same-sensor cross-illumination for sun angle, Chandrayaan-2 against
-> LROC and Kaguya for cross-sensor and 20× scale, and optical-against-infrared for the
-> multi-modal case."
+> "We validate against exact ground truth on a rendered sun-angle sweep and report the angle at
+> which we stop meeting our own threshold; on the one real multi-modal pair we own — optical
+> against elevation — our matcher fails, the system detects that itself, and it registers by
+> global correlation instead and says so."
+
+*(Rewritten 3 Sep 2026. The earlier sentence promised cross-sensor and optical-against-infrared
+validation that was never cut. Tiers A, B, B+ and C are aspirational rungs of the ladder, not
+results, and nobody says them as results.)*
 
 ---
 
@@ -209,12 +214,31 @@ That scores on feasibility and impact. Say it deliberately.
    ⚠️ `pip install magsac` **DOES NOT EXIST** — verified, no such package. The first draft said it
    did. If you need a standalone binding it is `pymagsac`, but OpenCV's is fine.
 4. **Illumination: phase congruency OR sign-invariant gradient orientation.** A/B test both.
-5. **Scale: explicit image pyramid + resample-to-common-GSD.** LoFTR is not reliably invariant
-   past ~4–8× on its own; our real ratios are 18–285×. **Resample both images to a common ground
-   sample distance before matching.** This is a required step, not an optimisation.
-6. **Sub-pixel: NCC on an 11×11 patch per match + quadratic peak fit.**
-7. **Uniform distribution: 8×8 grid, min 2 matches/cell, re-detect in empty cells.**
+5. **Scale: resample-to-common-GSD.** LoFTR is not reliably invariant past ~4–8× on its own; our
+   real ratios are 18–285×. **Resample both images to a common ground sample distance before
+   matching.** This is a required step, not an optimisation. ⚠️ **There is no image pyramid in
+   `core/scale.py` and there will not be one before 9 Sep.** Do not say "pyramid" to a judge.
+   Note also that common-GSD resampling is a preprocessing step in the PS-setters' own paper
+   (arXiv 2509.04775, §4.1.2) — it is engineering, cited, never claimed as innovation.
+6. **Sub-pixel: NCC on an 11×11 patch per match + quadratic peak fit — ON by default since
+   3 Sep 2026, after a measurement reversed the Day-3 decision.** Per-match error said it hurt
+   LoFTR; the transform-level `rmse_gt_px` (the Gate 2 metric) says it helps at every sun
+   difference and moves the 30° point from FAIL to PASS. Both arms are in `results_log.csv`
+   (`ours_loftr` = OFF, `ours_loftr+subpixel` = ON); `--no-subpixel` reproduces the old rows.
+   The pinned Gate-1 number changed with it — see §11.
+7. **Uniform distribution: 8×8 grid metrics (`grid_coverage_fraction`, `distribution_cv`).**
+   ⚠️ `redetect()` in `core/distribution.py` is built and tested but **not called by the
+   pipeline**. We *measure* uniformity; we do not *enforce* it. Do not claim enforcement.
 8. **UI: Streamlit.** A notebook on screen reads as unfinished.
+9. **The trust layer (added 3 Sep 2026, Phase 1 decision — `ops/PHASE1_NOVELTY_DECISION.md`).**
+   `core/reliability.py` labels every 8×8 cell of the reference frame `verified` / `weak` /
+   `no_evidence`, where *no evidence* is a distinct state and never a low score. The whole-frame
+   verdict is a **vote of the cells' own pixel correlations, which never see the matches**; when
+   the vote contradicts the matcher's homography, `core/pipeline.py` falls back to global phase
+   correlation, reports the translation with the quadrant disagreement as its uncertainty, and
+   **declares which method was used and why**. Calibrated against exact ground truth on the sun
+   sweep (`core/reliability_calibration.csv`). This is the innovation bullet; everything else in
+   this list is engineering.
 
 ---
 
@@ -253,12 +277,18 @@ A judge will ask. An unqualified "sub-pixel" is not an answer.
 Not slogans — these are the questions most likely to be asked, with honest answers.
 
 **"Is this really multi-modal?"**
-> "Our Tier C pairs are visible-against-infrared, which is genuinely multi-modal. Tier A is
-> same-sensor and we call it a sun-angle experiment, not multi-modal."
+> "Our one real multi-modal pair is optical against elevation — a Kaguya photograph against a
+> LOLA hillshade. On it our feature matcher produced correspondences that reached RANSAC consensus
+> and were all wrong; we know because we built ground truth for that pair. The system detected
+> that itself from the pixels, refused the homography, registered by global correlation to within
+> the disagreement between quadrants, and reported which method it used. We have no optical-against-
+> infrared pair and we say so." *(numbers: `[TBD — results_log.csv]`, rows `pair_04_tierD_native`)*
 
 **"How do you handle a 20× scale difference?"**
-> "We resample both images to a common ground sample distance using the metadata, then match on a
-> pyramid. Learned matchers degrade past roughly 4–8× on their own — we don't rely on that."
+> "We resample both images to a common ground sample distance using the metadata before matching,
+> because learned matchers degrade past roughly 4–8× on their own. That step is standard — the
+> Space Applications Centre's own 2025 benchmark does the same — and we cite it rather than claim
+> it. We have not built a coarse-to-fine pyramid; our real Tier D ratio is 6.4×."
 
 **"What's your accuracy on real data?"**
 > "On synthetic and DEM-rendered pairs where we have true ground truth: [rmse_gt_px]. On real
@@ -299,6 +329,10 @@ Q&A round. **If you catch a bare number anywhere in these documents that is not 
 - College SPOC registered before the 14 Aug 2026 deadline ✅. Team registered, SIH26166 submitted ✅.
 - **Internal college hackathon: September 2026, exact date TBC.** Chase your SPOC.
 - SIH26166 submission closes **20 September 2026**; SPOC portal nomination **30 September 2026**.
+  ⚠️ **UNRESOLVED (3 Sep):** the official *SIH 2026 Guidelines for College SPOCs* (p.16) says
+  "the last date for team nomination and idea submission by College SPOC and Team leader on SIH
+  portal is till **15th Sept 2026** only", while the PS listing shows 20 Sep for SIH26166. Ask
+  the SPOC which is binding before 9 Sep and correct this line. Source: `ops/PHASE0_RESEARCH_DAY5.md` §6.
 - Grand Finale: **December 2026**, 36 hours, at a nodal centre.
 - Eligibility, all satisfied: team of 6 ✅, ≥1 female member (Saniya) ✅, all from one institution ✅.
 
@@ -520,11 +554,13 @@ sih26166/
 ├── core/                       # Samartha
 │   ├── io_loader.py            # format abstraction — PDS3, PDS4, GeoTIFF
 │   ├── illumination.py
-│   ├── scale.py                # resample to common GSD + pyramid
+│   ├── scale.py                # resample to common GSD (no pyramid)
 │   ├── matcher.py
 │   ├── ransac.py
-│   ├── subpixel.py
-│   ├── distribution.py
+│   ├── subpixel.py             # built, shipped OFF (measured)
+│   ├── distribution.py         # grid metrics; redetect() not wired
+│   ├── reliability.py          # the trust layer: verified / weak / no_evidence + fallback
+│   ├── reliability_calibrate.py
 │   └── pipeline.py
 ├── presentation/               # Saniya
 ├── weights/                    # Pre-cached model weights — REQUIRED for Gate 4

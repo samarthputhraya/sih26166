@@ -269,8 +269,10 @@ runtime, not as numbers he hardcodes.** Give Saniya the gallery images and the f
   SIFT with our illumination normalisation. That row separates the preprocessing contribution from
   the matcher contribution."** ← the ablation, and the strongest thing you say
 - *"SIFT gets 0.2 px in published papers. Why is yours worse?"* → "Those are same-sensor,
-  similar-illumination pairs. Ours are cross-sensor with large sun-angle differences. Different
-  problem."
+  similar-illumination pairs. Our sweep has sun-angle differences up to 45 degrees against exact
+  ground truth, and on the same-frame pair with no sun difference AKAZE actually beats us — that
+  row is in the log. Different problem." *(Corrected 3 Sep 2026: we have NO cross-sensor pair;
+  never say "ours are cross-sensor".)*
 - *"What if SIFT is good enough?"* → point at the Tier C row and the failure gallery.
 - *"Which of your results is weakest?"* → know it. Say it.
 

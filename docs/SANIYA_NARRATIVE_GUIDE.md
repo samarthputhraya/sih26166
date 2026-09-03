@@ -130,18 +130,53 @@ slide to put it on.
 
 **The "Innovation and uniqueness" bullet is also Slide 2's**, and it is the one that scores.
 Be careful here, because *novelty* is the highest-weighted criterion and "we used a pretrained
-model" is not novel. What is actually ours:
+model" is not novel.
 
-1. **Illumination normalisation before matching**, so features come from structure rather than
-   brightness — with an ablation proving how much it contributes on its own (Risheeth's Config 2).
-2. **Explicit common-GSD resampling** before matching, because learned matchers degrade past
-   ~4–8× and our real ratios reach 285×.
-3. **Enforced spatial uniformity** as a first-class constraint, not a side effect — the PS asks for
-   it explicitly and almost nobody implements it.
-4. **Ground truth from DEM re-rendering**, which lets us measure sun-angle invariance
-   quantitatively instead of asserting it.
+> **Rewritten 3 Sep 2026 after the Phase 0 research and the Phase 1 decision**
+> (`ops/PHASE0_RESEARCH_DAY5.md`, `ops/PHASE1_NOVELTY_DECISION.md`). The four bullets that
+> used to stand here — illumination normalisation, common-GSD resampling, enforced uniformity,
+> DEM re-rendering — are **not** the innovation bullet any more. Two of them are the preprocessing
+> steps of the PS-setters' own 2025 paper (arXiv 2509.04775, Space Applications Centre), one was
+> never wired (`redetect()` has no callers), and one is standard methodology. Saying any of them
+> as "ours" to a SAC judge is the "this already exists" failure mode.
 
-That list is defensible. "We used LoFTR" is not.
+**The one innovation claim, in the words a judge hears:**
+
+> "Every registration tool gives you one accuracy number for the whole image. Ours tells you,
+> cell by cell, where the alignment is *verified*, where it is *weak*, and where it has *no
+> evidence at all* — and when its own matcher is confidently wrong, it says so and switches
+> method."
+
+What makes it defensible, and what has to be on the slide next to it:
+
+1. **Three states, not a score.** *No evidence* is a distinct state, never a low score. Built in
+   `core/reliability.py`; shown in the demo as a green / amber / grey map over the reference.
+2. **An independent check that never looks at the matches.** Each cell of the warped source is
+   cross-correlated against the reference; the cells vote. On the real optical ↔ elevation pair the
+   matcher reached RANSAC consensus with **zero correct correspondences** — the pixels caught it,
+   the system declared the transform contradicted, fell back to global correlation and reported
+   the disagreement between quadrants as its uncertainty. Numbers: `[TBD — results_log.csv]`
+   (rows `pair_04_tierD_native`, methods `ours_loftr` and `fft_phase_correlation (fallback)`).
+3. **Calibrated against exact ground truth.** Over the sun-azimuth sweep, verified cells are
+   measurably more accurate than weak cells: `[TBD — results_log.csv]` and
+   `core/reliability_calibration_summary.csv`. This is the measurement that could have killed the
+   claim; it ran first.
+4. **Cite the prior art on the same slide** — Uss et al. 2016 (per-region accuracy without ground
+   truth), Brown & Lowe 2007 (match verification from inlier counts — the test our Tier D case
+   *passes* while being wrong), Wan et al. 2021 (correlation where features fail on optical ↔ DEM).
+   Ours is the three-state semantics, the pixel-vs-match disagreement as the failure signal, and
+   the calibration on lunar data. A judge who hears the citations trusts the claim.
+
+**Say as engineering, with the citation, never as innovation:** illumination normalisation and
+common-GSD resampling (both in the SAC paper's pipeline); the rendered sun sweep as ground truth
+(standard practice; ours has no cast shadows and the slide says so).
+
+**Say on the FEASIBILITY slide, deliberately:** CPU-only, offline, Apache-2.0 components — the SAC
+benchmark's best method (SuperGlue) depends on non-commercial SuperPoint weights.
+
+**Never say:** cross-sensor (we have no cross-sensor pair), pyramid (not built), "we enforce
+uniformity" (not wired), "a 2025 paper benchmarks LoFTR on Chandrayaan-2" (it benchmarks
+SuperGlue), any Tier D number as an alignment accuracy.
 
 ---
 
@@ -298,20 +333,29 @@ TIME  | SPEAKER  | CONTENT                                                      
    smooth maria where corner detectors find nothing. And SuperPoint's pretrained weights are
    academic and non-commercial only — that would block operational use. LoFTR is Apache-2.0."
 5. *"How do you handle a 20× scale difference?"* — Samartha: **"We resample both images to a common
-   ground sample distance using the mission metadata, then match coarse-to-fine on a pyramid.
-   Learned matchers degrade past roughly four to eight times on their own, so we don't rely on
-   that — it's an explicit preprocessing step."**
+   ground sample distance using the mission metadata before matching, because learned matchers
+   degrade past roughly four to eight times on their own. That is standard — the Space
+   Applications Centre's own 2025 benchmark does the same — so we cite it rather than claim it.
+   We have not built a pyramid; our real Tier D ratio is 6.4×."**
 6. *"SIFT reaches 0.2 px in papers. Why is yours higher?"* — Risheeth: "Those are same-sensor,
-   similar-illumination pairs. Ours are cross-sensor with large sun-angle differences."
+   similar-illumination pairs. Our sweep goes to 45 degrees of sun difference against exact ground
+   truth, and on the same-frame pair with no sun difference AKAZE beats us — that row is in the
+   log." *(We have no cross-sensor pair. Never say "ours are cross-sensor".)*
 7. *"Did you actually get Chandrayaan-2 data?"* — Rohan: **"Yes. ISRO's OHRC products are publicly
    available and we're using them. We also registered on ISRO's own portal. And because the PS
    asks for a *generic* solution, we validated across four missions."**
-8. *"Is LROC-to-LROC cross-sensor?"* — Rohan: **"No. Same sensor. That's our sun-angle test and we
-   label it that way. Our cross-sensor work is Chandrayaan-2 against LROC and against Kaguya."**
-   ← **the trap question. The old guide's answer to this was false.**
-9. *"Where's the multi-modal part?"* — Samartha: "Optical against infrared — Chandrayaan-1's M3
-   spectrometer, same modality class as CH-2's IIRS. It's harder and our numbers are worse there;
-   we report by how much."
+8. *"Is LROC-to-LROC cross-sensor?"* — Rohan: **"No. Same sensor — that would be a sun-angle test.
+   We do not have a cross-sensor pair in this submission; our real pairs are one OHRC frame
+   cropped twice and Kaguya optical against a LOLA elevation model, and we label both exactly
+   that way."** ← **the trap question. Two earlier versions of this answer promised cross-sensor
+   work that was never cut.**
+9. *"Where's the multi-modal part?"* — Samartha: **"Optical against elevation: a Kaguya photograph
+   against a LOLA elevation model rendered as a hillshade. Our feature matcher produced
+   correspondences that reached RANSAC consensus and every one was wrong — we built ground truth
+   for that pair and checked. The system caught it from the pixels, refused the homography,
+   registered by global correlation and reported the disagreement between quadrants as the
+   uncertainty. We have no optical-against-infrared pair, and we say so rather than imply it."**
+   *(numbers: `[TBD — results_log.csv]`, rows `pair_04_tierD_native`)*
 10. *"How does change detection avoid shadow false positives?"* — Rishabh: "Shape elongation,
     intensity direction, and alignment with the sun-azimuth difference from the metadata. It's
     heuristic — properly you'd predict shadows from a DEM."

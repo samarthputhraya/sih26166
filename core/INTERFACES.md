@@ -39,8 +39,16 @@ load  ->  to_common_gsd  ->  normalize  ->  match  ->  filter_matches  ->  warp
 | `subpixel.metres(px, gsd_mpp)` · `subpixel.describe(px, gsd_mpp, grid)` | float · str |
 | `distribution.counts(pts, shape, grid=8)` | `(8, 8)` int array |
 | `distribution.weak_cells(cell_counts, min_per_cell=2)` | `[(row, col), ...]` |
-| `distribution.redetect(src_img, ref_img, H, cells, match_fn=None, ...)` | `(src_new, ref_new, info)` |
-| `pipeline.run_all(src_path, ref_path, H_true=None, progress=None, subpixel=False)` | result dict |
+| `distribution.redetect(src_img, ref_img, H, cells, match_fn=None, ...)` | `(src_new, ref_new, info)` — **built and tested, NOT called by `run_all`.** "We enforce uniformity" is not a claim this repo supports. |
+| `pipeline.run_all(src_path, ref_path, H_true=None, progress=None, subpixel=True)` | result dict |
+| `reliability.reliability_map(ref_shape, src_raw, ref_raw, H, src_in, ref_in, warped_img, ref_img, gsd_mpp=None, H_true=None, ...)` | dict: `state` (8×8 of `verified`/`weak`/`no_evidence`), `counts`, `global` (verdict, contradicted, cell vote), `true_error_px` when `H_true` is given |
+| `reliability.gate(changes, rel, ref_shape, keep_states=("verified",))` | `{"kept", "rejected_weak", "unassessable", "counts"}` |
+| `reliability.xcorr_peak(a, b)` | `(dx, dy, ncc)` — the shift that moves `a` onto `b`; sign pinned by test |
+
+`run_all`'s result dict also carries (added 3 Sep 2026): `reliability`, `declared`
+(`{"method", "why", "contradicted"}`), `fallback` (None, or the global-correlation translation
+with its quadrant spread), `H_final` / `warped_final` (what the system declared and used — the
+matcher's own `H` / `warped` are kept unchanged), `src_matches` / `ref_matches` (the raw matches).
 
 Points are **`(x, y)`**, never `(row, col)`. Every one of them, everywhere.
 
@@ -88,11 +96,13 @@ from `evaluation.metrics`, never redefined here.
 | Default | Why |
 |---|---|
 | `method="gradient_orientation"` | `bench_illumination_results.csv` — restores 5023 of 5185 matches under an inverted-and-gamma'd image, where `off` keeps 336. ~15% faster than phase congruency. |
-| `subpixel=False` | `bench_subpixel_results.csv` — NCC refinement converges on a ~0.16–0.43 px floor. It helps ORB (0.722 → 0.437) and **hurts LoFTR** (0.336 → 0.431). On for the classical fallback, off for what we ship. |
+| `subpixel=True` (since 3 Sep 2026) | Two measurements that disagree, and the one Gate 2 is judged on wins. Per-match endpoint error (`bench_subpixel_results.csv`, Day 3): refinement hurt LoFTR (0.336 → 0.431 px). Transform-level `rmse_gt_px` (`results_log.csv`, Day 5 evening, medians over 5 shifts): refinement helps at every sun difference — 0° 0.120 → 0.086, 15° 0.249 → 0.086, 30° 0.571 → 0.314, 45° 1.655 → 1.096 px — and 0.156 → 0.024 px on real OHRC texture. Rows `ours_loftr` (OFF) and `ours_loftr+subpixel` (ON). `--no-subpixel` reproduces the old rows. |
 | `tile=640` | `bench_loftr_cpu_results.csv` — the CPU budget on the demo machine. |
 | `threshold_px=3.0` | Canonical Facts §6.3. |
 | `patch=11`, `grid=8` | Canonical Facts §6.6 and §6.7. |
 
-> ⚠️ Turning `subpixel=True` on makes `residual_px` **fall** (0.195 → 0.038) while true accuracy
-> gets **worse**. NCC makes matches agree with each other, and `residual_px` measures agreement,
-> not truth. Never read a falling `residual_px` as evidence that accuracy improved.
+> ⚠️ `residual_px` and `rmse_gt_px` move independently, in **both** directions. With refinement
+> on, `residual_px` fell 0.195 → 0.038 on `pair_01` while the per-match error got worse; on the
+> real-texture ground-truth pair it **rose** 0.457 → 0.524 while the transform's true error got
+> **better** (0.156 → 0.024). NCC changes how much matches agree with each other; `residual_px`
+> measures agreement, not truth. Never read a residual as an accuracy, in either direction.

@@ -58,6 +58,7 @@ from scipy.ndimage import map_coordinates
 from core.io_loader import load
 from evaluation.shaded_relief import render_shaded_relief
 from ops.fetch_lola_dem import OFFSET_PX, SCALE_M, fetch_window, pixel_to_latlon
+from ops.solar_geometry import image_frame_azimuth
 # Private, and deliberately imported rather than copied: the GeoTIFF tag set is
 # what `core/io_loader.py` reads back. Two divergent copies of it is a bug that
 # shows up as a silently wrong gsd_mpp, which is the one field this whole
@@ -65,9 +66,12 @@ from ops.fetch_lola_dem import OFFSET_PX, SCALE_M, fetch_window, pixel_to_latlon
 # keeps a single definition without editing someone else's module.
 from ops.build_tier_d_pair import KAGUYA_GSD, LOLA_GSD, _write_geotiff
 
-# The measured Kaguya illumination for this scene, identical to the original pair
-# so the ONLY variable between the two runs is the grid the match happens on.
-SUN_AZIMUTH_DEG = 284.901
+# The measured Kaguya illumination for this scene (STAC `view:sun_azimuth`, clockwise
+# from TRUE NORTH). The renderer wants azimuth clockwise from IMAGE-UP, and in this
+# south-polar stereographic map north is rotated clockwise by the longitude - see
+# `ops/solar_geometry.py`. `build_native` derives the image-frame value from the
+# crop's own centre longitude and writes both numbers into PROVENANCE.md.
+SUN_AZIMUTH_TRUE_NORTH_DEG = 284.901
 SUN_ELEVATION_DEG = 16.98
 
 
@@ -127,10 +131,17 @@ def build_native(kaguya: pathlib.Path, out_dir: pathlib.Path,
         dem.astype(np.float64), [dem_lines, dem_samples], order=3, mode="reflect",
     ).astype(np.float32)
 
+    # Sun azimuth in the IMAGE frame: label azimuth (from true north) plus the
+    # meridian convergence at the crop centre. Derived, not fitted - the azimuth
+    # sweep in ops/tier_d_investigation.py confirms it to within its 5 deg step.
+    xc, yc = x_left + sx * (tile / 2.0), y_top + sy * (tile / 2.0)
+    _lat_c, lon_c = pixel_to_latlon(OFFSET_PX - yc / SCALE_M, OFFSET_PX + xc / SCALE_M)
+    sun_azimuth_image_deg = image_frame_azimuth(SUN_AZIMUTH_TRUE_NORTH_DEG, lon_c)
+
     # Hillshade at the FINE spacing. render_shaded_relief takes gradients with
     # np.gradient(dem, pixel_size_m), so passing the true 9.37 m spacing keeps the
     # slope field physically correct on the new grid.
-    relief = render_shaded_relief(dem_native, SUN_AZIMUTH_DEG, SUN_ELEVATION_DEG, KAGUYA_GSD)
+    relief = render_shaded_relief(dem_native, sun_azimuth_image_deg, SUN_ELEVATION_DEG, KAGUYA_GSD)
 
     out_dir.mkdir(parents=True, exist_ok=True)
     source_path = out_dir / "tier_d_native_source.tif"
@@ -146,8 +157,12 @@ def build_native(kaguya: pathlib.Path, out_dir: pathlib.Path,
         f"- Kaguya source window: x={x}, y={y}, size={tile} px; GSD={KAGUYA_GSD} m/px\n"
         f"- LOLA: `ldem_60s_60m`, native {LOLA_GSD} m/px, resampled by cubic spline onto the\n"
         f"  Kaguya pixel grid ({tile}x{tile} at {KAGUYA_GSD} m/px) BEFORE hillshading.\n"
-        f"- Hillshade computed at {KAGUYA_GSD} m/px, solar azimuth {SUN_AZIMUTH_DEG}deg,\n"
-        f"  elevation {SUN_ELEVATION_DEG}deg - identical illumination to `pair_03_tierD`.\n"
+        f"- Hillshade computed at {KAGUYA_GSD} m/px, solar elevation {SUN_ELEVATION_DEG} deg,\n"
+        f"  solar azimuth {SUN_AZIMUTH_TRUE_NORTH_DEG} deg from true north (STAC view:sun_azimuth)\n"
+        f"  = {sun_azimuth_image_deg:.3f} deg from image-up after adding the meridian\n"
+        f"  convergence at the crop centre (lon {lon_c:.3f} E) - see ops/solar_geometry.py.\n"
+        f"  Renderer convention fixed 3 Sep 2026 (evaluation/shaded_relief.py); earlier\n"
+        f"  versions of this pair were lit from a reflected direction.\n"
         f"- LOLA band origin: line {band_l0}, sample {band_s0}; band shape {dem.shape}.\n"
         "- Both crops use Moon (2015) south-polar stereographic on a 1737.4 km sphere.\n"
         "\n"

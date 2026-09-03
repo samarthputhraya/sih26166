@@ -18,10 +18,13 @@ from PIL import Image, TiffImagePlugin
 from core.io_loader import load
 from evaluation.shaded_relief import render_shaded_relief
 from ops.fetch_lola_dem import OFFSET_PX, SCALE_M, fetch_window, pixel_to_latlon
+from ops.solar_geometry import image_frame_azimuth
 
 KAGUYA_GSD = 9.3698731836556
 LOLA_GSD = 60.0
 CRS = "Moon (2015) - Sphere / Ocentric / South Polar"
+SUN_AZIMUTH_TRUE_NORTH_DEG = 284.901   # STAC view:sun_azimuth for TC1S2B0_01_03482S746E0433
+SUN_ELEVATION_DEG = 16.98
 
 
 def _write_geotiff(path: pathlib.Path, image: np.ndarray, gsd: float,
@@ -77,8 +80,13 @@ def build(kaguya: pathlib.Path, out_dir: pathlib.Path,
     if relief_dem.size == 0:
         raise ValueError("LOLA crop is empty")
 
-    # These are the measured Kaguya illumination values, not inferred values.
-    relief = render_shaded_relief(relief_dem, 284.901, 16.98, LOLA_GSD)
+    # The measured Kaguya illumination (STAC view:sun_azimuth 284.901 deg, clockwise
+    # from TRUE NORTH). The renderer takes azimuth from IMAGE-UP; in this south-polar
+    # stereographic map north is rotated clockwise by the longitude, so the crop
+    # centre's longitude is added - derived in ops/solar_geometry.py, not fitted.
+    _lat_c, lon_c = pixel_to_latlon((line0 + line1) / 2.0, (sample0 + sample1) / 2.0)
+    sun_az_image = image_frame_azimuth(SUN_AZIMUTH_TRUE_NORTH_DEG, lon_c)
+    relief = render_shaded_relief(relief_dem, sun_az_image, SUN_ELEVATION_DEG, LOLA_GSD)
     out_dir.mkdir(parents=True, exist_ok=True)
     source_path = out_dir / "tier_d_01_source.tif"
     ref_path = out_dir / "tier_d_01_ref.tif"
@@ -90,7 +98,10 @@ def build(kaguya: pathlib.Path, out_dir: pathlib.Path,
         "# Tier D pair provenance\n\n"
         f"- Kaguya source: `{kaguya}`\n"
         f"- Kaguya source window: x={x}, y={y}, size={tile} px; GSD={KAGUYA_GSD} m/px\n"
-        f"- LOLA: `ldem_60s_60m`, rendered at Kaguya solar azimuth 284.901°, elevation 16.98°\n"
+        f"- LOLA: `ldem_60s_60m`, rendered at Kaguya solar elevation {SUN_ELEVATION_DEG} deg and\n"
+        f"  azimuth {SUN_AZIMUTH_TRUE_NORTH_DEG} deg from true north = {sun_az_image:.3f} deg from\n"
+        f"  image-up (meridian convergence at crop-centre lon {lon_c:.3f} E; ops/solar_geometry.py).\n"
+        f"  Renderer convention fixed 3 Sep 2026; earlier builds were lit from a reflected direction.\n"
         f"- LOLA crop: lines {line0}:{line1}, samples {sample0}:{sample1}; GSD={LOLA_GSD} m/px\n"
         "- Both crops use Moon (2015) south-polar stereographic on a 1737.4 km sphere.\n"
         "- Generated files are ignored by Git; this file records how to reproduce them.\n",

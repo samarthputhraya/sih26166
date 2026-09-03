@@ -1,9 +1,15 @@
 # SIH26166 — Lunar Image Registration
 
-Registering Chandrayaan-2 imagery against reference lunar imagery across different sensors,
-sun angles and scales, to sub-pixel accuracy, with matches spread evenly across the frame.
+Registering Chandrayaan-2 imagery against reference lunar imagery under different sun angles
+and at different scales, to sub-pixel accuracy, with matches spread across the frame — and, cell
+by cell, telling you **where the alignment is verified, where it is weak, and where there is no
+evidence at all**. When its own matcher is confidently wrong, the system says so and switches
+method (`core/reliability.py`, `core/pipeline.py`).
 
 Smart India Hackathon 2026 · ISRO problem statement SIH26166.
+
+What is and is not validated is in `docs/00_CANONICAL_FACTS.md` §2 and §11. There is no
+cross-sensor pair in this repository; do not describe any result here as cross-sensor.
 
 ## Start here
 
@@ -61,6 +67,20 @@ radar or elevation only. "Sub-pixel" must always name the pixel grid and give th
 Code in git, imagery and model weights in Google Drive. Nothing over ~5 MB or binary goes in the
 repo. `weights/` and `demo_cache/` are gitignored but must be populated locally before the offline
 demo gate.
+
+## The trust layer
+
+```
+python -m core.pipeline data/pairs/pair_04_tierD_native        # prints WHERE IT CAN BE TRUSTED
+python -m core.reliability_calibrate --dem <dem.npy> --pixel-size 60 --sweep 0,15,30,45 --repeats 5
+python -m ops.gate_tier_d_changes                              # change detection, gated by the map
+python -m ops.precompute_demo_cache                            # cache run_all() for the demo
+```
+
+Every cell of the reference frame is `verified`, `weak` or `no_evidence`. The verdict on the
+whole transform is a vote of the cells' own pixel correlations, which never see the matches. The
+calibration run writes `core/reliability_calibration.csv` (one row per cell, with the true error)
+and logs one row per pair to `evaluation/results_log.csv`.
 
 ## Performance
 

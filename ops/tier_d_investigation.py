@@ -21,24 +21,29 @@ WHAT THIS MEASURES, AND WHY EACH PIECE IS HERE
    that way. It does not change the conclusion: the candidates differ by ~24 px and
    LoFTR is wrong by ~200 px against either.
 
-3. THE LIGHTING CONVENTION. `evaluation/shaded_relief.py` renders terrain lit from
-   180 degrees OPPOSITE the azimuth it is handed. At the recorded solar azimuth the
-   render is ANTI-correlated with the optical image (NCC -0.57); negating both
-   gradients - exactly a 180-degree aspect flip - gives +0.59. Every Tier D row in
-   `evaluation/results_log.csv`, ours and all three classical baselines, was scored
-   against a reference lit from the wrong side. Both lightings are measured here so
-   the effect is quantified rather than asserted.
+3. THE LIGHTING CONVENTION - two errors, both now fixed and both derived, not fitted.
+   (a) `evaluation/shaded_relief.py` (before 3 Sep 2026) unpacked `np.gradient` in
+       the wrong axis order, which REFLECTED the sun about the image diagonal: a
+       requested azimuth `a` lit the terrain as if from `90 - a`. The Day-5 reading of
+       this as "lit from az+180" was only half right. Pinned now by
+       `evaluation/test_shaded_relief.py` (a sun from the top must light a hill's top
+       flank and a crater's bottom wall).
+   (b) The label azimuth (284.901 deg, `view:sun_azimuth`) is clockwise from TRUE
+       NORTH; the renderer wants clockwise from IMAGE-UP. In this south-polar
+       stereographic map north is rotated clockwise by the longitude, so the crop
+       centre's 44.73 E must be added: 329.63 deg in the image frame
+       (`ops/solar_geometry.py`). That was the "unexplained ~15 deg" of the Day-5
+       sweep.
+   With both corrections the render correlates with the photograph at NCC +0.64 at
+   zero offset and the FFT peak reaches +0.75 (was -0.57 / +0.59 / +0.71). The
+   azimuth sweep below peaks within its 5-degree step of the derived value - the
+   derivation is what is used, the sweep is only the check.
 
 WHAT IS NOT TUNED
 -----------------
-The corrected azimuth is `recorded + 180`, derived from the convention error, NOT
-fitted to whatever maximises correlation. A sweep does peak slightly elsewhere
-(~120 deg, NCC +0.64); that extra ~15 deg is not claimed and not used. Choosing a
-sun angle because it makes the answer better is the move this file exists to avoid.
-
-`evaluation/shaded_relief.py` is Samrudh's file and is NOT edited here. Rendering at
-`azimuth + 180` through the existing function is arithmetically identical to
-rendering at `azimuth` through a fixed one, so the fix stays his to make.
+No sun angle in this file is chosen because it makes the answer better. The
+"as-labelled" arm renders at the label azimuth without the meridian correction,
+purely to quantify what that error costs.
 """
 from __future__ import annotations
 
@@ -97,12 +102,18 @@ def dem_on_optical_grid():
 
 
 def fft_peak(a, b):
-    """Integer (dx, dy) maximising cross-correlation, and the peak value."""
-    A, B = _z(a), _z(b)
-    n = A.shape[0]
-    F = np.fft.fftshift(np.fft.ifft2(np.fft.fft2(A) * np.conj(np.fft.fft2(B))).real) / A.size
-    r, c = np.unravel_index(np.argmax(F), F.shape)
-    return (c - n // 2, r - n // 2), float(F[r, c])
+    """Integer (dx, dy) that moves `a` onto `b`, and the peak NCC.
+
+    One convention for the whole project: `core.reliability.xcorr_peak`, pinned by
+    `core/test_reliability.py::test_xcorr_peak_sign` - if b == roll(a, (dy, dx))
+    the answer is (dx, dy). So for a = optical (source) and b = relief (reference),
+    (dx, dy) is the displacement `reference - source` that a correct match must show.
+    The Day-5 version of this function used the opposite sign, so its logged
+    ground truth reads (-9,+23) where this reads (+9,-23). Same alignment.
+    """
+    from core.reliability import xcorr_peak
+    dx, dy, v = xcorr_peak(a, b)
+    return (dx, dy), v
 
 
 def quadrant_agreement(optical, relief):
@@ -154,10 +165,19 @@ def main() -> int:
     print(f"  optical {optical.shape} at {KAGUYA_GSD:.4f} m/px   "
           f"DEM {dem.min():.0f}..{dem.max():.0f} m over {640 * KAGUYA_GSD:.0f} m\n")
 
+    # Crop-centre longitude -> meridian convergence -> image-frame azimuth. Derived.
+    from ops.solar_geometry import image_frame_azimuth
+    _optical_meta = load(KAGUYA, window=(WINDOW[0], WINDOW[1], 8, 8))[1]
+    _kx0, _sx, _, _ky0, _, _sy = _optical_meta["transform"]
+    _xc = _kx0 + _sx * (WINDOW[0] + WINDOW[2] / 2.0)
+    _yc = _ky0 + _sy * (WINDOW[1] + WINDOW[3] / 2.0)
+    _lat_c, lon_c = pixel_to_latlon(OFFSET_PX - _yc / SCALE_M, OFFSET_PX + _xc / SCALE_M)
     lightings = {
-        "as-recorded": RECORDED_AZIMUTH,
-        "corrected": (RECORDED_AZIMUTH + 180.0) % 360.0,
+        "as-labelled": RECORDED_AZIMUTH,                                  # no meridian correction
+        "corrected": image_frame_azimuth(RECORDED_AZIMUTH, lon_c),        # 329.63 deg here
     }
+    print(f"  crop centre lon {lon_c:.3f} E -> image-frame azimuth "
+          f"{lightings['corrected']:.3f} deg (label {RECORDED_AZIMUTH})")
     reliefs = {k: render_shaded_relief(dem, az, SUN_ELEVATION, KAGUYA_GSD)
                for k, az in lightings.items()}
 
@@ -170,6 +190,12 @@ def main() -> int:
     truth, peak = fft_peak(optical, reliefs["corrected"])
     print(f"    global peak (dx,dy) = ({truth[0]:+d}, {truth[1]:+d}) px "
           f"= ({truth[0]*KAGUYA_GSD:+.0f}, {truth[1]*KAGUYA_GSD:+.0f}) m   NCC {peak:+.4f}")
+    print("    convention: (dx,dy) = reference - source, the shift that moves the optical onto the relief")
+    # The sign, checked rather than trusted: apply the shift and the images must line up.
+    rolled = np.roll(optical, (truth[1], truth[0]), axis=(0, 1))
+    print(f"    check: NCC at zero offset after shifting the optical by (dx,dy): "
+          f"{float((_z(rolled) * _z(reliefs['corrected'])).mean()):+.4f} "
+          f"(was {float((_z(optical) * _z(reliefs['corrected'])).mean()):+.4f} unshifted)")
     print("    per-quadrant, independent:")
     quads = quadrant_agreement(optical, reliefs["corrected"])
     for name, (dx, dy), v in quads:
@@ -211,12 +237,14 @@ def main() -> int:
                         f"no-op); hillshade az {az:.3f} deg ({k}), el {SUN_ELEVATION} deg; "
                         f"LoFTR + gradient_orientation + MAGSAC++ 3.0 px"),
                 gsd_mpp=KAGUYA_GSD,
-                notes=(f"Ground truth ({truth[0]:+d},{truth[1]:+d}) px by FFT cross-correlation, "
+                notes=(f"Ground truth ({truth[0]:+d},{truth[1]:+d}) px (reference minus source; "
+                       f"the Day-5 rows used the opposite sign) by FFT cross-correlation, "
                        f"NCC {peak:+.3f}; {n_agree}/4 quadrants agree within 2 px, worst {spread} px, "
                        f"so it is not a perfectly uniform translation. rmse_gt_px is the TRUE match "
-                       f"error and is ~200 px against either candidate. Bet A: matching on the "
-                       f"sensor grid raised matches 19->{res['n_matches']}, none correct within "
-                       f"10 px. See ops/tier_d_investigation.py."))
+                       f"error. Correct within 10 px: {res['within'].get(10, 0)}/{res['n_matches']}. "
+                       f"Renderer convention and meridian convergence fixed 3 Sep 2026 "
+                       f"(evaluation/shaded_relief.py, ops/solar_geometry.py). "
+                       f"See ops/tier_d_investigation.py."))
         log_result(
             PAIR_ID, "D", "fft_phase_correlation",
             {"rmse_gt_px": None, "residual_px": None, "inlier_count": None,
@@ -225,11 +253,12 @@ def main() -> int:
             config=(f"global FFT cross-correlation, percentile-stretched, corrected "
                     f"lighting az {lightings['corrected']:.3f} deg; no features, no RANSAC"),
             gsd_mpp=KAGUYA_GSD,
-            notes=(f"Registers the pair at ({truth[0]:+d},{truth[1]:+d}) px "
-                   f"= {np.hypot(*truth)*KAGUYA_GSD:.0f} m, peak NCC {peak:.3f}; {n_agree}/4 "
+            notes=(f"Registers the pair at ({truth[0]:+d},{truth[1]:+d}) px (reference minus "
+                   f"source) = {np.hypot(*truth)*KAGUYA_GSD:.0f} m, peak NCC {peak:.3f}; {n_agree}/4 "
                    f"quadrants agree within 2 px, worst {spread} px. NO rmse_gt_px ON PURPOSE: "
                    f"this method DEFINES the reference alignment, so scoring it against itself "
-                   f"would be circular. Quadrant agreement is its evidence, not an accuracy."))
+                   f"would be circular. Quadrant agreement is its evidence, not an accuracy. "
+                   f"Lighting: renderer convention + meridian convergence fixed 3 Sep 2026."))
         print("\n  logged 3 rows to evaluation/results_log.csv")
     return 0
 

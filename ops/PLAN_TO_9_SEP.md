@@ -29,6 +29,9 @@ day itself**, and Gate 5 (all six explain their module cold) sits on **Day 12, a
 - **Our current novelty claims will not survive an expert.** Phase-congruency illumination-invariant
   lunar registration is established work (HOPC / HAPCG / HOWP / CFOG), and a 2025 paper already
   benchmarks **LoFTR on Chandrayaan-2 data**. LoFTR is off-the-shelf; we contributed nothing to it.
+  *[Correction, 3 Sep evening: that paper (arXiv 2509.04775, Space Applications Centre) benchmarks
+  SuperGlue, not LoFTR — LoFTR does not appear in it. The point stands: the matcher is not ours.
+  See `ops/PHASE0_RESEARCH_DAY5.md` §5.1.]*
 - **Two of our four written novelty bullets are false today**
   (`docs/SANIYA_NARRATIVE_GUIDE.md:131-142`): `redetect()` (`core/distribution.py:130`) has **zero
   callers** — we measure uniformity, we do not enforce it; and `core/scale.py` has **no pyramid**.
@@ -277,6 +280,8 @@ three minutes scores zero.
 
 1. **Regression floor** — `python -m pytest -q` stays green (currently **179 passed**) and
    `python -m core.pipeline data/pairs/pair_01` still prints `residual_px 0.19452325191421008`
+   *[3 Sep evening: sub-pixel refinement became the default on measured evidence, so the command
+   now prints `0.03761504064805703`; `--no-subpixel` reproduces the old figure exactly.]*
    exactly. That figure is quoted in our documents; if it moves, something upstream changed.
 2. **Bet A** — new Tier D rows in `results_log.csv` with the render resolution in `config`. Success =
    `residual_px` materially below 37.8. **Log either outcome.**

@@ -344,8 +344,10 @@ Rehearsals 1, 2, 3. Gate 5: answer cold.
 
 **Expect these questions:**
 - "Where did the Chandrayaan-2 data come from?" → archive.org public mirror + ISRO's own portal
-- "Is LROC-to-LROC really cross-sensor?" → **"No. Same sensor. That's our sun-angle test. Our
-  cross-sensor work is Chandrayaan-2 against LROC and Kaguya."** ← the most likely trap question
+- "Is LROC-to-LROC really cross-sensor?" → **"No. Same sensor — that would be a sun-angle test.
+  We have no cross-sensor pair in this submission: one OHRC frame cropped twice, and Kaguya optical
+  against a LOLA elevation model. We label both exactly that way."** ← the most likely trap
+  question. *(Corrected 3 Sep 2026 — Tier A/B were never cut; do not promise them.)*
 - "What licence is the Kaguya data?" → CC0, public domain
 - "How big is the dataset?" → know the number
 - "Could you rebuild this?" → "Yes, the dataset card documents every file."
