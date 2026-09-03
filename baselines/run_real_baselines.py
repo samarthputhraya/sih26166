@@ -5,23 +5,38 @@ import cv2
 import numpy as np
 
 
-# Allow imports from the project root.
+# ============================================================
+# PROJECT ROOT
+# ============================================================
+
 ROOT = Path(__file__).resolve().parents[1]
 
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 
+# ============================================================
+# BASELINE METHODS
+# ============================================================
+
 from baselines.sift_baseline import run_sift
 from baselines.orb_baseline import run_orb
 from baselines.akaze_baseline import run_akaze
 
 
-PAIR_SOURCE = ROOT / "data" / "pairs" / "pair_test_source.tif"
-PAIR_REFERENCE = ROOT / "data" / "pairs" / "pair_test_ref.tif"
+# ============================================================
+# REAL OHRC IMAGE PAIR
+# ============================================================
 
-OUTPUT = ROOT / "baselines" / "results.csv"
+PAIR_SOURCE = ROOT / "data" / "pairs" / "ohrc_real_source.png"
+PAIR_REFERENCE = ROOT / "data" / "pairs" / "ohrc_real_ref.png"
 
+OUTPUT = ROOT / "baselines" / "real_ohrc_results.csv"
+
+
+# ============================================================
+# IMAGE LOADING
+# ============================================================
 
 def load_gray(path):
     img = cv2.imread(str(path), cv2.IMREAD_GRAYSCALE)
@@ -34,14 +49,17 @@ def load_gray(path):
     return img
 
 
+# ============================================================
+# OFFSET CALCULATION
+# ============================================================
+
 def calculate_offset(src_pts, ref_pts):
     """
-    For the known synthetic pair:
+    Calculate the mean source-reference displacement.
 
-        source = reference shifted by approximately
-        (+7, +5)
-
-    Calculate mean source-reference displacement.
+    For real OHRC data there is no known ground-truth
+    translation, so this is only the displacement estimated
+    by the feature matches.
     """
 
     if len(src_pts) == 0:
@@ -55,10 +73,17 @@ def calculate_offset(src_pts, ref_pts):
     return dx, dy
 
 
+# ============================================================
+# OFFSET SPREAD
+# ============================================================
+
 def calculate_spread(src_pts, ref_pts):
     """
-    Calculate the standard deviation of displacement.
-    Lower means the estimated translation is more consistent.
+    Calculate the standard deviation of displacement
+    magnitudes.
+
+    Lower spread generally indicates more consistent
+    correspondence geometry.
     """
 
     if len(src_pts) == 0:
@@ -73,7 +98,12 @@ def calculate_spread(src_pts, ref_pts):
     return float(np.std(distances))
 
 
+# ============================================================
+# RUN ONE BASELINE METHOD
+# ============================================================
+
 def run_method(name, function, img1, img2):
+
     print()
     print("=" * 70)
     print(name)
@@ -92,9 +122,15 @@ def run_method(name, function, img1, img2):
         else 0.0
     )
 
-    dx, dy = calculate_offset(src, ref)
+    dx, dy = calculate_offset(
+        src,
+        ref
+    )
 
-    spread = calculate_spread(src, ref)
+    spread = calculate_spread(
+        src,
+        ref
+    )
 
     print(f"matches:          {n_matches}")
     print(f"mean confidence:  {mean_confidence:.6f}")
@@ -104,8 +140,8 @@ def run_method(name, function, img1, img2):
     print(f"time:             {elapsed:.4f} s")
 
     return {
-        "pair_id": "pair_test",
-        "tier": "TEST",
+        "pair_id": "ohrc_real",
+        "tier": "REAL",
         "config": "raw",
         "method": name,
         "n_matches": n_matches,
@@ -117,14 +153,22 @@ def run_method(name, function, img1, img2):
     }
 
 
+# ============================================================
+# MAIN
+# ============================================================
+
 def main():
 
     print("=" * 70)
-    print("SIH26166 — DAY 2 CLASSICAL BASELINE RUN")
+    print("SIH26166 — REAL OHRC CLASSICAL BASELINE RUN")
     print("=" * 70)
 
-    print(f"source: {PAIR_SOURCE}")
+    print(f"source:    {PAIR_SOURCE}")
     print(f"reference: {PAIR_REFERENCE}")
+
+    # --------------------------------------------------------
+    # Load images
+    # --------------------------------------------------------
 
     img1 = load_gray(PAIR_SOURCE)
     img2 = load_gray(PAIR_REFERENCE)
@@ -132,6 +176,10 @@ def main():
     print()
     print(f"source shape:    {img1.shape}")
     print(f"reference shape: {img2.shape}")
+
+    # --------------------------------------------------------
+    # Baseline methods
+    # --------------------------------------------------------
 
     methods = [
         ("SIFT", run_sift),
@@ -151,6 +199,10 @@ def main():
         )
 
         rows.append(row)
+
+    # --------------------------------------------------------
+    # Save results
+    # --------------------------------------------------------
 
     OUTPUT.parent.mkdir(
         parents=True,
@@ -183,15 +235,19 @@ def main():
         )
 
         writer.writeheader()
-
         writer.writerows(rows)
+
+    # --------------------------------------------------------
+    # Final results
+    # --------------------------------------------------------
 
     print()
     print("=" * 70)
-    print("DAY 2 RESULTS")
+    print("REAL OHRC RESULTS")
     print("=" * 70)
 
     for row in rows:
+
         print(
             f"{row['method']:6s} | "
             f"matches={row['n_matches']:5d} | "
@@ -201,15 +257,16 @@ def main():
         )
 
     print()
-    print(f"CSV written to:")
+    print("CSV written to:")
     print(OUTPUT)
 
     print()
-    print("KNOWN TEST ANSWER:")
-    print("Expected source-reference offset ≈ (+7, +5) pixels.")
-    print()
-    print("Day 2 baseline run complete.")
+    print("Real OHRC baseline run complete.")
 
+
+# ============================================================
+# ENTRY POINT
+# ============================================================
 
 if __name__ == "__main__":
     main()

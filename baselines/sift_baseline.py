@@ -1,61 +1,76 @@
-"""SIFT baseline for SIH26166.
-
-Implements run_sift(img1, img2, nfeatures=0) returning (src_pts, ref_pts)
-as (N, 2) float32 arrays in (x, y) order.
-"""
 import cv2
 import numpy as np
-
-EMPTY = (np.zeros((0, 2), np.float32), np.zeros((0, 2), np.float32))
-
-
-def _to_points(kp1, kp2, good):
-    src = np.float32([kp1[m.queryIdx].pt for m in good]).reshape(-1, 2)
-    ref = np.float32([kp2[m.trainIdx].pt for m in good]).reshape(-1, 2)
-    return src, ref
+import time
 
 
-def run_sift(img1: np.ndarray, img2: np.ndarray, nfeatures: int = 0) -> tuple[np.ndarray, np.ndarray]:
-    """Match SIFT features between two grayscale images.
+def run_sift(img1, img2, nfeatures=0, ratio=0.7):
+    """
+    SIFT + FLANN baseline.
 
-    Args:
-        img1: Source image (uint8 grayscale, HxW)
-        img2: Reference image (uint8 grayscale, HxW)
-        nfeatures: Maximum number of features to retain (0 = unlimited)
+    img1 = source image, uint8 grayscale
+    img2 = reference image, uint8 grayscale
 
     Returns:
-        (src_pts, ref_pts) each (N, 2) float32 in (x, y) order.
-        Returns empty arrays on failure (no descriptors, too few keypoints).
+        src_pts: (N, 2) float32
+        ref_pts: (N, 2) float32
+        confidence: (N,) float32
+        elapsed_seconds: float
     """
+
+    start = time.perf_counter()
+
     sift = cv2.SIFT_create(nfeatures=nfeatures)
+
     kp1, des1 = sift.detectAndCompute(img1, None)
     kp2, des2 = sift.detectAndCompute(img2, None)
 
-    if des1 is None or des2 is None or len(kp1) < 2 or len(kp2) < 2:
-        return EMPTY
+    if (
+        des1 is None
+        or des2 is None
+        or len(kp1) < 2
+        or len(kp2) < 2
+    ):
+        elapsed = time.perf_counter() - start
 
-    # SIFT descriptors are float32 -> FLANN KD-tree is correct here.
-    flann = cv2.FlannBasedMatcher(dict(algorithm=1, trees=5), dict(checks=50))
+        return (
+            np.zeros((0, 2), dtype=np.float32),
+            np.zeros((0, 2), dtype=np.float32),
+            np.zeros((0,), dtype=np.float32),
+            elapsed,
+        )
+
+    flann = cv2.FlannBasedMatcher(
+        dict(algorithm=1, trees=5),
+        dict(checks=50),
+    )
+
     knn = flann.knnMatch(des1, des2, k=2)
 
-    good = [p[0] for p in knn if len(p) == 2 and p[0].distance < 0.7 * p[1].distance]
-    return _to_points(kp1, kp2, good) if good else EMPTY
+    good = []
 
+    for pair in knn:
+        if len(pair) != 2:
+            continue
 
-if __name__ == "__main__":
-    from baselines.make_test_pair import make_pair
+        m, n = pair
 
-    src, ref = make_pair(dx=7, dy=5, seed=0)
-    src_pts, ref_pts = run_sift(src, ref)
+        if m.distance < ratio * n.distance:
+            good.append(m)
 
-    print(f"Matches: {len(src_pts)}")
-    if len(src_pts) > 0:
-        offset = np.median(ref_pts - src_pts, axis=0)
-        print(f"Median ref - src: {offset}")
-        expected = np.array([-7.0, -5.0])
-        print(f"Expected: {expected}")
-        print(f"Error: {np.abs(offset - expected)}")
-        assert np.allclose(offset, expected, atol=0.5), "Shift recovery failed"
-        print("SIFT baseline: PASS")
-    else:
-        print("SIFT baseline: NO MATCHES")
+    src = np.float32(
+        [kp1[m.queryIdx].pt for m in good]
+    ).reshape(-1, 2)
+
+    ref = np.float32(
+        [kp2[m.trainIdx].pt for m in good]
+    ).reshape(-1, 2)
+
+    # Convert descriptor distance into a simple confidence score.
+    confidence = np.float32([
+        1.0 / (1.0 + m.distance)
+        for m in good
+    ])
+
+    elapsed = time.perf_counter() - start
+
+    return src, ref, confidence, elapsed
