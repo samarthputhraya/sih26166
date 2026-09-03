@@ -178,11 +178,8 @@ True, verifiable, and a genuine deployment virtue. **Do not name a GPU model.**
 ### Benefits
 - **Trust as a deliverable.** An operator gets a per-region verdict, not one global number. A
   change-detection result inside a contradicted frame is **rejected, not reported** — on our Tier D
-  pair the gate **kept zero candidates.**
-  ⚠️ Quote "kept zero" and **no denominator**: the raw candidate count differs between the UI and
-  the ops script (known issue 9 — different contrast preprocessing into the same detector). The
-  *conclusion* is identical on both paths, the counts are not, and a judge who tries both routes
-  would catch a denominator.
+  pair the detector proposes **183 candidates and the gate keeps 0**: 5 rejected in weak cells,
+  178 unassessable in no-evidence cells. **Not one survives into a report.**
 - **Economic.** Open-source, permissively licensed, CPU-only — no GPU procurement, no licence cost,
   deployable on existing hardware.
 - **Reusable.** The same engine works for Mars, or for Earth-observation cross-sensor registration.
@@ -264,7 +261,7 @@ renderer.
 | 77% detection, 0% false alarms @ 120 m | `ops/MOVE2_FAILURE_DETECTION_DAY6.md` §3, from `core/reliability_calibration.csv` |
 | 88 matches, 0 of 35 cells, 231 m ± 216 m | `pair_04_tierD_native`, `ours_loftr+subpixel` + `fft_phase_correlation (fallback)` |
 | 142.7 m undetected @ 60° | `ops/MOVE2_FAILURE_DETECTION_DAY6.md` §4 |
-| gate kept zero candidates (no denominator) | `change_detection_absdiff+reliability_gate` |
+| 183 candidates, 0 kept / 5 rejected / 178 unassessable | `change_detection_absdiff+reliability_gate`, 4 Sep |
 | 285× scale ratio | `docs/00_CANONICAL_FACTS.md` §1 |
 
 **Banned from every slide** (Invariant 2): the words *cross-sensor* and *multi-modal* for anything

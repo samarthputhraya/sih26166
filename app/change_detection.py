@@ -93,33 +93,64 @@ def detect_changes(
         )
 
     # ---------------------------------------------------------
-    # 3. Convert non-uint8 images using a common scale
+    # 3. Normalise BOTH images, ALWAYS, and INDEPENDENTLY
     # ---------------------------------------------------------
+    #
+    # FIXED Day 6 (4 Sep 2026). This block used to do two things wrong, and
+    # together they made the detector return a different answer depending on what
+    # the caller had already done to the pixels.
+    #
+    # (a) It only normalised when the input was NOT uint8. So the Streamlit UI,
+    #     which hands over percentile-stretched uint8 for display, skipped it
+    #     entirely, while ops/gate_tier_d_changes.py, which hands over raw
+    #     float32, went through it. Same detector, same pair, 183 candidates
+    #     against 1.
+    #
+    # (b) Worse, it scaled both images by their COMBINED max. On
+    #     pair_04_tierD_native the reference peaks at 37488 DN and the aligned
+    #     optical image at 2040 - an 18x mismatch, which is normal for a
+    #     multi-modal pair because an optical image and an elevation hillshade
+    #     share no radiometric scale. Dividing both by 37488 crushed the optical
+    #     image to a 2nd-98th percentile range of [0, 5] and a standard deviation
+    #     of 1.35. Nothing can differ by `thresh` = 30 DN in an image that is
+    #     entirely black, so the detector reported 1 candidate. That was not a
+    #     conservative result, it was total contrast collapse, and it happened on
+    #     precisely the multi-modal case this project exists to handle.
+    #
+    # The fix is a robust per-image percentile stretch that always runs. Each
+    # image is scaled by its own 2nd-98th percentile, so a difference in absolute
+    # DN range between two sensors can no longer annihilate the darker one, and
+    # `thresh` means the same thing whoever calls this.
+    #
+    # THE TRADE-OFF, STATED: normalising each image separately also normalises
+    # away a genuine uniform brightness difference between them. For same-sensor
+    # change detection joint scaling would preserve that. We take per-image,
+    # because across sensors and modalities raw DN is not comparable in the first
+    # place - and the failure mode of the joint version is silent garbage rather
+    # than a slightly wrong answer.
 
-    if img_a.dtype != np.uint8 or img_b.dtype != np.uint8:
+    # ONE MORE TRAP, and it is why this does not fall back to min/max. A stretch
+    # needs a scale, and a near-uniform image does not have one. If the 2nd and
+    # 98th percentiles coincide, min/max would take whatever tiny feature exists -
+    # a 35 DN circle on a flat 100 DN field - and blow it up to the full 0-255
+    # range, turning a deliberately ambiguous difference into a confident "new
+    # bright". Classification here is threshold-based (+/-40 DN), so amplifying
+    # the scale silently rewrites the labels. When there is no robust range to
+    # stretch by, we pass the image through unchanged instead.
 
-        combined_max = max(
-            float(img_a.max()),
-            float(img_b.max())
-        )
+    def _stretch(img):
+        a = np.asarray(img, dtype=np.float64)
+        finite = a[np.isfinite(a)]
+        if finite.size == 0:
+            return np.zeros(a.shape, np.uint8)
+        lo, hi = np.percentile(finite, [2, 98])
+        if not np.isfinite(lo) or not np.isfinite(hi) or hi <= lo:
+            # No robust dynamic range: leave the values where they are.
+            return np.clip(np.nan_to_num(a), 0, 255).astype(np.uint8)
+        return np.clip((a - lo) * 255.0 / (hi - lo), 0, 255).astype(np.uint8)
 
-        if combined_max > 0:
-
-            img_a = np.clip(
-                img_a.astype(np.float32) * 255.0 / combined_max,
-                0,
-                255
-            ).astype(np.uint8)
-
-            img_b = np.clip(
-                img_b.astype(np.float32) * 255.0 / combined_max,
-                0,
-                255
-            ).astype(np.uint8)
-
-        else:
-            img_a = img_a.astype(np.uint8)
-            img_b = img_b.astype(np.uint8)
+    img_a = _stretch(img_a)
+    img_b = _stretch(img_b)
 
     # ---------------------------------------------------------
     # 4. Make sure both images have the same size
