@@ -87,13 +87,24 @@ def log_summary_row(pixel_size, method="ours_loftr+subpixel") -> tuple[bool, str
         seg += (f"; weak n={w['n']} median {float(w['median_px']):.3f} px"
                 if w and w.get("n") and int(w["n"]) else "; weak n=0")
         per_delta.append(seg)
+    # The sweep deltas and the repeat count are DERIVED, never hardcoded. They used to be
+    # the literal string "0/15/30/45 deg x 5 off-grid shifts", which silently became a lie the
+    # first time the sweep was extended: the Day-6 8-delta run logged a row whose `config` said
+    # four deltas while its own `notes` listed eight. A row that misdescribes its own population
+    # is worse than a missing row - it looks authoritative. Invariant 1 is about traceability,
+    # and a citation that points at the wrong population does not trace.
+    deltas = sorted({int(g[1:]) for g in {r["group"] for r in rows if r["group"] != "all"}
+                     if g.startswith("d") and g[1:].isdigit()})
+    delta_str = "/".join(str(d) for d in deltas) if deltas else "unknown"
+    n_reps = (n_pairs // len(deltas)) if deltas else 0
+
     metrics = {"rmse_gt_px": None, "residual_px": None, "inlier_count": None,
                "inlier_ratio": None, "grid_coverage_fraction": None, "distribution_cv": None,
                "n_matches": None, "status": "ok"}
     return _log_row("reliability_calibration_pooled", "synthetic", "reliability_calibration",
                     metrics,
                     config=(f"matcher arm: {method}; pooled over {n_pairs} synthetic pairs (sun "
-                            f"azimuth deltas 0/15/30/45 deg x 5 off-grid shifts), 64 cells each; "
+                            f"azimuth deltas {delta_str} deg x {n_reps} off-grid shifts), 64 cells each; "
                             f"true error per cell = RMS of "
                             f"|H(H_true^-1 p) - p| over a 5x5 grid of reference points; derivation in "
                             f"core/reliability_calibration.csv and core/reliability_calibration_summary.csv"),

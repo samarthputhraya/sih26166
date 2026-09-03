@@ -52,7 +52,36 @@ You are also the team's **fact-checker**. If a number appears in a slide and not
 
 ---
 
-## 📅 YOUR 12-DAY PLAN
+## 📅 YOUR PLAN — ⚠️ RE-ANCHORED ON DAY 6 (4 Sep). THE OLD DATES BELOW WERE WRONG.
+
+> 🔴 **Read this before anything else in this section. This is our error, not yours.**
+>
+> This guide was written against a **12-day** schedule. On Day 5 the SPOC confirmed the internal
+> round is **9 September 2026, which is Day 11** — so **Day 12 does not exist**, and Gates 4 and 5
+> moved earlier (`docs/00_CANONICAL_FACTS.md` §11). The day headings further down were never
+> updated. If you have been following them, **every deadline you hold is 1–2 days late, and the
+> old "Day 12" items would have landed after the round was already judged.**
+>
+> **The real remaining schedule:**
+>
+> | Real day | Date | What is yours | Gate that day |
+> |---|---|---|---|
+> | **6** | **4 Sep — today** | Slides 3, 5, 6 (these need **no** final numbers) | — |
+> | **7** | 5 Sep | Slides 2, 4. Full deck draft. | 🚪 Gate 2 |
+> | **8** | 6 Sep | **Deck v1 complete** + numbers audit #1. **Q&A bank finished.** | 🚪 Gate 3 |
+> | **9** | 7 Sep | Demo script final (3:00, all six speak). **Deck final** — code freezes today. | 🚪 Gate 4 |
+> | **10** | 8 Sep | Rehearsals 1–3, backup video, **final numbers audit** | 🚪 **Gate 5** |
+> | **11** | **9 Sep** | **THE INTERNAL HACKATHON** | 🎯 |
+>
+> **Where the old headings map to:** old "Day 8" → real Day 8 · old "Day 9" (demo script) → real
+> Day 9 · old "Day 10" (Q&A bank) → **real Day 8, one day earlier** · old "Day 11" and old
+> "Day 12" → **both collapse into real Day 10.** Day 10 is dense: three rehearsals, the video,
+> Gate 5 and the final audit. If rehearsal 3 will not fit, it moves to the morning of 9 Sep —
+> but Gate 5 does **not** move, because a Gate 5 held after the round is worth nothing.
+>
+> **Every "Day 12" written below means Day 10 (8 Sep).**
+
+## 📅 THE ORIGINAL DAY-BY-DAY (headings are the OLD numbering — use the table above)
 
 ### DAY 1 — ⚠️ THE TEMPLATE. This blocks the whole deck.
 
@@ -260,20 +289,20 @@ provenance, which is a maturity signal.
 
 ---
 
-### DAY 8 — Deck v1 complete
+### DAY 8 — Deck v1 complete   ⏩ *real Day 8 = 6 Sep — same day as Gate 3*
 
 Every slide has content. **Every number is written `[TBD — results_log.csv]`.**
 
 Then do a **numbers audit**: search the deck for every bare decimal. For each one, open
 `evaluation/results_log.csv` and confirm it exists there. If it doesn't, replace it with `[TBD]`.
-Do this again after Rehearsal 1 and again on Day 12.
+Do this again after Rehearsal 1 and again on real Day 10 (8 Sep).
 
 > You are the last line of defence against a fabricated number reaching a judge. In the first
 > draft, four separate documents carried the invented figure "0.7 px" as if it were measured.
 
 ---
 
-### DAY 9 — Demo script (3:00, all six speak)
+### DAY 9 — Demo script (3:00, all six speak)   ⏩ *real Day 9 = 7 Sep — code freeze + Gate 4*
 
 The old script left **Rishabh silent** for the entire demo and then Gate 5 required him to answer
 for his own module cold. Everyone speaks.
@@ -315,7 +344,7 @@ TIME  | SPEAKER  | CONTENT                                                      
 
 ---
 
-### DAY 10 — Q&A bank (20 questions)
+### DAY 10 — Q&A bank (20 questions)   ⏩ 🔴 *moves EARLIER: real Day 8 = 6 Sep*
 
 **Every answer below is true as written. Bracketed values are filled from the CSV, not guessed.**
 
@@ -382,7 +411,7 @@ TIME  | SPEAKER  | CONTENT                                                      
 
 ---
 
-### DAY 11 — Rehearsals 1 & 2, and the video
+### DAY 11 — Rehearsals 1 & 2, and the video   ⏩ 🔴 *real Day 10 = 8 Sep. Day 11 is the ROUND.*
 
 **Rehearsal 1 (1 hr):** full 3-minute run plus 5 minutes of Q&A. Time every section. Record on a
 phone. Note stumbles — don't fix mid-run.
@@ -399,7 +428,7 @@ the code change on Days 12–13, so the video would have shown a UI that no long
 
 ---
 
-### DAY 12 — Rehearsal 3 + Gate 5
+### DAY 12 — Rehearsal 3 + Gate 5   ⏩ 🔴 *THERE IS NO DAY 12. This is real Day 10 = 8 Sep.*
 
 **Rehearsal 3:** full run plus all 20 questions.
 
@@ -436,8 +465,38 @@ Google Drive SIH26166_DATA/    <- NOT IN GIT
 
 > ⚠️ **`deck.pptx` and `demo_video.mp4` cannot go in the repo.** `.gitignore` blocks `*.pptx` and
 > `*.mp4`, so `git add deck.pptx` **silently does nothing** — no error, no file, and you would only
-> find out on Day 12. Put both in Drive. Do **not** reach for `git add -f`; the rule exists because
-> a binary deck re-committed daily bloats the repo permanently for all six of us.
+> find out on real Day 10 (8 Sep). Put both in Drive. Do **not** reach for `git add -f`; the rule
+> exists because a binary deck re-committed daily bloats the repo permanently for all six of us.
+
+> 🔴 **BUT THIS MEANT YOUR WORK WAS INVISIBLE, AND THAT WAS OUR BUG — fixed on Day 6.**
+> Because your one deliverable is a format git refuses, **your progress could not be seen by
+> anyone**, and the Day-6 deck contingency in `ops/PLAN_TO_9_SEP.md` was written to trigger on
+> "no committed `.pptx`" — a thing this very guide forbids you from doing. It would have read
+> *failed* whether you had built five slides or none. **That criterion has been corrected.**
+>
+> **What to commit instead — do this today, it takes five minutes:**
+> `presentation/DECK_STATUS.md` — a text file, which `presentation/` **does** accept:
+>
+> ```markdown
+> # Deck status — <date>
+> Drive link: <paste the link to deck.pptx, sharing on for the team>
+> Template: official SIH 2026 .pptx, 924,505 bytes — downloaded? yes/no
+>
+> | Slide | Heading | State |
+> |---|---|---|
+> | 1 | TITLE PAGE | done / in progress / not started |
+> | 2 | IDEA TITLE | ... |
+> | 3 | TECHNICAL APPROACH | ... |
+> | 4 | FEASIBILITY AND VIABILITY | ... |
+> | 5 | IMPACT AND BENEFITS | ... |
+> | 6 | RESEARCH AND REFERENCES | ... |
+>
+> Blocked on: <anything, including "nothing">
+> ```
+>
+> Update it whenever the state changes. **This file — not the `.pptx` — is how the team sees the
+> deck exists.** If it says you are blocked on something, that is Samartha's problem to clear the
+> same day.
 
 ---
 
@@ -461,13 +520,13 @@ Google Drive SIH26166_DATA/    <- NOT IN GIT
 
 - [ ] Official template **downloaded and its real headings confirmed to the team on Day 1**
 - [ ] `deck.pptx` — 6 slides (title page + 5 content), official headings, unaltered template — **in Drive, not git**
-- [ ] Every number traced to `results_log.csv`; zero unfilled `[TBD]` at Day 12
+- [ ] Every number traced to `results_log.csv`; zero unfilled `[TBD]` at real Day 10 (8 Sep)
 - [ ] `demo_script.md` — 3:00, **all six speak**
 - [ ] `qa_bank.md` — 20 answers, all true, each assigned by name
 - [ ] `demo_video.mp4` — offline, post-Rehearsal-2, local copy on a phone — **in Drive, not git**
 - [ ] 3 rehearsals logged
 - [ ] Gate 5: all six answer cold
-- [ ] Three numbers audits done (Day 8, post-Rehearsal 1, Day 12)
+- [ ] Three numbers audits done (Day 8, post-Rehearsal 1, real Day 10 = 8 Sep)
 
 ---
 

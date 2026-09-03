@@ -198,11 +198,38 @@ one concrete instance where the rigour caught us lying to ourselves scores in th
 | **Risheeth** | Baseline numbers into the comparison table. | Failure gallery → one slide figure. | Rehearse his segment. |
 | **Saniya** | 🔴 Slides 3, 5, 6 (need **no** final numbers). | Slides 2, 4. Full deck draft. | Deck final. Lead rehearsals. |
 
-**Deck contingency, and this is the single highest-probability failure mode:** `presentation/` is a
-0-byte `.gitkeep` and its owner has **zero commits in five days**. **If there is no committed `.pptx`
-by end of Day 6 (4 Sep), `presentation/` is reassigned to Samartha and Saniya moves to Q&A prep and
-rehearsal support.** That is not a punishment — it is a deadline that protects the team. Decide it on
-a date, not on a feeling.
+**Deck contingency — 🔴 THE TRIGGER WAS BROKEN AND WAS REWRITTEN ON DAY 6 (4 Sep). Read why.**
+
+It used to read: *"If there is no committed `.pptx` by end of Day 6 (4 Sep), `presentation/` is
+reassigned to Samartha."* **That criterion could never be satisfied.** `.gitignore` line 31 blocks
+`*.pptx`, and `docs/SANIYA_NARRATIVE_GUIDE.md` explicitly instructs Saniya to keep `deck.pptx` **in
+Drive, not git**, and *"do not reach for `git add -f`."* The contingency therefore measured a thing
+the project forbids her from doing: it would have read **failed** whether she had built five slides
+or none. Acting on it would have taken a teammate's Gate 5 module away on the basis of an
+instrument that reads zero by construction — and "her zero commits in six days" is **not** evidence
+of no work, it is evidence that her only deliverable format is excluded from the repo.
+
+**The corrected trigger — an observable she is actually permitted to produce:**
+
+> **By 20:00 on Day 6 (4 Sep), `presentation/DECK_STATUS.md` must exist in git** — a text file
+> (which `presentation/` accepts) carrying the **Drive link** to `deck.pptx`, whether the official
+> template has been downloaded, and a **per-slide state** for all six slides. The format is given
+> verbatim in `docs/SANIYA_NARRATIVE_GUIDE.md` under 📁 YOUR FILES.
+>
+> - **File exists and shows ≥3 slides drafted** → Saniya keeps `presentation/`. No change.
+> - **File exists and shows she is blocked** → the blocker is Samartha's to clear *that same day*.
+>   She keeps `presentation/`. A blocked teammate is a bad spec, not a failing teammate.
+> - **File does not exist and she has not replied by 20:00** → Samartha writes the slide *content*
+>   into `ops/DECK_CONTENT.md` (a folder he owns) and Saniya transcribes it into the template.
+>   `presentation/` is reassigned **only** if there is still no reply by end of Day 7.
+
+**Why the softer ladder is also the safer one:** the deck's real risk is *content*, not
+*transcription*. `docs/SANIYA_NARRATIVE_GUIDE.md` is 29 KB and already carries all five content
+slides, corrected on Day 5. Writing that content down is a few hours and can be done by Samartha
+without touching `presentation/`; transcribing finished content into the template is ~90 minutes by
+anyone. So the content risk gets closed on Day 6 **regardless of what Saniya answers**, and the
+reassignment decision stops being all-or-nothing. Decide it on an observable, not on a feeling —
+and make sure the observable is one the rules permit.
 
 ---
 
