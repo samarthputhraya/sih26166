@@ -2,8 +2,10 @@ import cv2
 import numpy as np
 import time
 
+from baselines.settings import RATIO_TEST
 
-def run_akaze(img1, img2, ratio=0.75):
+
+def run_akaze(img1, img2, ratio=RATIO_TEST):
     """
     AKAZE + BFMatcher/Hamming baseline.
 
