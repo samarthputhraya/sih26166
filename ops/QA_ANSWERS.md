@@ -31,11 +31,13 @@ default since 3 Sep); `fft_phase_correlation (fallback)` = what the system decla
 > call either number an accuracy. Where we measure accuracy — the rendered sweep with exact ground
 > truth — the median true error is 0.086 px at 0° and 15° sun difference, 0.314 px at 30° and
 > 1.096 px at 45° (rows `synthetic_d0xx_*`, method `ours_loftr+subpixel`, medians of five off-grid
-> shifts). Same-scale classical baselines on those same 20 pairs are the open item; Risheeth has
-> the pairs."
+> shifts). And we have now run the classical baselines on those exact same pairs — at 15° the best
+> of SIFT, ORB and AKAZE is 0.247 px against our 0.086, so **2.88× better**."
 
-*Follow-up: "So the classical comparison isn't done?"* → "Not at the same scale. The SIFT rows at
-10 m/px are a different experiment and we do not compare across grids."
+*Follow-up: "So the classical comparison isn't done?"* → **Done on Day 6.** "Same-scale, on
+byte-identical files: `baselines/sweep_baselines.py` regenerates each pair through the same
+function our own run calls, so both arms see the same pixels. The old SIFT rows at 10 m/px are a
+different experiment and we still do not compare across grids."
 
 ### 3. "The PS asks for multi-modal OHRC/TMC/IIRS. Where is it?"
 
@@ -113,6 +115,75 @@ default since 3 Sep); `fft_phase_correlation (fallback)` = what the system decla
 > "SuperGlue's published weights depend on SuperPoint, whose licence is academic non-commercial
 > only. LoFTR is Apache-2.0, detector-free, and runs on this laptop's CPU in about six seconds per
 > 640-pixel tile with no GPU. If ISRO wanted to deploy this, the licence is the difference."
+
+---
+
+## Added Day 6 — the four questions today's results invite
+
+### 4. "You claim you beat classical methods. By how much, and where do you lose?"
+
+> "At 15° of sun difference, **2.88×** — best classical 0.247 px against our 0.086, medians of five
+> off-grid shifts on byte-identical pairs. At 30° it is 5.84×, and past 45° the classical baselines
+> stop producing a scoreable transform at all.
+>
+> **And at 0° we lose.** SIFT gets 0.044 px where we get 0.086. With identical illumination there
+> is no illumination problem to solve, and SIFT is a better sub-pixel corner localiser than a dense
+> matcher plus our refinement. So the claim is not *'a better matcher'* — it is **illumination
+> robustness, and it grows monotonically with the sun difference.** That is the axis the problem
+> statement is about."
+
+**Say the 0° loss before they find it.** A team that volunteers the case where it loses is believed
+about the cases where it wins. Rows: methods `SIFT`/`ORB`/`AKAZE`, notes `GATE 2 CRITERION 5`.
+
+### 5. "Your error goes DOWN at 180° of sun difference. That looks like a bug."
+
+> "It looks like one, so we tested it. At 180° we are at 0.080 px — better than our own 15° number
+> — and the failure peak is at **90°**, not at the extreme.
+>
+> The reason is the illumination normalisation. A 180° azimuth flip **inverts** the shading: lit
+> slopes become shadowed. We normalise on **gradient orientation**, which is invariant to contrast
+> inversion, so an inverted render still matches. At 90° the shading **rotates** instead — ridges
+> that ran across the frame now run along it — and no invariance covers that. **The hard axis is
+> orthogonality, not magnitude.**
+>
+> The control is the classical arm on the same pairs: **SIFT at 180° is 4,972 px wrong.** If our
+> recovery were an artifact of how the renderer produces an inverted image, classical would recover
+> too. It does not. That attributes the recovery to the component we are claiming."
+
+### 6. "How often does your failure detector actually work?"
+
+> "Measured over 40 pairs and 2,560 cells with exact ground truth. At a failure threshold of
+> **120 m**: **77% detection at a 0% false-alarm rate** — across 27 pairs that were correct it never
+> once raised a false alarm. Raise the threshold to 240 m and detection is 10 of 10, at the cost of
+> a 9% false-alarm rate.
+>
+> **And there is a blind spot we will state before you find it:** between 45° and 60° the system is
+> wrong and does not know it. At 60° the transform is 142.7 m out and the contradiction flag stays
+> down. Not the extremes — the *shoulder*, where degradation is gradual and the self-check has not
+> yet tripped."
+
+*Follow-up: "Why is a 0% false-alarm rate the number you lead with?"* → "Because a failure detector
+that fires on good data is worse than none — nobody keeps trusting it. Detection rate is
+adjustable by threshold; the false-alarm rate is the one that decides whether an operator believes
+the amber cells."
+
+### 7. "How do we know your own numbers are right?"
+
+> "We assume they are not, until a second, independent path agrees. Two examples from Day 6 alone.
+>
+> The change detector reported **183 candidates in the UI and 1 from the command line** on the same
+> pair. That was not cosmetic: it normalised both images by their *combined* max, and on a
+> multi-modal pair the reference peaks at 37,488 DN against the optical image's 2,040 — so the
+> optical image was crushed to a 2–98 percentile range of [0, 5] and nothing could exceed the
+> threshold. The '1 candidate' was contrast collapse, on exactly the multi-modal case this project
+> is about. It is fixed, both paths now agree, and it is pinned with a test that feeds the same
+> pixels through both preprocessings and requires the same answer.
+>
+> Second: a logged row described its own population as four sun angles when the run used eight,
+> because that string was hardcoded. Also fixed, and the delta list is now derived.
+>
+> **Every number we quote is in `evaluation/results_log.csv`, which is append-only — nothing is
+> edited or deleted, including the rows that made us look worse.**"
 
 ---
 
