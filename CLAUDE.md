@@ -93,8 +93,9 @@ demo_cache/   demo inputs — gitignored
 
 ## Open, every session until resolved
 
-- **The college's actual grading rubric and its weights.** We are optimising against *inferred*
-  weights from other institutions (Innovation ~25%, Relevance ~25%, Feasibility ~20%). If Impact or
-  Presentation outrank Novelty, the effort split should shift. One message to the SPOC closes it.
+- **The rest of the grading rubric.** **Novelty is 25% — CONFIRMED Day 5.** The remaining 75% is
+  still inferred from other institutions (Relevance ~25%, Feasibility ~20%, plus Impact, Technical
+  Execution, Presentation). Novelty being confirmed is the load-bearing part; the rest only changes
+  the margin.
 
-*(Resolved Day 5: the internal hackathon date. It is 9 Sep 2026 = Day 11.)*
+*(Resolved Day 5: the internal hackathon date — 9 Sep 2026 = Day 11. And the novelty weight — 25%.)*

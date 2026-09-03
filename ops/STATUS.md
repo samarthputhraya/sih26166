@@ -1,30 +1,31 @@
-# STATUS — end of Day 5 (3 Sep 2026)
+# STATUS — end of Day 5, second session (3 Sep 2026)
 
 > Rewritten by `/wrap` at the end of every session. Read by `/next` at the start of the next one.
-> **Rewritten in full, not appended.** True as of 3 Sep 2026, ~11:00 IST.
+> **Rewritten in full, not appended.** True as of 3 Sep 2026, ~16:45 IST.
 
 ---
 
-## 🔴 THE DATE IS KNOWN — this changes the schedule
+## 🔴 Two decisions were made today. Both change what the next session does.
 
-**The internal hackathon is 9 September 2026 = Day 11.** Confirmed by the SPOC today.
-Open since Day 0; now closed.
+**1. Novelty is worth 25%. CONFIRMED by the user with the SPOC.** This was the last open question
+in `CLAUDE.md` and it is now closed. It is the highest-weighted single criterion and the one we are
+weakest on.
 
-**7 days including today.** Two gates were scheduled on or after the event and have been moved:
+**2. Samartha is building alone for the next two days.** Deliberate, and a reversal of the
+per-person plan in `ops/PLAN_TO_9_SEP.md` Part 6. The reasoning: the team has been slow to converge,
+we do not have time to coordinate five people through a novelty decision, and the build is the
+critical path. Teammates are **not** being given nightly specs for Day 6 and Day 7.
 
-| Gate | Was | Now | Why |
-|---|---|---|---|
-| 4 (demo 3× offline) | Day 11 | **Day 9 (7 Sep)** | Day 11 *is* the event |
-| 5 (all six explain cold) | Day 12 | **Day 10 (8 Sep)** | Day 12 is *after* the event |
+> ⚠️ **This puts Gate 5 at risk and that is understood, not overlooked.** Gate 5 (Day 10) requires
+> all six to explain their own module cold. The mitigation is a **hard deliverable**: one written
+> brief per teammate at the end of the sprint, covering what changed in their area and what they
+> must be able to answer. **That brief is not optional and it is not a nice-to-have** — without it,
+> five people cannot answer for code they did not write. It is written into the Day-6 prompt's
+> definition of done.
 
-Full reasoning and the approved plan live in
-`C:\Users\samar\.claude\plans\i-asked-abt-the-nifty-origami.md`.
-**That plan is approved and is what the next session executes. Read it first.**
-
-**Format:** pitch-primary. The SPOC says a live demo is **not compulsory** for software projects, and
-there is **no prior upload** — we present on the day. So capabilities need to reach *"a measured
-result plus one figure on a slide"*, not polished-UI standard. We carry a demo anyway because it
-differentiates, but **the deck must score on its own.**
+**No `spec-writer` run this session.** Step 4 of `/wrap` was deliberately skipped — drafting five
+nightly specs would contradict the decision above. This is the one wrap step not performed, and it
+is recorded here rather than silently omitted.
 
 ---
 
@@ -32,8 +33,12 @@ differentiates, but **the deck must score on its own.**
 
 ```
 Day 5 of 11  |  6 days to the event  |  Internal hackathon: 9 SEP 2026 (CONFIRMED)
-Gate 1: PASSED and reproducible      Next: Gate 2 on Day 7 (5 Sep, moved from Day 8)
+Gate 1: PASSED and reproducible      Next: Gate 2 on Day 7 (5 Sep)
+Novelty weight: 25% — CONFIRMED
 ```
+
+Gate days are now in `docs/00_CANONICAL_FACTS.md` §11 with a Date column: **2 → Day 7 (5 Sep) ·
+3 → Day 8 (6 Sep) · 4 → Day 9 (7 Sep) · 5 → Day 10 (8 Sep) · event Day 11 (9 Sep).**
 
 **Smoke test — run this session, exit codes observed, not inferred:**
 
@@ -44,154 +49,236 @@ Gate 1: PASSED and reproducible      Next: Gate 2 on Day 7 (5 Sep, moved from Da
 | `import core.pipeline` | **0** | ok |
 | `python -m core.pipeline data/pairs/pair_01` | **0** | `residual_px 0.19452325191421008` — exact, unchanged |
 
----
-
-## What landed today
-
-- **`app/streamlit_app.py` now exists** (Samartha). Was scheduled for Day 9, shipped Day 5 — that
-  four-day surplus is what pays for the novelty work in the plan. Verified by *executing* it with
-  `streamlit.testing.v1.AppTest`: 0 exceptions on first render and through a full
-  select-pair → Align → render cycle. 21 tests in `app/`.
-- **The classical baselines ran on real lunar data for the first time in the project's history**
-  (Samartha, fixing Risheeth's folder at the user's explicit request).
-  `baselines/run_all_baselines.py` was hardcoded to `pair_test_source.tif`, a file that has never
-  existed on any machine — so it raised `FileNotFoundError` for everyone, including its author.
-- **Gate 2's re-scope is now canonical** — in `docs/00_CANONICAL_FACTS.md` §11, not just a proposal.
-- **Two false "Tier A" claims removed** from `docs/RISHEETH_BASELINE_GUIDE.md` and
-  `docs/ROHAN_DATA_GUIDE.md`. Both described `pair_01` as Tier A with a 26° sun difference; it is
-  two crops of ONE OHRC frame — same sensor, zero sun difference.
-- **Samrudh** hardened `evaluation/logger.py` twice, unprompted, overnight.
-- **Rishabh** moved his stray root-level notes into `app/` and started logging via `log_result()`.
-- **Risheeth** fixed the AKAZE constructor himself — correctly, with a `hasattr` fallback covering
-  both OpenCV 4 and 5. Better than what `main` had.
+⚠️ **The venv is at `C:\Users\samar\venvs\sih26166` and must be activated.** Unactivated, `python`
+on this machine is a bare 3.12 with no numpy and no pytest, and every check above fails in a way
+that reads as "a teammate broke the build." This cost real time this session. Now in `README.md`.
 
 ---
 
-## 🔴 The finding that reshaped the plan
+## 🔴 GATE 2 IS IN TWO DAYS AND ONE CRITERION HAS ZERO EVIDENCE
 
-`data/pairs/pair_03_tierD/PROVENANCE.md` shows Tier D is **already** render-and-match: the LOLA DEM
-rendered at the Kaguya image's own solar geometry. It scores 37.8 px and we have been calling that a
-multi-modal limitation.
+Checked against `results_log.csv` this session, criterion by criterion (§11):
 
-**It is not. It is an information-starvation bug in our own pipeline.** Both halves confirmed in code:
-
-- `core/scale.py:101` — `target = float(max(ga, gb))`, i.e. resample to the **coarser** grid.
-  The comment at `:84` says it "throws information away on purpose."
-- `core/matcher.py:68-71` — LoFTR's coarse stage runs at 1/8, `STRIDE = 8`.
-
-| Input | Coarse grid | Effective resolution | vs LOLA's real 60 m/px |
+| # | Criterion | Evidence | Verdict |
 |---|---|---|---|
-| 99 px (today) | 12×12 | **500 m/px** | 8× coarser than the data |
-| 640 px (proposed) | 80×80 | **75 m/px** | **matches the data** |
+| 1 | `rmse_gt_px` < 0.5 at Δaz ≤ 15° | 0.32230 | ✅ |
+| 2 | `inlier_ratio` > 0.60 | 0.9757 | ✅ |
+| 3 | `grid_coverage_fraction` ≥ 0.80 | 1.0000 | ✅ |
+| 4 | `distribution_cv` < 1.0 | 0.4145 | ✅ |
+| 5 | **≥2× better than best of SIFT/ORB/AKAZE on the *same pair at the same scale*** | **NONE** | 🔴 |
+| 6 | Matches on ≥1 Tier D pair, degradation in metres | literal pass, honestly rotten | ⚠️ |
 
-Kaguya 640 px × 9.37 m/px = 5997 m; LOLA 101 px × 60 m/px = 6060 m — same ground, 6.4× scale ratio.
-We downsample the optical image to 99 px, then match at 500 m/px when the elevation data carries
-60 m/px. **We threw away 97.6% of the optical pixels and concluded multi-modal matching is hard.**
+**Criterion 5 has no evidence at all, and I verified that rather than assuming it.** Every classical
+synthetic row is SIFT at `gsd_mpp=10.0` with an empty `config`; all 20 of ours are at `60.0`. There
+are **zero** SIFT/ORB/AKAZE rows at 60.0 on synthetic. A comparison at two different scales is a
+different experiment, and at 0° it reads as "SIFT is 34× better than us" — which is exactly the
+number a judge would find.
 
-**This is "bet A" in the plan and it is the next session's first task.**
+**Nobody is currently assigned to fix this.** It was Samrudh's Days 7–8 task in
+`ops/PLAN_TO_9_SEP.md` Part 6, and Samrudh is not being given specs under the build-alone decision.
+It is a re-run of the existing classical baselines at `gsd_mpp=60.0` on the same synthetic pairs —
+hours, not days — but **it has to be somebody's job on Day 6 or Gate 2 fails on the one criterion
+that carries our whole "better than classical" claim.**
 
 ---
 
-## Per person
+## What landed today (two commits, both pushed)
 
-| Who | Last push | Delivered | Blocked on |
+**`4b23ec2` — the schedule is in the repo.** The 9 Sep date existed only in STATUS.md and a plan
+file on Samartha's laptop. `00_CANONICAL_FACTS.md` — the document everyone is told to read first,
+which declares itself authoritative — did not contain the string "9 Sep" at all, and still scheduled
+Gate 4 on the event day and Gate 5 the day after the round is judged. Fixed §10 (date + the SPOC's
+format facts: **live demo NOT compulsory, no prior upload, we are pitch-primary**), §11 (gates
+re-anchored, Date column added, old days kept beside them), §12 (11 days, not 12; deleted "if you
+get extra days"). `TEAM_TASK_GUIDE.md` banner + killed its "Days 13–15 buffer". The approved plan
+is now committed at **`ops/PLAN_TO_9_SEP.md`** — it was outside git, so the five people it assigns
+work to could not read it.
+
+**`7f625c7` — bet A, and two findings underneath it.** See below.
+
+---
+
+## 🔴 Bet A is CLOSED. It failed, and it was worth doing.
+
+**The hypothesis:** Tier D scores 37.81 px because `core/scale.py:101` resamples to the coarser
+grid, downsampling the 640×640 optical crop to 99×99 so LoFTR's coarse stage runs at an effective
+500 m/px on 60 m/px data. Render the DEM into the sensor's grid instead.
+
+**Built** (`ops/build_tier_d_native.py`): DEM sampled at the Kaguya crop's own pixel centres,
+640×640 at 9.3698731836556 m/px, `to_common_gsd` an exact no-op.
+
+**Result: the prediction was half right and it did not help.** 19 → **105** matches, exactly as
+predicted. Every extra one is wrong. Residual 2268.8 m → 3995.6 m.
+
+**It is not a threshold artifact, and checking that mattered.** Both RANSAC gates are in **pixels**
+and default to 3.0 (`core/ransac.py:52`, `evaluation/metrics.py:5`), so the fine-grid arm was
+silently judged at a 28 m ground tolerance against the coarse arm's 180 m — a 6.4× stricter bar.
+`ops/bet_a_experiment.py` re-asks both arms the same question in metres; the fine grid is worse at
+**every** tolerance. Genuine negative.
+
+> The plan's own success criterion — "residual_px materially below 37.8" — was the same trap. On a
+> 6.4× finer grid that is a 6.4× stricter bar than intended. **Compare metres, never `residual_px`
+> across different grids.**
+
+---
+
+## 🔴 Finding 1 — the shaded relief has been lit from the wrong side all along
+
+**Owner: Samrudh. `evaluation/shaded_relief.py:10-16`. NOT FIXED — deliberately left to him.**
+
+```
+as-recorded  az 284.901°   NCC vs the real Kaguya image of that ground   -0.5744
+corrected    az 104.901°                                                 +0.5926
+```
+
+A negative correlation that size is the same terrain shaded backwards. Of eight gradient/sign
+conventions tested at the recorded azimuth, only negating **both** gradients flips it — exactly
+`aspect + 180`. So `render_shaded_relief(dem, az, ...)` lights terrain from `az + 180`.
+
+**Contaminates every Tier D row in `results_log.csv`** — ours *and* Risheeth's SIFT 36.03 / ORB
+26.76 / AKAZE 10.95, including the AKAZE number we call Q&A killer #2. **Does not** touch the
+synthetic sun-azimuth sweep: that compares two renders, so a constant offset cancels. The 15° Gate 2
+result stands.
+
+Rendering at `az+180` through the existing function is arithmetically identical to a fixed one, so
+the measurement was possible without editing his file. **Fixing it does not rescue Tier D.**
+
+---
+
+## 🔴 Finding 2 — we have never had a correct Tier D match. Not once.
+
+Because the reference now shares the optical grid, the true alignment is a translation recoverable
+without any feature matching. FFT cross-correlation over the full ±320 px range:
+
+```
+global peak (dx,dy) = (-9, +23) px = (-84, +216) m    NCC +0.7139
+  top-left    (-9,+23) +0.5455      bottom-left  ( 0, +1) +0.7524
+  top-right   (-8,+23) +0.6409      bottom-right (-9,+21) +0.5381
+```
+
+**Three of four quadrants agree within 2 px; the fourth does not** — so it is not a perfectly
+uniform translation, and that is reported rather than smoothed away. It does not change the
+conclusion: the candidates differ by ~24 px and the matcher is wrong by ~200 px against either.
+
+| lighting | matches | RMSE vs truth | correct within 94 m |
 |---|---|---|---|
-| **Samartha** | 3 Sep 10:54 | UI, baselines fix, docs corrections, Gate 2 canonical | Nothing. Bet A next. |
-| **Samrudh** | 3 Sep 09:39 | Logger guards ×2 overnight, `allow_failed`, swept-curve KeyError fix | Nothing. Owes the illumination-OFF sweep + fixing his test contamination. |
-| **Rishabh** | 3 Sep 10:44 | Change detection logged, notes moved into `app/` | Nothing. Most consistent contributor — committed all 5 days. |
-| **Risheeth** | 3 Sep 09:52 | AKAZE fix (his own, correct) | Nothing technically. **Owes understanding** — see Known issue 3. |
-| **Rohan** | **2 Sep 20:21** | Catalogue, Tier D pair, honest negative recorded | 🔴 **Tier A decision overdue.** `cut` or `abandoned` — due end of Day 6. |
-| **Saniya** | **NEVER** | Nothing. `presentation/` is a 0-byte `.gitkeep` | 🔴 See Known issue 1. |
+| as-recorded | 107 | 2434 m | **0 / 107** |
+| corrected | 94 | 2520 m | **0 / 94** |
+
+**The 37.81 px we have been quoting was never a degraded registration. It is RANSAC fitting a
+plausible homography to matches that are all wrong** — exactly what `core/pipeline.py:21-23` warns
+about when it says `residual_px` and `rmse_gt_px` are not interchangeable.
+
+**And a plain FFT cross-correlation registers the same pair to ~230 m, with no features and no
+RANSAC.** Logged as `fft_phase_correlation` with **no `rmse_gt_px` on purpose** — it defines the
+reference alignment, so scoring it against itself would be circular.
+
+Full write-up with per-owner actions: **`ops/specs/TIER_D_FINDINGS_DAY5.md`**.
+
+---
+
+## 🔴 The Gate 2 decision this forces — due before Day 7
+
+Gate 2 requires *"produces matches on ≥1 multi-modal (Tier D, optical↔elevation) pair with
+degradation quantified in metres."*
+
+**We pass that literally.** We produce 105 matches and can quantify degradation in metres better
+than ever. **"Show me one of those multi-modal matches" ends the Q&A round.**
+
+The honest version, and it is stronger than bet A would have been:
+
+> We tested our matcher against optical↔elevation and it produced 105 correspondences, none
+> correct. We know they are wrong because we built ground truth for that pair ourselves. Feature
+> matching has no purchase on a hillshade — so for that case we register by global correlation
+> instead, which lands it inside ~230 m. We report which method is used and why.
+
+**This is a decision, not a task.** It is Samartha's to make in the next session.
 
 ---
 
 ## In flight — resume here
 
-**Nothing is half-finished in the working tree.** The repo is clean and pushed.
+**Nothing is half-finished. The working tree is clean and both commits are pushed.**
 
-**The next session starts with plan Part 1, bet A:**
+**The next session is a NEW session, not a continuation.** Plan agreed with the user:
 
-1. Re-render the LOLA DEM at **9.37 m/px** (not its native 60) using `evaluation/shaded_relief.py`
-   and `ops/build_tier_d_pair.py`. `PROVENANCE.md` records the exact crop lines
-   (LOLA lines 9669:9770, samples 21214:21315; solar az 284.901°, el 16.98°).
-2. Match the resulting 640×640 render against the 640×640 Kaguya optical image **without**
-   downsampling.
-3. **Log the result either way. Timebox: end of Day 6.** Success = Tier D `residual_px` materially
-   below 37.8. Failure is still a win — it *measures* the resolution limit, which is a strong Q&A
-   answer where we currently have silence.
+1. **Model: Claude Fable 5.1** (`claude-fable-5-1`) — 1M context, built for long-horizon agentic
+   work. 2× Opus 5's price; worth it for a 2-day autonomous build.
+2. **Effort: `xhigh`** for the build (Claude Code's default and the documented sweet spot for
+   agentic coding). **`max` for the Phase 1 novelty decision only** — one reasoning-heavy call
+   where correctness beats cost.
+3. **Ultracode: ON for research and review. OFF for editing `core/`** — parallel agents mutating a
+   repo with 179 tests and a pinned exact number is how Gate 1 breaks silently.
+4. **The user has a prepared prompt** covering: Phase 0 web research on what wins and loses at SIH,
+   Phase 1 a ranked-and-committed novelty decision, Phase 2 a 2-day build. Phase 1 was rewritten to
+   be less prescriptive — Fable 5.1 degrades on over-prescriptive prompts.
 
-**Fallback if bet A fails:** "bet B" — `core/reliability.py`, a per-cell
-verified / weak / **no evidence** map. Reuses `core/distribution.py`'s existing binning. Do **not**
-change `run_all()`'s signature — it is pinned by list equality at `core/test_interfaces.py:59`.
+**A research workflow was launched this session and deliberately stopped** before completion. It
+produced **no output and nothing was written**. Phase 0 runs fresh in the new session. Do not go
+looking for a research file; there isn't one.
+
+**Bet B (`core/reliability.py`) is now the only live novelty bet** — per-cell verified / weak /
+**no evidence**. Reuses `core/distribution.py`'s binning. Wire beside `_distribution()` at
+`core/pipeline.py:184` as a new dict key. **Do not change `run_all()`'s signature** — it is pinned
+by parameter-name list equality at `core/test_interfaces.py:59`.
 
 ---
 
 ## Known issues — do not re-report these
 
-1. 🔴 **`presentation/` is empty and its owner has never committed.** Highest-probability failure
-   mode in the project. **But `docs/SANIYA_NARRATIVE_GUIDE.md` (25 KB) already contains ~70% of the
-   deck as prose** — verified 6-slide structure, technical diagram as text, feasibility and
-   licensing argument, impact bullets, and a timed 3-minute demo script for all six speakers. The
-   gap is transcription plus one diagram, not authorship. **The plan sets a hard contingency: no
-   committed `.pptx` by end of Day 6 → `presentation/` reassigns to Samartha.**
-2. 🔴 **Test contamination — rows cleaned, ROOT CAUSE STILL LIVE.** Samrudh deleted all junk
-   `method=test` rows late on Day 5 (the file is now clean at 43 rows). **But the bug that creates
-   them is not fixed.** Verified by md5: hash the file, run `pytest -q`, hash again — it changes,
-   and a fresh `test_pair_allowed / method=test` row appears. `evaluation/test_metrics.py` calls
-   `log_result` **without** redirecting `RESULTS_LOG`, so the file re-contaminates on every single
-   test run by anyone. Three such rows were reverted before commit during this session alone.
+1. 🔴 **`evaluation/shaded_relief.py` lights terrain from `az+180`.** Samrudh's. Unfixed by design.
+2. 🔴 **Every Tier D row is meaningless as an accuracy number** — ours and all three baselines. Do
+   not quote 37.81 / 36.03 / 26.76 / 10.95 as registration accuracy anywhere.
+3. 🔴 **Test contamination — ROOT CAUSE STILL LIVE.** `evaluation/test_metrics.py` calls
+   `log_result` without redirecting `RESULTS_LOG`, so every `pytest` run appends a
+   `test_pair_allowed / method=test` row. **Hit and reverted four separate times this session.**
    The fix is one `monkeypatch.setattr(logger, "RESULTS_LOG", tmp_path / "x.csv")`; it is Samrudh's
-   file, and every other test in the repo already redirects correctly.
-   **Until it is fixed, check `git diff evaluation/results_log.csv` before every commit.**
-3. **Risheeth's code is fixed; his understanding is not.** Of 5 blockers in `baselines/`, he fixed 1
-   (AKAZE, well). Samartha fixed the other 4 at the user's explicit request. Gate 5 requires him to
-   explain his own module cold — he needs to read the diff and be able to say *why* each change was
-   necessary. **This is a Gate 5 risk, not a code risk.**
-4. **AKAZE beats us on both real pairs.** `pair_01`: AKAZE `residual_px` 0.1215 vs ours 0.1945
-   (1.6×). Tier D: AKAZE 10.95 vs ours 37.81 (3.5×). **Neither real pair has a sun difference** —
-   `pair_01` is a same-frame crop and Tier D is optical↔elevation — so they test the one thing we do
-   not claim an advantage on. Our claim needs the synthetic sweep. **This is Q&A killer #2 and the
-   answer only works once the illumination-OFF sweep exists.**
-5. **No illumination-OFF arm on the sun sweep.** Highest-value measurement still unmade. Until it
-   exists we **cannot** say "illumination normalisation improves our sun-angle accuracy by N."
-   It is a flag and a re-run. Assigned to Samrudh.
-6. **The illumination A/B is near-circular.** `core/bench_illumination.py:56-64` builds the hard case
-   as contrast inversion, and `gradient_orientation` is *designed* to be invariant to exactly that.
-   Must be relabelled "intensity inversion, **not** sun angle" wherever it appears.
-7. **Synthetic ground truth has no moving shadows.** `evaluation/shaded_relief.py` is a pure
-   Lambertian hillshade with no occlusion term — shading rotates, shadows do not move. Its own
-   docstring overclaims. **Disclose on the slide; being caught is worse.** Q&A killer #3.
-8. **`redetect()` has zero callers** (`core/distribution.py:130`). We measure uniformity, we do not
-   enforce it — so that novelty bullet in `SANIYA_NARRATIVE_GUIDE.md:131-142` is **false as
-   written**. Wiring it trades accuracy for coverage (measured: coverage 0.797→0.891 while
-   `rmse_gt_px` 0.41→0.72).
-9. **No pyramid in `core/scale.py`.** The cross-scale novelty bullet is half-built. **The plan says
-   soften the claim, not build it** — wrong week.
-10. **The same Tier D pair is logged under two `pair_id`s** — `pair_03_tierD` (ours) vs `tier_d_01`
-    (baselines). A judge grepping the CSV cannot tell they are the same pair.
-11. **Two sets of `tier=synthetic` rows are not comparable.** Samrudh's 7 SIFT rows are at
-    `gsd_mpp=10.0` with an **empty `config`**; the 20 `ours_loftr` rows are at 60.0 with full config.
-    At 0° SIFT reads 0.00355 against our 0.11992 — which looks like "SIFT is 34× better" and is a
-    different experiment entirely.
-12. **Risheeth has 3 stale remote branches** — `risheeth-baseline-pipeline`,
-    `risheeth-invariant-pipeline`, `risheeth-baselines-clean`. His work is merged to `main`; the
-    branches should be deleted so nobody merges an old copy. **His earlier merge already reverted
-    Samartha's doc fixes once** — a rebase happened to save them.
+   file and every other test in the repo already redirects correctly.
+   **Check `git diff evaluation/results_log.csv` before every commit until it is fixed.**
+4. 🔴 **`presentation/` is still a 0-byte `.gitkeep` and Saniya has never committed** — verified
+   again today, six days. But `docs/SANIYA_NARRATIVE_GUIDE.md` (25 KB) already holds ~70% of the
+   deck as prose. The gap is transcription plus one diagram, not authorship.
+5. **RANSAC thresholds are in PIXELS, not metres** (`core/ransac.py:52`,
+   `evaluation/metrics.py:5`). Any comparison across two different pixel grids is invalid unless
+   the tolerance is converted. This nearly produced a wrong conclusion today.
+6. **AKAZE beats us on both real pairs** — 0.1215 vs 0.1945 on `pair_01`. Neither real pair has a
+   sun difference, so they test the one thing we do not claim. Our claim needs the synthetic sweep.
+   **Q&A killer #2, and the Tier D half of it is now void for everyone.**
+7. **No illumination-OFF arm on the sun sweep.** Still the highest-value measurement unmade. Until
+   it exists we cannot say "illumination normalisation improves our sun-angle accuracy by N."
+8. **The illumination A/B is near-circular** — `core/bench_illumination.py:56-64` builds the hard
+   case as contrast inversion and `gradient_orientation` is designed to be invariant to exactly
+   that. Relabel "intensity inversion, **not** sun angle" everywhere.
+9. **Synthetic ground truth has no moving shadows** — pure Lambertian, no occlusion term. Shading
+   rotates, shadows do not. Disclose on the slide. Q&A killer #3.
+10. **`redetect()` has zero callers** (`core/distribution.py:130`) — so that novelty bullet in
+    `SANIYA_NARRATIVE_GUIDE.md:131-142` is false as written.
+11. **No pyramid in `core/scale.py`.** The cross-scale novelty bullet is half-built. Soften the
+    claim; wrong week to build it.
+12. **The same Tier D pair is logged under two `pair_id`s** — `pair_03_tierD` vs `tier_d_01`. A
+    third now exists: `pair_04_tierD_native` (legitimately a different pair — different grid).
+13. **Two sets of `tier=synthetic` rows are not comparable** — Samrudh's SIFT rows are at
+    `gsd_mpp=10.0` with an empty `config`; the 20 `ours_loftr` rows are at 60.0 with full config.
+14. **Risheeth's understanding gap.** Code fine, but 4 of 5 `baselines/` blockers were fixed for
+    him. Gate 5 risk, not a code risk.
+15. **Risheeth has 3 stale remote branches** — `risheeth-baseline-pipeline`,
+    `risheeth-invariant-pipeline`, `risheeth-baselines-clean`. Merged to `main`; delete them.
 
 ---
 
 ## Evidence file — `evaluation/results_log.csv`
 
-**43 rows, 15 fields, `csv.DictReader`-clean. Junk rows removed by Samrudh on Day 5.**
+**46 rows, 15 fields, `csv.DictReader`-clean.** 3 added today, no existing row edited or deleted.
 
 | Rows | Tier | Method |
 |---|---|---|
 | 20 | synthetic | `ours_loftr` — the sun-azimuth sweep, 5 off-grid shifts × 4 angles |
-| 14 | synthetic | SIFT (Samrudh) — ⚠️ check `config` is populated, see issue 11 |
+| 14 | synthetic | SIFT (Samrudh) — see issue 13 |
 | 4 | same-frame offset crop | `ours_loftr`, SIFT, ORB, AKAZE |
-| 5 | D | `ours_loftr`, SIFT, ORB, AKAZE, `change_detection_absdiff` |
+| 5 | D | `ours_loftr`, SIFT, ORB, AKAZE, `change_detection_absdiff` — **see issue 2** |
+| 3 | D | **NEW:** `ours_loftr` ×2 (both lightings, with real `rmse_gt_px`) + `fft_phase_correlation` |
 
-**The headline result — medians over 5 off-grid shifts:**
+**The headline result — medians over 5 off-grid shifts. Unaffected by today's findings:**
 
 | Δazimuth | `rmse_gt_px` | `inlier_ratio` | `grid_coverage` | Gate 2 C1 (<0.5) |
 |---|---|---|---|---|
@@ -200,28 +287,31 @@ change `run_all()`'s signature — it is pinned by list equality at `core/test_i
 | 30° | 0.93134 | 0.7404 | 0.8281 | FAIL |
 | 45° | 2.58557 | 0.3484 | 0.4062 | FAIL |
 
-**Four criteria pass simultaneously at 15°.** Report the **median, never the minimum** — a single 30°
-run returns anywhere from 0.71 to 1.65 on sub-pixel offset alone, and an *integer* shift returns a
-flattering 0.41 because the warp does not interpolate.
+Report the **median, never the minimum**.
 
 ---
 
 ## Open questions
 
-1. 🔴 **What is our college's actual rubric, and its weights?** We are optimising against *inferred*
-   weights from other institutions (Innovation ~25%, Relevance ~25%, Feasibility ~20%). **One
-   message to the SPOC de-risks the whole allocation.** If Impact or Presentation outrank Novelty,
-   the plan's effort split should shift. **Day 5 action, not yet done.**
-2. **Saniya — engage or reassign?** Decision due end of Day 6.
-3. **Rohan — Tier A `cut` or `abandoned`?** Overdue. Either answer is fine; an open question is not.
+1. **Reframe the multi-modal claim honestly, or drop it?** Due before Gate 2 on Day 7. See above.
+2. **Saniya — engage or reassign?** The plan's contingency (no `.pptx` by end of Day 6 →
+   `presentation/` moves to Samartha) is now entangled with the build-alone decision. Still
+   undecided.
+3. **Rohan — Tier A `cut` or `abandoned`?** Overdue since Day 6. Lower stakes now that Tier A is
+   formally dropped, but an open question is not an answer.
+
+*(Resolved today: the novelty weight — 25%, confirmed. The internal hackathon date — 9 Sep,
+resolved this morning.)*
 
 ---
 
 ## Not doing — settled, do not re-litigate
 
-- **No VM or cloud machine.** Checked this session: it appears nowhere in the repo, and it would
-  break Gate 4, which requires the demo to run on Samartha's laptop with **wifi off**. This machine
-  is sufficient and measured: LoFTR 640² in **5.50 s**, 1.84 GB peak, 14 threads,
-  `torch 2.13.0+cpu`. The 640 px tile size was chosen *because* of this hardware.
-- **No pyramid**, no cross-sensor chase (Tier A/B formally dropped in the Day-5 scope cut), no new
-  matcher work, no further `core/` polish. 179 tests green and Gate 1 exact — `core/` is done.
+- **Bet A.** Closed, measured, logged. Do not rebuild it.
+- **No VM or cloud machine.** Breaks Gate 4, which needs the demo on this laptop with wifi off.
+  LoFTR 640² in 5.50 s, 1.84 GB peak, `torch 2.13.0+cpu`.
+- **No pyramid**, no cross-sensor chase (Tier A/B dropped in the Day-5 scope cut), no new matcher
+  work. 179 tests green and Gate 1 exact — `core/` is done.
+- **`core/scale.py` stays as it is.** Its "downsampling is the honest direction" reasoning survived
+  bet A: upsampling did not invent useful detail, it invented *matchable-looking* detail, which is
+  worse. The docstring was right.
