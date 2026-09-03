@@ -77,3 +77,14 @@ def test_log_result_rejects_inconsistent_failure_row():
                 "inlier_count": 0, "inlier_ratio": 0.0}
     with pytest.raises(ValueError):
         log_result("bad_pair", tier="synthetic", method="test", metrics=bad_metrics)
+
+def test_log_result_refuses_failed_status_by_default():
+    metrics = {"status": "too_few_matches", "rmse_gt_px": None, "residual_px": None}
+    with pytest.raises(ValueError):
+        log_result("test_pair", tier="synthetic", method="test", metrics=metrics)
+
+def test_log_result_allows_failed_status_with_explicit_flag():
+    metrics = {"status": "too_few_matches", "rmse_gt_px": None, "residual_px": None,
+               "inlier_count": 0, "inlier_ratio": 0.0}
+    log_result("test_pair_allowed", tier="synthetic", method="test", metrics=metrics, allow_failed=True)
+    # confirm no exception was raised — that's the assertion here

@@ -5,9 +5,11 @@ from evaluation.metrics import evaluate
 from evaluation.logger import log_result
 from baselines.sift_baseline import run_sift
 
+
 def u8(img):
     """Convert a float32 [0,1] shaded-relief render to uint8 for SIFT."""
     return (img * 255.0).clip(0, 255).astype(np.uint8)
+
 
 def crater_dem(n=420, seed=3, ncr=90):
     rng = np.random.default_rng(seed)
@@ -23,6 +25,7 @@ def crater_dem(n=420, seed=3, ncr=90):
                         depth*0.28*(1-(d-rad)/(rad*0.25)), 0.0)
     return dem
 
+
 if __name__ == "__main__":
     dem = crater_dem()
 
@@ -34,14 +37,14 @@ if __name__ == "__main__":
         src_pts, ref_pts = run_sift(u8(s), u8(r))
         m = evaluate(r.shape, src_pts, ref_pts, H_true=H_true)
         log_result(f"synth_sun_{d:03d}", tier="synthetic", method="SIFT",
-                   metrics=m, gsd_mpp=10.0,
+                   metrics=m, gsd_mpp=10.0, allow_failed=True,
                    notes=f"synthetic, DEM-rendered — sun azimuth difference {d} deg")
         results.append({"sun_diff": d, **m})
         print(f"{d:3d}deg  matches={m['n_matches']:4d}  "
-              f"status={m['status']:16s}  inlier_ratio={m['inlier_ratio']:.3f}  "
+              f"status={m.get('status', '?'):16s}  inlier_ratio={m['inlier_ratio']:.3f}  "
               f"rmse_gt_px={m['rmse_gt_px']}")
 
-        sun_diffs = [row["sun_diff"] for row in results]
+    sun_diffs = [row["sun_diff"] for row in results]
     matches = [row["n_matches"] for row in results]
     rmse = [row["rmse_gt_px"] if row["rmse_gt_px"] is not None else np.nan for row in results]
 

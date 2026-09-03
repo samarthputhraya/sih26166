@@ -11,13 +11,20 @@ FIELDS = ["timestamp", "pair_id", "tier", "method", "config", "rmse_gt_px",
 FAILURE_STATUSES = {"too_few_matches", "ransac_failed"}
 ACCURACY_FIELDS = ["rmse_gt_px", "residual_px", "grid_coverage_fraction", "distribution_cv"]
 
-def log_result(pair_id, tier, method, metrics, config=None, gsd_mpp=None, notes=""):
+def log_result(pair_id, tier, method, metrics, config=None, gsd_mpp=None, notes="", allow_failed=False):
     """Append one run to results_log.csv. The ONLY way anything gets written there."""
     if not tier:
         raise ValueError("tier is mandatory - a number without its tier is meaningless")
 
     metrics = metrics or {}
     status = metrics.get("status")
+
+    if status not in (None, "ok") and not allow_failed:
+        raise ValueError(
+            f"refusing to log a failed run ({status!r}) as a result — "
+            "pass allow_failed=True if this is intentional"
+        )
+
     if status in FAILURE_STATUSES:
         bad = [f for f in ACCURACY_FIELDS if metrics.get(f) is not None]
         if bad:
