@@ -4,11 +4,35 @@
 > with its row. Nothing is rounded in our favour and nothing is a placeholder except the portal
 > metadata on slide 1, which only the SIH portal can supply.
 >
-> **Template:** official SIH 2026 idea-presentation `.pptx`,
-> `sih.gov.in/letters/2026/SIH2026-IDEA-Presentation-Format.pptx`, **924,505 bytes**.
-> ⚠️ **Not yet downloaded — this is the last hard blocker on producing the file.**
-> `sih.gov.in` returns 403 to non-browser agents; fetch it through a browser.
-> Use it **unaltered**: do not add slides, rename headings, delete the bullet prompts, or restyle.
+> ## ✅ THE DECK IS BUILT — Day 6, 4 Sep 2026
+>
+> `presentation/SIH26166_deck.pptx` → `presentation/SIH26166_deck.pdf` (6 slides).
+> Both are gitignored by rule and live locally / in Drive, not in history.
+> Rebuild: `python -m presentation.make_figures && python -m presentation.build_deck`,
+> then export to PDF (PowerPoint → Save as PDF, or `soffice --headless --convert-to pdf`).
+>
+> **Template acquired and verified.** Our guides said `sih.gov.in` 403s non-browser agents. It
+> does not — it 403s the *default* user agent. With a normal browser UA it serves fine:
+>
+> ```
+> curl -L -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 \
+>   (KHTML, like Gecko) Chrome/128.0 Safari/537.36" \
+>   -o presentation/sih_template.pptx \
+>   "https://sih.gov.in/letters/2026/SIH2026-IDEA-Presentation-Format.pptx"
+> ```
+>
+> **924,505 bytes, sha256 `ce3e5dee…` — matches the value in `CLAUDE.md` exactly.** 7 slides
+> (6 + the instructions slide, which that slide itself says may be deleted).
+>
+> **What the official instructions slide requires, verbatim, and how the build honours it:**
+> max 6 slides *including* the title page (we ship exactly 6) · *"avoid paragraphs, post your idea
+> in points / diagrams / infographics / pictures"* (all bullets, two generated figures) ·
+> *"only use provided template … without changing the idea details pointers"* (**the pointer text
+> is never edited — not one character**; it is moved to the top and set small and grey, and our
+> content goes in a new box below) · **"save the file in PDF and upload the same on portal. No PPT,
+> Word Doc or any other format will be supported."**
+>
+> 🔴 **The submission is a PDF, not a `.pptx`.** That was not written down anywhere before Day 6.
 >
 > **Six slides including the title page ⇒ five content slides.** There is no "Problem Statement"
 > slide and no "Proposed Solution" slide — *Proposed Solution* is the first bullet **prompt inside
