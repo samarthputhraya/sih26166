@@ -73,7 +73,8 @@ The PS names three difficulties and we address each, on the axis it names:
   0% false-alarm rate** — across 27 correct registrations it never once cried wolf.
 - **The trust label is calibrated** — inside the operating envelope (sun difference ≤ 30°), cells
   marked *verified* have median true error **0.123 px = 7.4 m at 60 m/px, 99.0% under half a
-  pixel**, over 817 cells.
+  pixel**, over 817 cells. **Figure: `figures/fig2_trust_calibration.png`** — the three states
+  separate cleanly, which is what makes the map a measurement rather than a colour scheme.
 - **Prior art, cited on the slide:** Uss et al. 2016 (per-region accuracy without ground truth);
   Brown & Lowe 2007 (match verification from inlier counts — **the test our failing case passes**);
   Wan et al. 2021 (correlation where features fail on optical↔DEM). **Ours** is the three-state
@@ -228,7 +229,14 @@ Full evidence ledger: `ops/PHASE0_RESEARCH_DAY5.md` · every measurement:
 
 ---
 
-## The 20-second moment — put this on slide 2 or 4 as one figure
+## The 20-second moment — **this is `figures/fig1_sun_angle_vs_error.png`**
+
+![ours vs classical across sun angle](figures/fig1_sun_angle_vs_error.png)
+
+Regenerate with `python -m presentation.make_figures` — it reads `results_log.csv` at run time,
+so the picture cannot drift from the evidence. **If a figure and a slide disagree, re-run it;
+never edit the picture.**
+
 
 **Classical methods fail under illumination change *and do not know it*. We fail later, and we
 say so.** Same pairs, byte-identical files, median `rmse_gt_px`:
