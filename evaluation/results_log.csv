@@ -28,6 +28,7 @@ timestamp,pair_id,tier,method,config,rmse_gt_px,residual_px,inlier_count,inlier_
 2026-09-02T15:30:37.403928+00:00,synthetic_d045_x+18.06_y-9.12_s4,synthetic,ours_loftr,"dem=dem_site_60m.npy (375, 364); d_azimuth=45deg at fixed 30deg elevation; shift=(+18.0567,-9.1241); rot=0; scale=1; seed=4",1.7495660781860352,66.6940906498878,114,0.5507246376811594,0.40625,1.841938171202074,207,60.0,ok,"LOLA site DEM 375x364 @60m/px, Day 5"
 2026-09-02T15:31:28.160762+00:00,pair_01,same-frame offset crop,ours_loftr,,,0.19452325191421008,5183,0.9996142719382836,1.0,0.36296717866529005,5185,,ok,"Gate 1 command. NOT a validation tier: two crops of ONE OHRC frame, same sensor, zero sun difference"
 2026-09-02T15:31:44.300426+00:00,pair_03_tierD,D,ours_loftr,,,37.81266287150397,10,0.5263157894736842,0.109375,3.243454948045371,19,60.0,ok,optical vs elevation. Produces matches; does NOT yet register - see rmse vs GeoTIFF affines
+<<<<<<< HEAD
 2026-09-03T04:07:42.295307+00:00,test_pair_allowed,synthetic,test,,,,0,0.0,,,,,too_few_matches,
 2026-09-03T04:39:35.086690+00:00,test_pair_allowed,synthetic,test,,,,0,0.0,,,,,too_few_matches,
 2026-09-03T04:53:51.621902+00:00,synth_sun_000,synthetic,SIFT,,0.00354927615262568,0.04801448434591293,488,1.0,0.984375,0.5816785245642679,488,10.0,ok,"synthetic, DEM-rendered — sun azimuth difference 0 deg; sift_time=0.168s"
@@ -41,3 +42,11 @@ timestamp,pair_id,tier,method,config,rmse_gt_px,residual_px,inlier_count,inlier_
 2026-09-03T04:58:30.275330+00:00,synth_sun_150,synthetic,SIFT,,,,0,0.0,,,0,10.0,too_few_matches,"synthetic, DEM-rendered — sun azimuth difference 150 deg; sift_time=0.095s"
 2026-09-03T04:58:30.428233+00:00,synth_sun_180,synthetic,SIFT,,,,0,0.0,,,2,10.0,too_few_matches,"synthetic, DEM-rendered — sun azimuth difference 180 deg; sift_time=0.092s"
 2026-09-03T04:59:53.864112+00:00,test_pair_allowed,synthetic,test,,,,0,0.0,,,,,too_few_matches,
+2026-09-03T04:58:29.537788+00:00,synth_sun_000,synthetic,SIFT,,0.00354927615262568,0.04801448434591293,488,1.0,0.984375,0.5816785245642679,488,10.0,ok,"synthetic, DEM-rendered — sun azimuth difference 0 deg; sift_time=0.117s"
+2026-09-03T04:58:29.678317+00:00,synth_sun_030,synthetic,SIFT,,0.7467706203460693,76.0910415649414,10,0.9090909090909091,0.140625,2.584569596664017,11,10.0,ok,"synthetic, DEM-rendered — sun azimuth difference 30 deg; sift_time=0.090s"
+2026-09-03T04:58:29.817704+00:00,synth_sun_060,synthetic,SIFT,,,,0,0.0,,,0,10.0,too_few_matches,"synthetic, DEM-rendered — sun azimuth difference 60 deg; sift_time=0.087s"
+2026-09-03T04:58:29.959858+00:00,synth_sun_090,synthetic,SIFT,,,,0,0.0,,,0,10.0,too_few_matches,"synthetic, DEM-rendered — sun azimuth difference 90 deg; sift_time=0.090s"
+2026-09-03T04:58:30.116792+00:00,synth_sun_120,synthetic,SIFT,,,,0,0.0,,,1,10.0,too_few_matches,"synthetic, DEM-rendered — sun azimuth difference 120 deg; sift_time=0.097s"
+2026-09-03T04:58:30.275330+00:00,synth_sun_150,synthetic,SIFT,,,,0,0.0,,,0,10.0,too_few_matches,"synthetic, DEM-rendered — sun azimuth difference 150 deg; sift_time=0.095s"
+2026-09-03T04:58:30.428233+00:00,synth_sun_180,synthetic,SIFT,,,,0,0.0,,,2,10.0,too_few_matches,"synthetic, DEM-rendered — sun azimuth difference 180 deg; sift_time=0.092s"
+2026-09-03T04:38:42.671473+00:00,pair_03_tierD,D,change_detection_absdiff,"threshold=30, min_area_px=50, edge_margin_frac=0.05",,,,,,,35,60.0,ok,"35 candidate changes: 0 likely real surface changes, 31 likely shadow/illumination effects, 4 likely registration artifacts; optical vs elevation-derived pair"

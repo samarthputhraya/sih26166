@@ -224,9 +224,18 @@ stays honest about what each result proves.
 
 ```csv
 pair_id,tier,source_instrument,source_file,source_gsd_mpp,source_sun_az,source_sun_el,source_incidence,ref_instrument,ref_file,ref_gsd_mpp,ref_sun_az,ref_sun_el,ref_incidence,scale_ratio,overlap_lat,overlap_lon,notes
-pair_01,A,LROC_NAC,pair_01_source.tif,0.5,,,32,LROC_NAC,pair_01_ref.tif,0.5,,,58,1.0,0.674,23.47,"same sensor - sun angle test only"
+pair_01,same-frame offset crop,CH2_OHRC,pair_01_source.tif,0.22977,,,,CH2_OHRC,pair_01_ref.tif,0.22977,,,,1.0,,,"same-frame wiring fixture; known 40x25 px offset; NOT a validation tier"
 pair_07,B,CH2_OHRC,pair_07_source.tif,0.28,,,,LROC_NAC,pair_07_ref.tif,0.5,,,,1.8,,,"cross-sensor cross-mission"
 ```
+
+> ⚠️ **The `pair_01` row above is the real one, and it is deliberately unglamorous.** Until Day 5
+> 2026 this example read `pair_01,A,LROC_NAC,...,32,...,58` — claiming Tier A, the wrong
+> instrument, and a sun-angle difference that does not exist. `pair_01` is two crops of ONE
+> Chandrayaan-2 OHRC frame: same sensor, same instant, zero sun difference.
+>
+> The lesson the row is here to teach: **the `tier` string is a claim about what a result proves,
+> so it has to survive a judge asking "which two sensors?"** `same-frame offset crop` is an
+> honest answer. `A` was not.
 
 Leave a field blank if you genuinely don't have it. **Never guess a number to fill a cell** — a
 wrong sun angle silently corrupts Samrudh's entire illumination analysis.
