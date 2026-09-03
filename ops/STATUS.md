@@ -1,6 +1,6 @@
 # STATUS — end of Day 5, third session (3 Sep 2026, night)
 
-> Rewritten in full at the end of every session. True as of 3 Sep 2026, ~21:20 IST.
+> Rewritten in full at the end of every session. True as of 3 Sep 2026, ~22:10 IST (`/wrap`).
 > Previous session's STATUS is in git history (`fce6d05`).
 
 ---
@@ -54,7 +54,31 @@ with the live path one checkbox away.
 | `pytest app/test_streamlit_app.py` | 12 passed (first render, no network, no nested buttons) |
 | `git diff evaluation/results_log.csv` | only appended rows; test contamination root cause **fixed** (`evaluation/test_metrics.py` now redirects) |
 
+**Re-run at `/wrap` time, exit codes observed not inferred:** `pytest evaluation/ -q` → **21 passed,
+exit 0** · `pytest -q` → **206 passed, exit 0** · `import core.pipeline` → **ok, exit 0**.
+
 ⚠️ The venv is `C:\Users\samar\venvs\sih26166`; call its `python.exe` directly or activate it.
+The `/wrap` skill's bare `python` fails here with `ModuleNotFoundError: numpy` — that is the
+missing venv, not a broken build.
+
+## The demo was driven in a real browser this session, not judged by eye
+
+`streamlit run app/streamlit_app.py`, then clicked through as a user would. Verified live:
+
+- `pair_01` → 63/64 verified, 1 weak, 0 no-evidence, green tint over the frame. **Matches the
+  logged row exactly.**
+- `pair_04_tierD_native` → the precomputed result loads instantly (the caption names the commit and
+  when it was computed), with the warning **"The matcher's result was contradicted and not used"**,
+  0% of 35 cells agreeing, the fallback translation 231 m, the 216 m quadrant disagreement, a
+  0/4/60 trust map, and the collapsed expander "What the matcher alone would have shown".
+- The five-metric table correctly shows the **matcher's** numbers (residual 4684.9 px, three
+  Gate-2 FAILs) beside a fallback that worked — the honest reading, since `evaluate()` always
+  scores the raw matcher output. Nobody can mistake one for the other on screen.
+- "Detect changes" → the reliability gate reported **0 kept, 5 rejected, 178 unassessable**.
+
+The server was **shut down** at the end of the session (port 8501 free). A background-task
+notification claimed the shell had stopped while the process was still listening — check
+`netstat -ano | grep 8501` rather than trusting that notification.
 
 ## Gate 2 (Day 7) against the log tonight
 
@@ -95,17 +119,37 @@ claim was wrong — it benchmarks SuperGlue (SAC ISRO authors) — and is correc
    Day-6 contingency (reassign to Samartha if no `.pptx` by end of 4 Sep) stands.
 8. The verdict on frames whose cells are narrower than 24 px (pair_03) falls back to the
    whole-frame peak; it says so in `basis`.
+9. 🔴 **NEW — the change-detection candidate count is not consistent between entry points.** On
+   `pair_04_tierD_native` the live UI button reports **183** raw candidates where
+   `python -m ops.gate_tier_d_changes` reports **1**. Cause: the UI hands `detect_changes`
+   `to_display()`-percentile-stretched uint8 images, the ops script hands it raw float32 arrays and
+   lets `detect_changes` do its own max-based scaling. Same detector, different contrast going in.
+   **The gate's conclusion is identical either way — 0 kept, because no cell is verified — so the
+   novelty claim is unaffected**, but a judge who tries both routes sees two numbers. Fix by making
+   one path use the other's preprocessing; do not "fix" it by deleting a row. Neither number is
+   quoted anywhere in the deck.
 
 ## Next session (Day 6, 4 Sep) — in order
 
-1. `/next`, pull, `pytest -q`, both Gate-1 commands.
-2. Gate 2 criterion 5: run the three classical baselines on the 20 sweep pairs and log them, or
+1. **`git push`** — commit `65b3224` is local-only. Deliberately deferred at the user's
+   instruction at the end of Day 5; it is the first action of Day 6, before anyone pulls.
+2. `/next`, pull, `pytest -q`, both Gate-1 commands.
+3. Gate 2 criterion 5: run the three classical baselines on the 20 sweep pairs and log them, or
    assign it in writing.
-3. Deck: transcribe `docs/SANIYA_NARRATIVE_GUIDE.md` + `ops/briefs/BRIEF_SANIYA.md` into the
+4. Deck: transcribe `docs/SANIYA_NARRATIVE_GUIDE.md` + `ops/briefs/BRIEF_SANIYA.md` into the
    official template; one figure = the trust map on the Tier D pair from the app.
-4. Gate 3 rehearsal with a stranger on the cached demo; Gate 4 dry run with wifi off
+5. Gate 3 rehearsal with a stranger on the cached demo; Gate 4 dry run with wifi off
    (`ops/precompute_demo_cache.py` must be re-run after any change to `core/`).
-5. Optional: MiLOI (2-hour timebox to check ground truth), `redetect()` opt-in flag with logged rows.
+6. Known issue 9 (change-detection preprocessing mismatch) — one of the two paths, ~20 minutes.
+7. Optional: MiLOI (2-hour timebox to check ground truth), `redetect()` opt-in flag with logged rows.
+
+## `/wrap` step 4 (nightly specs) deliberately NOT run — second night running
+
+No `spec-writer` agent. The build-alone decision (Days 5–7) means the five teammates are not being
+handed nightly task specs, so drafting them would contradict the plan in force. **What replaces
+them is stronger and already written:** one brief per person in `ops/briefs/BRIEF_<NAME>.md`, each
+covering what changed in their area, the questions they must answer cold for Gate 5, and an
+explicit "never say" list. Recorded here rather than silently omitted.
 
 ## Not doing — settled
 
