@@ -53,6 +53,8 @@ def test_every_real_pair_is_offered():
     assert offered, "data/pairs has directories but none were offered"
     for expected in ("pair_01",):
         assert expected in offered, f"{expected} missing from {offered}"
+    # ...and the app opens ON the demo pair, not on the uncatalogued dry-run fixture.
+    assert at.selectbox[0].value == "pair_01"
 
 
 # --- the honesty rules, enforced as tests -------------------------------------
@@ -185,12 +187,176 @@ def test_swipe_refuses_mismatched_shapes_rather_than_crashing():
 
 
 def test_verdict_applies_gate_2_thresholds_correctly():
+    """verdict() returns (ok, op, threshold); the WORD is rendered by the table."""
     m = _app_module()
-    assert m.verdict("rmse_gt_px", 0.32, "<", 0.5).startswith("PASS")
-    assert m.verdict("rmse_gt_px", 0.93, "<", 0.5).startswith("FAIL")
-    assert m.verdict("inlier_ratio", 0.5263, ">", 0.60).startswith("FAIL")
+    assert m.verdict("rmse_gt_px", 0.32, "<", 0.5)[0] is True
+    assert m.verdict("rmse_gt_px", 0.93, "<", 0.5)[0] is False
+    assert m.verdict("inlier_ratio", 0.5263, ">", 0.60)[0] is False
     # The Tier D pair really does sit just under 0.80 - it must not read as PASS.
-    assert m.verdict("grid_coverage_fraction", 0.796875, ">=", 0.80).startswith("FAIL")
-    assert m.verdict("grid_coverage_fraction", 0.80, ">=", 0.80).startswith("PASS")
-    assert m.verdict("residual_px", 1.0, None, None) == ""
-    assert m.verdict("rmse_gt_px", None, "<", 0.5) == ""
+    assert m.verdict("grid_coverage_fraction", 0.796875, ">=", 0.80)[0] is False
+    assert m.verdict("grid_coverage_fraction", 0.80, ">=", 0.80)[0] is True
+    assert m.verdict("residual_px", 1.0, None, None)[0] is None
+    assert m.verdict("rmse_gt_px", None, "<", 0.5)[0] is None
+    # ...and the rendered table carries the word, with the threshold beside it.
+    html = m.metrics_table_html({"rmse_gt_px": 0.93, "residual_px": 0.0376, "inlier_count": 5183,
+                                 "inlier_ratio": 0.9996, "grid_coverage_fraction": 0.796875,
+                                 "distribution_cv": 0.357})
+    assert "<b>FAIL</b> (&lt; 0.5)" in html
+    assert "<b>FAIL</b> (&gt;= 0.80)" in html
+    assert "<b>PASS</b> (&gt; 0.60)" in html
+    assert 'title="0.796875"' in html, "full precision must ride along in the cell title"
+    assert "0.7969" in html, "grid_coverage_fraction is drawn to 4 places, as the deck prints it"
+    void = m.metrics_table_html({"rmse_gt_px": None})
+    assert "no ground truth on a real pair" in void
+    # A value that rounds to its own threshold is drawn to six places, so the
+    # digits on screen can never contradict the word beside them.
+    edge = m.metrics_table_html({"grid_coverage_fraction": 0.79996})
+    assert "0.799960" in edge and "<b>FAIL</b> (&gt;= 0.80)" in edge
+    # On a contradicted frame the matcher's residual is drawn void and says why,
+    # so a photograph of the table alone never carries a bare 4,685 px "residual".
+    contra = m.metrics_table_html({"residual_px": 4684.908484071721}, contradicted=True)
+    assert "matcher transform, not used" in contra
+    assert 'class="num num--void" title="4684.908484071721">4684.9085 px' in contra
+
+
+# --- the skin: Gate 4 and the projector, enforced as tests ---------------------
+
+def test_the_skin_has_no_url_and_no_streamlit_internal_class():
+    """Invariant 3 as an assertion: a font CDN in the CSS would be a 30-second
+    timeout with the wifi off, and it would be caught here instead of on stage.
+    st-emotion-cache-* classes are regenerated on every Streamlit build."""
+    m = _app_module()
+    assert "http" not in m.SKIN
+    assert "st-emotion-cache" not in m.SKIN
+    assert "@import" not in m.SKIN and "url(" not in m.SKIN
+
+
+def test_the_source_is_ascii_only():
+    """Seven rows of results_log.csv already carry cp1252 mojibake. Typographic
+    characters in this file are HTML entities, never literal code points."""
+    bad = [(i + 1, ln) for i, ln in enumerate(SOURCE.splitlines())
+           if any(ord(ch) > 127 for ch in ln)]
+    assert not bad, f"non-ASCII characters at lines {[b[0] for b in bad][:10]}"
+
+
+def test_config_toml_uses_only_keys_this_streamlit_knows():
+    """An unknown config KEY warns; an invalid VALUE for a known key can stop the
+    app from starting, which is a Gate 4 failure. Every key must exist in the
+    installed build, and the three demo-critical values must be what Gate 4 needs."""
+    import tomllib
+    from streamlit import config
+    cfg_path = APP.parent.parent / ".streamlit" / "config.toml"
+    assert cfg_path.is_file(), "the skin's theme half is missing"
+    cfg = tomllib.loads(cfg_path.read_text(encoding="utf-8"))
+    known = set(config.get_config_options())
+    flat = {}
+
+    def walk(d, prefix=""):
+        for k, v in d.items():
+            if isinstance(v, dict):
+                walk(v, prefix + k + ".")
+            else:
+                flat[prefix + k] = v
+    walk(cfg)
+    unknown = sorted(k for k in flat if k not in known)
+    assert not unknown, f"config keys this streamlit does not know: {unknown}"
+    assert flat["theme.base"] == "light", "a dark ground does not survive a lit classroom"
+    assert flat["browser.gatherUsageStats"] is False, "a network call on startup, wifi off"
+    assert flat["server.fileWatcherType"] == "none", "a stray Ctrl+S must not rerun the demo"
+    for k in ("theme.font", "theme.headingFont", "theme.codeFont"):
+        assert "http" not in flat.get(k, "")
+
+
+def test_reliability_overlay_renders_three_different_kinds_of_mark():
+    """State is never colour alone. Verified is a tint, weak is a tint plus a
+    hatch, no-evidence is NO tint - faded toward paper. On a projector or for a
+    colour-blind judge those must be distinguishable with the hue removed."""
+    m = _app_module()
+    base = np.full((96, 96), 128, np.uint8)
+    state = np.array([[m.VERIFIED, m.WEAK], [m.NO_EVIDENCE, m.NO_EVIDENCE]], dtype=object)
+    rel = {"state": state}
+    ov = m.reliability_overlay(base, rel)
+    assert ov is not None and ov.shape == (96, 96, 3) and ov.dtype == np.uint8
+    # interior samples away from borders and glyphs (the glyph sits top-left)
+    v = ov[30:44, 30:44].astype(float)
+    w = ov[30:44, 78:92].astype(float)
+    n = ov[78:92, 78:92].astype(float)
+    # no-evidence is LIGHTER than the terrain (faded toward paper), and has no hue
+    assert n.mean() > 128 + 20
+    assert np.ptp(n.mean(axis=(0, 1))) < 6, "no-evidence must carry no tint"
+    # verified and weak are tinted (channels differ), and in different hues
+    assert np.ptp(v.mean(axis=(0, 1))) > 10
+    assert np.ptp(w.mean(axis=(0, 1))) > 10
+    assert v.mean(axis=(0, 1))[1] - v.mean(axis=(0, 1))[0] > 5      # green-leaning
+    # weak carries the hatch: its luminance varies inside the cell, verified's does not
+    assert w.mean(axis=2).std() > 4 * max(v.mean(axis=2).std(), 1e-6)
+    # and every state has a distinct glyph and word, so the legend can say it
+    assert len(set(m.STATE_GLYPH.values())) == 3 and all(m.STATE_GLYPH.values())
+    assert len(set(m.STATE_WORD.values())) == 3
+
+
+def test_reliability_overlay_survives_a_tiny_reference_frame():
+    """pair_03's reference is 101 x 101, so an 8x8 cell is 12 px. Borders and
+    glyphs must scale down rather than eat the cell or raise."""
+    m = _app_module()
+    base = np.full((101, 101), 90, np.uint8)
+    state = np.full((8, 8), m.WEAK, dtype=object)
+    state[0, 0] = m.VERIFIED
+    ov = m.reliability_overlay(base, {"state": state})
+    assert ov is not None and ov.shape == (101, 101, 3)
+
+
+def test_every_verdict_on_screen_carries_a_word():
+    """Stock st.success / st.warning / st.error in the main column are colour-first
+    and an instant AI tell. Every verdict_strip call must name its state."""
+    calls = re.findall(r'verdict_strip\(\s*"(\w+)",\s*"([A-Z][A-Z ]+)"', SOURCE)
+    assert calls, "no verdict strips found"
+    kinds = {k for k, _ in calls}
+    assert kinds <= {"ok", "caution", "fail"}
+    words = {w for _, w in calls}
+    assert {"ALIGNED", "FALLBACK USED", "NO TRANSFORM", "CONTRADICTED", "ERROR"} <= words
+    main_col = SOURCE.split("# --- render ---")[1]
+    for stock in ("st.success(", "st.warning(", "st.info(", "st.error("):
+        assert stock not in main_col, f"{stock} survives in the main column"
+
+
+def test_every_readout_form_names_the_grid_and_says_whether_metres_exist():
+    """The primary readout has no form that prints a bare pixel figure. Every
+    branch names the reference grid; metres appear only when the reference label
+    carries a scale, and the void branches say in words why the number is not
+    an accuracy."""
+    m = _app_module()
+    ok = m.readout_for(0.0376, 9.3698731836556, "ref.tif", True, False)
+    assert "0.0376" in ok and "reference grid of ref.tif" in ok and "9.37 m/px" in ok
+    assert f"{0.0376 * 9.3698731836556:.2f} m" in ok and "not an accuracy" in ok
+    nogsd = m.readout_for(0.0376, None, "pair_01_ref.tif", True, False)
+    assert "reference grid of pair_01_ref.tif" in nogsd and "metres not available" in nogsd
+    assert " m</b>" not in nogsd, "no metre figure may be printed without a scale"
+    fb = m.readout_for(4684.908484071721, 9.3698731836556, "tier_d_native_ref.tif", True, True)
+    assert "readout--void" in fb and "MATCHER TRANSFORM NOT USED" in fb
+    assert f"{4684.908484071721 * 9.3698731836556:.2f} m" in fb and "not an accuracy" in fb
+    void = m.readout_for(None, 60.0, "x.tif", False, False)
+    assert "nothing to measure" in void and "reference grid of x.tif" in void
+    notr = m.readout_for(2.0, 60.0, "x.tif", False, False)
+    assert "NO TRANSFORM" in notr and "not an alignment" in notr
+
+
+def test_switching_the_source_radio_drops_the_previous_result():
+    """A stale result under a rail that says 'unknown (upload)' is the wrong-number
+    demo design decision 2 exists to prevent. Every pair-changing input resets."""
+    at = _fresh_app()
+    at.session_state["result"] = {"metrics": None}
+    at.session_state["pair_label"] = "pair_01"
+    at.session_state["pair_mode"] = "Bundled pair"
+    at.radio[0].set_value("Upload two images").run()
+    assert not at.exception
+    assert "result" not in at.session_state, "the radio must reset the result"
+
+
+def test_the_rail_describes_the_result_pair_not_the_sidebar():
+    """pair_identity() is what the rail prints; it is looked up for the pair the
+    result came from and never guessed."""
+    m = _app_module()
+    assert m.pair_identity(None, "Bundled pair") == ("--", "--")
+    assert m.pair_identity("a.tif vs b.tif", "Upload two images") == ("unknown (upload)", "unknown")
+    assert m.pair_identity("no_such_pair", "Bundled pair") == ("unknown", "unknown")

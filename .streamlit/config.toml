@@ -1,0 +1,57 @@
+# .streamlit/config.toml - the demo skin's theme half. The other half is the ONE
+# CSS block (SKIN) in app/streamlit_app.py. Launch from the repo root or this file
+# is ignored and a Windows-dark-mode laptop inverts the whole app.
+#
+# Every key below was checked against the installed build (streamlit==1.62.0):
+#   C:\Users\samar\venvs\sih26166\Scripts\python.exe -c "from streamlit import config; \
+#     print('\n'.join(k for k in config.get_config_options() if k.startswith('theme')))"
+# and app/test_streamlit_app.py::test_config_toml_uses_only_keys_this_streamlit_knows
+# re-checks it on every run. An unknown KEY only warns; an invalid VALUE for a known
+# key is what can stop the app from starting, and that is a Gate 4 failure.
+
+[theme]
+base                     = "light"
+# Paper, not pure white - pure white blooms under a bright projector lamp.
+backgroundColor          = "#F7F7F4"
+# Sidebar, table headers, code blocks: the control-panel field.
+secondaryBackgroundColor = "#ECEBE6"
+textColor                = "#14171A"
+# The accent appears on exactly one element: the Align button.
+primaryColor             = "#14487F"
+linkColor                = "#14487F"
+borderColor              = "#C9C7BF"
+codeBackgroundColor      = "#ECEBE6"
+# Square corners on every widget. Nothing floats, nothing is rounded.
+baseRadius               = "none"
+buttonRadius             = "none"
+showWidgetBorder         = true
+showSidebarBorder        = true
+# System faces only. Wifi is off at the demo; a web font would silently fall
+# back mid-run. Consolas ships with every Windows since Vista.
+font        = "\"Segoe UI\", \"Segoe UI Variable Text\", system-ui, -apple-system, Roboto, \"Helvetica Neue\", Arial, \"Liberation Sans\", sans-serif"
+headingFont = "\"Segoe UI\", \"Segoe UI Variable Text\", system-ui, -apple-system, Roboto, \"Helvetica Neue\", Arial, \"Liberation Sans\", sans-serif"
+codeFont    = "Consolas, \"Cascadia Mono\", \"DejaVu Sans Mono\", \"Liberation Mono\", Menlo, Monaco, \"Courier New\", monospace"
+
+[theme.sidebar]
+backgroundColor          = "#ECEBE6"
+secondaryBackgroundColor = "#F7F7F4"
+borderColor              = "#C9C7BF"
+textColor                = "#14171A"
+
+[browser]
+# Invariant 3: wifi is OFF at the demo. Usage stats are a network call on
+# startup - off is both correct and one less thing to time out.
+gatherUsageStats = false
+
+[client]
+# Removes the "Deploy" button and the developer items from the top-right menu.
+toolbarMode = "minimal"
+
+[server]
+# No filesystem watcher during the demo. A stray Ctrl+S in an open editor must
+# not rerun the script while a judge is looking at a result.
+fileWatcherType = "none"
+enableStaticServing = false
+
+[logger]
+level = "warning"
