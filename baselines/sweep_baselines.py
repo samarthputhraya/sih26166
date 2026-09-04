@@ -30,6 +30,18 @@ produced a number that looked fine and meant nothing.
 4. FAILURES ARE LOGGED, NOT DROPPED (`allow_failed=True`). Classical methods genuinely
    fall over past ~30 degrees of sun difference. A logged failure is the evidence; a
    filtered-out failure is a flattering lie about the comparison.
+
+5. EVERY MEDIAN CARRIES ITS n, AND THE SUCCESS RATE IS THE HEADLINE. Fixed Day 6 after an
+   audit caught it. A run that fails produces no `rmse_gt_px`, so it cannot enter a median
+   - correct - but the first version of this script then printed the survivors' median with
+   no n, and the number was copied into the deck, the Q&A bank and the gate evidence
+   captioned "median of 5 off-grid shifts". At 180 degrees SIFT scored 1 run of 5; that
+   "median of five" was a median of one. Five of the eight sun angles were mislabelled the
+   same way.
+   The honest framing is also the stronger one: past 30 degrees classical methods usually
+   produce NO scoreable transform at all, and that is a better result for us than any
+   median. So this script now prints `n/N` beside every median and a SUCCESS RATE row, and
+   refuses to print a bare median without its n.
 """
 from __future__ import annotations
 
@@ -121,30 +133,41 @@ def main(argv: list[str]) -> int:
     print("\n" + "=" * 78)
     print("  GATE 2 CRITERION 5 - median rmse_gt_px per detector per sun-azimuth delta")
     print("=" * 78)
-    hdr = "  delta  " + "".join(f"{n:>12s}" for n, _ in DETECTORS) + f"{'best cls':>12s}"
+    N = args.repeats
+    hdr = "  delta  " + "".join(f"{n + ' (n/N)':>16s}" for n, _ in DETECTORS) + f"{'best cls':>16s}{'success':>10s}"
     print(hdr)
     best_by_delta: dict[float, float] = {}
     for d in deltas:
         line = f"  {int(d):>5d}  "
-        meds = []
+        meds, scored, attempted = [], 0, 0
         for name, _ in DETECTORS:
             vals = rows[name][d]
+            attempted += N
+            scored += len(vals)
             if vals:
                 med = statistics.median(vals)
-                meds.append(med)
-                line += f"{med:>12.3f}"
+                meds.append((med, len(vals)))
+                # n/N is NOT decoration. A median of 1 surviving run is not a median of N,
+                # and printing it bare is how "median of 5 off-grid shifts" reached a slide.
+                line += f"{f'{med:.3f} ({len(vals)}/{N})':>16s}"
             else:
-                line += f"{'no gt':>12s}"
+                line += f"{f'FAILED (0/{N})':>16s}"
         if meds:
-            best_by_delta[d] = min(meds)
-            line += f"{min(meds):>12.3f}"
+            best, bn = min(meds, key=lambda t: t[0])
+            best_by_delta[d] = best
+            line += f"{f'{best:.3f} ({bn}/{N})':>16s}"
         else:
-            line += f"{'-':>12s}"
+            line += f"{'ALL FAILED':>16s}"
+        line += f"{f'{scored}/{attempted}':>10s}"
         print(line)
 
     print("\n  A number here is the TRUE error against the known homography, in reference")
-    print("  pixels. Lower is better. `no gt` means every repeat failed before a transform")
+    print("  pixels. Lower is better. `FAILED` means every repeat failed before a transform")
     print("  could be scored - which is itself the finding, and those rows are logged.")
+    print("\n  READ THE (n/N) BEFORE QUOTING ANY NUMBER. A failed run produces no score, so it")
+    print("  cannot enter a median. `4971.677 (1/5)` is ONE run that happened to score, not a")
+    print("  median of five - do not caption it as one. The `success` column is the honest")
+    print("  headline past 30 deg: classical methods mostly return no usable answer at all.")
     print("\n  Compare against our own medians from the same pairs (results_log.csv,")
     print("  method ours_loftr+subpixel): 0deg 0.086 | 15deg 0.086 | 30deg 0.314 | 45deg 1.096")
     print("  Gate 2 criterion 5 needs ours to be >=2x better at a stated delta <= 15 deg.")

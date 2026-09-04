@@ -56,27 +56,42 @@ def _delta(r):
 
 
 def load_curves():
-    """median rmse_gt_px per sun delta, for ours and for the best classical detector."""
-    ours, cls = {}, {}
+    """Per sun delta: our median, the best classical median, and HOW MANY classical runs scored.
+
+    The n matters and is not decoration. A classical run that fails produces no `rmse_gt_px`
+    and so cannot enter a median - correct - but the first version of this figure then
+    captioned the survivors' median "median of 5 off-grid shifts". At 180 deg exactly ONE of
+    fifteen classical runs scored; that "median of five" was a median of one, and it reached
+    the deck, the Q&A bank and the gate evidence. The success rate is returned alongside so
+    the plot can show what actually happened: past 30 deg the classical arm mostly returns no
+    usable answer at all, which is a stronger result than any median.
+    """
+    ours, cls, attempts = {}, {}, {}
     for r in _rows(LOG):
         d, v = _delta(r), r.get("rmse_gt_px")
-        if d is None or not v or v == "None":
+        if d is None:
             continue
+        scored = bool(v) and v != "None"
         if r.get("method") == "ours_loftr+subpixel":
-            ours.setdefault(d, []).append(float(v))
+            if scored:
+                ours.setdefault(d, []).append(float(v))
         elif (r.get("method") in ("SIFT", "ORB", "AKAZE")
               and "GATE 2 CRITERION 5" in (r.get("notes") or "")):
-            cls.setdefault((d, r["method"]), []).append(float(v))
+            attempts[d] = attempts.get(d, 0) + 1
+            if scored:
+                cls.setdefault((d, r["method"]), []).append(float(v))
     deltas = sorted(ours)
     o = [st.median(ours[d]) for d in deltas]
-    best = []
+    best, nscored, ntried = [], [], []
     for d in deltas:
         per = [st.median(cls[(d, m)]) for m in ("SIFT", "ORB", "AKAZE") if (d, m) in cls]
         best.append(min(per) if per else np.nan)
-    return deltas, o, best
+        nscored.append(sum(len(v) for k, v in cls.items() if k[0] == d))
+        ntried.append(attempts.get(d, 0))
+    return deltas, o, best, nscored, ntried
 
 
-def fig_sun_angle(deltas, ours, best):
+def fig_sun_angle(deltas, ours, best, nscored, ntried):
     fig, ax = plt.subplots(figsize=(10, 5.8))
     ax.set_yscale("log")
     ax.grid(True, which="major", color=GRID, linewidth=0.8, zorder=0)
@@ -117,6 +132,18 @@ def fig_sun_angle(deltas, ours, best):
                 color=INK, fontsize=11, ha="left", va="bottom",
                 arrowprops=dict(arrowstyle="-", color=MUTED, linewidth=1))
 
+    # How many classical runs actually produced a scoreable transform. Past 30 deg most
+    # produce none, and the orange point is then one or two survivors - NOT a median of 15.
+    # Printing this on the figure is what stops the number being miscaptioned downstream.
+    for x, b, ns, nt in zip(deltas, best, nscored, ntried):
+        if np.isfinite(b):
+            ax.annotate(f"{ns}/{nt}", xy=(x, b), xytext=(0, 11), textcoords="offset points",
+                        ha="center", va="bottom", fontsize=9, color=ORANGE, zorder=5)
+    # No in-plot explainer for the n labels: at this y it lands on the legend. The two
+    # footer lines below carry it instead.
+    ax.text(64, 250, "classical runs that scored,\nout of 15 attempted",
+            color=ORANGE, fontsize=10, ha="left", va="top", style="italic")
+
     ax.set_xlabel("sun-azimuth difference between the two images  (degrees)")
     ax.set_ylabel("registration error vs known truth\nmedian rmse_gt_px  (reference pixels)")
     ax.set_title("Registration error against illumination change",
@@ -125,9 +152,11 @@ def fig_sun_angle(deltas, ours, best):
     ax.set_xlim(-8, 190)
     ax.set_ylim(0.008, 20000)
     ax.legend(loc="upper left", frameon=False, bbox_to_anchor=(0.0, 0.99))
-    fig.text(0.01, 0.015, "40 pairs, exact ground truth · every point is the median of 5 "
-             "off-grid shifts · 60 m/px · source: evaluation/results_log.csv",
-             fontsize=9.5, color=MUTED)
+    fig.text(0.01, 0.028, "blue = median of 5 off-grid shifts, and all 5 scored at every angle · "
+             "orange = median of the classical runs that produced a scoreable transform (n/15 shown)",
+             fontsize=9, color=MUTED)
+    fig.text(0.01, 0.006, "40 pairs, exact ground truth · 60 m/px · "
+             "source: evaluation/results_log.csv", fontsize=9, color=MUTED)
     fig.tight_layout(rect=(0, 0.035, 1, 1))
     p = OUT / "fig1_sun_angle_vs_error.png"
     fig.savefig(p, dpi=200)
@@ -203,12 +232,13 @@ def fig_trust_calibration():
 
 def main() -> int:
     OUT.mkdir(parents=True, exist_ok=True)
-    deltas, ours, best = load_curves()
+    deltas, ours, best, nscored, ntried = load_curves()
     print(f"  read {len(deltas)} sun deltas from {LOG.name}")
-    for d, o, b in zip(deltas, ours, best):
+    for d, o, b, ns, nt in zip(deltas, ours, best, nscored, ntried):
         ratio = (b / o) if (o and np.isfinite(b)) else float("nan")
-        print(f"    {int(d):>4}°  ours {o:9.3f}   best classical {b:11.3f}   {ratio:9.2f}x")
-    print(f"  wrote {fig_sun_angle(deltas, ours, best).name}")
+        print(f"    {int(d):>4}°  ours {o:9.3f}   best classical {b:11.3f} "
+              f"(from {ns}/{nt} scoreable runs)   {ratio:9.2f}x")
+    print(f"  wrote {fig_sun_angle(deltas, ours, best, nscored, ntried).name}")
     print(f"  wrote {fig_trust_calibration().name}")
     return 0
 

@@ -441,7 +441,9 @@ byte-identical files and "same pair at the same scale" is true by construction.
 1. **At 0° sun difference the classical baselines beat us** — SIFT 0.044 px against our 0.086 px.
    With identical illumination there is no illumination problem to solve. The claim is therefore
    *"illumination robustness that grows with the sun difference"*, **not** *"a better matcher"*.
-2. **At 180° we are at 0.080 px while SIFT is 4,972 px wrong** (62,519×). 180° is our *easiest*
+2. **At 180° we scored 5/5 runs at 0.080 px while 14 of 15 classical runs failed outright**; the
+   one that scored was 4,972 px wrong. (Say the success rate, not the 62,519× ratio - the ratio
+   rests on a single surviving run and invites a sample-size attack.) 180° is our *easiest*
    hard case; the failure peak is 90°. A 180° azimuth flip inverts the shading and
    gradient-orientation normalisation is invariant to contrast inversion, while 90° rotates it.
    Classical does **not** recover at 180°, which is what attributes the recovery to our

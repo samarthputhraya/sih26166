@@ -146,7 +146,9 @@ about the cases where it wins. Rows: methods `SIFT`/`ORB`/`AKAZE`, notes `GATE 2
 > that ran across the frame now run along it — and no invariance covers that. **The hard axis is
 > orthogonality, not magnitude.**
 >
-> The control is the classical arm on the same pairs: **SIFT at 180° is 4,972 px wrong.** If our
+> The control is the classical arm on the same pairs. At 180°, **fourteen of fifteen classical
+> runs failed to produce a scoreable transform at all**; the single one that did was **4,972 px
+> wrong.** We scored five of five, at 0.080 px. If our
 > recovery were an artifact of how the renderer produces an inverted image, classical would recover
 > too. It does not. That attributes the recovery to the component we are claiming."
 

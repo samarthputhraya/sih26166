@@ -43,19 +43,41 @@ shifts, same seeds, byte-identical `.tif` files. "Same pair at the same scale" i
 by construction, not by careful copying. Raw matches go to `evaluate()` pre-RANSAC; failures are
 logged, not dropped.
 
-| Δ azimuth | SIFT | ORB | AKAZE | best classical | **ours** | ratio |
-|---|---|---|---|---|---|---|
-| **0°** | **0.044** | 0.183 | 0.047 | **0.044** | 0.086 | **0.51× — classical wins** |
-| **15°** | 0.247 | 0.347 | 1.721 | 0.247 | **0.086** | **2.88×** ← the gate |
-| 30° | 241.7 | 1.833 | 433.9 | 1.833 | **0.314** | 5.84× |
-| 45° | *failed* | 443.2 | *failed* | 443.2 | **1.096** | 404× |
-| 60° | 320.8 | *failed* | *failed* | 320.8 | **2.379** | 135× |
-| 90° | *failed* | 2465.0 | *failed* | 2465.0 | **5.805** | 425× |
-| 120° | 718.9 | *failed* | *failed* | 718.9 | **4.025** | 179× |
-| **180°** | 4971.7 | *failed* | *failed* | 4971.7 | **0.080** | **62,519×** |
+> 🔴 **CORRECTED on Day 6 after an audit — read this before quoting any row below.**
+> This table first shipped captioned *"medians of 5 off-grid shifts"* for **both** arms. That is
+> true of ours and **false of the classical arm.** A classical run that fails produces no
+> `rmse_gt_px` and so cannot enter a median; five of the eight angles were therefore medians of
+> **one or two surviving runs**, presented as medians of five — including the headline 180° cell.
+> Every classical figure now carries the number of runs that actually scored.
+>
+> **Gate 2 itself is untouched:** at 0° and 15° all three detectors scored **5/5**, so the 2.88×
+> that the gate rests on was never affected.
 
-*(median `rmse_gt_px`, reference pixels, 60 m/px. "failed" = every repeat failed before a
-transform could be scored — those rows are in the log with their failure status.)*
+| Δ azimuth | SIFT | ORB | AKAZE | best classical | **ours** (5/5) | ratio | classical runs that scored |
+|---|---|---|---|---|---|---|---|
+| **0°** | **0.044** (5/5) | 0.183 (5/5) | 0.047 (5/5) | **0.044** | 0.086 | **0.51× — classical wins** | **15/15** |
+| **15°** | 0.247 (5/5) | 0.347 (5/5) | 1.721 (5/5) | 0.247 | **0.086** | **2.88×** ← the gate | **15/15** |
+| 30° | 241.7 (5/5) | 1.833 (5/5) | 433.9 **(1/5)** | 1.833 | **0.314** | 5.84× | 11/15 |
+| 45° | *all failed* | 443.2 **(2/5)** | *all failed* | 443.2 | **1.096** | 404× | **2/15** |
+| 60° | 320.8 **(1/5)** | *all failed* | *all failed* | 320.8 | **2.379** | 135× | **1/15** |
+| 90° | *all failed* | 2465.0 **(1/5)** | *all failed* | 2465.0 | **5.805** | 425× | **1/15** |
+| 120° | 718.9 **(1/5)** | *all failed* | *all failed* | 718.9 | **4.025** | 179× | **1/15** |
+| **180°** | 4971.7 **(1/5)** | *all failed* | *all failed* | 4971.7 | **0.080** | **62,519×** | **1/15** |
+
+*(median `rmse_gt_px` over the runs that scored, reference pixels, 60 m/px. "all failed" = every
+repeat failed before a transform could be scored — those rows are in the log with their
+`ransac_failed` / `too_few_matches` status. **Ours scored 5/5 at every single angle.**)*
+
+### The honest framing is the stronger one
+
+Do **not** say *"at 180° classical is 4,972 px wrong on the median of five runs."* Say:
+
+> **"Past 30° the classical baselines mostly produce no answer at all. At 180°, fourteen of
+> fifteen classical runs failed outright — no transform to score. The single run that did produce
+> one was 4,972 pixels wrong. We scored five out of five, at 0.080 px."**
+
+A success rate of 1/15 against 5/5 is a harder result to argue with than any ratio, and it cannot
+be attacked on sample size — which the mislabelled version could.
 
 ### 🔴 At 0° sun difference, classical beats us — say this out loud
 
@@ -86,8 +108,11 @@ failure — while we are at 0.080 px. If our 180° recovery were an artifact of 
 produces an inverted image, classical detectors would recover too. They do not. **The recovery is
 attributable to the illumination normalisation**, which is the component we are claiming.
 
-That is a controlled experiment with a 62,519× separation, and it is the strongest single figure
-in the project.
+That is a controlled experiment, and it is the strongest single result in the project. **State it
+as a success rate, not as a ratio:** at 180° we scored 5 of 5 runs at 0.080 px while **14 of 15
+classical runs failed to produce a transform at all**, and the one that did was 4,972 px wrong.
+The 62,519× ratio is arithmetically true but rests on that single surviving run — quoting the
+ratio invites a sample-size attack that the success rate is immune to.
 
 ### Where classical actually breaks
 

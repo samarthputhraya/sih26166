@@ -84,14 +84,24 @@ The PS names three difficulties and we address each, on the axis it names:
 ### Innovation and uniqueness — **lead with the finding, not the feature**
 
 > **"The problem statement asks for RMSE, inlier count and inlier ratio. We implemented all three —
-> then found a reproducible case on real lunar data where all three look acceptable and the
-> registration is 100% wrong. Self-consistency cannot detect its own failure. So we built the
-> independent check that can — and we measured how often it works."**
+> and then found a reproducible case on real lunar data where the matcher still returns a
+> confident consensus transform that the pixels flatly contradict. Match statistics describe the
+> matches; they cannot see the ground. So we built the check that can — and we measured how often
+> it works."**
+
+> 🔴 **CORRECTED Day 6 — do not restore the earlier wording.** This bullet used to read *"all three
+> look acceptable and the registration is 100% wrong."* **Our own logged row refutes that**: on
+> `pair_04_tierD_native` the inlier count is **5** and the inlier ratio **0.057**, which look
+> terrible, not acceptable. A judge asking "show me the inlier ratio you say looked fine" would have
+> opened `results_log.csv` and falsified the project's single 25%-weighted novelty claim from its
+> own evidence file. The finding is real; only that sentence was wrong.
 
 - **The case** *(row `pair_04_tierD_native`, `ours_loftr+subpixel`)*: 88 correspondences, RANSAC
-  consensus, and **0 of 35 measurable cells agree with the transform.** The system declared it
-  **contradicted**, fell back to global correlation, and reported **231 m ± 216 m** — its own
-  uncertainty, not a hidden failure.
+  returned a transform and reported `status ok`, and **0 of 35 measurable cells agree with it.**
+  The system declared it **contradicted**, refused to use it, fell back to global correlation, and
+  reported **231 m ± 216 m** — a declared failure with a number on it, instead of a confident wrong
+  answer. *(The same row logs inlier count 5 and inlier ratio 0.057 — say those numbers yourself if
+  asked; they are the evidence that this pair was hard, not evidence against us.)*
 - **It is measured, not anecdotal** *(`reliability_calibration_pooled`, 8-delta)*: over 40 pairs
   and 2,560 cells with exact ground truth, failure detection is **77% at a 120 m threshold with a
   0% false-alarm rate** — across 27 correct registrations it never once cried wolf.
@@ -262,23 +272,28 @@ so the picture cannot drift from the evidence. **If a figure and a slide disagre
 never edit the picture.**
 
 
-**Classical methods fail under illumination change *and do not know it*. We fail later, and we
-say so.** Same pairs, byte-identical files, median `rmse_gt_px`:
+**Past 30° of sun difference, classical methods mostly return no answer at all. We keep working,
+and where we stop being right we say so.** Same pairs, byte-identical files:
 
-| Δ sun azimuth | best of SIFT/ORB/AKAZE | ours | |
-|---|---|---|---|
-| 0° | **0.044** | 0.086 | *classical wins — no illumination problem to solve* |
-| 15° | 0.247 | **0.086** | **2.88×** |
-| 30° | 1.833 | **0.314** | 5.84× |
-| 90° | 2465 | **5.805** | 425× |
-| **180°** | **4972** | **0.080** | **62,519×** |
+| Δ sun azimuth | classical runs that scored | best classical | ours (scored 5/5) | |
+|---|---|---|---|---|
+| 0° | 15 / 15 | **0.044** | 0.086 | *classical wins — no illumination problem to solve* |
+| 15° | 15 / 15 | 0.247 | **0.086** | **2.88×** — the gate |
+| 30° | 11 / 15 | 1.833 | **0.314** | 5.84× |
+| 90° | **1 / 15** | 2465 | **5.805** | classical has all but stopped working |
+| **180°** | **1 / 15** | 4972 | **0.080** | **we are back to sub-pixel; classical is not** |
+
+> ⚠️ **Say the success rate, not the ratio.** *"At 180°, fourteen of fifteen classical runs failed
+> outright — no transform to score. The one that scored was 4,972 px wrong. We scored five of five,
+> at 0.080 px."* The 62,519× ratio is arithmetically true but rests on that single surviving run,
+> and quoting it invites a sample-size question the success rate simply does not have.
+> **This was mislabelled as a "median of 5" until an audit on Day 6 — do not reintroduce it.**
 
 **Why 180° is our *easiest* hard case, not our hardest:** a 180° azimuth flip **inverts** the
 shading, and gradient-orientation normalisation is invariant to contrast inversion. At 90° the
 shading **rotates**, which no invariance covers — so 90° is the failure peak. **The hard axis is
-orthogonality, not magnitude.** Classical detectors do *not* recover at 180° (SIFT: 4,972 px),
-which is what proves the recovery comes from our illumination normalisation and not from the
-renderer.
+orthogonality, not magnitude.** Classical detectors do *not* recover at 180°, which is what proves
+the recovery comes from our illumination normalisation and not from the renderer.
 
 ---
 
@@ -288,7 +303,7 @@ renderer.
 |---|---|
 | 0.0856 px, 0.9774, 1.0000, 0.4006 @ 15° | `results_log.csv`, `ours_loftr+subpixel`, `d_azimuth=15deg` |
 | 2.88× vs classical | `results_log.csv`, methods `SIFT`/`ORB`/`AKAZE`, notes `GATE 2 CRITERION 5` |
-| 0.044 px SIFT @ 0°, 4,972 px SIFT @ 180° | same |
+| 0.044 px SIFT @ 0° (5/5 runs), 4,972 px SIFT @ 180° (**1 of 5 runs**; 14/15 classical runs failed) | same — check `status` on every classical row before quoting a median |
 | 0.123 px / 99.0% / 817 cells | `reliability_calibration_pooled` + `core/reliability_calibration_summary.csv` |
 | 77% detection, 0% false alarms @ 120 m | `ops/MOVE2_FAILURE_DETECTION_DAY6.md` §3, from `core/reliability_calibration.csv` |
 | 88 matches, 0 of 35 cells, 231 m ± 216 m | `pair_04_tierD_native`, `ours_loftr+subpixel` + `fft_phase_correlation (fallback)` |

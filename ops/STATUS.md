@@ -50,7 +50,8 @@ byte-identical files. **Per the gate rule the algorithm is now frozen.**
    The failure peak is **90°**. A 180° flip *inverts* the shading and gradient-orientation
    normalisation is invariant to contrast inversion; 90° *rotates* it, and nothing covers that.
    **The classical arm proves the mechanism: SIFT at 180° is 4,971 px wrong.** If our recovery were
-   a renderer artifact, classical would recover too. 62,519× separation.
+   a renderer artifact, classical would recover too. Quote it as a SUCCESS RATE - we scored 5/5,
+   classical 1/15 - not as the 62,519× ratio, which rests on that single surviving run.
 3. 🔴 **At 0° sun difference classical BEATS us** — SIFT 0.044 px vs our 0.086. There is no
    illumination problem to solve at 0°, and SIFT is the better sub-pixel corner localiser. **This
    goes on the slide.** The claim is *illumination robustness that grows with the sun difference*,
