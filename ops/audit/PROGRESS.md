@@ -10,7 +10,7 @@ State lives on disk, not in a session. Skip every area marked DONE.
 | 04 | test coverage | **DONE** (Day 6 recon) | `00_RECON_RAW_DAY6.json` |
 | 05 | docs drift | **DONE** (Day 6 recon) | `00_RECON_RAW_DAY6.json` |
 | 06 | claims defensibility | **DONE** (Day 6 recon) | `00_RECON_RAW_DAY6.json` |
-| 07 | UI rebuild | **NOT STARTED** — 3 designs + judge are in the raw file, unimplemented | — |
+| 07 | UI rebuild | **NOT STARTED — full spec ready** | `07_UI_SPEC.md` |
 | 08 | hygiene / dead code | **DONE** (Day 6 recon) | `00_RECON_RAW_DAY6.json` |
 
 `00_RECON_RAW_DAY6.json` is the full structured output of a 12-agent, 1.69M-token survey
