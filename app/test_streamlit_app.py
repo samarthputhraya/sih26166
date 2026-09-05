@@ -326,19 +326,34 @@ def test_every_readout_form_names_the_grid_and_says_whether_metres_exist():
     carries a scale, and the void branches say in words why the number is not
     an accuracy."""
     m = _app_module()
+
+    def text(html):
+        """What a judge actually reads: markup stripped, entities resolved."""
+        import html as _html
+        return _html.unescape(re.sub(r"<[^>]+>", "", html))
+
     ok = m.readout_for(0.0376, 9.3698731836556, "ref.tif", True, False)
-    assert "0.0376" in ok and "reference grid of ref.tif" in ok and "9.37 m/px" in ok
-    assert f"{0.0376 * 9.3698731836556:.2f} m" in ok and "not an accuracy" in ok
+    assert "0.0376" in text(ok) and "reference grid of ref.tif" in text(ok)
+    assert "9.37 m/px" in text(ok)
+    assert f"{0.0376 * 9.3698731836556:.2f} m" in text(ok) and "not an accuracy" in ok
+    # the metres are the bold element ONLY when the transform was actually used
+    assert f"<b>{0.0376 * 9.3698731836556:.2f} m</b>" in ok
     nogsd = m.readout_for(0.0376, None, "pair_01_ref.tif", True, False)
-    assert "reference grid of pair_01_ref.tif" in nogsd and "metres not available" in nogsd
-    assert " m</b>" not in nogsd, "no metre figure may be printed without a scale"
+    assert "reference grid of pair_01_ref.tif" in text(nogsd)
+    assert "metres not available" in text(nogsd)
+    assert not re.search(r"[0-9.]+\s*m(?!/px)", text(nogsd).split("neither label")[0]),         "no metre figure may be printed without a scale"
     fb = m.readout_for(4684.908484071721, 9.3698731836556, "tier_d_native_ref.tif", True, True)
-    assert "readout--void" in fb and "MATCHER TRANSFORM NOT USED" in fb
-    assert f"{4684.908484071721 * 9.3698731836556:.2f} m" in fb and "not an accuracy" in fb
+    assert "readout--void" in fb and "MATCHER TRANSFORM NOT USED" in text(fb)
+    assert f"{4684.908484071721 * 9.3698731836556:.2f} m" in text(fb) and "not an accuracy" in fb
+    # ...and on a transform the system disowned, the emphasis is on the disclaimer,
+    # never on a confident distance. "Your error is 44 km?" is self-inflicted.
+    assert f"<b>{4684.908484071721 * 9.3698731836556:.2f} m</b>" not in fb
+    assert "<b>the system did not use it</b>" in fb
     void = m.readout_for(None, 60.0, "x.tif", False, False)
-    assert "nothing to measure" in void and "reference grid of x.tif" in void
+    assert "nothing to measure" in text(void) and "reference grid of x.tif" in text(void)
     notr = m.readout_for(2.0, 60.0, "x.tif", False, False)
-    assert "NO TRANSFORM" in notr and "not an alignment" in notr
+    assert "NO TRANSFORM" in text(notr) and "not an alignment" in notr
+    assert "<b>describes nothing that was aligned</b>" in notr
 
 
 def test_switching_the_source_radio_drops_the_previous_result():
@@ -436,3 +451,118 @@ def test_the_one_scale_the_ui_multiplies_by_is_the_reference_grid():
         seen += 1
     if seen == 0:
         pytest.skip("demo_cache is not synced on this machine (gitignored)")
+
+
+# --- the design lens, 5 Sep: the eight findings, pinned ------------------------
+
+def _contrast(hex_a: str, hex_b: str) -> float:
+    """WCAG contrast ratio between two #rrggbb colours."""
+    def lum(h):
+        c = [int(h[i:i + 2], 16) / 255 for i in (1, 3, 5)]
+        f = [x / 12.92 if x <= 0.03928 else ((x + 0.055) / 1.055) ** 2.4 for x in c]
+        return 0.2126 * f[0] + 0.7152 * f[1] + 0.0722 * f[2]
+    la, lb = lum(hex_a), lum(hex_b)
+    hi, lo = max(la, lb), min(la, lb)
+    return (hi + 0.05) / (lo + 0.05)
+
+
+def _token(name: str) -> str:
+    """Read a --token's hex value out of the SKIN block."""
+    m = re.search(r"--" + name + r":\s*(#[0-9A-Fa-f]{6})", _app_module().SKIN)
+    assert m, f"--{name} not found in SKIN"
+    return m.group(1).upper()
+
+
+def test_every_signal_colour_meets_AA_on_the_ground_it_is_printed_on():
+    """Finding 7. `--caution` is the state word for the Tier D pair - the one
+    carrying the 25% novelty claim - and it is printed on `--panel`, not on the
+    page. At #A8560A that was 4.40:1, below AA, while the comment quoted the
+    4.9:1 it scores on `--ground`. A colour is only as legible as the surface it
+    is actually drawn on, so both surfaces are checked here."""
+    ground, panel = _token("ground"), _token("panel")
+    for name in ("ink", "ink-mute", "accent", "ok", "caution", "fail"):
+        c = _token(name)
+        assert _contrast(c, ground) >= 4.5, f"--{name} is {_contrast(c, ground):.2f}:1 on --ground"
+    # the three that are drawn on the panel: verdict word, table header, strip
+    for name in ("ok", "caution", "fail"):
+        c = _token(name)
+        assert _contrast(c, panel) >= 4.5, f"--{name} is {_contrast(c, panel):.2f}:1 on --panel"
+
+
+def test_the_hairline_survives_a_projector_lamp():
+    """Finding 7. At #C9C7BF the rule was 1.58:1 on the ground: under a lamp it
+    washes out and the metrics table becomes rows floating in space."""
+    assert _contrast(_token("rule"), _token("ground")) >= 2.0
+
+
+def test_the_aligned_verdict_is_glossed_in_words_not_machine_prose():
+    """Finding 1, and it is a Gate 3 finding: a stranger must explain the output
+    unaided. The strip used to interpolate `declared['why']` verbatim - "98% of 64
+    measurable cells agree with H -> agrees" - which contains a matrix name, a
+    method token, an arrow and "agree...agrees". The raw string still prints in
+    the section-03 log, where the audit trail belongs."""
+    m = _app_module()
+    aligned = SOURCE.split('_v = ((rel or {})')[1].split("imgs = st.columns")[0]
+    assert "declared.get('why'" not in aligned, (
+        "the ALIGNED strip interpolates the raw reliability sentence again")
+    assert "Aligned by the feature matcher" in aligned
+    # and the gloss must not claim agreement the check never gave
+    assert '"agrees"' in aligned and "could not confirm or contradict" in aligned
+    # the raw sentence still reaches the page, in the log
+    assert "describe(rel)" in SOURCE
+    assert m._cap("area check contradicts H") == "Area check contradicts H"
+    assert m._cap("") == ""
+
+
+def test_the_metrics_section_says_whose_metrics_they_are_on_a_fallback():
+    """Finding 2. On the Tier D pair three red FAILs were the loudest legible
+    thing on the page, and the sentences that reframe them were the smallest and
+    greyest. A judge reads orange, then three FAILs, and concludes it failed - on
+    the pair carrying the novelty claim. The rule itself now says whose numbers
+    these are, and the Gate-2 sentence leads the section instead of trailing it."""
+    m = _app_module()
+    assert "matcher's metrics &mdash; transform not used" in SOURCE
+    # the Gate-2 sentence is no longer inside the table's own markup...
+    table = m.metrics_table_html({"rmse_gt_px": None, "residual_px": 0.1})
+    assert "Gate 2 is judged on" not in table
+    # ...it is a separate lead, in sans at body size, emitted above the table
+    assert "Gate 2 is judged on the synthetic sun-angle sweep" in m.MT_LEAD
+    assert "passing or failing them here is not the gate" in m.MT_LEAD
+    lead_at = SOURCE.index("st.html(MT_LEAD)")
+    table_at = SOURCE.index("st.html(metrics_table_html(")
+    assert lead_at < table_at, "the Gate-2 lead must render above the table"
+
+
+def test_the_label_tier_is_legible_from_five_metres():
+    """Finding 3. Cap-height angle = px * 0.70 * (2.0 m / 1366 px) / 5 m; ~15
+    arc-minutes is comfortable sustained reading. Every label class sat at
+    .72-.78rem = 12.2-13.3 px = 8.6-9.3', so the page read as a big number, three
+    photographs and a green grid, with none of the words that say what any of it
+    is. This pins the floor rather than the exact sizes."""
+    skin = _app_module().SKIN
+    for cls in (".tag", ".rail__k", ".seclabel", ".panellabel", ".platecap",
+                ".readout__k", ".verdict__word"):
+        m = re.search(re.escape(cls) + r"\s*\{[^}]*?font-size:\s*([0-9.]+)rem", skin)
+        assert m, f"{cls} has no font-size"
+        rem = float(m.group(1))
+        px = rem * 17
+        arcmin = px * 0.70 * (2000.0 / 1366.0) / 5000.0 * (180 / 3.141592653589793) * 60
+        assert arcmin >= 10.0, f"{cls} is {rem}rem = {px:.1f}px = {arcmin:.1f}' at 5 m"
+
+
+def test_state_is_never_carried_by_colour_alone_in_the_tag_strip():
+    """Finding 8. `.tag--live` gave two of the four tags ink and a dark border and
+    the other two grey - a two-level state, by colour only, with nothing on the
+    page saying what the levels meant."""
+    assert "tag--live" not in SOURCE
+
+
+def test_the_readout_argues_in_sans_and_prints_figures_in_mono():
+    """Finding 6. On the fallback pair the only bold text in the readout was
+    "= 43897.00 m on the ground", beside a greyed residual - a confident distance
+    on the pair we most need to be honest about. The explanatory line is prose and
+    is now set as prose."""
+    skin = _app_module().SKIN
+    m = re.search(r"\.readout__x\s*\{[^}]*?font-family:\s*var\(--(\w+)\)", skin)
+    assert m and m.group(1) == "sans", "the readout's explanatory line must be sans"
+    assert re.search(r"^\.fig\s*\{", skin, re.M), ".fig must be usable outside .verdict__body"

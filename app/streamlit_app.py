@@ -152,11 +152,15 @@ SKIN = """<style>
   --panel: #ECEBE6;      /* sidebar, table header, verdict strip */
   --panel-2: #E2E0D9;    /* nested / inset */
   --plate: #E8E7E2;      /* behind image plates */
-  --rule: #C9C7BF;       /* hairline */
+  --rule: #A9A79D;       /* hairline - 2.25:1 on ground. #C9C7BF was 1.58:1 and washed
+                            out under a lamp, leaving the table as floating rows. */
   --rule-hard: #8C8A82;  /* section rule */
   --accent: #14487F;     /* the interactive accent; the only FILLED accent surface is the Align button */
   --ok: #146B3C;         /* verified / PASS / DECLARED */
-  --caution: #A8560A;    /* weak / FALLBACK USED - a word and a bar, never a sentence */
+  --caution: #8F4708;    /* weak / FALLBACK USED - a word and a bar, never a sentence.
+                            5.73:1 on --panel, which is where the word is actually
+                            printed; 6.37:1 on --ground. The earlier #A8560A was 4.40:1
+                            on panel - below AA - and the comment quoted its ground figure. */
   --fail: #A3231E;       /* contradicted / FAIL / NO TRANSFORM */
   --mono: Consolas, "Cascadia Mono", "DejaVu Sans Mono", "Liberation Mono", Menlo, Monaco, "Courier New", monospace;
   --sans: "Segoe UI", "Segoe UI Variable Text", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, "Liberation Sans", sans-serif;
@@ -200,40 +204,39 @@ h1 { font-size: 1.55rem; font-weight: 600; } h2 { font-size: 1.15rem; font-weigh
 .idplate__ps { font-family: var(--mono); font-size: .74rem; font-weight: 400; letter-spacing: .10em; color: var(--ink-mute); margin-left: var(--s3); vertical-align: 3px; white-space: nowrap; }
 .idplate__sub { font-size: .95rem; color: var(--ink-mute); margin-top: var(--s1); max-width: 78ch; }
 .idplate__strip { margin-top: var(--s2); display: flex; flex-wrap: wrap; gap: var(--s2); }
-.tag { font-family: var(--mono); font-size: .74rem; letter-spacing: .09em; text-transform: uppercase; color: var(--ink-mute); border: 1px solid var(--rule); padding: 2px var(--s2); white-space: nowrap; }
+.tag { font-family: var(--mono); font-size: .86rem; letter-spacing: .09em; text-transform: uppercase; color: var(--ink-mute); border: 1px solid var(--rule); padding: 2px var(--s2); white-space: nowrap; }
 .tag__v { text-transform: none; letter-spacing: .04em; }
-.tag--live { color: var(--ink); border-color: var(--ink); }
 
 /* ---- 3b. state rail (filled LAST, so STATE can never read READY above a result) */
 .rail { display: flex; flex-wrap: wrap; gap: var(--s6); border-bottom: 1px solid var(--rule); padding: var(--s1) 0 var(--s2) 0; margin: 0; }
-.rail__k { display: block; font-family: var(--mono); font-size: .72rem; letter-spacing: .11em; text-transform: uppercase; color: var(--ink-faint); }
+.rail__k { display: block; font-family: var(--mono); font-size: .84rem; letter-spacing: .11em; text-transform: uppercase; color: var(--ink-faint); }
 .rail__v { font-family: var(--mono); font-size: .92rem; font-weight: 600; color: var(--ink); white-space: nowrap; }
 .rail__v--ok { color: var(--ok); } .rail__v--caution { color: var(--caution); } .rail__v--fail { color: var(--fail); }
 
 /* ---- 4. section label (replaces every divider + subheader pair) ---------- */
-.seclabel { display: flex; align-items: baseline; gap: var(--s3); font-family: var(--mono); font-size: .78rem; font-weight: 600; letter-spacing: .11em; text-transform: uppercase; color: var(--ink); border-bottom: 1px solid var(--rule-hard); padding-bottom: var(--s2); margin: var(--s12) 0 var(--s4) 0; }
+.seclabel { display: flex; align-items: baseline; gap: var(--s3); font-family: var(--mono); font-size: .90rem; font-weight: 600; letter-spacing: .11em; text-transform: uppercase; color: var(--ink); border-bottom: 1px solid var(--rule-hard); padding-bottom: var(--s2); margin: var(--s12) 0 var(--s4) 0; }
 .seclabel--first { margin-top: var(--s3); }
 .seclabel__n { color: var(--ink-faint); font-weight: 400; }
 .seclabel__id { text-transform: none; letter-spacing: .04em; font-weight: 400; color: var(--ink-mute); }
 .seclabel__note { margin-left: auto; font-weight: 400; letter-spacing: .04em; text-transform: none; color: var(--ink-mute); font-size: .74rem; text-align: right; }
-.panellabel { font-family: var(--mono); font-size: .74rem; font-weight: 600; letter-spacing: .11em; text-transform: uppercase; color: var(--ink); border-bottom: 1px solid var(--rule-hard); padding-bottom: var(--s2); margin: var(--s4) 0 var(--s3) 0; }
+.panellabel { font-family: var(--mono); font-size: .86rem; font-weight: 600; letter-spacing: .11em; text-transform: uppercase; color: var(--ink); border-bottom: 1px solid var(--rule-hard); padding-bottom: var(--s2); margin: var(--s4) 0 var(--s3) 0; }
 
 /* ---- 5. primary readout: value + grid + metres, or an explicit void ------ */
-.readout { border-top: 3px solid var(--ink); border-bottom: 1px solid var(--rule); padding: var(--s3) 0 var(--s4) 0; margin: var(--s2) 0 var(--s4) 0; }
-.readout__k { font-family: var(--mono); font-size: .84rem; font-weight: 600; letter-spacing: .10em; text-transform: uppercase; color: var(--ink); }
+.readout { border-top: 3px solid var(--ink); border-bottom: 1px solid var(--rule); padding: var(--s3) 0 var(--s4) 0; margin: 0 0 var(--s4) 0; }
+.readout__k { font-family: var(--mono); font-size: .92rem; font-weight: 600; letter-spacing: .10em; text-transform: uppercase; color: var(--ink); }
 .readout__v { font-family: var(--mono); font-size: 2.75rem; font-weight: 600; line-height: 1.05; letter-spacing: -0.01em; color: var(--ink); font-variant-numeric: tabular-nums; margin-top: var(--s1); }
 .readout__u { font-size: 1.05rem; font-weight: 400; color: var(--ink-mute); margin-left: var(--s2); }
 .readout__q { font-family: var(--sans); font-size: 1rem; font-weight: 400; letter-spacing: 0; color: var(--ink); margin-left: var(--s4); }
-.readout__x { font-family: var(--mono); font-size: .92rem; color: var(--ink); margin-top: var(--s2); max-width: 96ch; line-height: 1.5; }
+.readout__x { font-family: var(--sans); font-size: 1rem; color: var(--ink); margin-top: var(--s2); max-width: 88ch; line-height: 1.5; }
 .readout__x b { font-weight: 600; }
 .readout__x .warn { color: var(--caution); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
 .readout--void .readout__v { color: var(--ink-faint); font-size: 1.6rem; }
 
 /* ---- 6. verdict strip: the WORD first, the 4px bar second ---------------- */
 .verdict { display: flex; gap: var(--s4); align-items: flex-start; background: var(--panel); border-left: 4px solid var(--ink-mute); padding: var(--s3) var(--s4); margin: var(--s2) 0 var(--s3) 0; }
-.verdict__word { font-family: var(--mono); font-size: .84rem; font-weight: 700; letter-spacing: .11em; text-transform: uppercase; white-space: nowrap; padding-top: 2px; min-width: 15ch; }
+.verdict__word { font-family: var(--mono); font-size: 1rem; font-weight: 700; letter-spacing: .11em; text-transform: uppercase; white-space: nowrap; padding-top: 2px; min-width: 15ch; }
 .verdict__body { font-size: .98rem; line-height: 1.5; max-width: 80ch; }
-.verdict__body .fig { font-family: var(--mono); font-size: .94em; white-space: nowrap; }
+.fig { font-family: var(--mono); font-size: .94em; white-space: nowrap; }
 .verdict--ok { border-left-color: var(--ok); } .verdict--ok .verdict__word { color: var(--ok); }
 .verdict--caution { border-left-color: var(--caution); } .verdict--caution .verdict__word { color: var(--caution); }
 .verdict--fail { border-left-color: var(--fail); } .verdict--fail .verdict__word { color: var(--fail); }
@@ -247,8 +250,8 @@ h1 { font-size: 1.55rem; font-weight: 600; } h2 { font-size: 1.15rem; font-weigh
 
 /* ---- 7. metrics table ---------------------------------------------------- */
 .mt { width: 100%; border-collapse: collapse; margin-top: var(--s2); }
-.mt th { font-family: var(--mono); font-size: .74rem; font-weight: 600; letter-spacing: .10em; text-transform: uppercase; color: var(--ink-mute); text-align: left; padding: var(--s2) var(--s3); border-bottom: 2px solid var(--ink); white-space: nowrap; }
-.mt th.num { text-align: right; font-size: .74rem; font-weight: 600; }
+.mt th { font-family: var(--mono); font-size: .86rem; font-weight: 600; letter-spacing: .10em; text-transform: uppercase; color: var(--ink-mute); text-align: left; padding: var(--s2) var(--s3); border-bottom: 2px solid var(--ink); white-space: nowrap; }
+.mt th.num { text-align: right; font-size: .86rem; font-weight: 600; }
 .mt td { padding: var(--s3); border-bottom: 1px solid var(--rule); font-size: .96rem; vertical-align: baseline; }
 .mt tr:last-child td { border-bottom: 1px solid var(--rule-hard); }
 .mt .k { font-family: var(--mono); font-size: .92rem; white-space: nowrap; }
@@ -260,7 +263,7 @@ h1 { font-size: 1.55rem; font-weight: 600; } h2 { font-size: 1.15rem; font-weigh
 .mt .g b { font-weight: 700; letter-spacing: .06em; }
 .mt .g--pass b { color: var(--ok); } .mt .g--fail b { color: var(--fail); } .mt .g--none { color: var(--ink-faint); }
 .mt .num[title] { cursor: help; }
-.mt-note { font-family: var(--mono); font-size: .78rem; color: var(--ink-mute); margin-top: var(--s2); }
+.mt-lead { font-family: var(--sans); font-size: 1rem; color: var(--ink); margin: var(--s2) 0 var(--s3) 0; max-width: 88ch; line-height: 1.5; }
 
 /* ---- 8. reliability legend: the swatches are the overlay's tint maths on the plate colour */
 .legend { list-style: none; margin: 0 0 var(--s4) 0; padding: 0; display: flex; flex-direction: column; gap: var(--s2); }
@@ -280,7 +283,7 @@ h1 { font-size: 1.55rem; font-weight: 600; } h2 { font-size: 1.15rem; font-weigh
 /* ---- 9. image plates ----------------------------------------------------- */
 [data-testid="stImage"] img { border: 1px solid var(--ink); background: var(--plate); display: block; }
 [data-testid="stImageCaption"] { font-family: var(--mono) !important; font-size: .76rem !important; color: var(--ink-mute) !important; text-align: left !important; }
-.platecap { font-family: var(--mono); font-size: .76rem; letter-spacing: .04em; color: var(--ink-mute); border-top: 1px solid var(--rule); padding-top: var(--s1); margin-bottom: var(--s2); }
+.platecap { font-family: var(--mono); font-size: .90rem; letter-spacing: .04em; color: var(--ink-mute); border-top: 1px solid var(--rule); padding-top: var(--s1); margin-bottom: var(--s2); }
 .platecap b { color: var(--ink); text-transform: uppercase; letter-spacing: .10em; }
 .plate--void { border: 1px dotted var(--ink-mute); background: var(--plate); min-height: 200px; display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: .84rem; color: var(--ink-mute); text-align: center; padding: var(--s4); }
 
@@ -587,6 +590,18 @@ def reset_results() -> None:
 
 # --- HTML emitters. Every interpolated string goes through esc() first. -------
 
+def _cap(html: str) -> str:
+    """Capitalise the first letter of an interpolated clause.
+
+    `declared["why"]` begins mid-sentence ("area check contradicts..."), so
+    dropping it after a full stop read as two authors glued together. Operates on
+    already-escaped HTML, so it must not touch an entity: the first character of
+    `&amp;...` is `&`, which .capitalize() would leave alone anyway, but slicing
+    keeps the rest of the string byte-identical either way.
+    """
+    return html[:1].upper() + html[1:] if html else html
+
+
 def esc(x) -> str:
     """html.escape for anything that did not originate in this file."""
     return _h.escape("" if x is None else str(x), quote=True)
@@ -676,10 +691,18 @@ def readout_for(resid, ref_gsd, ref_name: str, aligned_ok: bool, fallback_used: 
         return readout_html("void", label, "&mdash;", "", "",
                             f"no transform &mdash; nothing to measure on the {grid}")
     value = esc(f"{resid:.4f}")
+    # Bold the metres ONLY when the transform was actually used. On a contradicted
+    # or fallback result the emphasis goes on "not used" instead: a confident
+    # distance is exactly the wrong instinct on the pair we most need to be honest
+    # about, and "your error is 44 km?" is a self-inflicted question.
+    trusted = aligned_ok and not fallback_used
     if ref_gsd:
-        where = (f"= <b>{resid * ref_gsd:.2f} m</b> on the ground &middot; {grid} at "
-                 f"{ref_gsd:.4g} m/px")
+        metres = f"{resid * ref_gsd:.2f} m"
+        metres_html = f"<b>{metres}</b>" if trusted else f'<span class="fig">{metres}</span>'
+        where = (f"= {metres_html} on the ground &middot; {grid} at "
+                 f'<span class="fig">{ref_gsd:.4g}</span> m/px')
     else:
+        trusted = aligned_ok and not fallback_used
         where = (f"on the {grid} &middot; <span class=\"warn\">metres not available</span> "
                  f"&mdash; neither label carries a map scale, so no metre figure is printed. "
                  f"Never quote this figure without naming its grid.")
@@ -687,13 +710,13 @@ def readout_for(resid, ref_gsd, ref_name: str, aligned_ok: bool, fallback_used: 
         return readout_html("void", label + " &middot; NO TRANSFORM", value, "px",
                             "not an alignment",
                             f"No usable transform was found; this is evaluate()'s own fit on the "
-                            f"raw matches, {where}. It describes nothing that was aligned.")
+                            f"raw matches, {where}. It <b>describes nothing that was aligned</b>.")
     if fallback_used:
         return readout_html("void", label + " &middot; MATCHER TRANSFORM NOT USED", value, "px",
                             "not an accuracy",
                             f"{where}. This residual describes the matcher's transform, which the "
-                            f"pixels contradicted and the system did not use. The declared alignment "
-                            f"and its uncertainty are in the verdict above, in metres.")
+                            f"pixels contradicted and <b>the system did not use it</b>. The declared "
+                            f"alignment and its uncertainty are in the verdict above, in metres.")
     return readout_html("ok", label, value, "px", "held-out fit residual, not an accuracy", where)
 
 
@@ -731,9 +754,13 @@ def metrics_table_html(metrics: dict, contradicted: bool = False) -> str:
         rows.append(f'<tr><td class="k">{key}</td>{vcell}<td class="m">{esc(meaning)}</td>{gcell}</tr>')
     return ('<table class="mt"><thead><tr><th>Metric</th><th class="num">Value</th>'
             '<th>What it means</th><th>Gate 2 threshold</th></tr></thead><tbody>'
-            + "".join(rows) + "</tbody></table>"
-            '<div class="mt-note">Gate 2 is judged on the synthetic sun-angle sweep in '
-            'evaluation/results_log.csv (Canonical Facts sec. 11); the thresholds are shown here for scale.</div>')
+            + "".join(rows) + "</tbody></table>")
+
+
+MT_LEAD = ('<div class="mt-lead">Gate 2 is judged on the synthetic sun-angle sweep with exact '
+           'ground truth, logged in evaluation/results_log.csv (Canonical Facts sec. 11). The '
+           'thresholds below are shown for scale on this pair; passing or failing them here is '
+           'not the gate.</div>')
 
 
 def legend_html(counts: dict, n_cells: int) -> str:
@@ -942,8 +969,8 @@ _plate.html(
     '<div class="idplate__name">Lunar Image Registration<span class="idplate__ps">ISRO SIH26166</span></div>'
     '<div class="idplate__sub">Aligning two images of the same place on the Moon taken under '
     'different sunlight, and reporting where that alignment can be trusted.</div>'
-    '<div class="idplate__strip"><span class="tag tag--live">CPU only</span>'
-    '<span class="tag tag--live">Offline</span>'
+    '<div class="idplate__strip"><span class="tag">CPU only</span>'
+    '<span class="tag">Offline</span>'
     f'<span class="tag">{grid_tag}</span><span class="tag">{result_tag}</span></div></div>')
 
 
@@ -977,14 +1004,23 @@ if r is not None:
                       f"{esc(sp_m)}</span>")
         verdict_strip("caution", "FALLBACK USED",
                       f"<b>The matcher's result was contradicted and not used.</b> "
-                      f"{esc(declared.get('why', '')).replace('-&gt;', '&rarr;')}. The system switched to global "
+                      f"{_cap(esc(declared.get('why', '')).replace('-&gt;', '&rarr;'))}. The system switched to global "
                       f"correlation of the pixels (no features, no RANSAC) and aligned the pair "
                       f"by a translation of <span class=\"fig\">({dx:+d}, {dy:+d}) px{esc(m_txt)}"
                       f"</span>{sp_txt}. That disagreement is the uncertainty to quote.")
     else:
+        # `global["verdict"]` is "agrees" | "contradicted" | "unconfirmed"
+        # (core/reliability.py). This branch is only reached when it is not
+        # contradicted, so the gloss states which of the other two it was rather
+        # than claiming agreement the check never gave.
+        _v = ((rel or {}).get("global") or {}).get("verdict")
+        _check = ("An independent check of the pixels, which never sees the matches, "
+                  "agrees with it." if _v == "agrees" else
+                  "The independent check of the pixels could not confirm or contradict it.")
         verdict_strip("ok", "ALIGNED",
-                      f"<b>Method used: {esc(declared.get('method', '?'))}</b> &mdash; "
-                      f"{esc(declared.get('why', '')).replace('-&gt;', '&rarr;')}.")
+                      f"Aligned by the feature matcher "
+                      f"(<span class=\"fig\">{esc(declared.get('method', '?'))}</span>). "
+                      f"{_check} The check's own sentence is in section 03.")
 
     imgs = st.columns(3)
     # run_all does not return the loaded arrays, so re-read only for DISPLAY.
@@ -1011,7 +1047,8 @@ if r is not None:
     plate(imgs[1], b_img, "Reference", r["shape_reference"], "the frame everything is measured in")
     if warped is not None:
         plate(imgs[2], warped, "Source, aligned onto reference", tuple(warped.shape[:2]),
-              f"what the system declared ({esc(declared.get('method', '?'))})")
+              f"what the system declared ({esc(declared.get('method', '?'))}). Black edge = no "
+              f"source pixels there once shifted, not missing data")
     else:
         plate(imgs[2], None, "Source, aligned onto reference", "n/a", "no transform",
               void_msg="NO ALIGNED IMAGE<br>the transform could not be estimated")
@@ -1079,7 +1116,12 @@ if r is not None:
                           "as an alignment accuracy.")
 
     # --- the five metrics ----------------------------------------------------
-    seclabel("04", "THE FIVE METRICS")
+    # On a fallback result these are the MATCHER's metrics for a transform the
+    # system did not use. Saying so on the rule itself is what stops a judge
+    # reading three red FAILs as "the project failed".
+    seclabel("04", "THE FIVE METRICS",
+             note=("matcher's metrics &mdash; transform not used" if fallback.get("used")
+                   else ""))
 
     if metrics is None:
         note(f"<b>Unavailable</b> &mdash; {esc(r.get('metrics_note', 'evaluation/metrics.py did not run'))}. "
@@ -1088,6 +1130,7 @@ if r is not None:
     else:
         st.html(readout_for(metrics.get("residual_px"), ref_gsd, pathlib.Path(r["reference"]).name,
                             aligned_ok, bool(fallback.get("used"))))
+        st.html(MT_LEAD)
         st.html(metrics_table_html(metrics, contradicted=(not aligned_ok) or bool(fallback.get("used"))))
 
         st.html('<div class="log">' + esc(
@@ -1252,5 +1295,4 @@ _rail.html(rail_html([
     ("Sensors", esc(rail_sensors), ""),
     ("State", state_word, state_cls),
     ("Result source", _source, ""),
-    ("Elapsed", _elapsed, ""),
 ]))
