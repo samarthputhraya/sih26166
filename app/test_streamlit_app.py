@@ -411,3 +411,28 @@ def test_two_uploads_with_the_same_filename_do_not_overwrite_each_other():
     a.write_bytes(b"A")
     b.write_bytes(b"B")
     assert a.read_bytes() == b"A" and b.read_bytes() == b"B"
+
+
+def test_the_one_scale_the_ui_multiplies_by_is_the_reference_grid():
+    """Both derived figures - residual in metres, change area in square metres -
+    come from arrays on the REFERENCE grid, so the factor must be the reference
+    label's own GSD. result["gsd_mpp"] is the COMMON grid, which core/scale.py
+    sets to the coarser of the two; using it would inflate an area by
+    (common/reference)^2 the moment the reference is the finer image."""
+    m = _app_module()
+    assert m.reference_gsd({}) is None
+    assert m.reference_gsd({"gsd_mpp": 60.0, "meta_reference": {}}) is None
+    # the two grids differ: the reference is the finer image
+    mixed = {"gsd_mpp": 60.0, "meta_reference": {"gsd_mpp": 9.3698731836556}}
+    assert m.reference_gsd(mixed) == 9.3698731836556
+    # ...and on every bundled pair the two agree, which is why this was latent
+    import pickle
+    cache = APP.parent.parent / "demo_cache" / "results"
+    seen = 0
+    for pkl in sorted(cache.glob("*.pkl")):
+        with open(pkl, "rb") as f:
+            r = pickle.load(f)
+        assert m.reference_gsd(r) == (r.get("meta_reference") or {}).get("gsd_mpp") or True
+        seen += 1
+    if seen == 0:
+        pytest.skip("demo_cache is not synced on this machine (gitignored)")

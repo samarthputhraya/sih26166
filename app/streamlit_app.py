@@ -650,6 +650,22 @@ def readout_html(kind: str, key_label: str, value_txt: str, unit: str, qualifier
             f'<div class="readout__x">{extra_html}</div></div>')
 
 
+def reference_gsd(result: dict):
+    """The REFERENCE image's own metres-per-pixel, or None.
+
+    Both figures the UI is allowed to derive - the residual in metres and a
+    change candidate's area in square metres - are computed from arrays on the
+    REFERENCE grid (`evaluation/metrics.py`: "ALL pixel units are REFERENCE-image
+    pixels"; the change detector is handed `b_img` and the warp into `b_img`'s
+    frame). `result["gsd_mpp"]` is a different quantity: the COMMON grid the
+    matcher ran on, which `core/scale.py` sets to the COARSER of the two. They
+    are equal on all four bundled pairs and differ by the scale ratio the moment
+    the reference is the finer image - the 6.4x two-grid confusion
+    `core/reliability.py`'s docstring records from Day 5. One definition, here.
+    """
+    return (result.get("meta_reference") or {}).get("gsd_mpp") or None
+
+
 def readout_for(resid, ref_gsd, ref_name: str, aligned_ok: bool, fallback_used: bool) -> str:
     """Pick the readout form for a result. Pure function of the result dict, so it
     is testable: every branch names the grid, and only the branch with a known
@@ -904,9 +920,7 @@ if r is None and not st.session_state.get("error"):
 # The reference label's own ground sample distance: residual_px is in REFERENCE
 # pixels (evaluation/metrics.py), so this - not the common grid the matcher ran
 # on - is the factor that turns it into metres. run_all() stores both.
-ref_gsd = None
-if r is not None:
-    ref_gsd = (r.get("meta_reference") or {}).get("gsd_mpp") or None
+ref_gsd = reference_gsd(r) if r is not None else None
 
 # The identification plate, filled the moment the result is known (before any
 # section renders) so the title never blanks while a live run spins.
@@ -1100,7 +1114,9 @@ if r is not None:
     if warped is None or b_img is None:
         note("Align the pair first.")
     else:
-        gsd_known = r.get("gsd_mpp")
+        # The reference grid, not the common grid: the detector is handed the
+        # reference image and the warp into its frame. See reference_gsd().
+        gsd_known = ref_gsd
         gsd_use = gsd_known or st.number_input(
             "Ground scale (m/pixel) - not in either label, so it must be supplied",
             min_value=0.0, value=0.0, step=0.01, format="%.5f",
