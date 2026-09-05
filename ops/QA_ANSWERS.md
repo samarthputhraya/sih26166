@@ -73,12 +73,18 @@ different experiment and we still do not compare across grids."
 > contribution, not a new estimator, and we say that."
 
 **"What does 'verified' actually promise?"**
-> "Measured, not asserted. Over 20 rendered pairs with exact ground truth — 1,280 cells — the
-> cells we mark verified have a median true error of 0.162 px, 9.7 metres at 60 m/px; 92% are
-> under half a pixel and 98% under one pixel. Weak cells: 0.363 px median. No-evidence cells: 0.766
-> px. At 45° of sun difference 'verified' is a one-pixel promise, not a half-pixel one, and we
-> show that column (row `reliability_calibration_pooled`; derivation
-> `core/reliability_calibration.csv`)."
+> "Measured, not asserted, and promised only inside the envelope we claim. Across the rendered
+> sweep with exact ground truth, at a sun azimuth difference of 30° or less, the cells we mark
+> verified have a median true error of **0.123 px — 7.4 metres at 60 m/px — with 99.0% under
+> half a pixel and 100% under one pixel, over 817 cells.** Weak cells: 0.229 px. No-evidence
+> cells: 0.390 px. Row `reliability_calibration_envelope`; derivation
+> `core/reliability_calibration.csv`, one row per cell.
+>
+> Outside that envelope it degrades, and we show the whole curve rather than the average: at 45°
+> the verified median is 0.580 px and only 38.5% are under half a pixel; at 60° it is 1.016 px.
+> So 'verified' is a half-pixel promise inside 30° and a one-pixel promise at 45°, and the slide
+> says which. Pool everything together and you get 0.147 px, which looks similar and means less,
+> because it averages the case we claim with five cases we do not."
 
 **"Why is the verdict a vote of cells and not one correlation of the whole frame?"**
 > "Because we tried the whole frame first and it was wrong. At 30–45° of sun difference the

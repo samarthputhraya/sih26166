@@ -304,7 +304,7 @@ the recovery comes from our illumination normalisation and not from the renderer
 | 0.0856 px, 0.9774, 1.0000, 0.4006 @ 15° | `results_log.csv`, `ours_loftr+subpixel`, `d_azimuth=15deg` |
 | 2.88× vs classical | `results_log.csv`, methods `SIFT`/`ORB`/`AKAZE`, notes `GATE 2 CRITERION 5` |
 | 0.044 px SIFT @ 0° (5/5 runs), 4,972 px SIFT @ 180° (**1 of 5 runs**; 14/15 classical runs failed) | same — check `status` on every classical row before quoting a median |
-| 0.123 px / 99.0% / 817 cells | `reliability_calibration_pooled` + `core/reliability_calibration_summary.csv` |
+| 0.123 px / 99.0% / 817 cells | `reliability_calibration_envelope` (logged 5 Sep; derivation `core/reliability_calibration.csv`) |
 | 77% detection, 0% false alarms @ 120 m | `ops/MOVE2_FAILURE_DETECTION_DAY6.md` §3, from `core/reliability_calibration.csv` |
 | 88 matches, 0 of 35 cells, 231 m ± 216 m | `pair_04_tierD_native`, `ours_loftr+subpixel` + `fft_phase_correlation (fallback)` |
 | 142.7 m undetected @ 60° | `ops/MOVE2_FAILURE_DETECTION_DAY6.md` §4 |

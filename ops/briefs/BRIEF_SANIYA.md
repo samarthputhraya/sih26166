@@ -17,10 +17,11 @@ standard methodology. The innovation bullet is now:
 
 Under it, three lines of evidence (all numbers in `evaluation/results_log.csv`; the rows are named):
 
-- **Calibrated** (row `reliability_calibration_pooled`, the one whose config says
-  `matcher arm: ours_loftr+subpixel`): over 20 ground-truth pairs, verified cells median true error
-  0.162 px (9.7 m at 60 m/px), 92% under half a pixel, 98% under one pixel; weak cells 0.363 px;
-  no-evidence cells 0.766 px (45.9 m).
+- **Calibrated** (row `reliability_calibration_envelope`): inside the claimed envelope — sun
+  azimuth difference ≤ 30° — verified cells have median true error **0.123 px (7.4 m at
+  60 m/px), 99.0% under half a pixel, 100% under one pixel**, over 817 cells; weak cells
+  0.229 px; no-evidence cells 0.390 px (23.4 m). Outside the envelope it degrades and the deck
+  shows the whole curve: 0.580 px at 45°, 1.016 px at 60°.
 - **Caught a confident failure on real data** (rows `pair_04_tierD_native`): the matcher's 87
   correspondences reached RANSAC consensus; 0 of 87 were correct within 10 px; 0% of the 35
   measurable cells agreed with the transform; the system fell back to global correlation and

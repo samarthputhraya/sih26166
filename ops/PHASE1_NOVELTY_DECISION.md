@@ -147,9 +147,11 @@ time remains. Gate 2 re-read against `results_log.csv` at the end of Day 7.
 - **M1 ran first and the claim survived**, after one redesign. The first verdict rule (one
   whole-frame correlation) wrongly contradicted every 30° and 45° pair and triggered a fallback
   10–40× worse than the homography it replaced; the rule became a vote of cells and the rows from
-  the bad rule were discarded before logging. Final (refinement ON): verified cells median true
-  error 0.162 px, 92% under 0.5 px, 98% under 1 px; weak 0.363 px; no evidence 0.766 px. Row
-  `reliability_calibration_pooled`, config `matcher arm: ours_loftr+subpixel`.
+  the bad rule were discarded before logging. Final (refinement ON), inside the claimed envelope
+  of sun azimuth difference ≤ 30°: verified cells median true error 0.123 px, 99.0% under 0.5 px,
+  100% under 1 px, n=817; weak 0.229 px; no evidence 0.390 px. Row
+  `reliability_calibration_envelope`. (The Day-5 figure quoted here until 5 Sep — 0.162 px,
+  92%/98% — was the pooled population, which averages in deltas outside the envelope.)
 - **M2 works on real data.** Tier D native: 0 of 35 measurable cells agree → contradicted →
   fallback (+9, −23) px = 231 m, quadrant disagreement 216 m. LoFTR vs ground truth: 0 of 87
   correct within 10 px. Two lighting errors in the reference were found and derived on the way

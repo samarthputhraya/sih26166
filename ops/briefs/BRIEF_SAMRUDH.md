@@ -57,11 +57,14 @@ re-derive it.**
    matches versus true error against a known transform. They can move in opposite directions:
    on real OHRC texture with a known half-pixel shift, NCC refinement made `residual_px` worse
    (0.457 → 0.524) and `rmse_gt_px` better (0.156 → 0.024) — rows `ohrc_fracshift_x+0.50_y+0.50`.
-5. **"What is the calibration row?"** — `reliability_calibration_pooled` (there are two; quote the
-   later one, config `matcher arm: ours_loftr+subpixel`; the earlier is the refinement-OFF arm):
-   over 20 sweep pairs, cells the trust layer marks *verified* have median true error 0.162 px
-   (9.7 m at 60 m/px), 92% under 0.5 px, 98% under 1 px; *weak* cells 0.363 px; *no evidence*
-   cells 0.766 px. Derivation: `core/reliability_calibration.csv` (one row per cell).
+5. **"What is the calibration row?"** — quote `reliability_calibration_envelope`, the claimed
+   envelope (sun azimuth difference ≤ 30°): cells the trust layer marks *verified* have median
+   true error **0.123 px (7.4 m at 60 m/px), 99.0% under 0.5 px, 100% under 1 px, n=817**;
+   *weak* 0.229 px; *no evidence* 0.390 px. The `reliability_calibration_pooled` rows are the
+   wider populations — 0.147 px over all eight deltas, and the Day-5 0.162 px over four — and
+   they average in 45–180°, which is outside what we claim. Derivation:
+   `core/reliability_calibration.csv` (one row per cell); note that the calibrate script opens
+   it `"w"`, so always run the full delta list.
 
 ## Never say
 

@@ -38,14 +38,23 @@ homography it replaced (rows from that run were discarded before logging the fin
 high-pass by construction and vote independently. That is a measured design decision, not a
 preference — say it if asked "why cells".
 
-## What "verified" means, exactly, from the pooled row (refinement ON, the shipped default)
+## What "verified" means, exactly (refinement ON, the shipped default)
 
-Median true error 0.162 px (9.7 m), p90 0.435 px, 92% under 0.5 px, 98% under 1 px (20 pairs,
-926 cells). At 0–15° it is 100% under 0.5 px; at 30° 96%; at 45° the median is 0.58 px and 79%
-are under 1 px. Weak: 0.363 px median. No evidence: 0.766 px. "Verified" promises "under one
-reference pixel in ~98% of calibrated cells, under half a pixel in ~92%"; at 45° of sun
-difference it is a one-pixel promise, and the slide must not imply better. (The earlier pooled
-row in the log, without `matcher arm` in its config, is the refinement-OFF arm: 0.208 px median.)
+**Quote the envelope, not the pooled figure.** Row `reliability_calibration_envelope`.
+
+Inside the claimed envelope — sun azimuth difference ≤ 30° — verified cells have median true
+error **0.123 px = 7.4 m at 60 m/px, p90 0.324 px, 99.0% under half a pixel, 100% under one
+pixel, over 817 cells.** Weak: 0.229 px (13.7 m), n=115. No evidence: 0.390 px (23.4 m), n=28.
+
+Outside the envelope it degrades, and we say so rather than averaging it away: at 45° the
+verified median is 0.580 px and 38.5% are under half a pixel; at 60° it is 1.016 px. Those
+deltas are outside what this project claims, which is exactly why the envelope row exists.
+
+The **pooled** row `reliability_calibration_pooled` (0.147 px, n=1,257 over all eight deltas)
+averages the envelope together with 45–180°. The older Day-5 pooled figure — 0.162 px, 926
+cells, 92% / 98% — is that same pooling over only four deltas and is **superseded for quoting**;
+it remains true and logged for the population it describes. (The earliest pooled row, without
+`matcher arm` in its config, is the refinement-OFF arm: 0.208 px median.)
 
 Gate 1 now prints `residual_px 0.03761504064805703` with the ON default;
 `--no-subpixel` reproduces `0.19452325191421008` exactly — both were run tonight.
