@@ -592,7 +592,7 @@ sih26166/
 │   ├── scale.py                # resample to common GSD (no pyramid)
 │   ├── matcher.py
 │   ├── ransac.py
-│   ├── subpixel.py             # built, shipped OFF (measured)
+│   ├── subpixel.py             # built, shipped ON since 3 Sep (measured; see pipeline._refine_subpixel)
 │   ├── distribution.py         # grid metrics; redetect() not wired
 │   ├── reliability.py          # the trust layer: verified / weak / no_evidence + fallback
 │   ├── reliability_calibrate.py

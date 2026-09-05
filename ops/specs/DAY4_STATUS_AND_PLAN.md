@@ -227,6 +227,12 @@ it makes LoFTR worse), `distribution.py`, 99 tests, the Tier C→D decision, the
 finding SLDEM cannot reach our site, and the `inlier_ratio` fix that had us passing Gate 2's
 threshold automatically.
 
+> ⚠️ **Superseded on 3 Sep 2026 (Day 5):** sub-pixel refinement ships **ON**, not off. The
+> "makes LoFTR worse" measurement above is *per-match endpoint error*; the transform-level
+> `rmse_gt_px` that Gate 2 is judged on improves at every sun difference, and every Gate 2
+> number was measured with refinement ON. See `core/pipeline.py::_refine_subpixel`. This
+> paragraph is kept as a dated record of what was believed on Day 4.
+
 | Day | Task |
 |---|---|
 | **5** | **Gate 1 formally.** Then `app/streamlit_app.py` — Gate 3 is Day 10 and nothing exists yet. |

@@ -73,29 +73,49 @@ pixels:
 it is handed. It helps a matcher that is WORSE than that floor and HURTS one that
 is already better.**
 
-LoFTR is already better. So this module is **off by default in `pipeline.py`** -
-enabling it on our shipping path would make our headline number worse while
-sounding like an improvement. It earns its place on Gate 1's fallback path
-(Sec.11: *"drop LoFTR, ship classical + illumination normalisation + sub-pixel +
+LoFTR is already better ON THIS METRIC, and until 3 Sep 2026 that is why this
+module shipped OFF. It also earns its place on Gate 1's fallback path (Sec.11:
+*"drop LoFTR, ship classical + illumination normalisation + sub-pixel +
 uniformity"*), where ORB goes from 0.722 px to 0.437 px - a 1.65x gain on the
 matcher that needs it most.
 
+*** IT NOW SHIPS ON. A SECOND MEASUREMENT REVERSED THE FIRST. ***
+
+`pipeline.run_all(subpixel=True)` has been the default since 3 Sep 2026. Read
+`core/pipeline.py::_refine_subpixel` for the full account; the short version is
+that the two measurements are of DIFFERENT QUANTITIES and both are real:
+
+- The table above is **per-match endpoint error** (`core/bench_subpixel_results.csv`,
+  columns `median_err_raw_px` / `median_err_refined_px`). By it, refinement hurts
+  LoFTR: 0.336 -> 0.431 px.
+- **Transform-level `rmse_gt_px`** - the metric Gate 2 is actually judged on
+  (Sec.11 C1), logged in `evaluation/results_log.csv`, medians over 5 off-grid
+  shifts - improves at every sun difference: 0 deg 0.120 -> 0.086, 15 deg
+  0.249 -> 0.086, 30 deg 0.571 -> 0.314, 45 deg 1.655 -> 1.096 px, and
+  0.156 -> 0.024 px on real OHRC texture with a known half-pixel shift. The
+  30 deg point moves from FAIL to PASS.
+
+MAGSAC fits one transform through thousands of matches, so the fit can get more
+accurate while the individual matches get noisier. Both arms are in the log:
+`ours_loftr` (OFF) and `ours_loftr+subpixel` (ON). `--no-subpixel` reproduces the
+old rows. **Every Gate 2 number was measured with refinement ON.**
+
 Canonical Facts Sec.6.6 lists sub-pixel refinement as a locked step. It is built,
-measured, and available. What the measurement changed is *when* it is switched on,
+measured, and shipped. What the measurements changed is *when* it is switched on,
 not whether it exists.
 
-*** THE TRAP THAT WOULD TALK YOU INTO SWITCHING IT ON ANYWAY ***
+*** THE TRAP, WHICH POINTS THE OTHER WAY AND IS STILL A TRAP ***
 
 Run the Gate-1 pair with refinement enabled and `residual_px` FALLS from 0.195 to
-0.038 - a five-fold "improvement" on the number the pipeline prints. Enable it on
-that evidence and you have made the registration measurably less accurate.
+0.038 - a five-fold "improvement" on the number the pipeline prints. That fall is
+NOT the reason the default changed, and it is not evidence of accuracy at all.
 
-Both facts are real, and they are not in conflict. NCC pulls every match onto the
-same locally-correlating peak, so the matches agree with each other far better
-than before - and `residual_px` measures exactly that agreement. It does not
-measure truth; it cannot, because on a real pair there is no truth to measure
-against. `rmse_gt_px`, which does know the answer, moves the other way: 0.336 px
-to 0.431 px.
+NCC pulls every match onto the same locally-correlating peak, so the matches agree
+with each other far better than before - and `residual_px` measures exactly that
+agreement. It does not measure truth; it cannot, because on a real pair there is
+no truth to measure against. The default changed on `rmse_gt_px`, on synthetic
+pairs where the transform IS known. Had we changed it on the residual we would
+have been right by accident, which is the same as being wrong.
 
 This is Sec.7's "the two accuracy numbers are NOT the same thing" arriving as a
 concrete, reproducible trap rather than a caution. A step that makes points more
