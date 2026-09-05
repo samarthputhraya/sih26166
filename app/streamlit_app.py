@@ -1,6 +1,9 @@
 """The demo UI. This module IS Gate 3 and Gate 4.
 
-    streamlit run app/streamlit_app.py      # from the repo ROOT, so .streamlit/config.toml loads
+    streamlit run app/streamlit_app.py
+
+(`.streamlit/config.toml` sits both at the repo root and beside this file, byte-
+identical, so the skin loads from any working directory - a test pins the two.)
 
 Gate 3 (Day 8, 6 Sep): *"A stranger operates the UI and explains the output with
 nobody speaking."* Gate 4 (Day 9, 7 Sep): *"Demo runs 3x consecutively on
@@ -612,6 +615,29 @@ def platecap(target, title: str, shape, what: str) -> None:
     target.html(f'<div class="platecap"><b>{title}</b> &middot; {esc(shape)} &middot; {what}</div>')
 
 
+def plate(target, arr, title: str, shape, what: str, void_msg: str = "IMAGE NOT READABLE") -> None:
+    """One image plate with its caption. A plate whose array is missing renders
+    as an explicit void, never as st.image(None) - which raises AttributeError
+    and takes the whole page down with a traceback (Gate 4: no crashes)."""
+    u8 = to_display(arr)
+    if u8 is None:
+        target.html(f'<div class="plate--void">{void_msg}</div>')
+    else:
+        target.image(u8, width='stretch', clamp=True)
+    platecap(target, title, shape, what)
+
+
+def upload_paths(tmp: pathlib.Path, name_a: str, name_b: str) -> tuple[pathlib.Path, pathlib.Path]:
+    """Where two uploads are spilled to disk: separate subdirectories, so two files
+    with the SAME name cannot overwrite each other. If they did, the pipeline would
+    align an image against itself and return a flawless-looking result from a
+    mistake."""
+    a_dir, b_dir = tmp / "source", tmp / "reference"
+    a_dir.mkdir(parents=True, exist_ok=True)
+    b_dir.mkdir(parents=True, exist_ok=True)
+    return a_dir / pathlib.Path(name_a).name, b_dir / pathlib.Path(name_b).name
+
+
 def readout_html(kind: str, key_label: str, value_txt: str, unit: str, qualifier: str,
                  extra_html: str) -> str:
     """The primary readout. `kind` is "ok" (value in ink) or "void" (value greyed).
@@ -786,7 +812,7 @@ with st.sidebar:
             # run_all() takes paths, not arrays, so the uploads are spilled to a
             # temp directory. Kept for the life of the process, not the repo.
             tmp = pathlib.Path(tempfile.mkdtemp(prefix="sih26166_"))
-            src_path, ref_path = tmp / up_a.name, tmp / up_b.name
+            src_path, ref_path = upload_paths(tmp, up_a.name, up_b.name)
             src_path.write_bytes(up_a.getbuffer())
             ref_path.write_bytes(up_b.getbuffer())
             pair_label = f"{up_a.name} vs {up_b.name}"
@@ -956,18 +982,25 @@ if r is not None:
     except Exception:
         a_img = b_img = None
 
-    imgs[0].image(to_display(a_img), width='stretch', clamp=True)
-    platecap(imgs[0], "Source", r["shape_source"], "the image being moved")
-    imgs[1].image(to_display(b_img), width='stretch', clamp=True)
-    platecap(imgs[1], "Reference", r["shape_reference"], "the frame everything is measured in")
+    if a_img is None or b_img is None:
+        # The cached pickles store the paths of the machine that wrote them. On a
+        # backup laptop or after the data folder moves, the pictures cannot be
+        # re-opened; the numbers are still the pipeline's own output.
+        verdict_strip("caution", "IMAGES NOT READABLE",
+                      f"The result's image files could not be re-opened for display "
+                      f"({esc(pathlib.Path(r['source']).name)}, "
+                      f"{esc(pathlib.Path(r['reference']).name)}). The numbers below are still "
+                      f"the pipeline's own output; only the pictures are missing. If this is a "
+                      f"precomputed result, the cache was written on another machine or the data "
+                      f"folder has moved - untick the box and run live.")
+    plate(imgs[0], a_img, "Source", r["shape_source"], "the image being moved")
+    plate(imgs[1], b_img, "Reference", r["shape_reference"], "the frame everything is measured in")
     if warped is not None:
-        imgs[2].image(to_display(warped), width='stretch', clamp=True)
-        platecap(imgs[2], "Source, aligned onto reference", tuple(warped.shape[:2]),
-                 f"what the system declared ({esc(declared.get('method', '?'))})")
+        plate(imgs[2], warped, "Source, aligned onto reference", tuple(warped.shape[:2]),
+              f"what the system declared ({esc(declared.get('method', '?'))})")
     else:
-        imgs[2].html('<div class="plate--void">NO ALIGNED IMAGE<br>the transform could not be '
-                     'estimated</div>')
-        platecap(imgs[2], "Source, aligned onto reference", "n/a", "no transform")
+        plate(imgs[2], None, "Source, aligned onto reference", "n/a", "no transform",
+              void_msg="NO ALIGNED IMAGE<br>the transform could not be estimated")
 
     # --- swipe ---------------------------------------------------------------
     if warped is not None and b_img is not None:

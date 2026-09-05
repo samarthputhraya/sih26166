@@ -360,3 +360,54 @@ def test_the_rail_describes_the_result_pair_not_the_sidebar():
     assert m.pair_identity(None, "Bundled pair") == ("--", "--")
     assert m.pair_identity("a.tif vs b.tif", "Upload two images") == ("unknown (upload)", "unknown")
     assert m.pair_identity("no_such_pair", "Bundled pair") == ("unknown", "unknown")
+
+
+# --- demo fragility: three defects the streamlit-correctness review found ------
+
+def test_a_result_whose_images_cannot_be_reread_does_not_crash():
+    """Gate 4 is 'no crashes'. The cached pickles store the absolute paths of the
+    machine that wrote them; on a backup laptop or a moved data folder the images
+    cannot be re-opened for display. st.image(None) raises AttributeError, so the
+    plates must render as explicit voids and the numbers must still be shown."""
+    at = _fresh_app()
+    at.session_state["result"] = {
+        "source": r"Z:\nowhere\src.tif", "reference": r"Z:\nowhere\ref.tif",
+        "shape_source": (8, 8), "shape_reference": (8, 8), "gsd_mpp": None,
+        "illumination": "gradient_orientation", "n_matches": 0,
+        "ransac": {"note": "MAGSAC++ at 3.0 px"}, "H": None, "warped": None,
+        "metrics": None, "distribution": None, "reliability": None,
+        "reliability_note": "no transform", "fallback": None,
+        "declared": {"method": "none", "why": "no transform", "contradicted": False},
+        "H_final": None, "warped_final": None, "seconds": 0.0,
+        "meta_source": {}, "meta_reference": {},
+    }
+    at.session_state["pair_label"] = "ghost"
+    at.session_state["pair_mode"] = "Bundled pair"
+    at.run()
+    assert not at.exception, "render raised: " + " | ".join(str(e.value) for e in at.exception)
+
+
+def test_the_two_config_files_are_identical():
+    """Streamlit reads .streamlit/config.toml from the working directory AND from
+    beside the main script; the script-level copy wins and works from any cwd.
+    Launched from app/ with only the root copy, the theme reverted to default,
+    file watching came back and a usage-stats call went out with wifi off
+    (measured on 1.62.0). Two copies are the fix; this is what stops them drifting."""
+    root = APP.parent.parent / ".streamlit" / "config.toml"
+    beside = APP.parent / ".streamlit" / "config.toml"
+    assert beside.is_file(), "app/.streamlit/config.toml is missing"
+    assert root.read_bytes() == beside.read_bytes(), "the two config copies have drifted"
+
+
+def test_two_uploads_with_the_same_filename_do_not_overwrite_each_other():
+    """Two uploads both named source.tif would land on one path; the pipeline
+    would then align an image against itself and return a flawless-looking
+    result from a mistake."""
+    import tempfile
+    m = _app_module()
+    tmp = pathlib.Path(tempfile.mkdtemp(prefix="sih26166_test_"))
+    a, b = m.upload_paths(tmp, "same.tif", "same.tif")
+    assert a != b and a.parent != b.parent
+    a.write_bytes(b"A")
+    b.write_bytes(b"B")
+    assert a.read_bytes() == b"A" and b.read_bytes() == b"B"
