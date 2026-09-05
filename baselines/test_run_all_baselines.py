@@ -64,7 +64,14 @@ def test_pairs_one_directory_down_are_found(tmp_path):
 
     found = H.discover_pairs(tmp_path)
     assert len(found) == 2, f"nested pairs not found: {found}"
-    assert {p[0] for p in found} == {"pair_01", "tier_d_01"}
+    # `pair_03_tierD` resolves to the DIRECTORY name now that the directory name is
+    # itself catalogued (Day 7). It used to resolve to the file stem `tier_d_01`,
+    # because that was the only id pairs_catalogue.csv knew for this pair - which is
+    # also why results_log.csv carries rows under both. The directory name is the
+    # canonical id: it is what the UI looks a pair up by, and the log already
+    # prefers it 9 rows to 3. The fallback to the file stem is still exercised, on
+    # a monkeypatched catalogue, by the test below.
+    assert {p[0] for p in found} == {"pair_01", "pair_03_tierD"}
 
 
 def test_a_source_without_its_reference_is_skipped(tmp_path):
