@@ -192,7 +192,9 @@ findings that matter tomorrow. Full text in `ops/audit/07_ui.md`.
     2 wants the metres beside every pixel figure. Either the pipeline accepts a catalogue GSD
     (touches frozen `core/`, argue it first) or the Q&A answers it in words. The UI takes the
     metres form automatically the moment that value is non-null.
-12. **`pair_01`'s catalogue note still says its files "were not present during repository audit"** -
+12. RESOLVED Day 7 (`03ea293`) - rewritten in the same commit that catalogued the Tier D pairs;
+    it now says what the pair is and that neither label carries a map scale. Original report:
+    **`pair_01`'s catalogue note still says its files "were not present during repository audit"** -
     true on Day 3, not now, and it is one click from a judge in the sidebar.
 13. RESOLVED Day 7 (`2d2bb5e`) - the integration guide's `st.title` sketch is marked
     superseded, and `demo-medic.md` now `cd`s to the repo root in both places and says why.
