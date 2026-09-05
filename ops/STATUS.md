@@ -138,11 +138,15 @@ findings that matter tomorrow. Full text in `ops/audit/07_ui.md`.
 1. RESOLVED Day 6 - `detect_changes` normalised both images by their combined max, which crushed
    the optical image on the multi-modal pair. Fixed; 183 candidates, 0 kept / 5 rejected / 178
    unassessable. Pinned by 7 tests.
-2. **Six documents still quote the superseded Day-5 pooled figure** (0.162 px / 926 cells / 92% /
-   98%): `ops/briefs/BRIEF_SAMARTHA.md`, `BRIEF_SAMRUDH.md`, `BRIEF_SANIYA.md`,
-   `ops/PHASE1_NOVELTY_DECISION.md`, `ops/QA_ANSWERS.md`, and this file's history. They remain
-   traceable and true for the 20-pair population but should point at the envelope figure.
-   **The deck and `QA_ANSWERS.md` sections 4-7 already use the correct one.**
+2. RESOLVED Day 7 (`cc5890e`) - **and it was worse than a stale figure.** The five documents
+   were migrated to the envelope figure, but the envelope figure itself
+   (0.123 px / 7.4 m / 99.0% / n=817) **was not in `results_log.csv` at all.** The deck quoted it
+   and cited `reliability_calibration_pooled`, whose logged rows carry 0.162/n=926 and
+   0.147/n=1257 - the pooled populations. The envelope is the `sun_delta <= 30` subset, an
+   aggregation of three per-delta groups (300+294+223) that existed only in
+   `core/reliability_calibration.csv` - a derivation the calibrate script opens `"w"` and would
+   silently overwrite. It is correct (recomputed, matches MOVE2 exactly) and is now its own
+   appended row, `reliability_calibration_envelope`.
 3. **`core/reliability_calibration.csv` is a derivation, not a log** - the script opens it `"w"`.
    Running a *partial* sweep silently discards the rest. Always run the full delta list.
 4. **`presentation/sih_template.pptx` is gitignored**, so a fresh clone has no template. The curl
@@ -152,14 +156,23 @@ findings that matter tomorrow. Full text in `ops/audit/07_ui.md`.
 7. **Submission deadline discrepancy** (15 vs 20 Sep) - still unasked of the SPOC.
 8. Frames whose cells are narrower than 24 px (pair_03) fall back to the whole-frame peak; the
    `basis` field says so.
-9. **NEW - the demo cache was written from an uncommitted working tree.** Every
+9. RESOLVED Day 7 (`43d1692`) - re-run at a clean HEAD; the sidecar now says `43d1692`, a
+   commit that actually contains the trust layer, and `_commit()` appends `-dirty` when core/,
+   evaluation/ or app/ are uncommitted. Every cached number reproduced bit-for-bit
+   (pair_01 residual 0.03761504064805703, all four pairs' methods and cell counts identical).
+   Original report: **the demo cache was written from an uncommitted working tree.** Every
    `demo_cache/results/*.json` says `git_commit: fce6d05`, but `git ls-tree fce6d05 --
    core/reliability.py` is empty: that commit has no trust layer and no fallback. The cache was
    written four minutes before `65b3224`, which added them. **The numbers are correct** - a live
    `run_all()` at HEAD reproduces every cached metric, verdict, shift and cell count exactly - but
    the provenance string is wrong. The UI now labels it `CACHED RESULT commit fce6d05` rather than
    claiming it is the running code. Fix by re-running the precompute.
-10. **NEW - the two Tier D demo pairs are absent from `data/pairs_catalogue.csv`.** Its `pair_id`
+10. RESOLVED Day 7 (`03ea293`) - both catalogued from each pair's `PROVENANCE.md`; the rail
+    now reads `TIER D / Kaguya_TC vs LOLA_LDEM` and the "not evidence" warning is gone. The
+    notes also state that the hillshade is rendered at the photograph's OWN solar geometry, so
+    there is zero sun-angle difference in either pair - a modality test, not an illumination
+    test. Original report: **the two Tier D demo pairs are absent from
+    `data/pairs_catalogue.csv`.** Its `pair_id`
     values are `pair_01, tier_bplus_01, tier_a_01, tier_d_01`; the directories the app offers are
     `pair_03_tierD` and `pair_04_tierD_native`. The UI looks up by directory name, finds nothing,
     and correctly prints `TIER unknown / SENSORS unknown` plus *"A number without its tier is not
@@ -170,7 +183,10 @@ findings that matter tomorrow. Full text in `ops/audit/07_ui.md`.
     pair's `PROVENANCE.md`. Restart the app afterwards (`catalogue_row` is `st.cache_data`-cached).
     Reconcile with the existing `tier_d_01` row rather than simply appending -
     `ops/PLAN_TO_9_SEP.md:159` already flags the duplicate.
-11. **NEW - `pair_01` carries no map scale, so its headline number has no metres.** Neither `.tif`
+11. RESOLVED Day 7 (`c958eb0`), without touching frozen `core/` - the readout now prints
+    `= 0.0086 m on the ground ... SCALE FROM THE CATALOGUE, NOT THE LABEL`, so the metres are
+    there and their weaker provenance is stated beside them. Original report: **`pair_01`
+    carries no map scale, so its headline number has no metres.** Neither `.tif`
     label declares a GSD, so `meta_reference.gsd_mpp` is `None` and the readout says
     `METRES NOT AVAILABLE`. The catalogue and `PROVENANCE.md` both record 0.22977 m/px. Invariant
     2 wants the metres beside every pixel figure. Either the pipeline accepts a catalogue GSD
@@ -178,7 +194,9 @@ findings that matter tomorrow. Full text in `ops/audit/07_ui.md`.
     metres form automatically the moment that value is non-null.
 12. **`pair_01`'s catalogue note still says its files "were not present during repository audit"** -
     true on Day 3, not now, and it is one click from a judge in the sidebar.
-13. **Three documents describe the old UI**: `docs/SAMARTHA_INTEGRATION_GUIDE.md:237` shows a
+13. RESOLVED Day 7 (`2d2bb5e`) - the integration guide's `st.title` sketch is marked
+    superseded, and `demo-medic.md` now `cd`s to the repo root in both places and says why.
+    Original report: **Three documents describe the old UI**: `docs/SAMARTHA_INTEGRATION_GUIDE.md:237` shows a
     `st.title` that no longer exists, and `.claude/agents/demo-medic.md:97,118` launch the app
     without saying to `cd` to the repo root first.
 
@@ -190,6 +208,41 @@ findings that matter tomorrow. Full text in `ops/audit/07_ui.md`.
 - The rest of the grading rubric. **Novelty is 25% - CONFIRMED Day 5.** The remaining 75% is still
   inferred.
 - Submission deadline, 15 vs 20 Sep (known issue 7).
+
+## Day 7 (5 Sep) - what landed
+
+Nine commits. My half of the day's list is done; steps 1 (message the five about Gate 5) and 6
+(Team ID + Team Name into slide 1) are Samartha's and were running in parallel.
+
+| commit | what |
+|---|---|
+| `68b3680` | the eight design-lens findings - the verdict a stranger can read aloud, Tier D stops reading as a failure |
+| `03ea293` | the two Tier D pairs catalogued; the novelty pair stops calling itself "not evidence" |
+| `591ec5e` | sub-pixel ships ON, the docs said OFF; the append-only log now enforces itself |
+| `43d1692` | the cache stamps `-dirty` when the tree that produced it was |
+| `cc5890e` | **the deck's headline trust figure was not in the log** - now appended; five docs migrated |
+| `2d2bb5e` | the demo script (it did not exist), two Q&A answers, the docs describing the old UI |
+| `c958eb0` | pair_01 gets its metres, with the scale's provenance stated beside them |
+
+**Three findings worth knowing about, all now closed:**
+
+1. **Invariant 1 was broken by the number we most want to say.** The deck's
+   0.123 px / 99.0% / 817 cells had no row in `results_log.csv`; it lived only in a derivation
+   the calibrate script overwrites. Appended as `reliability_calibration_envelope`.
+2. **The append-only log had been edited once** - commit `f788a17`, a test-pollution row, found
+   with the exact command `CLAUDE.md` tells auditors to run. Documented, not hidden, and a test
+   now runs that command on every `pytest`.
+3. **`core/subpixel.py` argued against the shipped default and mislabelled its own evidence**,
+   calling a per-match endpoint error `rmse_gt_px`. Anyone revising from it - or from Canonical
+   Facts, which said "shipped OFF" - would have told a judge the opposite of the truth.
+
+## Still open, and they are Samartha's
+
+- **Gate 5 (Day 10) needs all six.** Nobody has been messaged. Longest lead time on the board.
+- **Team ID + Team Name** - the only thing between us and a submittable deck.
+- **Gate 3 is tomorrow (Day 8).** Recruit the stranger; hand them the laptop and say nothing.
+- **Gate 4 (Day 9) is the formal three wifi-off runs**, and it needs the physical machine.
+- The demo script exists now but **has never been read aloud with a timer**.
 
 ## In flight - resume this first
 
