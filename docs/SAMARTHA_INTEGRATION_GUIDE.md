@@ -235,6 +235,10 @@ from app.change_detection import detect_changes
 
 st.set_page_config(page_title="LunarAlign — SIH26166", layout="wide")
 st.title("LunarAlign — SIH26166")
+# ^ SUPERSEDED SKETCH, kept for the data flow below, not the chrome. The shipped
+#   app has no st.title: it renders an identification plate and a state rail via
+#   one injected CSS block, and it must be launched from the repo root or from a
+#   directory whose .streamlit/config.toml it can find. See app/streamlit_app.py.
 
 col1, col2 = st.columns(2)
 source = col1.file_uploader("Source (Chandrayaan-2)", type=["tif","tiff","img","png","jpg"])

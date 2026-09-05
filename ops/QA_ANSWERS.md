@@ -190,8 +190,59 @@ the amber cells."
 > Second: a logged row described its own population as four sun angles when the run used eight,
 > because that string was hardcoded. Also fixed, and the delta list is now derived.
 >
-> **Every number we quote is in `evaluation/results_log.csv`, which is append-only — nothing is
-> edited or deleted, including the rows that made us look worse.**"
+> **Every number we quote is in `evaluation/results_log.csv`, which is append-only — including the
+> rows that made us look worse. One row was removed once, in three days of six people committing;
+> it was a test artifact, we found it ourselves, and question 9 below is the whole story.**"
+
+---
+
+## Added Day 7 — the two an auditor finds, so we say them first
+
+### 8. "What is the smallest error your trust layer can actually catch?"
+
+> "**Two and a half reference pixels — 150 metres at the 60 m/px grid — and that is by
+> construction, not by measurement.** The independent area check cross-correlates each cell and
+> takes the correlation peak, and that peak is an integer number of pixels
+> (`core/reliability.py`, `_peak` returns `int(c - w//2), int(r - h//2)`). It is compared against
+> `MAX_CELL_SHIFT_PX = 2.0` with `np.hypot(dx, dy) <= 2.0`. So an axis-aligned error anywhere up
+> to 2.49 px still rounds to a peak of 2, still passes, and the cell is still marked verified.
+>
+> That is the resolution of the instrument, and it explains our own blind spot rather than
+> excusing it. **At 60° of sun difference our transform is 142.7 m out and the contradiction flag
+> stays down** — 142.7 m at 60 m/px is 2.38 px, which is inside the floor. The detector is not
+> failing there; it is being asked to resolve something finer than it can.
+>
+> Two consequences we accept. Below 150 m we can say *verified* and be wrong. Above it — and the
+> failures that matter operationally are far above it — the detection rate is 77% at a 120 m
+> threshold with a 0% false-alarm rate. If we wanted a finer floor the fix is a sub-pixel peak fit
+> in the area check, which is an afternoon's work and a full recalibration, and we froze the
+> algorithm when Gate 2 passed rather than change what *verified* means four days before the
+> round."
+
+*Why this is the answer and not a defence:* a team that can state its own resolution limit to two
+significant figures has measured it. **Never say "it always catches it."** The honest floor is a
+stronger answer than any claim of completeness, and it converts our known 45–60° blind spot from
+an unexplained gap into a predicted one.
+
+### 9. "Your log is append-only. Has it ever been edited?"
+
+> "Once, and we found it with the same command we tell auditors to run —
+> `git log -p evaluation/results_log.csv`. Commit `f788a17` on 3 September was one insertion and
+> one deletion: it replaced a row instead of appending. The removed row was
+> `pair_id=test_pair_allowed`, `method=test`, `status=too_few_matches` — written into the real log
+> by the pytest that exercises the failed-run path, and cleaned up by the next person to touch the
+> file.
+>
+> **No measured result has ever been removed.** That row carried no accuracy figure; the `0` and
+> `0.0` in it are the sentinels our logger writes for a run that produced nothing. We did not
+> re-add it, because re-adding would itself be an edit and would put something that reads like a
+> failed run back into a file people read as measurements. Instead the deletion is documented in
+> `evaluation/test_results_log_integrity.py`, which now runs that same git command on every
+> `pytest` and fails on any removed row that is not that one. The next one cannot happen quietly."
+
+*If pressed — "so your invariant was broken?":* "Yes, once, by a test rather than by a person, and
+the invariant now has a test of its own instead of a rule in a document. That is the version we
+would rather defend."
 
 ---
 

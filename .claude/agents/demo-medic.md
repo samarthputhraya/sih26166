@@ -93,7 +93,13 @@ takes 90 seconds, that is a finding, not a footnote — Saniya has to rewrite th
 has to shrink the tile size.
 
 ### 7. Streamlit launches and serves
+Run this FROM THE REPO ROOT. Streamlit reads `.streamlit/config.toml` from the working
+directory and from beside the main script; launched from anywhere else with only one of
+those present, the theme silently reverts to default, `fileWatcherType` returns to `auto`
+and `gatherUsageStats` to true - a dark app and a network call with the wifi off, with no
+error to say why. Both copies exist and a test pins them identical; keep it that way.
 ```bash
+cd "$(git rev-parse --show-toplevel)"
 timeout 45 python -m streamlit run app/streamlit_app.py --server.headless true --server.port 8599 &
 sleep 20
 curl -s -o /dev/null -w "%{http_code}" http://localhost:8599 || echo "NO RESPONSE"
@@ -115,10 +121,17 @@ GATE 4 MANUAL PROCEDURE — a human must do this, no agent can
 1. Disconnect wifi. Airplane mode. Physically confirm — not "probably off".
 2. Close every terminal. Open a fresh one.
 3. venv\Scripts\activate
-4. streamlit run app/streamlit_app.py
-5. Full demo: load pair -> Align -> swipe -> Detect Changes -> read metrics
+4. cd to the REPO ROOT, then: streamlit run app/streamlit_app.py
+   (from anywhere else the skin's config may not be found - see step 7)
+5. Full demo: pick pair_01 -> Align -> read the verdict word and the readout ->
+   swipe -> section 03 map -> section 04 metrics -> Detect Changes.
+   Then switch to pair_04_tierD_native and Align again: it must read
+   FALLBACK USED, TIER D, Kaguya_TC vs LOLA_LDEM.
 6. Close the laptop lid. Reopen. Repeat from step 4.
 7. Three consecutive clean runs. ANY crash resets the count to zero.
+8. Read the five metric values aloud from the back of the room. If any is
+   ambiguous, tick "Projector mode (larger type)" in the sidebar and stop -
+   do not start restyling on the day.
 ```
 
 ## OUTPUT FORMAT
