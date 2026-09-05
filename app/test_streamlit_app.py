@@ -335,9 +335,10 @@ def test_every_readout_form_names_the_grid_and_says_whether_metres_exist():
     ok = m.readout_for(0.0376, 9.3698731836556, "ref.tif", True, False)
     assert "0.0376" in text(ok) and "reference grid of ref.tif" in text(ok)
     assert "9.37 m/px" in text(ok)
-    assert f"{0.0376 * 9.3698731836556:.2f} m" in text(ok) and "not an accuracy" in ok
+    # sub-metre values keep four places: 0.35 m would hide that it is 0.3523 m
+    assert f"{0.0376 * 9.3698731836556:.4f} m" in text(ok) and "not an accuracy" in ok
     # the metres are the bold element ONLY when the transform was actually used
-    assert f"<b>{0.0376 * 9.3698731836556:.2f} m</b>" in ok
+    assert f"<b>{0.0376 * 9.3698731836556:.4f} m</b>" in ok
     nogsd = m.readout_for(0.0376, None, "pair_01_ref.tif", True, False)
     assert "reference grid of pair_01_ref.tif" in text(nogsd)
     assert "metres not available" in text(nogsd)
@@ -433,27 +434,70 @@ def test_the_one_scale_the_ui_multiplies_by_is_the_reference_grid():
     come from arrays on the REFERENCE grid, so the factor must be the reference
     label's own GSD. result["gsd_mpp"] is the COMMON grid, which core/scale.py
     sets to the coarser of the two; using it would inflate an area by
-    (common/reference)^2 the moment the reference is the finer image."""
+    (common/reference)^2 the moment the reference is the finer image.
+
+    reference_gsd returns (value, source) so every metre figure can name its own
+    provenance. The label always wins; the catalogue is a named fallback.
+    """
     m = _app_module()
-    assert m.reference_gsd({}) is None
-    assert m.reference_gsd({"gsd_mpp": 60.0, "meta_reference": {}}) is None
+    assert m.reference_gsd({}) == (None, None)
+    assert m.reference_gsd({"gsd_mpp": 60.0, "meta_reference": {}}) == (None, None)
     # the two grids differ: the reference is the finer image
     mixed = {"gsd_mpp": 60.0, "meta_reference": {"gsd_mpp": 9.3698731836556}}
-    assert m.reference_gsd(mixed) == 9.3698731836556
-    # ...and on every bundled pair the two agree, which is why this was latent
+    assert m.reference_gsd(mixed) == (9.3698731836556, "label")
+    # a label scale is never overridden by the catalogue, even when both exist
+    assert m.reference_gsd(mixed, "pair_01", "Bundled pair") == (9.3698731836556, "label")
+    # ...and on every bundled pair the label value is what comes back
     import pickle
     cache = APP.parent.parent / "demo_cache" / "results"
     seen = 0
     for pkl in sorted(cache.glob("*.pkl")):
         with open(pkl, "rb") as f:
             r = pickle.load(f)
-        assert m.reference_gsd(r) == (r.get("meta_reference") or {}).get("gsd_mpp") or True
+        label = (r.get("meta_reference") or {}).get("gsd_mpp")
+        if label:
+            assert m.reference_gsd(r) == (float(label), "label")
+        else:
+            assert m.reference_gsd(r) == (None, None), "no label scale, no bare value"
         seen += 1
     if seen == 0:
         pytest.skip("demo_cache is not synced on this machine (gitignored)")
 
 
-# --- the design lens, 5 Sep: the eight findings, pinned ------------------------
+def test_a_catalogue_scale_is_used_but_never_silently():
+    """Known issue 11. pair_01 carries no map scale in either .tif, so the pair
+    the demo OPENS with printed METRES NOT AVAILABLE - and Invariant 2 wants the
+    metres beside every pixel figure. The catalogue records 0.22977 m/px for it,
+    but from a teammate handoff, not from the file.
+
+    So the metres are printed AND the readout says where the scale came from. A
+    metre figure whose provenance is weaker than the pixel figure beside it has to
+    say so, in a project whose entire argument is that provenance is the point.
+    """
+    m = _app_module()
+    no_label = {"meta_reference": {}}
+    # uploads have no catalogue row and must stay void
+    assert m.reference_gsd(no_label, "whatever.tif vs other.tif",
+                           "Upload two images") == (None, None)
+    got = m.reference_gsd(no_label, "pair_01", "Bundled pair")
+    if got == (None, None):
+        pytest.skip("pairs_catalogue.csv has no ref_gsd_mpp for pair_01 on this machine")
+    value, source = got
+    assert source == "catalogue" and value > 0
+
+    # the readout prints the metres AND names the source. At 0.23 m/px a 0.0376 px
+    # residual is 8.6 MILLIMETRES; two decimals would render that "0.01 m", which
+    # reads as a rounded number rather than the precise one it is.
+    html = m.readout_for(0.0376, value, "pair_01_ref.tif", True, False, "catalogue")
+    assert f"{0.0376 * value:.4f} m" in html
+    assert "0.01 m" not in html
+    # ...and a large value still reads in plain metres, not four decimals
+    big = m.readout_for(4684.908484071721, 9.3698731836556, "t.tif", True, True, "label")
+    assert "43897.00 m" in big
+    assert "Scale from the catalogue, not the label" in html
+    # a label-sourced scale carries no such qualifier
+    plain = m.readout_for(0.0376, value, "pair_01_ref.tif", True, False, "label")
+    assert "Scale from the catalogue" not in plain
 
 def _contrast(hex_a: str, hex_b: str) -> float:
     """WCAG contrast ratio between two #rrggbb colours."""

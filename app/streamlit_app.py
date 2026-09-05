@@ -665,8 +665,9 @@ def readout_html(kind: str, key_label: str, value_txt: str, unit: str, qualifier
             f'<div class="readout__x">{extra_html}</div></div>')
 
 
-def reference_gsd(result: dict):
-    """The REFERENCE image's own metres-per-pixel, or None.
+def reference_gsd(result: dict, pair_label: str | None = None, mode: str | None = None):
+    """`(metres_per_pixel, source)` for the REFERENCE grid. Source names its own
+    provenance: "label", "catalogue", or None when there is no scale at all.
 
     Both figures the UI is allowed to derive - the residual in metres and a
     change candidate's area in square metres - are computed from arrays on the
@@ -677,11 +678,37 @@ def reference_gsd(result: dict):
     are equal on all four bundled pairs and differ by the scale ratio the moment
     the reference is the finer image - the 6.4x two-grid confusion
     `core/reliability.py`'s docstring records from Day 5. One definition, here.
+
+    THE LABEL WINS, AND THE CATALOGUE IS NAMED WHEN IT IS USED. `pair_01` carries
+    no map scale in either .tif, so before this the demo's opening pair printed
+    METRES NOT AVAILABLE - Invariant 2 wants the metres. Rohan's catalogue records
+    0.22977 m/px for it, but from a teammate handoff rather than from the file. A
+    metre figure derived from a weaker source than the pixel figure beside it must
+    say so, or this project is doing the thing it exists to argue against. So the
+    caller gets the source and the readout prints it.
+
+    Looked up for the pair the RESULT came from, not the sidebar's current
+    selection, exactly as `pair_identity` is - otherwise a scale from the newly
+    selected pair could be applied to the result still on screen.
     """
-    return (result.get("meta_reference") or {}).get("gsd_mpp") or None
+    from_label = (result.get("meta_reference") or {}).get("gsd_mpp") or None
+    if from_label:
+        return float(from_label), "label"
+    if not pair_label or mode == "Upload two images":
+        return None, None
+    row = catalogue_row(pair_label)
+    raw = (row.get("ref_gsd_mpp") or "").strip() if row else ""
+    if not raw:
+        return None, None
+    try:
+        value = float(raw)
+    except (TypeError, ValueError):
+        return None, None
+    return (value, "catalogue") if value > 0 else (None, None)
 
 
-def readout_for(resid, ref_gsd, ref_name: str, aligned_ok: bool, fallback_used: bool) -> str:
+def readout_for(resid, ref_gsd, ref_name: str, aligned_ok: bool, fallback_used: bool,
+                gsd_source: str | None = "label") -> str:
     """Pick the readout form for a result. Pure function of the result dict, so it
     is testable: every branch names the grid, and only the branch with a known
     reference GSD prints metres (resid x ref_gsd, both from the dict)."""
@@ -697,10 +724,20 @@ def readout_for(resid, ref_gsd, ref_name: str, aligned_ok: bool, fallback_used: 
     # about, and "your error is 44 km?" is a self-inflicted question.
     trusted = aligned_ok and not fallback_used
     if ref_gsd:
-        metres = f"{resid * ref_gsd:.2f} m"
+        # Two decimals is right for 43897.00 m and wrong for 0.0086 m, which it
+        # renders as "0.01 m" - a rounded-looking figure that understates the
+        # precision it is reporting. Sub-metre values keep four places.
+        _m = resid * ref_gsd
+        metres = f"{_m:.2f} m" if abs(_m) >= 1 else f"{_m:.4f} m"
         metres_html = f"<b>{metres}</b>" if trusted else f'<span class="fig">{metres}</span>'
         where = (f"= {metres_html} on the ground &middot; {grid} at "
                  f'<span class="fig">{ref_gsd:.4g}</span> m/px')
+        if gsd_source == "catalogue":
+            # The pixel figure is measured; this metre figure is not derived from
+            # anything in the file. Say which, next to the number, every time.
+            where += ('. <span class="warn">Scale from the catalogue, not the '
+                      'label</span> &mdash; neither .tif declares one, so the metres '
+                      'are only as good as that entry.')
     else:
         trusted = aligned_ok and not fallback_used
         where = (f"on the {grid} &middot; <span class=\"warn\">metres not available</span> "
@@ -947,12 +984,15 @@ if r is None and not st.session_state.get("error"):
 # The reference label's own ground sample distance: residual_px is in REFERENCE
 # pixels (evaluation/metrics.py), so this - not the common grid the matcher ran
 # on - is the factor that turns it into metres. run_all() stores both.
-ref_gsd = reference_gsd(r) if r is not None else None
+ref_gsd, gsd_source = ((reference_gsd(r, st.session_state.get('pair_label'), mode))
+                       if r is not None else (None, None))
 
 # The identification plate, filled the moment the result is known (before any
 # section renders) so the title never blanks while a live run spins.
 if r is not None and ref_gsd:
-    grid_tag = f'REFERENCE GRID <span class="tag__v">{ref_gsd:.4g} m/px</span>'
+
+    _src = " (catalogue)" if gsd_source == "catalogue" else ""
+    grid_tag = f'REFERENCE GRID <span class="tag__v">{ref_gsd:.4g} m/px{_src}</span>'
 else:
     grid_tag = "REFERENCE GRID NOT DECLARED"
 _info = st.session_state.get("cache_info") or {}
@@ -1129,7 +1169,7 @@ if r is not None:
              "the single source of numbers for this project.")
     else:
         st.html(readout_for(metrics.get("residual_px"), ref_gsd, pathlib.Path(r["reference"]).name,
-                            aligned_ok, bool(fallback.get("used"))))
+                            aligned_ok, bool(fallback.get("used")), gsd_source))
         st.html(MT_LEAD)
         st.html(metrics_table_html(metrics, contradicted=(not aligned_ok) or bool(fallback.get("used"))))
 
@@ -1232,7 +1272,9 @@ if r is not None:
                 )
                 # Kept as st.dataframe on purpose: this can run to hundreds of rows
                 # and needs virtual scrolling. The reliability column is the WORD.
-                area_col = "area_m2" if gsd_known else "area_m2 (operator-supplied scale)"
+                area_col = ("area_m2" if gsd_source == "label" else
+                            "area_m2 (catalogue scale)" if gsd_source == "catalogue" else
+                            "area_m2 (operator-supplied scale)")
                 st.dataframe(
                     [{"reliability": STATE_WORD.get(c.get("reliability"), c.get("reliability")),
                       "classification": c.get("classification"),
