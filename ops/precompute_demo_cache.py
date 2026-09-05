@@ -26,11 +26,29 @@ OUT = ROOT / "demo_cache" / "results"
 
 
 def _commit() -> str:
+    """The commit that produced this cache - with `-dirty` when it did not.
+
+    The Day-6 cache was stamped `fce6d05`, a commit that has no trust layer and no
+    fallback: it was written from an uncommitted working tree four minutes before
+    those were committed. The numbers were right, but the sidecar named code that
+    could not have produced them, and the UI printed that string on the
+    identification plate as provenance. A short SHA on a dirty tree is a claim
+    about code that is not what ran, so say so.
+    """
     try:
-        return subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], cwd=ROOT,
-                                       text=True).strip()
+        sha = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], cwd=ROOT,
+                                      text=True).strip()
     except Exception:  # noqa: BLE001
         return "?"
+    try:
+        # Only the paths that can change what run_all() returns. A dirty README
+        # does not make a cache stale; a dirty core/ does.
+        dirty = subprocess.check_output(
+            ["git", "status", "--porcelain", "--", "core", "evaluation", "app"],
+            cwd=ROOT, text=True).strip()
+    except Exception:  # noqa: BLE001
+        return sha + "-unknown"
+    return sha + "-dirty" if dirty else sha
 
 
 def main(argv: list[str]) -> int:
