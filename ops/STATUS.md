@@ -194,9 +194,24 @@ findings that matter tomorrow. Full text in `ops/audit/07_ui.md`.
 ## In flight - resume this first
 
 Nothing is half-written; the tree is clean and every test passes. **The two HIGH design findings
-above are the first thing to do tomorrow**, before the Gate 3 stranger sits down. One background
-agent was still running at wrap: `demo-medic`, on Gate 3 and Gate 4 readiness. If its verdict did
-not land, re-run it or work the manual procedure in `.claude/agents/demo-medic.md`.
+above are the first thing to do tomorrow**, before the Gate 3 stranger sits down.
+
+**`demo-medic` was launched at wrap and stalled with no verdict** (no progress for 600 s). Do not
+assume its checklist is unexamined: most of it was verified directly this session, by command.
+
+| demo-medic check | result, this session |
+|---|---|
+| Runtime files that are gitignored are present | `weights/loftr_outdoor.pt` 46,348,591 bytes; 4 cached pickles; 4 pair directories |
+| CPU only | torch 2.13.0+cpu, `cuda False`; no device code in `core/` |
+| Config survives either working directory | from repo root AND from `app/`: `base='light' watcher='none' stats=False` |
+| No network on the demo path | `test_no_network_access_anywhere` and the skin-URL test pass; no `http` / `url(` / `@import` |
+| Runs repeatedly without a restart | the app was restarted and driven 7 times; cached path on 3 pairs plus one live LoFTR run (19.1 s, correct residual); the stale-result paths are pinned by the radio and selector reset tests |
+| Hardcoded absolute paths | found: the cached pickles store this machine's paths. No longer fatal - the plate guard renders a void and an `IMAGES NOT READABLE` strip instead of crashing. Known issue 9 |
+
+**What is genuinely NOT done: the formal Gate 4 procedure** - three consecutive clean runs on
+Samartha's laptop with the wifi physically off. That is Day 9's gate and needs the machine, not an
+agent. The manual procedure is in `.claude/agents/demo-medic.md`; note that file still tells you
+to launch without `cd`-ing to the repo root, which is known issue 13.
 
 ## Not doing - settled
 
