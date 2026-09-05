@@ -88,8 +88,13 @@ Read the rail: **TIER D · Kaguya_TC vs LOLA_LDEM**.
 Point at **04 THE FIVE METRICS** and the rule above it.
 
 > "The metrics here say *matcher's metrics — transform not used*, and three of them read FAIL.
-> That is the system reporting its own failure rather than hiding it. A fit residual would have
-> called this registration sub-pixel. It was 43.9 kilometres out."
+> That is the system reporting its own failure rather than hiding it — these are the numbers for a
+> transform it threw away."
+
+> ⚠️ **Do NOT say "it was 43.9 kilometres out."** That is `residual_px` times the grid — a fit
+> residual converted to metres, which is the exact error this project exists to prevent, and the
+> app prints it labelled *not an accuracy*. The true error against ground truth is **~200 px, about
+> two kilometres.** If you want the number, say that one."
 
 ---
 
