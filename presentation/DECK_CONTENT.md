@@ -305,9 +305,9 @@ the recovery comes from our illumination normalisation and not from the renderer
 | 2.88× vs classical | `results_log.csv`, methods `SIFT`/`ORB`/`AKAZE`, notes `GATE 2 CRITERION 5` |
 | 0.044 px SIFT @ 0° (5/5 runs), 4,972 px SIFT @ 180° (**1 of 5 runs**; 14/15 classical runs failed) | same — check `status` on every classical row before quoting a median |
 | 0.123 px / 99.0% / 817 cells | `reliability_calibration_envelope` (logged 5 Sep; derivation `core/reliability_calibration.csv`) |
-| 77% detection, 0% false alarms @ 120 m | `ops/MOVE2_FAILURE_DETECTION_DAY6.md` §3, from `core/reliability_calibration.csv` |
+| 77% detection, 0% false alarms @ 120 m | `reliability_failure_detection` (logged 5 Sep; write-up `ops/MOVE2_FAILURE_DETECTION_DAY6.md` §3) |
 | 88 matches, 0 of 35 cells, 231 m ± 216 m | `pair_04_tierD_native`, `ours_loftr+subpixel` + `fft_phase_correlation (fallback)` |
-| 142.7 m undetected @ 60° | `ops/MOVE2_FAILURE_DETECTION_DAY6.md` §4 |
+| 142.7 m undetected @ 60° | median `rmse_gt_px` of the five logged `synthetic_d060_*` rows (2.3787 px) x 60 m/px; write-up `ops/MOVE2_FAILURE_DETECTION_DAY6.md` §4 |
 | 183 candidates, 0 kept / 5 rejected / 178 unassessable | `change_detection_absdiff+reliability_gate`, 4 Sep |
 | 285× scale ratio | `docs/00_CANONICAL_FACTS.md` §1 |
 
