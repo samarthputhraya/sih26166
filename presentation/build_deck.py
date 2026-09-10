@@ -12,30 +12,48 @@ WHAT THE OFFICIAL INSTRUCTIONS SLIDE ACTUALLY SAYS, and how each line is honoure
       -> we ship exactly 6. The instructions slide (7) is deleted, which that slide
          explicitly permits.
   "Try to avoid paragraphs and post your idea in points /diagrams /Infographics /pictures"
-      -> every content block is bullets, and two slides carry a generated figure.
+      -> every content block is bullets, and every content slide carries a generated
+         figure: the trust map itself (2), the pipeline flowchart (3), the sun-angle
+         curve (4), the calibration curve (5).
   "You can only use provided template ... without changing the idea details pointers
    (mentioned in previous slides)."
-      -> THE PROMPT TEXT IS NEVER EDITED. Not one character. It is moved to the top of
-         the slide and set small and grey so it reads as the section guide it is, and
-         our content goes in a NEW text box underneath. Moving a box does not change a
+      -> THE POINTER TEXT IS NEVER EDITED. Not one character. It is moved under the
+         title bar and set small and grey so it reads as the section guide it is, and
+         our content goes in NEW text boxes below it. Moving a box does not change a
          pointer; rewriting it would. This is the conservative reading and it is the one
-         we take, because the cost of being wrong is disqualification.
+         we take, because the cost of being wrong is disqualification. The build checks
+         this itself at the end of a run (see `_check_pointers`).
   "You need to save the file in PDF and upload the same on portal."
       -> the .pptx is the source; export to PDF before uploading. See the note printed
          at the end of a run.
 
-Every number that appears on a slide is in evaluation/results_log.csv. This file is the
-only place deck prose lives in code - if a figure changes, re-run make_figures; if a
-number changes, fix it here and re-run.
+Layout facts of the template that this file works around (measured with python-pptx):
+  slide 13.33 x 7.5 in · "Your Team Name" oval at (0.36, 0.28) 1.37 x 0.88 in · title
+  placeholder spans y -0.05..1.20 · SIH logo at (10.70, 0) 2.46 x 1.16 in · footer bar
+  from y 6.95. The 4 Sep build put the pointers at y 1.06 and they printed straight
+  through the oval on every content slide; they now start at y 1.20, below both.
+
+Every number that appears on a slide is in evaluation/results_log.csv, or is a documented
+instrument/literature fact whose source presentation/DECK_CONTENT.md names in its audit
+table. This file is the only place deck prose lives in code - if a figure changes,
+re-run make_figures; if a number changes, fix it here and in DECK_CONTENT.md and re-run.
+
+The college's Round-1 criteria (F1-F8, from the SPOC's schedule PDF) and where each is
+answered: F1 innovation -> slide 2 · F2 technical feasibility -> slides 3, 4 · F3 UX &
+design -> slide 3 (right column) · F4 impact & usefulness -> slide 5 · F5 technical
+execution -> slide 3 · F6 sustainability & future scope -> slide 4 (roadmap), slide 5 ·
+F7 business viability -> slide 5 (economic) · F8 security & privacy -> slide 5.
 """
 from __future__ import annotations
 
-import copy
 import pathlib
+import re
 import sys
 
+from PIL import Image
 from pptx import Presentation
 from pptx.dml.color import RGBColor
+from pptx.oxml.ns import qn
 from pptx.util import Emu, Inches, Pt
 
 HERE = pathlib.Path(__file__).resolve().parent
@@ -48,124 +66,262 @@ MUTED = RGBColor(0x60, 0x60, 0x60)
 BLUE = RGBColor(0x1F, 0x5C, 0xA8)
 ACCENT = RGBColor(0xC2, 0x4A, 0x1E)
 
+# EVERY run we write names this font for latin, East Asian AND complex-script ranges.
+#
+# The template's theme declares <a:latin typeface="Calibri"/> but leaves <a:ea/> and
+# <a:cs/> EMPTY. A run that inherits that has no font for any glyph PowerPoint classifies
+# outside the latin range, so it resolves ° and × through font linking to a system East
+# Asian face with full-width metrics - which is why the 9 Sep build rendered
+# "at a 15°   sun difference" and "2.88 ×  better", with gaps we never typed. Calibri
+# carries every character this deck uses (° × ± → ↔ ≤ — – ·), so naming it in all three
+# ranges removes the fallback entirely.
+BODY_FONT = "Calibri"
+
+# Portal values, copied from Saniya's 9 Sep deck (she took them from the SIH portal).
+TEAM_ID = "SNPSU0192"
+TEAM_NAME = "SNPSU LunaX"
+
+# Labels copied from the template's own title block, separator included, rather than
+# reworded with colons: the template writes "Problem Statement ID –", "Theme-",
+# "Team Name (Registered on portal)". Only the values after them are ours.
 TITLE_META = [
-    ("Problem Statement ID", "SIH26166"),
-    ("Problem Statement Title", "Multi-modal, Sun angle and scale invariant image "
-                                "correspondence using Chandrayaan-2 optical images "
-                                "(OHRC, TMC and IIRS)"),
-    ("Theme", "Space Technology"),
-    ("PS Category", "Software"),
-    ("Team ID", "<TEAM ID - from the SIH portal>"),
-    ("Team Name", "<TEAM NAME - as registered>"),
+    ("Problem Statement ID –", "SIH26166"),
+    ("Problem Statement Title-", "Multi-modal, Sun angle and scale invariant image "
+                                 "correspondence using Chandrayaan-2 optical images "
+                                 "(OHRC, TMC and IIRS)"),
+    ("Theme-", "Space Technology"),
+    ("PS Category-", "Software"),
+    ("Team ID-", TEAM_ID),
+    ("Team Name (Registered on portal)-", TEAM_NAME),
 ]
 
-# (text, indent level, bold, colour)  - level 0 is a heading bullet, 1 a sub-point.
+# Geometry (inches). Content sits under the pointer box, above the footer bar. The right
+# margin matches the left one: 0.55 in each side, so the content band is 0.55..12.78. The
+# 9 Sep build put side figures at 7.45 + 5.50 = 12.95, leaving 0.38 in on the right against
+# 0.55 in on the left - a visible asymmetry against the template's centred title.
+POINTER_BOX = (0.55, 1.24, 12.2, 0.44)   # below the oval (ends 1.16) and the title text
+# The pointer box's four-line worst case (slide 2, 8 pt) ends at 1.68; the footer bar
+# starts at 6.95. TOP/BOTTOM take the rest, which is what keeps slide 4 - the densest -
+# off its ceiling.
+TOP, BOTTOM = 1.74, 6.90
+LEFT_COL = (0.55, TOP, 6.55, BOTTOM - TOP)          # text column beside a figure
+RIGHT_FIG = (7.28, 5.50)                            # (left, width) of a side figure
+# Slide 2 answers FOUR pointers where slides 4 and 5 answer three and two, so its figure
+# is the STACKED trust map (5.0 x 7.2 in canvas): narrow and tall, which leaves the text
+# 8.33 in instead of 6.55 and still lands every label above the 6 pt on-slide floor.
+S2_COL = (0.55, TOP, 8.33, BOTTOM - TOP)
+S2_FIG = (9.18, 3.60)
+FULL = (0.55, TOP, 12.23, BOTTOM - TOP)
+BULLET_INDENT = 0.26                                # hanging indent for wrapped bullets
+
+# (text, level, bold, colour). Level 0 is a heading, 1 a bullet.
+#
+# EVERY HEADING IS ONE OF THE TEMPLATE'S OWN POINTERS, in the template's order.
+#
+# The 9 Sep build used headings we invented — "The finding, not the feature", "Risks -
+# stated by us, with numbers", "Built, tested, usable", "Trust as a deliverable". They read
+# as commentary on our own work rather than as answers, which is what makes a deck feel
+# machine-written; worse, slide 2 never answered "Detailed explanation of the proposed
+# solution" at all, because the how-it-works had been left on slide 3. Round 1 is screened
+# from the file with nobody presenting, so an evaluator reads down the grey pointers and
+# looks for each one in turn. Each is now a heading directly beneath them.
+S2 = [
+    ("Proposed Solution", 0, True, BLUE),
+    ("A lunar image-registration engine that knows when it is wrong: it aligns Chandrayaan-2 "
+     "imagery to a lunar reference to sub-pixel accuracy and reports where that alignment "
+     "can be trusted.", 1, False, INK),
+    ("Detailed explanation", 0, True, BLUE),
+    ("Common scale; lighting removed so only edge direction survives; a learned matcher "
+     "finds corresponding points, and disagreeing ones are discarded.", 1, False, INK),
+    ("An independent check re-derives the alignment from raw pixels alone, never seeing a "
+     "match; an 8×8 grid of cells votes. Output: the aligned image, five metrics, and a "
+     "trust map — verified / weak / no evidence.", 1, False, INK),
+    ("How it addresses the problem", 0, True, BLUE),
+    ("Sun angle: measured across a full sweep against exact ground truth. Scale: OHRC "
+     "0.28 m/px to IIRS 80 m/px is 285×, resampled to a common scale. Sub-pixel accuracy "
+     "and even coverage on every run, in the metrics the problem statement names: RMSE, "
+     "inlier count, inlier ratio and grid coverage.", 1, False, INK),
+    ("Innovation and uniqueness", 0, True, ACCENT),
+    # "reported success" = the row's status is `ok`. NOT "looked acceptable": that row's
+    # inlier ratio is 0.057, and a judge who opens the log would falsify it in ten seconds.
+    # "over 2 km" = 239-273 px true error at 9.37 m/px (rows 70/71); "~2 km" undersold it.
+    # 64 and 35 count different things and both are on this slide, so the sentence has to
+    # bridge them: 64 is every cell in the grid (each carries a trust label), 35 is how many
+    # the independent check could actually score. Side by side without that bridge they read
+    # as a contradiction - the first thing a reader asks.
+    ("On a real lunar pair the matcher reported success and was over 2 km wrong. Of the 64 "
+     "regions, 35 could be scored by the independent check — and not one of them agreed. The "
+     "system refused the result and reported 231 m ± 216 m.", 1, False, INK),
+    ("Match statistics cannot see the ground. Ours is the check that can, and it is "
+     "measured: 77% of failures caught at 0% false alarms, over 2,560 cells.",
+     1, True, ACCENT),
+]
+
+S3_LEFT = [
+    ("Technologies to be used", 0, True, BLUE),
+    ("Python · OpenCV · PyTorch, CPU build · NumPy · Streamlit.", 1, False, INK),
+    ("LoFTR matcher (Apache-2.0) · MAGSAC++ · gradient-orientation illumination "
+     "normalisation · FFT area check.", 1, False, INK),
+    ("Data: Chandrayaan-2 OHRC · LROC NAC · Kaguya TC · LOLA.", 1, False, INK),
+    ("Hardware: any laptop. CPU only, fully offline, no GPU.", 1, True, ACCENT),
+]
+
+# The pointer here is "Methodology and process for implementation (Flow Charts/Images/
+# working prototype)", so this column describes the process and the prototype. It used to
+# hold a "Built, tested, usable" box — a test count and an integrity check — which answered
+# neither pointer and read as self-congratulation.
+S3_RIGHT = [
+    ("Methodology and process", 0, True, BLUE),
+    ("The flow above is the implemented pipeline, in the order it runs — every box is a "
+     "function in the codebase, not a plan.", 1, False, INK),
+    ("Working prototype: a Streamlit application. Load a pair, run it, and read the trust "
+     "map and the five metrics on screen.", 1, False, INK),
+    ("Every run appends its metrics to one evidence log, so any figure quoted here can be "
+     "traced back to the run that produced it.", 1, False, INK),
+]
+
+S4 = [
+    ("Analysis of the feasibility", 0, True, BLUE),
+    # "Gate 2 passed" was internal project vocabulary and meant nothing to a judge. Say what
+    # was actually measured instead.
+    ("Built and measured, not proposed. At 15° Sun difference, against exact ground truth: "
+     "0.0856 px = 5.1 m at 60 m/px, inlier ratio 0.977, full grid coverage, and 2.88× the "
+     "accuracy of the best classical method on identical files.", 1, False, INK),
+    ("All data public, all libraries open-source, runs on an ordinary laptop. LoFTR is "
+     "Apache-2.0; SuperPoint rejected as non-commercial.", 1, False, INK),
+    ("Potential challenges and risks", 0, True, ACCENT),
+    ("With identical lighting, classical methods still win — SIFT 0.044 px against our "
+     "0.086. Our advantage is lighting robustness, and it grows as the Sun moves.",
+     1, False, INK),
+    ("Between 45° and 60° it is wrong and does not know it: at 60° it is 142.7 m out with no "
+     "warning, and cannot see errors below about 150 m.", 1, False, INK),
+    ("Calibration so far is on rendered pairs; we have no genuine cross-sensor pair yet. "
+     "Optical-to-elevation matching fails, is detected, and falls back.", 1, False, INK),
+    ("Strategies for overcoming these challenges", 0, True, BLUE),
+    # Future tense, a dependency each, no performance number — and no durations: the Grand
+    # Finale is months away, so "~1 week" has nothing to count from and invites a question
+    # we cannot answer.
+    ("Add sub-pixel precision to the area check, lowering the 150 m floor.", 1, False, INK),
+    ("Calibrate on MiLOI, a public set of 321 real multi-illumination LROC NAC pairs.",
+     1, False, INK),
+    ("Obtain a genuine cross-sensor pair, OHRC against LROC NAC; then extend to IIRS for "
+     "optical-to-infrared.", 1, False, INK),
+]
+
+S5 = [
+    ("Potential impact on the target audience", 0, True, BLUE),
+    ("Landing-site selection, such as LUPEX: a hazard map is only as good as the alignment "
+     "beneath it. Every region now carries its own verdict, so a wrong alignment cannot "
+     "quietly become a safety decision.", 1, False, INK),
+    ("Change detection: on the pair the system rejected, the detector proposed 183 candidate "
+     "changes and the trust gate passed none — 5 rejected, 178 unassessable.", 1, False, INK),
+    ("More value from imagery ISRO already holds: existing OHRC strips become mosaics and "
+     "time series with no new spacecraft.", 1, False, INK),
+    ("Benefits of the solution", 0, True, ACCENT),
+    ("Scientific: a verdict per region instead of one number for a whole image. Inside the "
+     "range we claim, regions marked verified are within 0.123 px — 7.4 m at 60 m/px — with "
+     "99.0% under half a pixel, over 817 regions.", 1, False, INK),
+    ("Economic: open-source and CPU-only. No GPU purchase, no licence cost, and it runs on "
+     "hardware already in place.", 1, False, INK),
+    ("Security and privacy: public planetary data only, no personal data, fully offline.",
+     1, False, INK),
+    ("Sustainable and reusable: sensor-agnostic, so a new instrument is a configuration "
+     "entry rather than a rewrite; the same engine serves Mars and Earth observation.",
+     1, False, INK),
+]
+
+# One work per line with a link, because the pointer asks for "Details / Links" and the
+# 9 Sep version had neither — it packed three or four works into each of eight long lines.
+S6 = [
+    ("Methods we build on", 0, True, BLUE),
+    ("LoFTR, detector-free local feature matching — Sun et al., CVPR 2021 · "
+     "arxiv.org/abs/2104.00680", 1, False, INK),
+    ("MAGSAC++ — Barath et al., CVPR 2020 · arxiv.org/abs/1912.05909", 1, False, INK),
+    ("Phase congruency — Kovesi, 1999", 1, False, INK),
+    ("Reliability estimation — the basis of our contribution", 0, True, BLUE),
+    ("Uss, Vozel, Lukin, Chehdi — IEEE TGRS 2016 · arxiv.org/abs/1602.02720", 1, False, INK),
+    ("Brown & Lowe — IJCV 2007", 1, False, INK),
+    ("Wan, Shao, Li — 2021 · arxiv.org/abs/2106.12738", 1, False, INK),
+    ("Truong et al., PDC-Net — CVPR 2021 · arxiv.org/abs/2101.01710", 1, False, INK),
+    ("Lunar domain", 0, True, BLUE),
+    ("Singla, Patel, Dube et al., Space Applications Centre — 2025 · "
+     "arxiv.org/abs/2509.04775", 1, False, INK),
+    ("Xie, Liu, Di et al. — Remote Sensing 17(13):2302, 2025 (MiLOI dataset)", 1, False, INK),
+    ("Wagner et al. — LPSC 2022 #2573", 1, False, INK),
+    ("Data sources and licences", 0, True, BLUE),
+    ("Chandrayaan-2 OHRC — ISRO PRADAN, chmapbrowse.issdc.gov.in  ·  LROC NAC — NASA PDS "
+     "Imaging, public domain", 1, False, INK),
+    ("Kaguya TC — JAXA via AWS Astrogeo, CC0-1.0  ·  LOLA LDEM — NASA PDS Geosciences, "
+     "public domain", 1, False, INK),
+]
+
+# Per slide: text blocks (box, items, heading pt, body pt) and an optional figure
+# (file, left, width). A side figure is centred vertically in the content band.
 SLIDES = {
-    2: [
-        ("A lunar image-registration engine that knows when it is wrong.", 0, True, BLUE),
-        ("Aligns Chandrayaan-2 optical imagery to lunar reference imagery to sub-pixel "
-         "accuracy, and reports cell by cell where that alignment is trustworthy.", 1, False, INK),
-        ("Illumination normalisation → LoFTR dense matching → MAGSAC++ → "
-         "sub-pixel NCC → 8×8 distribution check.", 1, False, INK),
-        ("An independent pixel check re-derives the alignment without looking at any "
-         "match; the cells vote on the matcher's transform.", 1, False, INK),
-        ("The finding, not the feature:", 0, True, ACCENT),
-        # CORRECTED Day 6. This used to say "all three look acceptable and the registration
-        # is 100% wrong" - which our OWN logged row refutes: inlier count 5, inlier ratio
-        # 0.057. A judge asking "show me the ratio you say looked fine" would have falsified
-        # the 25%-weighted novelty claim from our own evidence file. Do not restore it.
-        ("The PS asks for RMSE, inlier count and inlier ratio. We implemented all three — "
-         "then found a real lunar case where the matcher still returns a confident "
-         "consensus transform that the pixels flatly contradict.", 1, False, INK),
-        ("88 correspondences, RANSAC reports success — and 0 of 35 measurable cells agree "
-         "with the result. The system declares it contradicted, refuses it, falls back, "
-         "and reports 231 m ± 216 m: a declared failure with a number on it.", 1, False, INK),
-        ("Match statistics describe the matches. They cannot see the ground.", 1, True, ACCENT),
-        ("Self-consistency cannot detect its own failure. We built the check that can, "
-         "and measured it: 77% detection at 0% false alarms.", 1, False, INK),
-        ("Verified cells: 0.123 px = 7.4 m, 99.0% under half a pixel (817 cells).", 1, False, INK),
-    ],
-    3: [
-        ("Technologies", 0, True, BLUE),
-        ("LoFTR detector-free transformer matcher (Apache-2.0) · MAGSAC++ via "
-         "cv2.USAC_MAGSAC · gradient-orientation illumination normalisation", 1, False, INK),
-        ("Common-GSD resampling · sub-pixel NCC · 8×8 grid distribution · "
-         "FFT area check · Python, OpenCV, PyTorch (CPU), Streamlit", 1, False, INK),
-        ("Data: Chandrayaan-2 OHRC · LROC NAC · Kaguya TC · LOLA elevation", 1, False, INK),
-        ("Methodology", 0, True, BLUE),
-        ("input pair → common-GSD resample → illumination normalisation", 1, False, INK),
-        ("→ LoFTR matching → MAGSAC++ outlier rejection → sub-pixel refinement", 1, False, INK),
-        ("→ INDEPENDENT AREA CHECK (pixels, not matches)", 1, True, ACCENT),
-        ("      agrees → aligned output + trust map + 5 metrics", 1, False, INK),
-        ("      contradicted → declare, fall back, report uncertainty in metres", 1, False, INK),
-        ("Runs on a standard laptop, CPU only. No discrete GPU required.", 0, True, ACCENT),
-    ],
-    4: [
-        ("Feasibility — built and measured, not proposed", 0, True, BLUE),
-        ("Gate 2 passed on all six criteria at 15° sun difference (medians of 5 "
-         "off-grid shifts): rmse_gt 0.0856 px · inlier ratio 0.977 · coverage 1.00 "
-         "· distribution cv 0.40 · 2.88× best classical", 1, False, INK),
-        ("All data public and downloaded; all libraries open-source; CPU-only.", 1, False, INK),
-        ("LoFTR is Apache-2.0. We rejected SuperPoint — its weights are "
-         "non-commercial research only, which would block deployment. Kaguya TC is CC0.", 1, False, INK),
-        ("Risks — stated by us, with numbers", 0, True, ACCENT),
-        ("Optical↔elevation matching fails: we detect it and fall back, reporting "
-         "231 m ± 216 m instead of a wrong answer.", 1, False, INK),
-        ("Blind spot at 45–60°: at 60° we are 142.7 m out and the flag does "
-         "not fire.", 1, False, INK),
-        ("At 0° sun difference classical beats us (SIFT 0.044 px vs our 0.086) — "
-         "there is no illumination problem to solve. Our advantage is illumination "
-         "robustness, and it grows with the sun difference.", 1, False, INK),
-    ],
-    5: [
-        ("Impact — what registration unlocks", 0, True, BLUE),
-        ("Landing-site characterisation: aligning imagery across epochs and sensors is a "
-         "prerequisite for hazard mapping — directly relevant to LUPEX.", 1, False, INK),
-        ("Change monitoring: new impacts, and locating landed assets. Chandrayaan-2's "
-         "DFSAR imaged the Vikram lander after touchdown — this is real ISRO work.", 1, False, INK),
-        ("More from data ISRO already owns: 200+ OHRC images sit in the archive. "
-         "Registration turns strips into mosaics and time series. No new spacecraft.", 1, False, INK),
-        ("Sovereign tooling: OHRC is the sharpest operational camera at the Moon. "
-         "Indian tooling for Indian data at the highest available resolution.", 1, False, INK),
-        ("Benefits", 0, True, ACCENT),
-        ("Trust as a deliverable: a per-region verdict, not one global number. On the "
-         "contradicted pair the gate keeps 0 of 183 change candidates — none reported.", 1, False, INK),
-        ("Economic: open-source, permissively licensed, CPU-only — no GPU "
-         "procurement, no licence cost.", 1, False, INK),
-        ("Reusable: the same engine works for Mars, or Earth-observation registration.", 1, False, INK),
-        ("Future scope: DEM-assisted orthorectification · polar optimisation · "
-         "onboard deployment.", 1, False, MUTED),
-    ],
-    6: [
-        ("Methods we build on", 0, True, BLUE),
-        ("LoFTR — Sun et al., CVPR 2021 · MAGSAC++ — Barath et al., CVPR 2020 "
-         "· Phase congruency — Kovesi 1999", 1, False, INK),
-        ("Prior art on reliability — the lineage of our claim", 0, True, BLUE),
-        ("Uss, Vozel, Lukin, Chehdi, IEEE TGRS 2016 (arXiv 1602.02720) — per-fragment "
-         "accuracy without ground truth", 1, False, INK),
-        ("Brown & Lowe, IJCV 2007 — match verification from inlier counts: the test "
-         "our failing case passes while being 100% wrong", 1, False, INK),
-        ("Wan, Shao, Li, arXiv 2106.12738 (2021) — correlation where features fail on "
-         "optical↔DEM · Truong et al., CVPR 2021 — PDC-Net", 1, False, INK),
-        ("Lunar-domain context", 0, True, BLUE),
-        ("Singla, Patel, Dube et al. (Space Applications Centre), arXiv 2509.04775 (2025) "
-         "· Xie, Liu, Di et al., Remote Sensing 17(13):2302 (2025) — MiLOI "
-         "· Wagner et al., LPSC 2022 #2573", 1, False, INK),
-        ("Data and licences", 0, True, BLUE),
-        ("Chandrayaan-2 OHRC — ISRO open data · LROC NAC — NASA PDS, public "
-         "domain · Kaguya TC — CC0-1.0 · LOLA — NASA PDS, public domain", 1, False, INK),
-    ],
+    2: {"text": [(S2_COL, S2, 15, 13)],
+        "fig": ("fig3_trust_map.jpg",) + S2_FIG},
+    3: {"text": [((0.55, 4.92, 6.0, 1.95), S3_LEFT, 15, 13),
+                 ((6.78, 4.92, 6.0, 1.95), S3_RIGHT, 15, 13)],
+        "fig": ("fig4_pipeline.png", 0.87, 11.6), "fig_top": 1.76},
+    4: {"text": [(LEFT_COL, S4, 15, 13)],
+        "fig": ("fig1_sun_angle_vs_error.png",) + RIGHT_FIG},
+    5: {"text": [(LEFT_COL, S5, 16, 13.5)],
+        "fig": ("fig2_trust_calibration.png",) + RIGHT_FIG},
+    6: {"text": [(FULL, S6, 15, 13)]},
 }
 
-FIGURE_ON = {2: "fig2_trust_calibration.png", 4: "fig1_sun_angle_vs_error.png"}
+
+# The opening words of each content slide's pointer text, from the template.
+POINTER_MARKERS = ("Proposed Solution", "Technologies to be used",
+                   "Analysis of the feasibility", "Potential impact", "Details / Links")
 
 
-def _prompt_box(slide):
-    """The template's own pointer text box: the widest TEXT_BOX that is not the title."""
-    cands = [sh for sh in slide.shapes
-             if sh.has_text_frame and not sh.is_placeholder
-             and sh.text_frame.text.strip() and Emu(sh.width).inches > 5]
-    return max(cands, key=lambda sh: sh.width) if cands else None
+def _pointer_box(slide):
+    """The template's own pointer text box, identified by its text.
+
+    It used to be "the widest text box that is not the title", which only works while the
+    slide still holds nothing but template shapes. Our slide-6 content box is 12.23 in
+    wide against the pointer box's 10.26 in, so anything calling this after the content is
+    added picks the wrong box - which is exactly what the preview renderer did.
+    """
+    for sh in slide.shapes:
+        if (sh.has_text_frame and not sh.is_placeholder
+                and any(m in sh.text_frame.text for m in POINTER_MARKERS)):
+            return sh
+    return None
+
+
+def _team_oval(slide):
+    for sh in slide.shapes:
+        if sh.has_text_frame and sh.text_frame.text.strip() == "Your Team Name":
+            return sh
+    return None
+
+
+def _footer(slide):
+    """The template's footer placeholder, which reads '@SIH Idea submission- Template'."""
+    for sh in slide.shapes:
+        if sh.has_text_frame and "Idea submission" in sh.text_frame.text:
+            return sh
+    return None
+
+
+# Two template strings this build deliberately fills or clears. They are NOT pointer text:
+# the pointers are the grey bullet prompts inside each content slide ("Proposed Solution
+# (Describe your Idea/Solution/Prototype)", "Technologies to be used ...") and those are
+# never touched - `_check_pointers` proves it on every run.
+#
+#   "Your Team Name"                  the oval IS a placeholder for the team name; filled.
+#   "@SIH Idea submission- Template"  the footer; cleared, keeping the bar and page number.
+#
+# Evidence for clearing the footer, gathered 9 Sep 2026 from eight public SIH decks: every
+# Grand Finale deck inspected had removed it (Cannon Crew 2024, GeoGuards 2025, Tech
+# Pioneers 2025 - all image-only PDFs, checked by rendering the footer strip) and every
+# deck that kept it was an internal-round submission (NeXora, Sehat Sathi, Team Niyati).
+# It is boilerplate identifying the file as the blank template, and printing the word
+# "Template" on a finished submission is worse than the near-zero risk of dropping it.
+# To put it back, delete the `_footer` call in build().
+TEMPLATE_STRINGS_WE_SET = ("Your Team Name", "Idea submission")
 
 
 def _delete_slide(prs, index):
@@ -175,6 +331,208 @@ def _delete_slide(prs, index):
         "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id")
     prs.part.drop_rel(rId)
     xml_slides.remove(slides[index])
+
+
+def _norm(text: str) -> str:
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def _set_run_font(run, name=BODY_FONT):
+    """Name the font for the latin, East Asian and complex-script ranges of one run.
+
+    `run.font.name` writes only <a:latin>. Leaving <a:ea>/<a:cs> to be inherited from a
+    theme that declares them empty is what sent ° and × through East-Asian font linking.
+    Element order inside <a:rPr> is fixed by the schema: latin, then ea, then cs.
+    """
+    run.font.name = name
+    rPr = run._r.get_or_add_rPr()
+    for tag in ("a:ea", "a:cs"):
+        for el in list(rPr.findall(qn(tag))):
+            rPr.remove(el)
+    after = rPr.find(qn("a:latin"))
+    for tag in ("a:ea", "a:cs"):
+        el = rPr.makeelement(qn(tag), {"typeface": name})
+        if after is not None:
+            after.addnext(el)
+        else:
+            rPr.append(el)
+        after = el
+
+
+def _set_bullet(para, char, mar_l, indent):
+    """A real PowerPoint bullet with a hanging indent, not a "•" typed into the text.
+
+    A literal bullet gives no hanging indent, so the second and later lines of a wrapped
+    bullet wrapped back under the bullet itself instead of under its first word - visible
+    on every multi-line bullet in the 9 Sep build. marL/indent make the text hang.
+    Schema order inside <a:pPr>: lnSpc, spcBef, spcAft, ... buFont, buChar/buNone, defRPr.
+    """
+    pPr = para._p.get_or_add_pPr()
+    pPr.set("marL", str(int(Inches(mar_l))))
+    pPr.set("indent", str(int(Inches(indent))))
+    for tag in ("a:buNone", "a:buChar", "a:buAutoNum", "a:buFont"):
+        for el in list(pPr.findall(qn(tag))):
+            pPr.remove(el)
+    new = ([pPr.makeelement(qn("a:buNone"), {})] if char is None
+           else [pPr.makeelement(qn("a:buFont"), {"typeface": BODY_FONT}),
+                 pPr.makeelement(qn("a:buChar"), {"char": char})])
+    anchor = pPr.find(qn("a:defRPr"))
+    for el in new:
+        if anchor is not None:
+            anchor.addprevious(el)
+        else:
+            pPr.append(el)
+
+
+def _add_text(slide, box, items, head_pt, body_pt):
+    left, top, width, height = box
+    tb = slide.shapes.add_textbox(Inches(left), Inches(top), Inches(width), Inches(height))
+    tf = tb.text_frame
+    tf.word_wrap = True
+    for i, (text, level, bold, colour) in enumerate(items):
+        para = tf.paragraphs[0] if i == 0 else tf.add_paragraph()
+        run = para.add_run()
+        run.text = text
+        run.font.bold = bold
+        run.font.color.rgb = colour
+        run.font.size = Pt(body_pt if level else head_pt)
+        _set_run_font(run)
+        # Headings sit flush left with no bullet; bullets hang by BULLET_INDENT.
+        if level:
+            _set_bullet(para, "•", BULLET_INDENT, -BULLET_INDENT)
+        else:
+            _set_bullet(para, None, 0.0, 0.0)
+        para.line_spacing = 1.0
+        para.space_before = Pt(6 if (level == 0 and i) else 2)
+        para.space_after = Pt(2)
+    return sum(len(t.split()) for t, _l, _b, _c in items)
+
+
+def _add_fig(slide, spec, fig_top=None):
+    name, left, width = spec
+    path = FIGURES / name
+    if not path.is_file():
+        print(f"  !! figure missing: {path.name} - run `python -m presentation.make_figures`")
+        return
+    with Image.open(path) as im:
+        w_px, h_px = im.size
+    height = width * h_px / w_px
+    if fig_top is None:                      # centre in the content band
+        fig_top = TOP + max(0.0, (BOTTOM - TOP - height) / 2)
+    slide.shapes.add_picture(str(path), Inches(left), Inches(fig_top), width=Inches(width))
+
+
+BANNED = ("<", "TBD", "Your Team Name", "Idea submission", "multi-modal", "62,519", "43.9",
+          "0.7 px", "cross sensor")
+
+
+def _audit_deck(deck) -> list[str]:
+    """Everything about the built file that a machine can check, checked on every run.
+
+    This exists because the deck was corrected one defect at a time over several rounds -
+    template footer, off-canvas figure text, 4.5 pt chart labels, ° rendered through an
+    East-Asian fallback, bullets with no hanging indent, an asymmetric right margin. Each
+    was found by a human looking at a slide. Everything below is now found by the build.
+    """
+    bad: list[str] = []
+    if len(deck.slides) != 6:
+        bad.append(f"slide count is {len(deck.slides)}, must be 6 including the title page")
+
+    band_l, band_r, band_b = 0.54, 12.79, 6.96
+    for i, slide in enumerate(deck.slides, 1):
+        ours = [sh for sh in slide.shapes
+                if not sh.is_placeholder and sh.shape_type != 13
+                and sh.has_text_frame and sh.text_frame.text.strip()
+                and "Proposed Solution" not in sh.text_frame.text
+                and "Technologies to be used" not in sh.text_frame.text
+                and "Analysis of the feasibility" not in sh.text_frame.text
+                and "Potential impact" not in sh.text_frame.text
+                and "Details / Links" not in sh.text_frame.text
+                and sh.text_frame.text.strip() != TEAM_NAME]
+        pics = [sh for sh in slide.shapes if sh.shape_type == 13
+                and Emu(sh.width).inches > 3]
+
+        # Slide 1 is the template's own title layout - its metadata block sits at 0.36 in
+        # and there is no footer bar - so the content band applies to slides 2-6 only.
+        for sh in (ours + pics) if i > 1 else []:
+            l, r = Emu(sh.left).inches, Emu(sh.left).inches + Emu(sh.width).inches
+            b = Emu(sh.top).inches + Emu(sh.height).inches
+            if l < band_l or r > band_r:
+                bad.append(f"slide {i}: a shape spans {l:.2f}..{r:.2f} in, outside the "
+                           f"{band_l:.2f}..{band_r:.2f} in content band")
+            if b > band_b:
+                bad.append(f"slide {i}: a shape reaches {b:.2f} in, into the footer bar")
+
+        # A figure and a text box must not share space.
+        for pic in pics:
+            pl, pr = Emu(pic.left).inches, Emu(pic.left).inches + Emu(pic.width).inches
+            pt_, pb = Emu(pic.top).inches, Emu(pic.top).inches + Emu(pic.height).inches
+            for tb in ours:
+                tl, tr = Emu(tb.left).inches, Emu(tb.left).inches + Emu(tb.width).inches
+                tt, tb_ = Emu(tb.top).inches, Emu(tb.top).inches + Emu(tb.height).inches
+                if pl < tr and tl < pr and pt_ < tb_ and tt < pb:
+                    bad.append(f"slide {i}: figure and text box overlap")
+
+        for sh in ours:
+            ends = []
+            for p in sh.text_frame.paragraphs:
+                if not p.text.strip():
+                    continue
+                pPr = p._p.find(qn("a:pPr"))
+                bulleted = pPr is not None and pPr.find(qn("a:buChar")) is not None
+                if bulleted:
+                    ends.append(p.text.rstrip().endswith("."))
+                    mar_l = int(pPr.get("marL") or 0)
+                    ind = int(pPr.get("indent") or 0)
+                    if mar_l <= 0 or ind >= 0:
+                        bad.append(f"slide {i}: a bullet has no hanging indent "
+                                   f"(marL={mar_l}, indent={ind}); wrapped lines will sit "
+                                   f"under the bullet")
+                for r in p.runs:
+                    rPr = r._r.find(qn("a:rPr"))
+                    faces = {t: (rPr.find(qn(f"a:{t}")).get("typeface")
+                                 if rPr is not None and rPr.find(qn(f"a:{t}")) is not None
+                                 else None)
+                             for t in ("latin", "ea", "cs")}
+                    if set(faces.values()) != {BODY_FONT}:
+                        bad.append(f"slide {i}: run {r.text[:28]!r} has fonts {faces} - a "
+                                   f"missing ea/cs face sends ° and × through font linking")
+            if len(set(ends)) > 1:
+                bad.append(f"slide {i}: bullets in one box mix terminal full stops "
+                           f"({sum(ends)} with, {len(ends) - sum(ends)} without)")
+
+        text = " ".join(sh.text_frame.text for sh in slide.shapes if sh.has_text_frame)
+        for word in BANNED:
+            if word in text:
+                bad.append(f"slide {i}: banned text {word!r} is on the slide")
+        # Invariant 2: the words may appear only alongside an admission that we have no
+        # such pair. Allow a qualifier in between - "no genuine cross-sensor pair yet" is
+        # the honest sentence, and an exact-substring test rejected it.
+        if "cross-sensor" in text and not re.search(
+                r"\bno\s+(?:\w+\s+){0,2}cross-sensor", text):
+            bad.append(f"slide {i}: 'cross-sensor' used without saying we have none")
+
+    all_text = " ".join(sh.text_frame.text for s in deck.slides for sh in s.shapes
+                        if sh.has_text_frame)
+    for need in (TEAM_ID, TEAM_NAME, "SIH26166"):
+        if need not in all_text:
+            bad.append(f"{need!r} does not appear anywhere in the deck")
+    return bad
+
+
+def _check_pointers(template, deck) -> bool:
+    """Every pointer text on every content slide must survive unchanged (whitespace aside)."""
+    ok = True
+    for i in range(1, 6):
+        want = [_norm(sh.text_frame.text) for sh in template.slides[i].shapes
+                if sh.has_text_frame and sh.text_frame.text.strip()
+                and not any(s in sh.text_frame.text for s in TEMPLATE_STRINGS_WE_SET)]
+        have = [_norm(sh.text_frame.text) for sh in deck.slides[i].shapes if sh.has_text_frame]
+        for w in want:
+            if w not in have:
+                print(f"  !! slide {i + 1}: template text altered or missing: {w[:70]!r}")
+                ok = False
+    return ok
 
 
 def build() -> int:
@@ -195,47 +553,64 @@ def build() -> int:
         tf.clear()
         for i, (label, value) in enumerate(TITLE_META):
             para = tf.paragraphs[0] if i == 0 else tf.add_paragraph()
+            _set_bullet(para, None, 0.0, 0.0)
             r1 = para.add_run()
-            r1.text = f"{label}: "
-            r1.font.size = Pt(14)
+            r1.text = f"{label} "
+            r1.font.size = Pt(15)
             r1.font.bold = True
             r1.font.color.rgb = MUTED
+            _set_run_font(r1)
             r2 = para.add_run()
             r2.text = value
-            r2.font.size = Pt(14)
+            r2.font.size = Pt(15)
             r2.font.bold = False
             r2.font.color.rgb = INK
-            para.space_after = Pt(7)
+            _set_run_font(r2)
+            para.space_after = Pt(8)
 
     # ---- content slides ----
-    for idx, blocks in SLIDES.items():
+    words = {}
+    for idx, spec in SLIDES.items():
         slide = prs.slides[idx - 1]
 
-        # Move the official pointer text to the top, small and grey. Text UNCHANGED.
-        pb = _prompt_box(slide)
+        # The template's oval is a placeholder for the team name; fill it, keep its style.
+        oval = _team_oval(slide)
+        if oval is not None:
+            paras = oval.text_frame.paragraphs
+            first = paras[0]
+            if first.runs:
+                first.runs[0].text = TEAM_NAME
+                _set_run_font(first.runs[0])
+                for r in first.runs[1:]:
+                    r.text = ""
+            else:
+                first.text = TEAM_NAME
+            for p in paras[1:]:
+                p._p.getparent().remove(p._p)
+
+        # Clear the "@SIH Idea submission- Template" footer; the bar and page number stay.
+        ft = _footer(slide)
+        if ft is not None:
+            ft.text_frame.clear()
+            ft.text_frame.paragraphs[0].add_run().text = ""
+
+        # Move the official pointer text under the title bar, small and grey. TEXT UNCHANGED.
+        pb = _pointer_box(slide)
         if pb is not None:
-            pb.left, pb.top = Inches(0.55), Inches(1.06)
-            pb.width, pb.height = Inches(12.2), Inches(0.62)
+            pb.left, pb.top = Inches(POINTER_BOX[0]), Inches(POINTER_BOX[1])
+            pb.width, pb.height = Inches(POINTER_BOX[2]), Inches(POINTER_BOX[3])
             tfp = pb.text_frame
             tfp.word_wrap = True
-            # Autofit and per-paragraph spacing were letting the four pointers spread
-            # down a third of the slide and print straight through our content. They
-            # are a compact section guide, so they get compact metrics - the TEXT is
-            # still untouched, which is the part the rules protect.
             try:
                 tfp.auto_size = None
             except Exception:
                 pass
-            # Slide 2's pointer box carries two EMPTY paragraphs sized 32 pt. They
-            # alone opened an 80 px hole that printed our first heading straight
-            # through the pointers. Neither run fonts nor paragraph-level fonts
-            # shrink them - PowerPoint takes a blank line's height from
-            # a:endParaRPr - so the blank lines are removed outright. They carry no
-            # pointer text, so no pointer is changed; only whitespace goes.
+            # Slide 2's pointer box carries two EMPTY paragraphs sized 32 pt that alone open
+            # an 80 px hole. They carry no pointer text, so removing them changes no pointer;
+            # only whitespace goes. `_check_pointers` compares whitespace-normalised text.
             for para in list(tfp.paragraphs):
                 if not para.text.strip():
                     para._p.getparent().remove(para._p)
-
             for para in tfp.paragraphs:
                 para.space_before = Pt(0)
                 para.space_after = Pt(0)
@@ -249,36 +624,29 @@ def build() -> int:
                     run.font.bold = False
                     run.font.color.rgb = MUTED
 
-        has_fig = idx in FIGURE_ON and (FIGURES / FIGURE_ON[idx]).exists()
-        body_w = Inches(6.95) if has_fig else Inches(12.2)
-        box = slide.shapes.add_textbox(Inches(0.55), Inches(1.80), body_w, Inches(4.95))
-        tf = box.text_frame
-        tf.word_wrap = True
-
-        for i, (text, level, bold, colour) in enumerate(blocks):
-            para = tf.paragraphs[0] if i == 0 else tf.add_paragraph()
-            para.level = level
-            run = para.add_run()
-            run.text = ("" if level == 0 else "•  ") + text
-            run.font.bold = bold
-            run.font.color.rgb = colour
-            run.font.size = Pt(12 if has_fig else 14) if level else Pt(15 if has_fig else 17)
-            para.line_spacing = 1.0
-            para.space_before = Pt(9 if level == 0 and i else 2)
-            para.space_after = Pt(2)
-
-        if has_fig:
-            slide.shapes.add_picture(str(FIGURES / FIGURE_ON[idx]),
-                                     Inches(7.62), Inches(2.30), width=Inches(5.25))
+        if "fig" in spec:
+            _add_fig(slide, spec["fig"], spec.get("fig_top"))
+        words[idx] = sum(_add_text(slide, box, items, hp, bp)
+                         for box, items, hp, bp in spec["text"])
 
     _delete_slide(prs, 6)          # the instructions slide, which itself says we may
     prs.save(str(OUT))
 
-    print(f"  wrote {OUT.name}  ({OUT.stat().st_size:,} bytes, {len(prs.slides)} slides)")
+    deck = Presentation(str(OUT))
+    pointers_ok = _check_pointers(Presentation(str(TEMPLATE)), deck)
+    problems = _audit_deck(deck)
+    print(f"  wrote {OUT.name}  ({OUT.stat().st_size:,} bytes, {len(deck.slides)} slides)")
+    print("  words of ours per slide: " + " · ".join(f"s{k}={v}" for k, v in sorted(words.items())))
+    print(f"  pointer text unchanged on every content slide: {'YES' if pointers_ok else 'NO'}")
+    if problems:
+        print(f"  AUDIT: {len(problems)} problem(s)")
+        for line in problems:
+            print(f"    !! {line}")
+    else:
+        print("  AUDIT: clean - geometry, fonts, bullets, punctuation, banned terms")
     print("  NEXT: export to PDF - the portal accepts PDF only, not .pptx")
-    print("        soffice --headless --convert-to pdf presentation/SIH26166_deck.pptx")
-    print("  STILL TO FILL: Team ID and Team Name on slide 1 (SIH portal)")
-    return 0
+    print("        PowerPoint: File > Save As > PDF   (or Print > Microsoft Print to PDF)")
+    return 0 if (pointers_ok and not problems) else 1
 
 
 if __name__ == "__main__":

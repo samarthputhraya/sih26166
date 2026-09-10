@@ -1,4 +1,4 @@
-# STATUS - 9 September 2026. **TODAY IS THE EVENT.**
+# STATUS - 10 September 2026, night. **THE EVENT IS TOMORROW, 11 SEPTEMBER.**
 
 > Rewritten in full at the end of every session. Previous STATUS is in git history.
 > WARNING: the venv is `C:\Users\samar\venvs\sih26166`; call its `python.exe` directly. A bare
@@ -6,132 +6,193 @@
 
 ---
 
+## 🔴 The date was wrong in this repo, and it is now corrected here
+
+Every document still says the round is **9 September = Day 11**. It is not.
+
+**The SPOC's own schedule (`SIH 2026 - Schedule_Instructions_Evaluation criteria-1.pdf`, in
+Downloads) says Friday 11 September.** Day 1 was 30 Aug, so the event is **Day 13**, and today,
+10 Sep, is Day 12.
+
+`docs/00_CANONICAL_FACTS.md` §10-11 and `CLAUDE.md` still carry 9 Sep. **They were not edited this
+session** - they are outside `presentation/` and `ops/`, and changing four documents at 8pm the
+night before is how a wrong edit ships. Fix them after the round, or read this file instead.
+
+### The schedule, verbatim from that PDF
+
+```
+08:45-09:30  Team leaders report to B Block Seminar Hall
+09:00        Team members report to their assigned classrooms
+10:00-11:30  Inauguration -> guidelines -> evaluation setup
+11:30-12:00  ROUND 1 - evaluated on criteria F1-F8   <- the PPT alone, nobody presents
+12:00-12:30  Evaluation and result compilation
+12:30        ROUND 1 RESULTS - shortlist announced
+13:00        ROUND 2 - criteria F9 & F10, shortlisted teams only
+```
+
+Formal dress: white shirt, black trousers. **All six must be present for Round 2.**
+Only Round-2 qualifiers receive certificates.
+
+### The real criteria - no longer inferred
+
+F1 Innovation & Creativity · F2 Technical Feasibility · F3 User Experience & Design ·
+F4 Impact & Usefulness · F5 Technical Execution · F6 Sustainability & Future Scope ·
+F7 Business Viability · F8 Security & Privacy · **F9 Presentation & Communication** ·
+**F10 Collaboration & Teamwork**.
+
+Round 1 = F1-F8, from the PDF, with nobody in the room. Round 2 = F9 + F10 only.
+
+---
+
 ## Position
 
 ```
-Day 11 of 11  |  9 SEP 2026 - THE INTERNAL HACKATHON IS TODAY
+Day 12 of 13  |  EVENT IS TOMORROW, 11 SEP 2026
 Gate 1: PASSED (Day 5)      Gate 2: PASSED (Day 6, one day early)
-Gates 3, 4, 5: NOT RECORDED IN THE REPO - see "What is unknown" below
+Gates 3, 4, 5: STILL NOT RECORDED IN THE REPO - see Known issues
 Novelty weight: 25% (confirmed)
 ```
 
-## Verified right now, by command, this session
+## Verified this session, by command
 
 | Check | Result |
 |---|---|
-| `pytest -q` | **242 passed**, exit 0 |
-| `git status` | clean, nothing uncommitted |
-| `main` vs `origin/main` | in sync, 0 unpushed |
-| Total commits | 135 |
-| Evidence log | 277 rows, append-only guard passing |
+| `pytest -q` (full) | **242 passed**, exit 0 |
+| `pytest evaluation/ -q` | **24 passed**, exit 0 |
+| `import core.pipeline` | OK, exit 0 |
+| `python -m presentation.make_figures` | 4 figures, all three figure audits clean |
+| `python -m presentation.build_deck` | 6 slides, `AUDIT: clean`, pointers unchanged |
+| Final PDF | 6 pages, exact 16:9, no banned strings, nothing required missing |
 
-The code, the evidence and the documents are in the state the 5-6 Sep sessions left them. Nothing
-has regressed.
+---
 
-## What is unknown, and it is being stated rather than assumed
+## ✅ DONE AND READY TO SUBMIT
 
-**There are ZERO commits between 6 Sep and today.** No gate evidence file was written, and no
-document was touched. So from the repo alone I cannot tell whether Gate 3 (a stranger operates the
-UI), Gate 4 (three wifi-off runs) or Gate 5 (all six answer cold) were actually run.
+**`presentation/SIH26166_deck_UPLOAD.pdf`** - 6 pages, 11.000 x 6.1875 in (exact 16:9),
+1,098,333 bytes, sha256 `5f6adbc7931d1896`. **`SIH26166_deck.pdf` is byte-identical**, so
+whichever file is uploaded is the correct one. Both are gitignored and live only on this machine
+and in Drive.
 
-They may well have been run offline. **The repo simply does not record it**, and this file will not
-claim they passed. If they were run, say so out loud today; if they were not, the demo is optional
-per the SPOC and the deck carries the round regardless.
+Round 1 is a PDF read without us present, so the deck was rebuilt to be read that way:
 
-## 🔴 In flight - THE ONE THING FOR THE NEXT SESSION
+- **Every heading is one of the template's own pointers**, in the template's order. An evaluator
+  reads down the grey prompts and finds each answered directly beneath. The earlier build used
+  headings we invented ("The finding, not the feature", "Built, tested, usable") and never
+  answered "Detailed explanation of the proposed solution" at all.
+- Team ID **SNPSU0192**, team name **SNPSU LunaX**, taken from Saniya's portal deck.
+- The template footer "@SIH Idea submission- Template" is cleared; the bar and page number stay.
+- Four generated figures, one on every content slide, including the trust map itself.
 
-**Saniya has made a PPT and it needs reviewing before it is presented or uploaded.**
+### What the build now checks on every run, so nobody has to eyeball it
 
-**It is not in this repo.** The only PowerPoint files here are `SIH26166_deck.pptx` (5 Sep, built by
-`presentation/build_deck.py`) and the blank official template. Deck files are gitignored by rule, so
-hers lives in Drive / on her machine. **She will need to share the actual file at the start of the
-next session.**
+`build_deck._audit_deck`: 6 slides · every shape inside the 0.55-12.78 in band · nothing in the
+footer bar · no figure overlapping a text box · **Calibri named for latin, ea AND cs on every run**
+· every bullet has a hanging indent · no box mixes terminal full stops · nine banned strings absent
+· team ID/name/`SIH26166` present. `_check_pointers`: pointer text byte-identical.
+`make_figures._audit` and `._overflows`: no label wider than its box, no text off-canvas, no text
+printing through other text, and the **effective on-slide point size** of every figure.
 
-### The first question to ask about it, and it decides everything else
+**The font rule is not cosmetic.** The template's theme sets `<a:latin>` to Calibri but leaves
+`<a:ea>` and `<a:cs>` empty, so inherited runs sent `°` and `×` through East-Asian font linking -
+the 9 Sep build rendered "at a 15°   sun difference" and "2.88 ×  better" with gaps nobody typed.
 
-> **Was it built by running `presentation/build_deck.py`, or typed by hand in PowerPoint?**
+---
 
-- **If the script built it** - every number came from the audited content file and cannot have
-  drifted. Then the review is quick: check the two portal fields, check the export, done.
-- **If it was typed by hand** - the property that protects this whole project is gone. Every figure
-  on every slide must then be checked one at a time against the audit table at the bottom of
-  `presentation/DECK_CONTENT.md`. That is not a criticism of her work; it is that a typed number
-  cannot be traced, and Invariant 1 is the thing the project is defended by.
+## 🔴 IN FLIGHT - the first thing tomorrow morning
 
-### What to check it against
+**Nothing is half-finished in the repo.** The deck is built, verified, exported and cropped; the
+script is written and checked. What remains is human, and it is all in one file:
 
-| Check | Where the answer lives |
+### `ops/ROUND2_SCRIPT.md` - read your own section, nobody else's
+
+Word-for-word scripts for all six, built for F9 and F10:
+
+| Who | Owns | Their opening idea |
+|---|---|---|
+| Samartha | the problem, then the engine | opens on the 2 km failure; "it never looks at a single match" |
+| Rohan | the chain of custody | "we tried five times to cut that pair. Five times it failed" |
+| Samrudh | how we know | "I am the exam marker. I never touch the alignment" |
+| Risheeth | the comparison | "I am the control group. My job is to make our result falsifiable" |
+| Rishabh | what the gate protects | "a shadow that moved is a difference. A new crater is a change" |
+| Saniya | impact and the close | Vikram, LUPEX, then the one sentence |
+
+**Ownership, not one-slide-per-person** - five content slides do not divide by six, and taking
+turns reading loses F9 while four silent people lose F10.
+
+**Length ladder** (measured from the prose at 130 wpm, not estimated): **6:53** with the
+⟨angle-bracket⟩ passages, **5:46** without them, 3:00 and 1:30 cuts in §8. Every story and every
+headline number sits outside the brackets. **Ask the SPOC the slot length before 1 PM.**
+
+Also in that file: handover choreography, Q&A routing by module owner, the three-layer answer rule,
+the never-say table, the AI answer, and the rehearsal plan.
+
+---
+
+## Per person - what to do tomorrow
+
+| Person | Tomorrow |
 |---|---|
-| Every number traces to a logged row | audit table at the foot of `presentation/DECK_CONTENT.md` |
-| "cross-sensor" / "multi-modal" used only where literally true | `docs/00_CANONICAL_FACTS.md` sec.2 |
-| Exactly 6 slides including the title page | official instructions; `build_deck.py` docstring |
-| Template's grey pointer text unedited | same - this one risks disqualification |
-| Team ID + Team Name filled from the portal | `build_deck.py` lines 58-59 are still `<TEAM ID ...>` placeholders |
-| Submission is a **PDF**, not .pptx | portal accepts PDF only |
-| No bare pixel figure without its grid and metres | Invariant 2 |
+| **Samartha** | Upload the PDF. Hold the clicker for the whole pitch. Segments 1 and 3. Answers the pipeline, the trust layer, the 150 m floor, and the AI question. |
+| **Rohan** | Segment 2. Answers data provenance, licences, what we could not get. |
+| **Samrudh** | Segment 4. Answers ground truth, calibration, the evidence log. |
+| **Risheeth** | Segment 5. Answers the classical baselines and where we lose. |
+| **Rishabh** | Segment 6. Answers change detection and the 183 -> 0 gate. |
+| **Saniya** | Segment 7. Answers the deck and how it was built. **Do not say we used DFSAR - it is radar and not ours.** |
 
-⚠️ **`build_deck.py` lines 58-59 still hold the placeholder text.** If her deck has real values in
-those fields, she filled them in PowerPoint - which is fine for the artefact, but means the script
-can no longer regenerate the deck. Worth knowing before anyone re-runs it and overwrites her work.
+Everyone: read `ops/gate5/<YOUR NAME>.md` once tonight, then explain your module to someone
+outside the team in 60 seconds with no jargon.
 
-## What was built on Day 7 (5 Sep), all pushed
-
-| commit | what |
-|---|---|
-| `68b3680` | the eight design-lens findings in the demo UI |
-| `03ea293` | the two Tier D pairs catalogued - the novelty pair stops calling itself "not evidence" |
-| `591ec5e` | sub-pixel ships ON, the docs said OFF; the append-only log now enforces itself |
-| `43d1692` | the cache stamps `-dirty` when the tree that produced it was |
-| `cc5890e` | the deck's headline trust figure was not in the log - appended |
-| `2d2bb5e` | the demo script, two Q&A answers, the docs describing the old UI |
-| `c958eb0` | pair_01 gets its metres, with the scale's provenance stated |
-| `34fa4c7` | `ops/PITCH.md` - the 3-minute spoken pitch |
-| `f654dd0` | the novelty slide's detection figure had no row either - appended |
-| `f02e467` | `ops/gate5/` - one card per person |
-| `698232b` | `ops/UNDERSTAND_EVERYTHING.md` - the whole project taught from zero |
-
-## The documents that matter today
-
-| File | What it is |
-|---|---|
-| `ops/PITCH.md` | the 3-minute spoken script, two speakers, the five numbers to say |
-| `ops/UNDERSTAND_EVERYTHING.md` | the whole project from zero, for anyone who needs to understand it fast |
-| `ops/gate5/<NAME>.md` | one card per person: their part, why it is hard, what it does NOT do |
-| `ops/QA_ANSWERS.md` | the questions judges ask, with answers |
-| `presentation/DECK_CONTENT.md` | what is on each slide, and the row behind every number |
-| `ops/SANIYA_DECK_AND_PITCH_GUIDE.md` | the deck build and quality pass |
-
-## The five numbers, and nothing else
-
-| Number | What it is |
-|---|---|
-| **~2 km** | how wrong a matcher that reported success actually was |
-| **2.88x** | better than best classical at 15 deg sun difference |
-| **14x** | verified vs no-evidence cell accuracy, hard cases |
-| **77% / 0%** | failure detection rate, false-alarm rate |
-| **150 m** | the floor below which we cannot detect an error |
-
-**Never say:** cross-sensor - multi-modal for anything but optical-vs-elevation - the 62,519x ratio
-- any Tier D residual as an accuracy - "43.9 km" (that is a fit residual times the grid) - a pixel
-figure without its grid and its metres.
-
-## Known issues - do not re-report
-
-1. **OneDrive has silently rolled back working-tree files twice** (3 and 5 Sep). Once it undid a
-   reference-grid fix; once it restored a wrong figure that had already been corrected. **Run
-   `git status` first thing every session.** A rollback looks exactly like an edit.
-2. `core/reliability_calibration.csv` is a derivation, not a log - the script opens it `"w"`.
-   Always run the full delta list.
-3. `presentation/sih_template.pptx` is gitignored; a fresh clone has no template. The curl command
-   is in `DECK_CONTENT.md`.
-4. No real pair with a sun difference. Stated openly; not a blocker.
-5. No cross-sensor pair and no IIRS infrared pair. Stated openly; the answer is written in
-   `QA_ANSWERS.md` sec.1 and sec.3.
-6. `redetect()` unwired - claim removed, not deferred.
-7. The demo cache stores absolute paths from this machine. Non-fatal since `c958eb0` - the app
-   renders a void plate and an `IMAGES NOT READABLE` strip instead of crashing.
+---
 
 ## Open questions
 
-- Submission deadline, 15 vs 20 Sep - still unasked of the SPOC.
-- The rest of the grading rubric. Novelty is 25%, confirmed. The remaining 75% is inferred.
+1. **How long is the Round 2 slot?** The schedule says "1:00 PM onwards" and gives no duration.
+   This decides which version of the script is used. **Ask the SPOC before 1 PM.**
+2. **Is a live demo wanted in Round 2?** The SPOC previously confirmed a demo is not mandatory.
+   See Known issues #2 before offering one.
+3. **Does the portal show the PS ID as `SIH26166` or `26166`?** Slide 1 says `SIH26166`; Saniya's
+   deck said `26166`. If the portal disagrees, change `TITLE_META` in `build_deck.py` and rebuild.
+
+---
+
+## Known issues - do not re-report these
+
+1. **Gates 3, 4 and 5 have no evidence in the repo.** There are still zero commits between 6 Sep
+   and 9 Sep. Whether a stranger drove the UI, whether the demo survived three wifi-off runs, and
+   whether all six answered cold are all unrecorded. This file does not claim they passed.
+2. **The Streamlit demo is unverified for tomorrow.** Following from #1, `demo-medic` has never
+   been run against the current build. **Do not offer a live demo unless it survives three
+   consecutive offline runs on Samartha's laptop first.** A failed demo costs more than no demo.
+3. **`docs/00_CANONICAL_FACTS.md`, `CLAUDE.md` and `ops/STATUS.md` history all say 9 Sep.** The
+   event is 11 Sep. Corrected at the top of this file only; the other documents were deliberately
+   not edited tonight.
+4. **`ops/PITCH.md` has drifted from the deck.** It still says "~2 km" where the deck and
+   `ROUND2_SCRIPT.md` say "over 2 km", and it still carries "200+ OHRC scenes", a count with no
+   source in this repo. `ROUND2_SCRIPT.md` supersedes it for tomorrow.
+5. **PowerPoint on this machine is an unlicensed install.** COM automation is refused
+   (`0x80048240`), so the .pptx cannot be exported to PDF programmatically - a human must run
+   File > Export, or Print > Microsoft Print to PDF. It also takes an exclusive lock: **close
+   PowerPoint before any rebuild**, or `build_deck` fails with PermissionError.
+6. **Print to PDF letterboxes onto Letter paper.** The export arrives 11 x 8.5 in with the 16:9
+   slide centred. The crop step (PyMuPDF `show_pdf_page` with a clip) is what produces the
+   uploadable file; it preserves vector text and loses no ink.
+7. **`64` and `35` on slide 2 count different things** and now say so on the slide. 64 = every cell
+   in the 8x8 grid; 35 = how many the independent area check could score (`n_meas =
+   np.isfinite(area_ncc).sum()`). Of the 35, zero agreed - that is what trips CONTRADICTED.
+   If asked why not 64: "the other 29 gave the check no usable signal; we don't score what we
+   can't measure, and we don't guess it either."
+
+---
+
+## What changed in the repo this session
+
+| File | Change |
+|---|---|
+| `presentation/build_deck.py` | Rewritten against the template's pointers; real bullets with hanging indents; Calibri on latin/ea/cs; template footer cleared; symmetric margins; `_audit_deck` self-check; portal Team ID/Name |
+| `presentation/make_figures.py` | Trust map restacked vertically; pipeline flowchart added; all type enlarged for on-slide legibility; `_audit` (off-canvas + text-overlap + effective point size) and `_overflows` |
+| `presentation/DECK_CONTENT.md` | Slide sections now **generated from `build_deck`**, so the record cannot drift from the file |
+| `presentation/figures/` | fig1, fig2 regenerated; **fig3_trust_map.jpg** and **fig4_pipeline.png** new |
+| `ops/ROUND2_SCRIPT.md` | **New** - the full Round 2 presentation |
+
+Not in git (gitignored, on this machine and in Drive): `SIH26166_deck.pptx`,
+`SIH26166_deck.pdf`, `SIH26166_deck_UPLOAD.pdf`.
