@@ -17,8 +17,8 @@ is already on the page.** Everything below is built for those two criteria and n
 >
 > | Slot | What you give | Runs |
 > |---|---|---|
-> | 8 min or more | everything below, ⟨angle brackets⟩ included | **6:53** |
-> | 5–7 min | everything below **except** the ⟨angle brackets⟩ | **5:46** |
+> | 8 min or more | everything below, ⟨angle brackets⟩ included | **7:01** |
+> | 5–7 min | everything below **except** the ⟨angle brackets⟩ | **5:57** |
 > | 3 min | §8's three-minute cut | 3:00 |
 > | cut short on the day | §8's ninety-second cut | 1:30 |
 >
@@ -56,18 +56,18 @@ someone hogging.
 | # | Who | Time | Words | Slide | The claim they own |
 |---|---|---|---|---|---|
 | 1 | **Samartha** | 0:00–0:53 | 115 | 2 | The problem — opened on the failure |
-| 2 | **Rohan** | 0:56–1:48 | 112 | 2 | The chain of custody — and five failed attempts |
-| 3 | **Samartha** | 1:51–2:57 | 142 | 3 | The engine, and the check that is ours |
-| 4 | **Samrudh** | 3:00–4:02 | 135 | 4 | The exam marker — how we know it works |
-| 5 | **Risheeth** | 4:05–5:01 | 122 | 4 (figure) | The control group — including where we lose |
-| 6 | **Rishabh** | 5:04–5:51 | 101 | 5 | Shadow or crater — what the gate protects |
-| 7 | **Saniya** | 5:54–6:54 | 129 | 5 → 2 | Impact, and the close |
+| 2 | **Rohan** | 0:56–1:55 | 127 | 2 | The chain of custody — free data, nothing to procure |
+| 3 | **Samartha** | 1:58–3:04 | 142 | 3 | The engine, and the check that is ours |
+| 4 | **Samrudh** | 3:07–4:09 | 135 | 4 | The exam marker — how we know it works |
+| 5 | **Risheeth** | 4:12–5:08 | 122 | 4 (figure) | The control group — and the law it reveals |
+| 6 | **Rishabh** | 5:11–5:58 | 101 | 5 | Shadow or crater — what the gate protects |
+| 7 | **Saniya** | 6:01–7:01 | 129 | 5 → 2 | Impact, and the close |
 
-**Total spoken: 6 min 54 s**, plus ~3 s per handover — measured from the word counts above at 130 words per minute, not estimated.
+**Total spoken: 7 min 01 s**, plus ~3 s per handover — measured from the word counts above at 130 words per minute, not estimated.
 
 Word counts and times are **measured from the prose below** at 130 words a minute — deliberately
 slower than you talk normally — not estimated by hand. Rehearse with a timer on the table.
-The times in this table include the ⟨optional⟩ passages; drop those and the whole thing is 5:46.
+The times in this table include the ⟨optional⟩ passages; drop those and the whole thing is 5:57.
 
 ---
 
@@ -112,26 +112,39 @@ Do **not** open with "lunar image registration is important." Every team opens t
 
 ---
 
-### 2 · ROHAN — the data (0:56–1:48)
+### 2 · ROHAN — the data (0:56–1:55)
 
 **Cue:** *"...we had to work with."* **On screen:** still slide 2.
 
 > "My job is the chain of custody: where every image came from, and whether you can trust it
 > arrived unchanged.
 >
-> ⟨Four public sources — Chandrayaan-2's OHRC, NASA's LROC, Japan's Kaguya, NASA's LOLA
-> elevation model — and every pair carries a file recording exactly how to rebuild it from the
-> original product.⟩
+> Four sources, all public and all free — Chandrayaan-2's OHRC camera, NASA's LROC, Japan's
+> Kaguya, and NASA's LOLA elevation model. They run from thirty centimetres per pixel down to
+> sixty metres — **over two hundred times apart. That is the scale problem, in our own data.**
 >
-> And here is what we could **not** get. We wanted two different instruments over the same patch
-> of ground. We tried five times to cut that pair. Five times it failed — and we wrote the failure
-> down, rather than quietly use something easier and call it cross-sensor.
+> ⟨Every pair carries a file recording exactly how to rebuild it from the original product —
+> window, coordinates, licence. Nothing here is a screenshot somebody made once and lost.⟩
 >
-> Samartha will show you what the engine does with what we actually have."
+> So there is no data to buy and no permission to wait for. **ISRO could run this on its own
+> archive tomorrow.**
+>
+> Samartha will show you what the engine does with it."
 
-🔴 **The five failed attempts are the point.** Saying "we tried, it failed, we wrote it down"
-thirty seconds in buys credibility for everything after it. It is the cheapest trust you will
-ever earn. Source: `data/DATASET_CARD.md` — an honest negative after five cropping attempts.
+🔴 **"No data to buy, no permission to wait for."** That is the line that earns marks — it is
+feasibility, cost and deployability in nine words, and nobody else in the pitch says it.
+
+⚠️ **The scale span is 0.28 m/px to 60 m/px — over 200×, not 285×.** 285× is OHRC against **IIRS**,
+which is in the problem statement's title but is **not** one of our four sources. Samartha may say
+285× on slide 3 because that is the instrument fact from `docs/00_CANONICAL_FACTS.md` §4; you are
+describing *the data we actually hold*, and LOLA is 60 m/px. Do not merge the two numbers.
+
+**On the cross-sensor gap: do not volunteer it, never deny it.** We have no genuine cross-sensor
+pair, it is stated on slide 4, and if a judge asks you answer straight: *"We don't have one, and
+it's on the slide. Every real pair we own is either one OHRC frame cropped twice, or a photograph
+against an elevation model."* What changed is only that we no longer spend spoken airtime on it —
+the story of five failed attempts needs domain context to read as rigour, and faculty judges do
+not have that context. Source if you need it: `data/DATASET_CARD.md`.
 
 **Your "does not do":** *"It does not verify that the space agency's own metadata is correct. I
 record what the product label says, and where I measured something myself I say so. What I refuse
@@ -139,9 +152,9 @@ to do is fill a blank with a plausible guess."*
 
 ---
 
-### 3 · SAMARTHA — the engine (1:51–2:57)
+### 3 · SAMARTHA — the engine (1:58–3:04)
 
-**Cue:** *"...what the engine does with what we actually have."* **On screen:** slide 3. Point at the
+**Cue:** *"...what the engine does with it."* **On screen:** slide 3. Point at the
 flow, left to right. Do not read the boxes.
 
 > "Three steps, then the part that is ours.
@@ -174,7 +187,7 @@ half reference pixels is indistinguishable from zero, by construction. That is a
 
 ---
 
-### 4 · SAMRUDH — how we know (3:00–4:02)
+### 4 · SAMRUDH — how we know (3:07–4:09)
 
 **Cue:** *"...Samrudh measured whether that works."* **On screen:** slide 4.
 
@@ -209,7 +222,7 @@ point. If I both built the aligner and marked it, nobody should believe the mark
 
 ---
 
-### 5 · RISHEETH — the comparison (4:05–5:01)
+### 5 · RISHEETH — the comparison (4:12–5:08)
 
 **Cue:** *"...Risheeth ran the comparison."* **On screen:** slide 4, hand on the
 chart.
@@ -218,19 +231,23 @@ chart.
 > byte-identical files, the same scoring function — the only thing that changes is the method.
 >
 > At fifteen degrees of Sun difference we are **2.88 times** more accurate than the best of SIFT,
-> ORB and AKAZE.
+> ORB and AKAZE. ⟨At ninety degrees, **fourteen of the fifteen standard runs came back with no
+> answer to score at all.**⟩
 >
-> ⟨Past that, it stops being a comparison. At ninety degrees, **fourteen of the fifteen standard
-> runs came back with no answer to score at all.**⟩
->
-> And here is where we lose. At **zero** degrees SIFT beats us — 0.044 against our 0.086. With
-> identical lighting there is no lighting problem to solve. Our advantage is lighting robustness,
-> and it grows as the Sun moves.
+> And the pattern matters more than any single number. With identical lighting the standard tools
+> are perfectly good — there is no lighting problem to solve. **The further the Sun moves, the
+> further ahead we get.** That is exactly the axis the problem statement is about.
 >
 > Rishabh will show you what that protects."
 
-🔴 **Say the loss yourself, before anyone finds it.** A team that volunteers where it loses is
-believed about where it wins. Deliver it as confidence, not apology — no dropping your voice.
+🔴 **"The further the Sun moves, the further ahead we get."** Land that line. It states the
+contribution as a law rather than as an exception, and it ties straight to the words in the
+problem statement's own title.
+
+**If a judge asks where you lose, answer immediately and without flinching:** *"At zero degrees
+of Sun difference SIFT beats us — 0.044 pixels against our 0.086. With identical lighting there is
+no lighting problem to solve, which is exactly why our advantage grows with the Sun angle."* It is
+on slide 4 either way. We simply no longer spend spoken airtime volunteering it.
 
 **Never say the 62,519× ratio.** It is arithmetically true and rests on a single surviving run.
 Say *"fourteen of fifteen classical runs failed outright"* instead.
@@ -241,7 +258,7 @@ where we lose."*
 
 ---
 
-### 6 · RISHABH — what it protects (5:04–5:51)
+### 6 · RISHABH — what it protects (5:11–5:58)
 
 **Cue:** *"...show you what that protects."* **On screen:** slide 5.
 
@@ -272,7 +289,7 @@ your own bug and saying so is a strength, not an admission.**
 
 ---
 
-### 7 · SANIYA — impact and close (5:54–6:54)
+### 7 · SANIYA — impact and close (6:01–7:01)
 
 **Cue:** *"...why that matters beyond our laptop."* **On screen:** slide 5, then go **back to
 slide 2** for the final sentence.
