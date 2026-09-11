@@ -1,3 +1,5 @@
+> **Superseded on 11 Sep for the talk itself: the format changed to one presenter and a seven-minute cap. Use `ops/ROUND2_SCRIPT_SOLO.md`.** The Q&A routing (§5), never-say table (§6) and AI answer (§7) below still apply.
+
 # Round 2 — the presentation, word for word
 
 **Friday 11 September. Round 2 starts at 1:00 PM, for teams shortlisted at 12:30.
