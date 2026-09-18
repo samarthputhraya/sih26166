@@ -178,3 +178,24 @@ def test_summary_by_state_handles_empty_states():
     s = summary_by_state(state, err, gsd_mpp=10.0)
     assert s[VERIFIED] == {"n": 0}
     assert s[WEAK]["n"] == 64 and s[WEAK]["median_m"] == pytest.approx(20.0)
+
+
+def test_xcorr_peak_subpixel_recovers_a_fractional_shift():
+    """The fallback's global shift is refined to sub-pixel; the integer peak is not."""
+    import numpy as np
+    import cv2
+    from core.reliability import xcorr_peak, xcorr_peak_subpixel
+    rng = np.random.default_rng(5)
+    base = cv2.GaussianBlur(rng.random((256, 256)).astype(np.float32), (0, 0), 3)
+    M = np.float32([[1, 0, 3.3], [0, 1, -2.6]])           # b = a moved by (+3.3, -2.6)
+    b = cv2.warpAffine(base, M, (256, 256), flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_REFLECT)
+    a = base
+    dx, dy, _ = xcorr_peak_subpixel(a[32:224, 32:224], b[32:224, 32:224])
+    ix, iy, _ = xcorr_peak(a[32:224, 32:224], b[32:224, 32:224])
+    assert abs(ix - 3.3) <= 1 and abs(iy + 2.6) <= 1              # integer peak: within a pixel
+    assert abs(dx - 3.3) < 0.15 and abs(dy + 2.6) < 0.15            # refined: within 0.15 px
+    for sx, sy in [(0.25, 0.4), (-1.7, 2.45), (0.5, -0.5), (-4.1, 0.9)]:
+        bb = cv2.warpAffine(base, np.float32([[1, 0, sx], [0, 1, sy]]), (256, 256),
+                            flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_REFLECT)
+        ddx, ddy, _ = xcorr_peak_subpixel(a[32:224, 32:224], bb[32:224, 32:224])
+        assert np.hypot(ddx - sx, ddy - sy) < 0.15, (sx, sy, ddx, ddy)

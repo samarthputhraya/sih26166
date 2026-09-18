@@ -708,11 +708,11 @@ def reference_gsd(result: dict, pair_label: str | None = None, mode: str | None 
 
 
 def readout_for(resid, ref_gsd, ref_name: str, aligned_ok: bool, fallback_used: bool,
-                gsd_source: str | None = "label") -> str:
+                gsd_source: str | None = "label", label: str | None = None) -> str:
     """Pick the readout form for a result. Pure function of the result dict, so it
     is testable: every branch names the grid, and only the branch with a known
     reference GSD prints metres (resid x ref_gsd, both from the dict)."""
-    label = "HELD-OUT FIT RESIDUAL &middot; residual_px"
+    label = label or "HELD-OUT FIT RESIDUAL &middot; residual_px"
     grid = f"reference grid of {esc(ref_name)}"
     if resid is None:
         return readout_html("void", label, "&mdash;", "", "",
@@ -1046,7 +1046,7 @@ if r is not None:
                       f"<b>The matcher's result was contradicted and not used.</b> "
                       f"{_cap(esc(declared.get('why', '')).replace('-&gt;', '&rarr;'))}. The system switched to global "
                       f"correlation of the pixels (no features, no RANSAC) and aligned the pair "
-                      f"by a translation of <span class=\"fig\">({dx:+d}, {dy:+d}) px{esc(m_txt)}"
+                      f"by a translation of <span class=\"fig\">({dx:+.2f}, {dy:+.2f}) px{esc(m_txt)}"
                       f"</span>{sp_txt}. That disagreement is the uncertainty to quote.")
     else:
         # `global["verdict"]` is "agrees" | "contradicted" | "unconfirmed"
@@ -1168,8 +1168,18 @@ if r is not None:
              "No substitute is computed here on purpose: evaluation/metrics.py is "
              "the single source of numbers for this project.")
     else:
-        st.html(readout_for(metrics.get("residual_px"), ref_gsd, pathlib.Path(r["reference"]).name,
-                            aligned_ok, bool(fallback.get("used")), gsd_source))
+        # residual_px is the RMSE over EVERY held-out match, outliers included: fine on
+        # the synthetic sweep it was designed on, meaningless on a real pair with 40 %
+        # outliers (352 px on a pair whose inliers sit at 0.5 px, 18 Sep 2026). The
+        # headline is the held-out MEDIAN when evaluate() provides it.
+        _med = metrics.get("residual_median_px")
+        if _med is not None:
+            st.html(readout_for(_med, ref_gsd, pathlib.Path(r["reference"]).name,
+                                aligned_ok, bool(fallback.get("used")), gsd_source,
+                                label="HELD-OUT MEDIAN RESIDUAL &middot; residual_median_px"))
+        else:
+            st.html(readout_for(metrics.get("residual_px"), ref_gsd, pathlib.Path(r["reference"]).name,
+                                aligned_ok, bool(fallback.get("used")), gsd_source))
         st.html(MT_LEAD)
         st.html(metrics_table_html(metrics, contradicted=(not aligned_ok) or bool(fallback.get("used"))))
 
@@ -1177,6 +1187,15 @@ if r is not None:
             f"matches {r['n_matches']}  |  {r['ransac']['note']}  |  "
             f"illumination: {r['illumination']}  |  "
             f"{st.session_state.get('elapsed', r['seconds']):.1f} s elapsed") + '</div>')
+
+        if metrics.get("holdout_inlier_rmse_px") is not None:
+            st.caption(
+                f"Held-out (the 20 % of matches the fit never saw): median "
+                f"{metrics['residual_median_px']:.3f} px; RMSE of those within 3 px "
+                f"{metrics['holdout_inlier_rmse_px']:.3f} px ({metrics['holdout_inlier_frac']:.0%} of them); "
+                f"both on the reference grid. residual_px in the table is the RMSE over ALL "
+                f"held-out matches, outliers included."
+            )
 
         d = r.get("distribution")
         if d:
@@ -1186,6 +1205,46 @@ if r is not None:
                 f"Diagnostic only - grid_coverage_fraction above is the Gate 2 number "
                 f"and counts a different set of points."
             )
+
+    # --- deliverables ---------------------------------------------------------
+    # The PS names "registered product with corresponding match points". These are
+    # exactly the files `python -m core.pipeline --out` writes (core/export.py).
+    seclabel("04b", "DELIVERABLES", note="registered product + match points")
+    _key = f"bundle::{r.get('source')}::{r.get('reference')}::{r.get('seconds')}"
+    if st.session_state.get("bundle_key") != _key:
+        try:
+            from core.export import bundle_bytes
+            st.session_state["bundle"] = bundle_bytes(
+                r, pathlib.Path(str(r.get("reference"))).parent.name or "pair")
+        except Exception as _e:  # noqa: BLE001 - the demo must not crash on an export
+            st.session_state["bundle"] = {}
+            st.session_state["bundle_error"] = str(_e)
+        st.session_state["bundle_key"] = _key
+    _files = st.session_state.get("bundle") or {}
+    if _files:
+        import io as _io
+        import zipfile as _zip
+        _buf = _io.BytesIO()
+        with _zip.ZipFile(_buf, "w", _zip.ZIP_DEFLATED) as _z:
+            for _n, _b in _files.items():
+                _z.writestr(_n, _b)
+        _c1, _c2, _c3, _c4 = st.columns(4)
+        _c1.download_button("All deliverables (.zip)", _buf.getvalue(),
+                            file_name="deliverables.zip", mime="application/zip")
+        if "registered_product.tif" in _files:
+            _c2.download_button("Registered product (GeoTIFF)", _files["registered_product.tif"],
+                                file_name="registered_product.tif", mime="image/tiff")
+        _c3.download_button("Match points (CSV)", _files["matches.csv"],
+                            file_name="matches.csv", mime="text/csv")
+        _c4.download_button("Report (Markdown)", _files["report.md"],
+                            file_name="report.md", mime="text/markdown")
+        st.caption("GeoTIFF carries the reference's georeferencing when it has one (NaN outside "
+                   "the source footprint). matches.csv lists every match with its MAGSAC++ flag, "
+                   "residual and trust state; gcps.txt / gcps.points and matches_isis.csv are in "
+                   "the zip. Coordinate conventions are written in each file's header.")
+    else:
+        note("Deliverables could not be written for this result: "
+             f"{esc(st.session_state.get('bundle_error', 'unknown error'))}.")
 
     # --- change detection ----------------------------------------------------
     seclabel("05", "CHANGE DETECTION")

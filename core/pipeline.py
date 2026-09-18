@@ -273,6 +273,16 @@ def _fallback(a_n, b_n, factors, gsd, ref_shape, H_true, reason, a_raw=None, b_r
     dx, dy, ncc, rep = best_peak(reps_a, reps_b)
     if dx is None:
         return {"used": False, "reason": reason, "note": "constant image, nothing to correlate"}
+    # Refine the winning representation's peak to sub-pixel (parabola through the
+    # peak's neighbours). The quadrant spread below stays integer - it is an
+    # uncertainty, not a measurement - and so does the per-cell area check.
+    from core.reliability import xcorr_peak_subpixel
+    ra = dict(reps_a)[rep]
+    rb = dict(reps_b)[rep]
+    sdx, sdy, sncc = xcorr_peak_subpixel(ra, rb)
+    idx, idy = dx, dy
+    if sdx is not None and abs(sdx - idx) <= 1.0 and abs(sdy - idy) <= 1.0:
+        dx, dy = sdx, sdy
     quads = []
     hh, ww = h // 2, w // 2
     for name, ys, xs in (("top-left", slice(0, hh), slice(0, ww)),
@@ -282,7 +292,7 @@ def _fallback(a_n, b_n, factors, gsd, ref_shape, H_true, reason, a_raw=None, b_r
         qdx, qdy, qncc, _m = best_peak([(m, x[ys, xs]) for m, x in reps_a],
                                        [(m, x[ys, xs]) for m, x in reps_b])
         quads.append({"name": name, "shift_px": None if qdx is None else (qdx, qdy), "ncc": qncc})
-    devs = [max(abs(q["shift_px"][0] - dx), abs(q["shift_px"][1] - dy))
+    devs = [max(abs(q["shift_px"][0] - idx), abs(q["shift_px"][1] - idy))
             for q in quads if q["shift_px"] is not None]
     spread = int(max(devs)) if devs else None
 
@@ -682,7 +692,7 @@ def _print_report(r: dict) -> None:
     if fb and fb.get("used"):
         dx, dy = fb["shift_px_common_grid"]
         m = f" = {fb['shift_m']:.0f} m" if fb.get("shift_m") is not None else ""
-        print(f"  fallback      translation ({dx:+d},{dy:+d}) px on the common "
+        print(f"  fallback      translation ({dx:+.2f},{dy:+.2f}) px on the common "
               f"{fb['gsd_mpp_common'] or '?'} m/px grid{m}, peak NCC {fb['ncc']:+.3f}")
         if fb.get("spread_px") is not None:
             sm = f" = {fb['spread_m']:.0f} m" if fb.get("spread_m") is not None else ""
@@ -820,7 +830,7 @@ def _run_one(src, ref, H_true, args, pair_id, tier, config, gsd_mpp):
                     pair_id, tier, "fft_phase_correlation (fallback)", fb_metrics,
                     config=(f"{fb['note']}; triggered because {fb['reason']}"),
                     gsd_mpp=gsd_mpp if gsd_mpp is not None else r["gsd_mpp"],
-                    notes=(f"translation ({dx:+d},{dy:+d}) px on the common "
+                    notes=(f"translation ({dx:+.2f},{dy:+.2f}) px on the common "
                            f"{fb['gsd_mpp_common']} m/px grid"
                            + (f" = {fb['shift_m']:.0f} m" if fb.get("shift_m") is not None else "")
                            + f", peak NCC {fb['ncc']:+.3f}; quadrant disagreement up to "

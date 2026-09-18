@@ -182,6 +182,28 @@ def _normalised(img):
         return np.asarray(img, dtype=np.float32), "raw"
 
 
+def xcorr_peak_subpixel(a, b):
+    """`xcorr_peak`'s shift, refined to sub-pixel. Same sign convention (a -> b).
+    Returns (dx, dy, peak) as floats, or (None, None, 0.0).
+
+    Hann-windowed phase correlation (OpenCV's weighted-centroid peak) on the same
+    standardised pixels. Measured on known fractional shifts of a textured image
+    (core/test_reliability.py): errors mostly under 0.06 px, worst 0.14 px on a 14 px
+    shift. A parabola through the NCC peak was tried first and was biased by
+    0.10-0.18 px - not good enough to call sub-pixel.
+
+    Used ONLY for the fallback's global translation. The per-cell area check keeps
+    the integer peak: its thresholds (MAX_CELL_SHIFT_PX) were calibrated on it.
+    """
+    import cv2
+    A, B = _standardise(a), _standardise(b)
+    if A is None or B is None or A.shape != B.shape:
+        return None, None, 0.0
+    w = cv2.createHanningWindow(A.shape[::-1], cv2.CV_64F)
+    (dx, dy), peak = cv2.phaseCorrelate(A.astype(np.float64), B.astype(np.float64), w)
+    return float(dx), float(dy), float(peak)
+
+
 def representations(img):
     """The two pixel representations the area check correlates on.
 
