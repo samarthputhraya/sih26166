@@ -36,6 +36,8 @@ REAL_FIELDS = [
     "archive_offset_px", "archive_offset_m",
     "loop_id", "loop_rms_px", "loop_p90_px", "loop_rms_m",
     "seconds", "git_commit", "command", "notes",
+    # added 18 Sep 2026 for the real sun-angle sweep (older rows leave them empty)
+    "matcher_offset_m", "outcome",
 ]
 
 

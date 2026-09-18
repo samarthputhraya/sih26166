@@ -280,8 +280,11 @@ def grid_xy(transform, shape, step=1):
 
 
 def overlap_mask(frames, res=10.0, pad=0.0):
-    """Raster the intersection of the frames' footprints. Returns (mask, transform)."""
-    from matplotlib.path import Path
+    """Raster the intersection of the frames' footprints. Returns (mask, transform).
+
+    Polygons are filled with cv2.fillPoly (a matplotlib point-in-polygon test on every
+    cell took minutes for a 45 km NAC strip; this takes milliseconds)."""
+    import cv2
     rings = [f.footprint() for f in frames]
     # the INTERSECTION of the bounding boxes: a 45 km NAC strip must not make us
     # rasterise its whole length when it shares 7 km with the other image
@@ -293,12 +296,37 @@ def overlap_mask(frames, res=10.0, pad=0.0):
         transform, shape = map_grid(x0, y0 + res, res, res, res)
         return np.zeros(shape, bool), transform
     transform, shape = map_grid(x0, y1, x1 - x0, y1 - y0, res)
-    X, Y, _, _ = grid_xy(transform, shape)
-    pts = np.c_[X.ravel(), Y.ravel()]
-    mask = np.ones(len(pts), bool)
+    mask = np.ones(shape, bool)
     for ring in rings:
-        mask &= Path(ring).contains_points(pts)
-    return mask.reshape(shape), transform
+        col = (ring[:, 0] - transform[0]) / res - 0.5
+        row = (transform[3] - ring[:, 1]) / res - 0.5
+        poly = np.round(np.c_[col, row] * 16).astype(np.int32)      # 4 fractional bits
+        m = np.zeros(shape, np.uint8)
+        cv2.fillPoly(m, [poly], 1, lineType=cv2.LINE_8, shift=4)
+        mask &= m.astype(bool)
+    return mask, transform
+
+
+def _upsample(A, rs, cs, rows, cols):
+    """Bilinear upsampling of a tensor-product lattice (rs x cs nodes) to every pixel,
+    as two small interpolation-weight matrices: out = Wr @ A @ Wc.T. NaN nodes stay
+    NaN (propagated by the weights they touch)."""
+    def weights(nodes, n):
+        full = np.arange(n, dtype=np.float64)
+        i = np.clip(np.searchsorted(nodes, full, side="right") - 1, 0, len(nodes) - 2)
+        t = (full - nodes[i]) / (nodes[i + 1] - nodes[i])
+        W = np.zeros((n, len(nodes)))
+        W[np.arange(n), i] = 1 - t
+        W[np.arange(n), i + 1] = t
+        return W
+    Wr, Wc = weights(rs, rows), weights(cs, cols)
+    nan = ~np.isfinite(A)
+    A0 = np.where(nan, 0.0, A)
+    out = Wr @ A0 @ Wc.T
+    if nan.any():
+        bad = (Wr @ nan.astype(np.float64) @ Wc.T) > 1e-9
+        out[bad] = np.nan
+    return out
 
 
 def project(frame: Frame, read_window, transform, shape, coarse=16, fill=np.nan,
@@ -314,16 +342,8 @@ def project(frame: Frame, read_window, transform, shape, coarse=16, fill=np.nan,
     X, Y, cs, rs = grid_xy(transform, shape, step=coarse)
     sx, sy = frame.from_map(X, Y)
     rows, cols = shape
-    # upsample the coarse coordinate maps to every output pixel
-    full_c = np.arange(cols, dtype=np.float64)
-    full_r = np.arange(rows, dtype=np.float64)
-
-    def up(A):
-        from scipy.interpolate import RegularGridInterpolator
-        f = RegularGridInterpolator((rs, cs), A, bounds_error=False, fill_value=np.nan)
-        R2, C2 = np.meshgrid(full_r, full_c, indexing="ij")
-        return f(np.c_[R2.ravel(), C2.ravel()]).reshape(rows, cols)
-    mx, my = up(sx), up(sy)
+    # upsample the coarse coordinate maps to every output pixel (separable bilinear)
+    mx, my = _upsample(sx, rs, cs, rows, cols), _upsample(sy, rs, cs, rows, cols)
     ok = np.isfinite(mx) & np.isfinite(my)
     img = np.full(shape, fill, np.float32)
     if not ok.any():
