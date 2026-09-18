@@ -110,3 +110,18 @@ Site: CH-2 OHRC `ch2_ohr_ncp_20200229T0739312111_d_img_d18`, 74 S 43.6 E, sun el
 8. PowerPoint on this machine is unlicensed; PDF via Print to PDF or another machine.
 9. `docs/00_CANONICAL_FACTS.md`, `CLAUDE.md`, `ops/specs/day_20.md` describe the college round and the
    team split; they are stale. `day_20.md`'s teammate specs are parked.
+10. **(added after wrap, 18 Sep ~19:00) Both runs FINISHED** - see "In flight" items 1-2: they are done.
+    Sun sweep: 69 windows / 25 NACs. 0-30 deg: 30/30 correct_accepted (inliers median ~4,500);
+    30-60 deg: 10 correct, 2 "missed_failure"; >= 60 deg: every window has 0 verified cells and is
+    contradicted. Trust calibration: 1,702 planted trials on 23 windows - 0 % false alarms at d=0,
+    0 % caught at 1-2 m (the design floor), 81.5 % at 3 m, 100 % at >= 5 m (~4 px).
+11. **The sweep's labels above 120 deg are probably WRONG, and possibly in the trust layer's favour.**
+    At 131-143 deg (sun from the opposite side) the matcher returns 400-1,400 inliers, its warp
+    correlates at NCC -0.54 to -0.66 (vs archive alignment -0.28 to -0.41) and sits 5-53 m from the
+    corrected archive geometry for M1233889992RE / M1369217819RE - i.e. it looks CORRECT under
+    inverted shading. The trust layer rejected all of them (0 verified), and `ops/sun_sweep.classify`
+    uses SIGNED NCC, so it labels them "caught_failure". They may be trust-layer FALSE ALARMS under
+    contrast inversion. Before quoting anything >= 60 deg: (a) make classify sign-aware (|NCC|, or
+    compare against the archive alignment by magnitude), (b) find out why the area check does not
+    verify inverted-shading cells (its gradient-orientation representation should be invariant to a
+    180 deg flip - check `core/reliability.representations`). Record the outcome in REPORT.md.
