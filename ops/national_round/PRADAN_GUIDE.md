@@ -89,6 +89,29 @@ Download tips from the FAQ:
 - **`ch2_ohr_ncp_20200824T0806596861_d_img_d18`**, 2020-08-24, ~08:06 UTC. It pairs with NAC
   `M165491149RE`. Same caveat: confirm by date and time.
 
+## 3a. What happened on 18 Sep (registered; downloads done by Claude in the logged-in browser)
+
+- **No TMC-2 strip covers our 74°S site.** Checked three ways: PRADAN's own footprint shapefiles
+  (`<data>/pradan/shapefiles/`, self-checked: exactly one OHRC footprint contains the site and it is
+  our frame), then the calibrated lat/lon grid of the nearest strips. The nearest nadir swath
+  (`ch2_tmc_ncn_20241115T2122241048`) spans lon 45.73-47.87° at the site's latitude; our OHRC frame
+  is at 43.36-43.96° (~17 km short). The table's "CorrectedCoordinates" filter matches the ortho
+  products' bounding boxes, which near the pole are huge - do not trust it for coverage.
+- **P1 moved to SAC's benchmark site** (P2's OHRC frame, 13.1-13.9°S 25.1-25.2°E): TMC-2 pass
+  `20250707T1853` covers it fully (grid columns 1100-1700 of 4000). Downloaded nadir/fore/aft
+  calibrated (`ncn`, `ncf`, `nca`) plus the derived ortho and DTM. Sun differs a lot: OHRC label
+  az 270.9° / elev 9.9°, TMC-2 label az 31.1° / elev 69.4° - a hard pair, and an honest one.
+- **P2** `ch2_ohr_ncp_20210401T2357376656_d_img_d18` and **P4**
+  `ch2_ohr_ncp_20200824T0806596861_d_img_d18` confirmed by time (the only OHRC products then) and
+  downloaded. P4 is at 61.5-62.4°S 56.5-56.9°E (label sun az 58.3° / elev 13.6°).
+- **P3 IIRS**: three calibrated cubes cover our site (grid-checked): `20201128T1108` (5.45 GB zip),
+  `20210621T1517` and `20210621T1715` (3.36 / 3.34 GB). Downloading `20210621T1517` (label sun elev
+  24.3°); IIRS served at ~0.55 MB/s vs ~8 MB/s for TMC-2, and the first attempt died part-way.
+- Sizes: the table's ProductSizeInBytes is the UNCOMPRESSED size (the 27 GB "ortho" zips are
+  0.6-0.9 GB). The server honours HTTP Range, so one member (e.g. the geometry CSV) can be read out
+  of a zip without downloading it. Every file's sha256 is in `<data>/download_manifest_done.csv`
+  (groups `pradan_ohrc`, `pradan_tmc2`, `pradan_iirs`).
+
 ## 4. Where to put the files
 
 ```
