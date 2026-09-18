@@ -97,7 +97,8 @@ def run_pair(pair_dir: pathlib.Path, log: bool = False, out_root=None, command="
     return r, row, logged
 
 
-_INSTRUMENTS = {"OHRC": "ohrc", "NAC": "nac", "Terrain Camera": "tc", "Multiband Imager": "mi"}
+_INSTRUMENTS = {"OHRC": "ohrc", "NAC": "nac", "TMC-2": "tmc2", "IIRS": "iirs",
+                "Terrain Camera": "tc", "Multiband Imager": "mi"}
 
 
 def _short(instrument: str) -> str:

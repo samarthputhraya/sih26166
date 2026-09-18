@@ -66,6 +66,10 @@ def _kind(r):
         pid = pid or ""
         if pid.startswith("ch2_ohr"):
             return "ohrc"
+        if pid.startswith("ch2_tmc"):
+            return "tmc2"
+        if pid.startswith("ch2_iir"):
+            return "iirs"
         if pid.startswith("TCO_"):
             return "tc"
         if pid.startswith("MI_MAP"):
@@ -130,6 +134,20 @@ def main(argv=None):
     if nac_nac:
         L += section_pairs("LRO NAC → LRO NAC (same sensor; loop legs)", nac_nac, "Same sensor - NOT cross-sensor.")
     other = sorted([r for r in reg if _kind(r) not in ("ohrc-nac", "nac-nac")], key=lambda r: r["pair_id"])
+    sac = sorted([r for r in reg if _kind(r) == "ohrc-tmc2"], key=lambda r: r["pair_id"])
+    if sac:
+        L += section_pairs("SAC's benchmark site: Chandrayaan-2 OHRC → TMC-2 nadir (cross-sensor, same mission)", sac,
+                           "OHRC frame `ch2_ohr_ncp_20210401T2357376656` (arXiv:2509.04775, Table 1), 13.1-13.9°S "
+                           "25.2°E, vs TMC-2 pass `20250707T1853` (`ops/cut_pradan_pairs.py`). OHRC area-averaged "
+                           "4×4 (~1.1 m) before resampling; TMC-2 ~5.6 m. Label sun: OHRC elevation 9.9°, TMC-2 "
+                           "69.4°, azimuths 120° apart. Both panchromatic - NOT multi-modal; same mission - NOT "
+                           "cross-mission.")
+    fa = sorted([r for r in reg if _kind(r) == "tmc2-tmc2"], key=lambda r: r["pair_id"])
+    if fa:
+        L += section_pairs("Real viewpoint: TMC-2 fore (+25°) → aft (−25°), one pass (same sensor)", fa,
+                           "Same instrument, same sun, seconds apart: only the viewing direction differs "
+                           "(~50°). Relief parallax between the two (~0.93 × height) is not a homography - "
+                           "compare with the synthetic parallax rows below. Same sensor - NOT cross-sensor.")
     mm = [r for r in reg if _kind(r) == "tc-mi"]
     if mm:
         L += section_pairs("Kaguya TC → Kaguya MI (cross-sensor; 749 nm visible and 1548 nm infrared)",
