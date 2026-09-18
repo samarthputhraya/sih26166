@@ -7,7 +7,8 @@ INLIER_THRESH_PX = 3.0
 def _failed(reason, n):
     return {"rmse_gt_px": None, "residual_px": None, "inlier_count": 0,
             "inlier_ratio": 0.0, "grid_coverage_fraction": None,
-            "distribution_cv": None, "n_matches": n, "status": reason}
+            "distribution_cv": None, "n_matches": n, "status": reason,
+            "residual_median_px": None, "holdout_inlier_rmse_px": None, "holdout_inlier_frac": None}
 
 def evaluate(ref_shape, matches_src, matches_ref, H_true=None, holdout_frac=0.2, seed=0):
     """Score one registration.
@@ -44,9 +45,26 @@ def evaluate(ref_shape, matches_src, matches_ref, H_true=None, holdout_frac=0.2,
         return _failed("ransac_failed", n)
 
     # --- residual on the HELD-OUT set (real pairs) -------------------------
+    # residual_px is the RMSE over EVERY held-out match, outliers included. On the
+    # synthetic pairs it was designed on (~98 % inliers) that is the registration
+    # error; on a real pair with 40 % outliers it is the outliers' spread, and on
+    # 18 Sep 2026 it read 352 px on a pair whose inliers sit at 0.5 px. Its meaning
+    # is kept (every existing row in results_log.csv uses it) and three robust
+    # held-out numbers are added beside it, each computed on the SAME held-out 20 %
+    # the fit never saw:
+    #   residual_median_px      median held-out error - no threshold, robust to <50 % outliers
+    #   holdout_inlier_rmse_px  RMSE of held-out matches within INLIER_THRESH_PX of the fit
+    #   holdout_inlier_frac     share of held-out matches within that threshold
+    residual_median_px = holdout_inlier_rmse_px = holdout_inlier_frac = None
     if len(hold) > 0:
         proj = cv2.perspectiveTransform(matches_src[hold].reshape(-1,1,2), H).reshape(-1,2)
-        residual_px = float(np.sqrt(np.mean(np.sum((proj - matches_ref[hold])**2, axis=1))))
+        e_hold = np.sqrt(np.sum((proj - matches_ref[hold])**2, axis=1))
+        residual_px = float(np.sqrt(np.mean(e_hold**2)))
+        residual_median_px = float(np.median(e_hold))
+        in_h = e_hold < INLIER_THRESH_PX
+        holdout_inlier_frac = float(in_h.mean())
+        if in_h.any():
+            holdout_inlier_rmse_px = float(np.sqrt(np.mean(e_hold[in_h]**2)))
     else:
         residual_px = None
 
@@ -76,7 +94,10 @@ def evaluate(ref_shape, matches_src, matches_ref, H_true=None, holdout_frac=0.2,
 
     return {
         "rmse_gt_px":             rmse_gt_px,                       # accuracy. None on real pairs.
-        "residual_px":            residual_px,                      # held-out fit residual.
+        "residual_px":            residual_px,                      # held-out fit residual, ALL held-out matches.
+        "residual_median_px":     residual_median_px,               # held-out, median (robust).
+        "holdout_inlier_rmse_px": holdout_inlier_rmse_px,           # held-out, within 3 px of the fit.
+        "holdout_inlier_frac":    holdout_inlier_frac,
         "inlier_count":           inlier_count,
         "inlier_ratio":           inlier_count / max(n, 1),
         "grid_coverage_fraction": float((cells > 0).sum() / (GRID*GRID)),
