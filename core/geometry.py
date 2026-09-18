@@ -147,6 +147,21 @@ class Frame:
                    source=source or "four footprint corners, bilinear (coarse prior)")
 
     @classmethod
+    def from_equirect(cls, max_lat, west_lon, ppd, shape, name="", step=64, source=""):
+        """A PDS SIMPLE CYLINDRICAL map (Kaguya TC / MI map products): pixel CENTRE
+        (col, row) at lat = max_lat - row/ppd, lon = west_lon + col/ppd - the label's
+        corner latitudes/longitudes are pixel centres (e.g. LOWER_LEFT_LATITUDE =
+        -74.999756 = -72 - 12287/4096). Nodes every `step` px; the map to polar
+        stereographic is smooth on that scale."""
+        rows, cols = shape
+        xs = np.unique(np.r_[np.arange(0, cols, step), cols - 1]).astype(float)
+        ys = np.unique(np.r_[np.arange(0, rows, step), rows - 1]).astype(float)
+        LON, LAT = np.meshgrid(west_lon + xs / ppd, max_lat - ys / ppd)
+        X, Y = ps_south(LAT, LON)
+        return cls(name, tuple(shape), xs, ys, X, Y,
+                   source=source or f"simple cylindrical map, {ppd} px/deg, from the PDS label")
+
+    @classmethod
     def from_transform(cls, transform, shape, name="", source="GeoTIFF transform"):
         """A GDAL-order transform (x0, sx, 0, y0, 0, sy) in polar-stereographic metres."""
         x0, sx, rx, y0, ry, sy = transform

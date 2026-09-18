@@ -233,6 +233,144 @@ def _sha(p):
 GEOM_DIR = DATA / "site_geometry"
 
 
+def _factor(frame):
+    return max(1, int(round(OVERVIEW_GSD / float(np.mean(frame.gsd())))))
+
+
+def _small(frame, reader, key, cache_dir):
+    from core import geometry as G
+    f = _factor(frame)
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    cp = cache_dir / f"{key}_overview_f{f}.npy"
+    if cp.exists():
+        return np.load(cp), f
+    arr = G.block_mean(reader, frame.shape, f)
+    np.save(cp, arr)
+    return arr, f
+
+
+def overviews_between(fa, ra, key_a, fb, rb, key_b, cache_dir):
+    """Two frames on one ~4 m polar-stereographic grid over their shared footprint."""
+    from core import geometry as G
+    sa, f_a = _small(fa, ra, key_a, cache_dir)
+    sb, f_b = _small(fb, rb, key_b, cache_dir)
+    mask, tr = G.overlap_mask([fa, fb], res=10)
+    ys, xs = np.nonzero(mask)
+    if not len(ys):
+        return None
+    pad = 400.0
+    x0 = tr[0] + xs.min() * 10 - pad
+    x1 = tr[0] + (xs.max() + 1) * 10 + pad
+    y1 = tr[3] - ys.min() * 10 + pad
+    y0 = tr[3] - (ys.max() + 1) * 10 - pad
+    gt, gshape = G.map_grid(x0, y1, x1 - x0, y1 - y0, OVERVIEW_GSD)
+    a, va = G.project(_decimated(fa, f_a), lambda x, y, w, h: sa[y:y + h, x:x + w], gt, gshape)
+    b, vb = G.project(_decimated(fb, f_b), lambda x, y, w, h: sb[y:y + h, x:x + w], gt, gshape)
+    return a, va, b, vb, gt
+
+
+def correct_against(nac_pid, anchor_pid, verbose=True):
+    """Fit NAC `nac_pid`'s correction field against an already-corrected NAC `anchor_pid`
+    (used when the sun is too different from the OHRC's for the images to correlate).
+    The chain is transitive: the anchor is itself corrected against the OHRC grid (or
+    against its own anchor), so the result is in the OHRC-aligned frame. Saved like
+    any other correction, with the anchor recorded."""
+    anchor, a_read, _, a_prior = nac_frame_corrected(anchor_pid, verbose=False)
+    nac, n_read, _ = _nac(nac_pid)
+    ov = overviews_between(anchor, a_read, anchor_pid, nac, n_read, nac_pid, DATA / "overviews")
+    if ov is None:
+        return None
+    a, va, b, vb, gt = ov
+    prior = coarse_prior(a, va, b, vb, gt)
+    if verbose:
+        _say_prior(f"{nac_pid} vs anchor {anchor_pid}", prior)
+    if prior["apply"]:
+        nac_c = nac.corrected(prior["model"], f"(4 m correlation field vs anchor {anchor_pid})")
+        a, va, b, vb, gt = overviews_between(anchor, a_read, anchor_pid, nac_c, n_read, nac_pid,
+                                             DATA / "overviews")
+        check = coarse_prior(a, va, b, vb, gt)
+        if verbose:
+            _say_prior(f"{nac_pid} after correction", check)
+        prior["after_correction"] = {k: v for k, v in check.items() if k != "boxes"}
+    prior["nac_pid"] = nac_pid
+    prior["anchor"] = anchor_pid
+    prior["anchor_chain"] = [anchor_pid] + list(a_prior.get("anchor_chain", []))
+    return prior
+
+
+KAGUYA_DIR = DATA / "kaguya_maps"
+# From the PDS labels (read 18 Sep 2026). TC maps: 12288 x 12288 MSB_UNSIGNED_INTEGER 16-bit,
+# 4096 px/deg, max lat -72, west lon 42. MI map: GEOMETRIC_DATA_ALTITUDE float32 2048^2 at
+# byte 0, then IMAGE 9 bands MSB_INTEGER 16-bit BSQ at byte 16777216, 2048 px/deg, max lat
+# -74, west lon 43, SCALING_FACTOR 2e-5 (reflectance), invalid values <= -20000.
+TC_MAPS = {"tc_morning": ("TCO_MAPM04_S72E042S75E045SC", "Kaguya TC morning map v4 (mosaic, sun from the east)"),
+           "tc_evening": ("TCO_MAPE04_S72E042S75E045SC", "Kaguya TC evening map v4 (mosaic, sun from the west)"),
+           "tc_ortho": ("TCO_MAP_02_S72E042S75E045SC", "Kaguya TC ortho map v2 (mosaic)")}
+MI_ID = "MI_MAP_03_S74E043S75E044SC"
+MI_BANDS_NM = [414, 749, 901, 950, 1001, 1000, 1049, 1248, 1548]
+
+
+def _kaguya(kind):
+    """(frame, reader, info, gsd) for a Kaguya map kind: tc_morning | tc_evening | tc_ortho | mi<nm>."""
+    from core import geometry as G
+    if kind in TC_MAPS:
+        pid, desc = TC_MAPS[kind]
+        path = KAGUYA_DIR / f"{pid}.IMG"
+        arr = np.memmap(path, dtype=">u2", mode="r", shape=(12288, 12288))
+        full = G.Frame.from_equirect(-72.0, 42.0, 4096.0, arr.shape, kind,
+                                     source=f"{pid}: simple cylindrical, 4096 px/deg (PDS label)")
+        # At 74 S a TC map pixel is 7.4 m in latitude but only 2.0 m in longitude. Average
+        # 4 columns (area, no aliasing) so the pixels are ~7.4 x 8.2 m before any resampling.
+        fx = 4
+        frame = G.Frame(full.name, (full.shape[0], full.shape[1] // fx), (full.xs - (fx - 1) / 2) / fx,
+                        full.ys, full.X, full.Y, full.source + "; 4 columns area-averaged")
+
+        def reader(x, y, w, h):
+            a = np.asarray(arr[y:y + h, x * fx:(x + w) * fx], np.float32)
+            return a[:, :w * fx].reshape(a.shape[0], w, fx).mean(axis=2)
+        info = {"instrument": "SELENE (Kaguya) Terrain Camera", "product_id": pid, "path": str(path),
+                "native_gsd_mpp": 7.4031617, "description": desc,
+                "band": "panchromatic visible (430-850 nm)",
+                "incidence_deg_at_site": None, "sun_azimuth_deg_from_north": None,
+                "sun_note": desc}
+        return frame, reader, info, 7.4
+    if kind.startswith("mi"):
+        nm = int(kind[2:])
+        b = MI_BANDS_NM.index(nm)
+        path = KAGUYA_DIR / f"{MI_ID}.IMG"
+        cube = np.memmap(path, dtype=">i2", mode="r", offset=16777216, shape=(9, 2048, 2048))
+        frame = G.Frame.from_equirect(-74.0, 43.0, 2048.0, (2048, 2048), kind,
+                                      source=f"{MI_ID}: simple cylindrical, 2048 px/deg (PDS label)")
+
+        def reader(x, y, w, h, _b=b):
+            a = np.asarray(cube[_b, y:y + h, x:x + w], np.float32)
+            a[a <= -20000] = np.nan
+            return a * 2e-5
+        info = {"instrument": "SELENE (Kaguya) Multiband Imager", "product_id": f"{MI_ID} band {nm} nm",
+                "path": str(path), "native_gsd_mpp": 14.806323 if nm < 1000 or b < 5 else 14.806323,
+                "band": f"{nm} nm ({'near-infrared' if nm >= 1000 else 'visible/near-visible'})",
+                "native_note": "MI VIS bands are ~20 m native, NIR bands ~62 m native; the map is 2048 px/deg",
+                "incidence_deg_at_site": None, "sun_azimuth_deg_from_north": None,
+                "sun_note": "MI map mosaic; per-pixel sun not in the label"}
+        return frame, reader, info, 14.8
+    raise KeyError(kind)
+
+
+def _ohrc16():
+    """OHRC area-averaged by 16 (3.68 m) - the right way to bring 0.23 m pixels near a
+    15 m infrared map without aliasing."""
+    from core import geometry as G
+    ohrc, o_read, meta = _ohrc()
+    small, f = _small(ohrc, o_read, "ohrc", DATA / "overviews") if False else (None, 16)
+    cp = DATA / "overviews" / f"ohrc_overview_f{OHRC_FACTOR}.npy"
+    small = np.load(cp) if cp.exists() else G.block_mean(o_read, ohrc.shape, OHRC_FACTOR)
+    if not cp.exists():
+        np.save(cp, small)
+    fr = _decimated(ohrc, OHRC_FACTOR)
+    reader = lambda x, y, w, h: small[y:y + h, x:x + w]  # noqa: E731
+    return fr, reader, meta
+
+
 def nac_frame_corrected(nac_pid, refit=False, verbose=True):
     """The NAC's frame with its correction field vs the OHRC grid - computed ONCE and
     saved, so every pair that uses this NAC shares one georeference (loop closure is
@@ -259,12 +397,58 @@ def nac_frame_corrected(nac_pid, refit=False, verbose=True):
         prior["nac_pid"] = nac_pid
         gp.write_text(json.dumps(prior, indent=1), encoding="utf-8")
     if prior.get("apply"):
-        nac = nac.corrected(prior["model"], "(4 m correlation field vs the OHRC grid)")
+        what = (f"vs anchor {prior['anchor']}" if prior.get("anchor") else "vs the OHRC grid")
+        nac = nac.corrected(prior["model"], f"(4 m correlation field {what})")
     return nac, n_read, n_info, prior
 
 
+def correct_chain(pids, min_boxes=20, verbose=True):
+    """Correct each NAC: directly against the OHRC if that works, else against the
+    already-corrected NAC with the most similar sun azimuth that it overlaps.
+    `pids` should be ordered by sun-azimuth difference from the OHRC, easiest first."""
+    GEOM_DIR.mkdir(parents=True, exist_ok=True)
+    done = {}
+    for pid in pids:
+        gp = GEOM_DIR / f"{pid}.json"
+        info = _nac(pid)[2]
+        if gp.exists():
+            done[pid] = (json.loads(gp.read_text(encoding="utf-8")), info)
+            continue
+        _, _, _, prior = nac_frame_corrected(pid, verbose=verbose)
+        direct_ok = prior.get("apply") and prior.get("model", {}).get("inliers", 0) >= min_boxes
+        if not direct_ok and done:
+            az = info["sun_azimuth_deg_from_north"]
+            cands = sorted(((abs((d[1]["sun_azimuth_deg_from_north"] - az + 180) % 360 - 180), q)
+                            for q, d in done.items() if d[0].get("apply")))
+            for _, anc in cands[:4]:
+                pr = correct_against(pid, anc, verbose=verbose)
+                if pr and pr.get("apply") and pr["model"]["inliers"] >= min_boxes:
+                    prior = pr
+                    gp.write_text(json.dumps(prior, indent=1), encoding="utf-8")
+                    break
+        done[pid] = (prior, info)
+        m = prior.get("model") or {}
+        print(f"  {pid}: {'anchor ' + prior['anchor'] if prior.get('anchor') else 'direct'}; "
+              f"apply={prior.get('apply')}; field {m.get('inliers')}/{m.get('n')} boxes, "
+              f"rms {m.get('rms_m', float('nan')):.1f} m", flush=True)
+    return done
+
+
 def _frame(kind_or_pid):
-    """('ohrc' | NAC pid) -> (frame, reader, info, gsd_to_write, label)."""
+    """(kind | NAC pid) -> (frame, reader, info, gsd_to_write, label).
+
+    kinds: ohrc (0.25 m), ohrc16 (area-averaged 3.68 m), tc_morning, tc_evening, tc_ortho,
+    mi<nm> (Kaguya MI band), or an LROC NAC product id."""
+    k = kind_or_pid.lower()
+    if k in TC_MAPS or (k.startswith("mi") and k[2:].isdigit()):
+        f, rd, info, gsd = _kaguya(k)
+        return f, rd, {**info, "geometry": f.source}, gsd, k
+    if k == "ohrc16":
+        f, rd, meta = _ohrc16()
+        info = {"instrument": "Chandrayaan-2 OHRC", "product_id": OHRC_ID + "_d_img_d18",
+                "path": str(OHRC_XML), "native_gsd_mpp": meta.get("gsd_mpp"),
+                "geometry": f.source + "; area-averaged 16x16 (3.68 m)", "sun": OHRC_SUN}
+        return f, rd, info, 3.68, "ohrc16"
     if kind_or_pid.lower() == "ohrc":
         f, rd, meta = _ohrc()
         info = {"instrument": "Chandrayaan-2 OHRC", "product_id": OHRC_ID + "_d_img_d18",
@@ -287,6 +471,31 @@ def _inside(frame, cx, cy, half_m, n=9):
                 and x.max() <= cols - 1 and y.max() <= rows - 1)
 
 
+def _tier(src_label, ref_label):
+    """Validation tier and the exact wording allowed for it (Invariant 2)."""
+    def kind(lbl):
+        if lbl.startswith("ohrc"):
+            return "ohrc"
+        if lbl.startswith("tc_"):
+            return "tc"
+        if lbl.startswith("mi"):
+            return "mi_nir" if int(lbl[2:]) >= 1000 else "mi_vis"
+        return "nac"
+    a, b = kind(src_label), kind(ref_label)
+    if a == b:
+        return ("A (same sensor, cross-illumination, real)",
+                f"same sensor ({a.upper()}) - a sun-angle test, NOT cross-sensor")
+    if "mi_nir" in (a, b):
+        return ("C (visible-infrared real, multi-modal)",
+                f"cross-sensor and multi-modal: visible panchromatic vs Kaguya MI near-infrared "
+                f"({ref_label if b == 'mi_nir' else src_label})")
+    if {a, b} == {"ohrc", "nac"}:
+        return ("B (OHRC-NAC real)", "cross-sensor, cross-mission (Chandrayaan-2 OHRC vs LRO LROC "
+                "NAC); both panchromatic, so NOT multi-modal")
+    return (f"B (cross-sensor real, {a}-{b})",
+            f"cross-sensor ({a.upper()} vs {b.upper()}); both visible, so NOT multi-modal")
+
+
 def cut(nac_pid, n_windows=6, window_px=640, ohrc_gsd=0.25, coarse_only=False,
         force_prior=None, src="ohrc", centres=None, tag=None, require_inside=(), window_m=None):
     """Cut `src` (ohrc or a NAC pid) against the reference NAC `nac_pid`.
@@ -302,10 +511,15 @@ def cut(nac_pid, n_windows=6, window_px=640, ohrc_gsd=0.25, coarse_only=False,
     src_gsd = ohrc_gsd if src_label == "ohrc" else src_gsd
     window_m = window_m or window_px * ref_gsd
     if centres is None:
-        if src_label != "ohrc":
-            raise SystemExit("new windows are picked on OHRC-lit ground; pass --centres-from for NAC-NAC")
-        ohrc, o_read, _ = _ohrc()
-        a, va, b, vb, gt = overviews(ohrc, o_read, ref_f, ref_read, DATA / "overviews")
+        if src_label == "ohrc":
+            ohrc, o_read, _ = _ohrc()
+            a, va, b, vb, gt = overviews(ohrc, o_read, ref_f, ref_read, DATA / "overviews")
+        else:
+            ov = overviews_between(src_f, src_read, src_label, ref_f, ref_read, ref_label,
+                                   DATA / "overviews")
+            if ov is None:
+                raise SystemExit("the two images do not overlap")
+            a, va, b, vb, gt = ov
         others = [nac_frame_corrected(pid, verbose=False)[0] for pid in require_inside]
         wins = pick_windows(a, va, b, vb, gt, window_m, n_windows * 8 if others else n_windows)
         if others:
@@ -321,8 +535,11 @@ def cut(nac_pid, n_windows=6, window_px=640, ohrc_gsd=0.25, coarse_only=False,
     s_sun = src_info.get("sun") or {"incidence_deg": src_info.get("incidence_deg_at_site"),
                                     "azimuth_deg_from_north": src_info.get("sun_azimuth_deg_from_north")}
     r_sun_az, r_inc = ref_info["sun_azimuth_deg_from_north"], ref_info["incidence_deg_at_site"]
-    d_az = round(abs((r_sun_az - s_sun["azimuth_deg_from_north"] + 180) % 360 - 180), 1)
-    d_inc = round(r_inc - s_sun["incidence_deg"], 2)
+    if r_sun_az is None or s_sun.get("azimuth_deg_from_north") is None:
+        d_az = d_inc = None
+    else:
+        d_az = round(abs((r_sun_az - s_sun["azimuth_deg_from_north"] + 180) % 360 - 180), 1)
+        d_inc = round(r_inc - s_sun["incidence_deg"], 2)
     out_dirs = []
     for k, (cx, cy, lit) in enumerate(centres, 1):
         pair_id = f"site_{src_label}_{ref_label}_w{k:02d}" + (f"_{tag}" if tag else "")
@@ -346,11 +563,7 @@ def cut(nac_pid, n_windows=6, window_px=640, ohrc_gsd=0.25, coarse_only=False,
         G.write_geotiff(src_p, s_img.astype(np.float32), tr_s)
         G.write_geotiff(ref_p, r_img.astype(np.float32), tr_r)
         lat, lon = G.ps_south_inv(cx, cy)
-        tier = ("A (NAC-NAC real, same sensor)" if same_sensor else "B (OHRC-NAC real)")
-        term = ("same sensor (LROC NAC) - a sun-angle / geometry test, NOT cross-sensor"
-                if same_sensor else
-                "cross-sensor, cross-mission (Chandrayaan-2 OHRC vs LRO LROC NAC); both "
-                "panchromatic, so NOT multi-modal")
+        tier, term = _tier(src_label, ref_label)
         meta = {
             "pair_id": pair_id,
             "created_utc": _dt.datetime.now(_dt.timezone.utc).isoformat(timespec="seconds"),
@@ -376,7 +589,7 @@ def cut(nac_pid, n_windows=6, window_px=640, ohrc_gsd=0.25, coarse_only=False,
         (d / "PROVENANCE.md").write_text(_provenance(meta), encoding="utf-8")
         out_dirs.append(d)
         print(f"  {pair_id}: centre ({lat:.4f}, {lon:.4f}); src {sh_s} @ {src_gsd} m, "
-              f"ref {sh_r} @ {ref_gsd} m; d_az {d_az} deg, d_inc {d_inc:+} deg")
+              f"ref {sh_r} @ {ref_gsd} m; d_az {d_az} deg, d_inc {d_inc} deg")
     return out_dirs
 
 
@@ -418,7 +631,7 @@ Cut {m['created_utc']} by `{m['command']}`.
 | geometry | {s['geometry']} | {r['geometry']} |
 
 Window centre ({m['window_centre_latlon'][0]:.5f}, {m['window_centre_latlon'][1]:.5f}), {m['window_m']:.1f} m square,
-map: {m['crs']}. Sun difference: azimuth {m['d_sun_azimuth_deg']} deg, incidence {m['d_incidence_deg']:+} deg.
+map: {m['crs']}. Sun difference: azimuth {m['d_sun_azimuth_deg']} deg, incidence {m['d_incidence_deg']} deg.
 Scale ratio {m['scale_ratio']}x.
 
 OHRC sun angles are derived from the acquisition time, not read (the PDS4 label has none).
@@ -431,7 +644,8 @@ Files (sha256): {', '.join(f'`{k}` {v[:16]}' for k, v in m['files'].items())}
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--nac", required=True, help="reference LROC NAC product id, e.g. M1153871873LE")
+    ap.add_argument("--nac", "--ref", dest="nac",
+                    help="reference: LROC NAC product id, tc_morning|tc_evening|tc_ortho, or mi<nm>")
     ap.add_argument("--src", default="ohrc", help="'ohrc' (default) or a NAC product id")
     ap.add_argument("--windows", type=int, default=6)
     ap.add_argument("--window-px", type=int, default=640)
@@ -443,7 +657,11 @@ def main(argv=None):
                     help="only pick windows that ALSO lie inside these NACs (for loops)")
     ap.add_argument("--coarse-only", action="store_true")
     ap.add_argument("--refit", action="store_true", help="recompute the saved NAC correction field")
+    ap.add_argument("--correct-chain", nargs="*", help="correct these NACs in order (direct or via anchors)")
     a = ap.parse_args(argv)
+    if a.correct_chain:
+        correct_chain(a.correct_chain)
+        return 0
     if a.refit:
         nac_frame_corrected(a.nac, refit=True)
     centres = None
