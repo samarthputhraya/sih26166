@@ -88,8 +88,23 @@ def main(argv=None):
             summary.append({"pid": pid, "outcome": "no_georeference"})
             continue
         existing = sorted((C.PAIRS).glob(f"site_ohrc_{pid.lower()}_w*_sw"))
-        dirs = existing or C.cut(pid, n_windows=a.windows, src="ohrc", tag="sw")
+        try:
+            dirs = existing or C.cut(pid, n_windows=a.windows, src="ohrc", tag="sw")
+        except SystemExit as e:
+            # e.g. "no lit window fits inside the shared footprint" - a result, not a crash
+            print(f"{pid}: {e} - recorded, sweep continues")
+            summary.append({"pid": pid, "outcome": f"no_window ({e})"})
+            continue
+        import csv as _csv
+        done = set()
+        if a.log and (ROOT / "evaluation" / "real_pairs_log.csv").exists():
+            done = {r["pair_id"] for r in _csv.DictReader(open(ROOT / "evaluation" / "real_pairs_log.csv",
+                                                               encoding="utf-8"))
+                    if (r.get("outcome") or "").strip()}
         for d in dirs:
+            if pathlib.Path(d).name in done:
+                print(f"{pathlib.Path(d).name}: already logged - skipped")
+                continue
             r, row, logged = run_pair(pathlib.Path(d), log=False, command=cmd)
             prior = json.loads((pathlib.Path(d) / "geometry_prior.json").read_text(encoding="utf-8"))
             gsd = prior["reference"]["resampled_gsd_mpp"]
