@@ -616,6 +616,99 @@ def fig_pipeline():
     return p
 
 
+# --- real-data figures (18 Sep 2026) -------------------------------------------------------
+REAL_LOG = ROOT / "evaluation" / "real_pairs_log.csv"
+TRUST_REAL = ROOT / "evaluation" / "trust_real_calibration.csv"
+OUTCOME_STYLE = {   # colour AND marker, so identity is never colour-alone
+    "correct_accepted": (AQUA, "o", "registered, verified"),
+    "caught_failure": (BLUE, "s", "failed, and the system said so"),
+    "false_alarm": (MUTED, "D", "correct, but flagged"),
+    "missed_failure": (ORANGE, "X", "failed, NOT caught"),
+    "no_transform": (MUTED, "v", "no transform"),
+}
+
+
+def fig_real_sun_sweep():
+    """The real sun sweep: one Chandrayaan-2 OHRC frame vs LROC NAC frames at 3-153 deg
+    of sun-azimuth difference. Inliers per window, marked by outcome (ops/sun_sweep.py).
+    Every point is a real_pairs_log row with an `outcome`; nothing is typed in."""
+    rows = [r for r in _rows(REAL_LOG) if (r.get("outcome") or "").strip()]
+    if not rows:
+        return None
+    # latest row per pair_id (a pair re-run on a later commit supersedes its old row)
+    latest = {}
+    for r in rows:
+        latest[r["pair_id"]] = r
+    rows = list(latest.values())
+    fig, ax = plt.subplots(figsize=(7.6, 4.4))
+    ax.set_yscale("symlog", linthresh=10)
+    ax.grid(True, which="major", color=GRID, linewidth=0.8, zorder=0)
+    ax.set_axisbelow(True)
+    ax.tick_params(labelsize=13)
+    counts = {}
+    for key, (col, mk, label) in OUTCOME_STYLE.items():
+        pts = [(float(r["d_sun_azimuth_deg"]), float(r["inliers"] or 0)) for r in rows
+               if r["outcome"] == key and r.get("d_sun_azimuth_deg")]
+        if not pts:
+            continue
+        counts[key] = len(pts)
+        x, y = zip(*pts)
+        ax.scatter(x, y, s=70, c=col, marker=mk, edgecolors=SURFACE, linewidths=1.2, zorder=3,
+                   label=f"{label} ({len(pts)})")
+    ax.set_xlabel("sun-azimuth difference, OHRC vs NAC  (degrees)", fontsize=14)
+    ax.set_ylabel("inlier matches per window", fontsize=14)
+    ax.set_title("Real Chandrayaan-2 OHRC vs LRO NAC, one site, 3-153° apart",
+                 loc="left", fontweight="bold", fontsize=15, pad=10)
+    ax.set_xlim(-5, 165)
+    ax.set_ylim(0, 20000)
+    ax.legend(loc="upper right", fontsize=11, frameon=False)
+    n_nac = len({r["reference_product"] for r in rows})
+    fig.text(0.014, 0.006, f"{len(rows)} windows over {n_nac} NAC frames · outcome by image "
+             f"evidence, ops/sun_sweep.py · evaluation/real_pairs_log.csv", fontsize=10, color=MUTED)
+    fig.tight_layout(rect=(0, 0.045, 1, 1))
+    out = OUT / "fig5_real_sun_sweep.png"
+    _audit(fig, out.name)
+    fig.savefig(out, dpi=200)
+    plt.close(fig)
+    return out
+
+
+def fig_trust_real():
+    """Planted confident-wrong registrations on real windows: how often does the area check
+    contradict them, by displacement? d = 0 is the false-alarm rate."""
+    if not TRUST_REAL.exists():
+        return None
+    rows = _rows(TRUST_REAL)
+    ds = sorted({float(r["displacement_m"]) for r in rows})
+    rate = [np.mean([r["contradicted"] == "True" for r in rows if float(r["displacement_m"]) == d]) for d in ds]
+    n = [sum(1 for r in rows if float(r["displacement_m"]) == d) for d in ds]
+    gsd = np.median([float(r["gsd_ref_m"]) for r in rows])
+    fig, ax = plt.subplots(figsize=(7.6, 4.4))
+    ax.grid(True, which="major", color=GRID, linewidth=0.8, zorder=0)
+    ax.set_axisbelow(True)
+    xs = np.arange(len(ds))
+    ax.bar(xs, [100 * v for v in rate], color=[MUTED if d == 0 else BLUE for d in ds], zorder=3, width=0.7)
+    for x, v, k in zip(xs, rate, n):
+        ax.text(x, 100 * v + 2, f"{100 * v:.0f}%", ha="center", va="bottom", fontsize=12, color=INK)
+    ax.set_xticks(xs)
+    ax.set_xticklabels([f"{d:g}" for d in ds], fontsize=13)
+    ax.set_ylim(0, 112)
+    ax.set_xlabel("planted error  (metres; reference grid ~%.2f m/px)" % gsd, fontsize=14)
+    ax.set_ylabel("flagged as wrong  (%)", fontsize=14)
+    ax.set_title("Confident but wrong: does the independent check catch it?",
+                 loc="left", fontweight="bold", fontsize=15, pad=10)
+    n_win = len({r["pair_id"] for r in rows})
+    fig.text(0.014, 0.006, f"{n_win} real OHRC/NAC windows · every planted match agrees with the "
+             f"wrong answer · 0 m = false-alarm rate · evaluation/trust_real_calibration.csv",
+             fontsize=9.5, color=MUTED)
+    fig.tight_layout(rect=(0, 0.045, 1, 1))
+    out = OUT / "fig6_trust_real_calibration.png"
+    _audit(fig, out.name)
+    fig.savefig(out, dpi=200)
+    plt.close(fig)
+    return out
+
+
 def main() -> int:
     OUT.mkdir(parents=True, exist_ok=True)
     deltas, ours, best, nscored, ntried = load_curves()
@@ -628,6 +721,9 @@ def main() -> int:
     print(f"  wrote {fig_trust_calibration().name}")
     print(f"  wrote {fig_trust_map().name}")
     print(f"  wrote {fig_pipeline().name}")
+    for f in (fig_real_sun_sweep, fig_trust_real):
+        out = f()
+        print(f"  wrote {out.name}" if out else f"  skipped {f.__name__} (no evidence file yet)")
     _report_slide_legibility()
     return 0
 
