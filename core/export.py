@@ -291,7 +291,7 @@ def _versions() -> dict:
 
 # The append-only evidence logs. Appending a row is not a code change.
 EVIDENCE_LOGS = ("evaluation/results_log.csv", "evaluation/real_pairs_log.csv",
-                 "evaluation/trust_real_calibration.csv")
+                 "evaluation/trust_real_calibration.csv", "evaluation/miloi_log.csv")
 
 
 def _commit(paths=("core", "evaluation"), root=ROOT) -> str:

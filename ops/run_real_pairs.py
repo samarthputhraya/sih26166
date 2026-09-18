@@ -61,7 +61,7 @@ def run_pair(pair_dir: pathlib.Path, log: bool = False, out_root=None, command="
              f"scale {prior.get('scale_ratio')}x")
     row = {
         "pair_id": pair_dir.name, "tier": prior["tier"],
-        "kind": "ohrc-nac" if "OHRC" in prior["source"]["instrument"] else "nac-nac",
+        "kind": f"{_short(prior['source']['instrument'])}-{_short(prior['reference']['instrument'])}",
         "method_declared": r["declared"]["method"],
         "source_product": prior["source"]["product_id"],
         "reference_product": prior["reference"]["product_id"],
@@ -95,6 +95,15 @@ def run_pair(pair_dir: pathlib.Path, log: bool = False, out_root=None, command="
             log_real(row)
         print(("  " + note) if ok else f"  NOT LOGGED: {note}")
     return r, row, logged
+
+
+_INSTRUMENTS = {"OHRC": "ohrc", "NAC": "nac", "Terrain Camera": "tc", "Multiband Imager": "mi"}
+
+
+def _short(instrument: str) -> str:
+    """"LRO LROC NAC" -> "nac". Until 18 Sep every non-OHRC source was logged as
+    "nac-nac", which put the Kaguya TC -> MI rows under a same-sensor heading."""
+    return next((v for k, v in _INSTRUMENTS.items() if k in (instrument or "")), "other")
 
 
 def main(argv=None):

@@ -15,6 +15,7 @@ from __future__ import annotations
 import csv
 import datetime as _dt
 import pathlib
+import re
 import statistics as st
 import sys
 from collections import Counter, defaultdict
@@ -55,6 +56,24 @@ def _latest(rows, key="pair_id"):
 def _git():
     from core.export import _commit
     return _commit(("core", "evaluation", "ops"))
+
+
+def _kind(r):
+    """The pair's instruments from its product ids. The logged `kind` column said
+    "nac-nac" for the Kaguya TC -> MI rows (fixed in run_real_pairs on 18 Sep; the log
+    is append-only, so the report derives it)."""
+    def one(pid):
+        pid = pid or ""
+        if pid.startswith("ch2_ohr"):
+            return "ohrc"
+        if pid.startswith("TCO_"):
+            return "tc"
+        if pid.startswith("MI_MAP"):
+            return "mi"
+        return "nac" if re.match(r"^M\d+[LR]E$", pid) else "other"
+    if r["pair_id"].startswith("loop_"):
+        return r["kind"]
+    return f"{one(r['source_product'])}-{one(r['reference_product'])}"
 
 
 def section_pairs(title, rows, note):
@@ -100,20 +119,20 @@ def main(argv=None):
               f"`ch2_ohr_ncp_20200229T0739312111_d_img_d18` was already on disk (archive.org mirror).", ""]
 
     # --- cross-sensor, same ground -----------------------------------------------------
-    ohrc_nac = sorted([r for r in reg if r["kind"] == "ohrc-nac" and not r.get("outcome")],
+    ohrc_nac = sorted([r for r in reg if _kind(r) == "ohrc-nac" and not r.get("outcome")],
                       key=lambda r: r["pair_id"])
     L += section_pairs("Chandrayaan-2 OHRC → LRO NAC (cross-sensor, cross-mission)", ohrc_nac,
                        "Windows cut at 0.25 m (OHRC) and the NAC's native ~0.9-1.25 m over the same "
                        "ground on a south-polar-stereographic grid (`ops/cut_site_pairs.py`). "
                        "Archive offset = how far the registration moved the source from where the two "
                        "archives' (corrected) geometry put it - a property of the archives.")
-    nac_nac = sorted([r for r in reg if r["kind"] == "nac-nac" and not r.get("outcome")], key=lambda r: r["pair_id"])
+    nac_nac = sorted([r for r in reg if _kind(r) == "nac-nac" and not r.get("outcome")], key=lambda r: r["pair_id"])
     if nac_nac:
         L += section_pairs("LRO NAC → LRO NAC (same sensor; loop legs)", nac_nac, "Same sensor - NOT cross-sensor.")
-    other = sorted([r for r in reg if r["kind"] not in ("ohrc-nac", "nac-nac")], key=lambda r: r["pair_id"])
-    mm = [r for r in reg if "multi-modal" in r["tier"] or "tc-mi" in r["tier"]]
+    other = sorted([r for r in reg if _kind(r) not in ("ohrc-nac", "nac-nac")], key=lambda r: r["pair_id"])
+    mm = [r for r in reg if _kind(r) == "tc-mi"]
     if mm:
-        L += section_pairs("Kaguya TC → Kaguya MI (visible and 1548 nm infrared)",
+        L += section_pairs("Kaguya TC → Kaguya MI (cross-sensor; 749 nm visible and 1548 nm infrared)",
                            sorted(mm, key=lambda r: r["pair_id"]),
                            "Tier C rows are multi-modal (visible vs near-infrared). On them the declared "
                            "method is the global-correlation fallback; compare its archive offset with the "
@@ -137,21 +156,29 @@ def main(argv=None):
     # --- sun sweep --------------------------------------------------------------------------
     sweep = [r for r in reg if (r.get("outcome") or "").strip()]
     if sweep:
+        from ops.sun_sweep import outcomes_v2
+        v2 = outcomes_v2(sweep, _rows(LOG))
+        moved = Counter((r["outcome"], v2[r["pair_id"]]) for r in sweep
+                        if r["pair_id"] in v2 and v2[r["pair_id"]] != r["outcome"])
         bins = [(0, 10), (10, 30), (30, 60), (60, 90), (90, 120), (120, 181)]
         L += ["## Real sun-angle sweep (one OHRC frame vs LRO NAC frames)", "",
-              "Outcome by image evidence (`ops/sun_sweep.py` docstring: the matcher's warp must "
-              "correlate with the reference at NCC ≥ 0.30 and better than the archive alignment). "
+              "Outcome by image evidence, rule v2 (`ops/sun_sweep.py` docstring): the matcher is "
+              "right when |NCC| of its warp against the reference is ≥ 0.30 and at least the archive "
+              "alignment's |NCC| − 0.05; when neither reaches 0.30 the image cannot judge "
+              "(inconclusive). |NCC| because opposite suns anti-correlate a correct alignment. "
+              f"Derived from the logged NCCs; v2 moved {sum(moved.values())} of {len(sweep)} logged "
+              "v1 labels (" + ", ".join(f"{a} → {b} {n}" for (a, b), n in sorted(moved.items())) + "). "
               "This sweep is NOT the trust layer's detection evidence - see the next section.", "",
-              "| Δsun az (deg) | windows | NAC frames | registered & verified | failed & caught | failed, not caught | correct but flagged | median inliers |",
-              "|---|---|---|---|---|---|---|---|"]
+              "| Δsun az (deg) | windows | NAC frames | registered & accepted | failed & caught | failed, not caught | correct but refused | inconclusive | median inliers |",
+              "|---|---|---|---|---|---|---|---|---|"]
         for lo, hi in bins:
             b = [r for r in sweep if lo <= float(r["d_sun_azimuth_deg"]) < hi]
             if not b:
                 continue
-            c = Counter(r["outcome"] for r in b)
+            c = Counter(v2.get(r["pair_id"], r["outcome"]) for r in b)
             L.append(f"| {lo}-{hi if hi < 181 else 180} | {len(b)} | {len({r['reference_product'] for r in b})} | "
                      f"{c['correct_accepted']} | {c['caught_failure']} | {c['missed_failure']} | "
-                     f"{c['false_alarm']} | {int(st.median([float(r['inliers'] or 0) for r in b]))} |")
+                     f"{c['false_alarm']} | {c['inconclusive']} | {int(st.median([float(r['inliers'] or 0) for r in b]))} |")
         L.append("")
 
     # --- trust calibration ------------------------------------------------------------------
@@ -177,11 +204,21 @@ def main(argv=None):
     log = _rows(LOG)
     vp = [r for r in log if r.get("tier") == "synthetic viewpoint"]
     if vp:
+        import re as _re
+        groups = defaultdict(list)
+        for r in vp:
+            m = _re.search(r"_t(\d+)a(\d+)(p?)$", r["pair_id"])
+            if m and r.get("rmse_gt_px"):
+                groups[(int(m[1]), int(m[2]), bool(m[3]))].append(float(r["rmse_gt_px"]))
         L += ["## Viewpoint (synthetic, exact truth)", "",
-              "| pair | rmse_gt_px | inliers | ratio | coverage |", "|---|---|---|---|---|"]
-        for r in vp[-40:]:
-            L.append(f"| `{r['pair_id']}` | {_f(r['rmse_gt_px'])} | {r['inlier_count']} | "
-                     f"{_f(r['inlier_ratio'])} | {_f(r['grid_coverage_fraction'], 2)} |")
+              "Off-nadir tilt applied to one image of a rendered pair (sun 15° apart), latest rows. "
+              "With relief parallax ON the truth is a field and rmse_gt_px is measured against the "
+              "plane homography, so it measures how far relief is from a homography, not a "
+              "registration error.", "",
+              "| tilt (deg) | parallax | runs | median rmse_gt_px | max |", "|---|---|---|---|---|"]
+        for (t, az, par), v in sorted(groups.items(), key=lambda kv: (kv[0][2], kv[0][0])):
+            v = v[-3:]
+            L.append(f"| {t} | {'on' if par else 'off'} | {len(v)} | {st.median(v):.3f} | {max(v):.3f} |")
         L.append("")
 
     L += ["## Reproduce", "", "```",

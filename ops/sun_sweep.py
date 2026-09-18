@@ -13,9 +13,20 @@ was right (its warp correlates with the NAC at NCC 0.871, the archive alignment 
 0.389) and the archive correction was wrong there - that NAC's affine field fits only
 169 of 272 correlation boxes. The archive geometry cannot be ground truth.
 
-The rule now is image evidence, independent of the matches:
-  matcher_ok  <=>  NCC(source warped by the matcher's H, reference) >= 0.30
-                   and >= NCC(source aligned by the archive geometry, reference) + 0.05
+The rule is image evidence, independent of the matches. Version 2 (18 Sep 2026, evening):
+  |NCC| is used, not NCC.  Opposite suns flip the shading of every slope, so a CORRECT
+      alignment at a 130-150 deg azimuth gap is strongly ANTI-correlated: 7 windows there have
+      400-1,400 inliers and matcher-warp NCC -0.54 to -0.67. v1 read that as failure.
+  inconclusive  <=>  |NCC_matcher| < 0.30 and |NCC_archive| < 0.30. Near 90 deg the shading
+      is orthogonal and even a perfect alignment correlates near 0; the image cannot judge.
+  matcher_ok    <=>  |NCC_matcher| >= 0.30 and |NCC_matcher| >= |NCC_archive| - 0.05,
+      i.e. the matcher's warp is at least as well aligned as the corrected archive geometry.
+      v1 demanded it be BETTER by 0.05, which failed windows where the two agree to 3.5 m
+      (Known issue 1 in STATUS, `m187919735re_w01`: 0.42 vs 0.39).
+Re-applied to the 69 logged windows from their logged NCCs (no re-registration), v2 moves 27
+labels: 14 caught_failure -> inconclusive, 11 caught_failure -> false_alarm (the 131-153 deg
+windows), 1 missed_failure -> correct_accepted, 1 missed_failure -> inconclusive. The logged
+`outcome` column keeps v1 (the log is append-only); `outcomes_v2()` derives v2 for REPORT.md.
 It is computed on the overlap, on plain intensity. It is related to - but not the same
 as - the trust layer's own per-cell area check, so this sweep is NOT the evidence for
 the trust layer's detection rate. That evidence is `ops/trust_real_calibration.py`,
@@ -25,6 +36,7 @@ which plants known-wrong transforms on real windows.
   caught_failure       not matcher_ok, and the system contradicted or fell back
   missed_failure       not matcher_ok, and the system accepted it
   false_alarm          matcher_ok, but contradicted / fallback declared
+  inconclusive         neither alignment correlates; the image cannot judge (v2)
   no_transform         the matcher produced nothing
 
 No row is ever dropped; a window with a failure is a result.
@@ -34,6 +46,7 @@ from __future__ import annotations
 import argparse
 import json
 import pathlib
+import re
 import sys
 
 import numpy as np
@@ -58,13 +71,38 @@ def warp_ncc(src, ref, H):
 
 
 def classify(ncc_matcher, ncc_prior, declared, verdict, has_H):
+    """Rule v2 - see the module docstring."""
     if not has_H:
         return "no_transform"
-    ok = ncc_matcher is not None and ncc_matcher >= NCC_MIN and         (ncc_prior is None or ncc_matcher >= ncc_prior + NCC_MARGIN or ncc_matcher >= 0.8)
+    am = abs(ncc_matcher) if ncc_matcher is not None else None
+    ap = abs(ncc_prior) if ncc_prior is not None else None
+    if (am is None or am < NCC_MIN) and (ap is None or ap < NCC_MIN):
+        return "inconclusive"
+    ok = am is not None and am >= NCC_MIN and (ap is None or am >= ap - NCC_MARGIN)
     rejected = declared != "loftr+magsac++" or verdict == "contradicted"
     if not ok:
         return "caught_failure" if rejected else "missed_failure"
     return "false_alarm" if rejected else "correct_accepted"
+
+
+_NCC = re.compile(r"NCC matcher-warp (-?[\d.]+|None) vs archive-aligned (-?[\d.]+|None)")
+
+
+def outcomes_v2(real_rows, results_rows) -> dict:
+    """{pair_id: v2 outcome} for logged sweep rows, from the NCCs in their results_log notes.
+    The logged `outcome` column is v1 and stays as written."""
+    nccs = {}
+    for r in results_rows:
+        m = _NCC.search(r.get("notes") or "")
+        if m:
+            nccs[r["pair_id"]] = tuple(None if v == "None" else float(v) for v in m.groups())
+    out = {}
+    for r in real_rows:
+        if not (r.get("outcome") or "").strip() or r["pair_id"] not in nccs:
+            continue
+        has_H = r["outcome"] != "no_transform"
+        out[r["pair_id"]] = classify(*nccs[r["pair_id"]], r["method_declared"], r["verdict"], has_H)
+    return out
 
 
 def main(argv=None):
@@ -133,7 +171,7 @@ def main(argv=None):
                                           f"NCC matcher-warp {n_m if n_m is None else round(n_m, 3)} vs "
                                           f"archive-aligned {n_p if n_p is None else round(n_p, 3)}; "
                                           f"declared {r['declared']['method']}; outcome {outcome} "
-                                          f"(image-evidence rule, see ops/sun_sweep.py)")
+                                          f"(image-evidence rule v2, see ops/sun_sweep.py)")
                 if ok:
                     row["notes"] = "results_log row: same pair_id, same run"
                     log_real(row)

@@ -1,6 +1,6 @@
 # SIH26166 - evaluation report
 
-Generated 2026-09-18T18:18 from commit `dc76e12-dirty` by `python -m ops.make_report`. **Do not edit by hand** - every number below is read from the evidence files named in each section.
+Generated 2026-09-18T19:32 from commit `c9fb875-dirty` by `python -m ops.make_report`. **Do not edit by hand** - every number below is read from the evidence files named in each section.
 
 All pixel figures are on the REFERENCE image's grid, with its metres stated. Real pairs have no exact ground truth: accuracy on them is reported as held-out residuals (the 20 % of matches the fit never saw) and as loop closure. `residual_px` in results_log.csv is the RMSE over ALL held-out matches including outliers and is not quoted for real pairs.
 
@@ -47,14 +47,8 @@ Same sensor - NOT cross-sensor.
 | `site_m1153871873le_m1363141432re_w04_t` | -73.7809, 43.7427 | 9.1 | 1.337 | 3066 | 3051 | 0.995 | 1.00 | 0.372 (0.463) | 0.533 | 64 / 0 | agrees | loftr+magsac++ | 3.6 |
 | `site_m1153871873le_m1363141432re_w05_t` | -73.6426, 43.8521 | 9.1 | 1.337 | 2340 | 2262 | 0.967 | 1.00 | 0.322 (0.401) | 0.492 | 63 / 0 | agrees | loftr+magsac++ | 8.4 |
 | `site_m1153871873le_m1363141432re_w06_t` | -73.7190, 43.8467 | 9.1 | 1.337 | 2709 | 2677 | 0.988 | 1.00 | 0.297 (0.369) | 0.509 | 64 / 0 | agrees | loftr+magsac++ | 5.6 |
-| `site_tc_morning_mi1548_w01` | -74.1077, 43.5487 | n/a | 2.0 | 35 | 6 | 0.171 | 0.08 | 57.068 (844.610) | n/a | 0 / 59 | contradicted | fft_phase_correlation (fallback) | 37.8 |
-| `site_tc_morning_mi1548_w02` | -74.2982, 43.7217 | n/a | 2.0 | 33 | 5 | 0.152 | 0.08 | 62.375 (923.153) | n/a | 0 / 59 | contradicted | fft_phase_correlation (fallback) | 37.8 |
-| `site_tc_morning_mi1548_w03` | -74.2100, 43.4127 | n/a | 2.0 | 34 | 5 | 0.147 | 0.08 | 74.582 (1103.817) | n/a | 0 / 59 | contradicted | fft_phase_correlation (fallback) | 37.8 |
-| `site_tc_morning_mi749_w01` | -74.1077, 43.5487 | n/a | 2.0 | 334 | 313 | 0.937 | 0.97 | 0.468 (6.926) | 0.692 | 45 / 2 | agrees | loftr+magsac++ | 41.0 |
-| `site_tc_morning_mi749_w02` | -74.2982, 43.7217 | n/a | 2.0 | 436 | 429 | 0.984 | 0.95 | 0.387 (5.720) | 0.562 | 56 / 3 | agrees | loftr+magsac++ | 46.4 |
-| `site_tc_morning_mi749_w03` | -74.2100, 43.4127 | n/a | 2.0 | 416 | 413 | 0.993 | 1.00 | 0.234 (3.464) | 0.445 | 55 / 0 | agrees | loftr+magsac++ | 38.9 |
 
-## Kaguya TC → Kaguya MI (visible and 1548 nm infrared)
+## Kaguya TC → Kaguya MI (cross-sensor; 749 nm visible and 1548 nm infrared)
 
 Tier C rows are multi-modal (visible vs near-infrared). On them the declared method is the global-correlation fallback; compare its archive offset with the visible-band rows on the same windows.
 
@@ -82,11 +76,50 @@ Tier C rows are multi-modal (visible vs near-infrared). On them the declared met
 
 ## Real sun-angle sweep (one OHRC frame vs LRO NAC frames)
 
-Outcome by image evidence (`ops/sun_sweep.py` docstring: the matcher's warp must correlate with the reference at NCC ≥ 0.30 and better than the archive alignment). This sweep is NOT the trust layer's detection evidence - see the next section.
+Outcome by image evidence, rule v2 (`ops/sun_sweep.py` docstring): the matcher is right when |NCC| of its warp against the reference is ≥ 0.30 and at least the archive alignment's |NCC| − 0.05; when neither reaches 0.30 the image cannot judge (inconclusive). |NCC| because opposite suns anti-correlate a correct alignment. Derived from the logged NCCs; v2 moved 27 of 69 logged v1 labels (caught_failure → false_alarm 11, caught_failure → inconclusive 14, missed_failure → correct_accepted 1, missed_failure → inconclusive 1). This sweep is NOT the trust layer's detection evidence - see the next section.
 
-| Δsun az (deg) | windows | NAC frames | registered & verified | failed & caught | failed, not caught | correct but flagged | median inliers |
-|---|---|---|---|---|---|---|---|
-| 0-10 | 9 | 3 | 9 | 0 | 0 | 0 | 4998 |
+| Δsun az (deg) | windows | NAC frames | registered & accepted | failed & caught | failed, not caught | correct but refused | inconclusive | median inliers |
+|---|---|---|---|---|---|---|---|---|
+| 0-10 | 16 | 6 | 16 | 0 | 0 | 0 | 0 | 4818 |
+| 10-30 | 14 | 5 | 14 | 0 | 0 | 0 | 0 | 4247 |
+| 30-60 | 12 | 4 | 11 | 0 | 0 | 0 | 1 | 559 |
+| 60-90 | 7 | 3 | 0 | 1 | 0 | 1 | 5 | 58 |
+| 90-120 | 5 | 2 | 0 | 0 | 0 | 1 | 4 | 8 |
+| 120-180 | 15 | 5 | 0 | 0 | 0 | 10 | 5 | 209 |
+
+## Trust layer on real imagery: planted confident-but-wrong registrations
+
+`ops/trust_real_calibration.py`: 23 real windows whose registration is independently good; the true transform shifted by d metres and a match set that agrees with the WRONG transform perfectly. d = 0 is the false-alarm rate.
+
+| planted error (m) | ~px on the reference grid | trials | flagged as wrong | mean verified cells /64 |
+|---|---|---|---|---|
+| 0 | 0.00 | 46 | 0.0% | 62.0 |
+| 1 | 0.80 | 184 | 0.0% | 60.5 |
+| 2 | 1.61 | 184 | 0.0% | 43.7 |
+| 3 | 2.41 | 184 | 81.5% | 8.1 |
+| 5 | 4.02 | 184 | 100.0% | 0.0 |
+| 10 | 8.03 | 184 | 100.0% | 0.0 |
+| 20 | 16.06 | 184 | 100.0% | 0.0 |
+| 50 | 40.16 | 184 | 100.0% | 0.0 |
+| 100 | 80.32 | 184 | 100.0% | 0.0 |
+| 200 | 160.64 | 184 | 100.0% | 0.0 |
+
+## Viewpoint (synthetic, exact truth)
+
+Off-nadir tilt applied to one image of a rendered pair (sun 15° apart), latest rows. With relief parallax ON the truth is a field and rmse_gt_px is measured against the plane homography, so it measures how far relief is from a homography, not a registration error.
+
+| tilt (deg) | parallax | runs | median rmse_gt_px | max |
+|---|---|---|---|---|
+| 10 | off | 3 | 0.110 | 0.111 |
+| 20 | off | 3 | 0.137 | 0.202 |
+| 30 | off | 3 | 0.143 | 0.224 |
+| 40 | off | 3 | 0.260 | 0.284 |
+| 50 | off | 3 | 0.607 | 0.750 |
+| 10 | on | 3 | 2.272 | 2.335 |
+| 20 | on | 3 | 5.004 | 5.115 |
+| 30 | on | 3 | 8.411 | 8.658 |
+| 40 | on | 3 | 13.327 | 13.694 |
+| 50 | on | 3 | 16.063 | 22.174 |
 
 ## Reproduce
 
@@ -100,4 +133,4 @@ python -m ops.trust_real_calibration "site_ohrc_m1153871873le_w*_t" ... --log
 python -m ops.make_report
 ```
 
-Rows in real_pairs_log.csv: 47 (47 distinct pairs/loops; where a pair was re-run, the latest row is shown). Rows in results_log.csv: 317.
+Rows in real_pairs_log.csv: 107 (107 distinct pairs/loops; where a pair was re-run, the latest row is shown). Rows in results_log.csv: 423.
