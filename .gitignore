@@ -61,3 +61,6 @@ data/lroc_analysis/M124545845LE_enhanced.png
 *.npy
 
 nac_catalogue.csv
+
+# pipeline --out deliverables (real-pair products are large; keep them out of git)
+out/

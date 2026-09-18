@@ -387,6 +387,9 @@ def run_all(src_path, ref_path, H_true=None, progress=None, subpixel=True) -> di
         "H": H, "warped": warped,
         "src_inliers": src_in, "ref_inliers": ref_in,
         "src_matches": src_full, "ref_matches": ref_full,
+        # LoFTR's per-match confidence, aligned row-for-row with src_matches
+        # (sub-pixel refinement keeps every row). Read by core/export.py.
+        "match_scores": np.asarray(scores, np.float32) if scores is not None else None,
         "metrics": metrics, "metrics_note": metrics_note,
         "distribution": dist_info, "distribution_note": dist_note,
         "reliability": rel, "reliability_note": rel_note,
@@ -585,7 +588,8 @@ def _log_preflight():
     )
 
 
-def _log_row(pair_id, tier, method, metrics, config=None, gsd_mpp=None, notes=""):
+def _log_row(pair_id, tier, method, metrics, config=None, gsd_mpp=None, notes="",
+             allow_failed=False):
     """Append one row to results_log.csv, then read it back and prove it parsed.
 
     Invariant 1: no figure may enter a slide, demo script, Q&A answer or README
@@ -603,7 +607,7 @@ def _log_row(pair_id, tier, method, metrics, config=None, gsd_mpp=None, notes=""
         before = sum(1 for _ in csv.DictReader(f))
 
     log_result(pair_id, tier, method, metrics, config=config,
-               gsd_mpp=gsd_mpp, notes=notes)
+               gsd_mpp=gsd_mpp, notes=notes, allow_failed=allow_failed)
 
     with open(RESULTS_LOG, newline="", encoding="utf-8") as f:
         after = sum(1 for _ in csv.DictReader(f))
@@ -730,6 +734,12 @@ def _build_parser() -> argparse.ArgumentParser:
                    help="method name for the logged row; default `ours_loftr+subpixel`, or "
                         "`ours_loftr` with --no-subpixel")
     p.add_argument("--notes", default="", help="free text for the logged row")
+    p.add_argument("--out", help="write the deliverables (registered product GeoTIFF, "
+                                 "match points, GCPs, trust map, report) to OUT/<pair_id>/")
+    p.add_argument("--allow-failed", action="store_true",
+                   help="log a failed registration too (status too_few_matches or "
+                        "ransac_failed), for rungs that are EXPECTED to fail and must be "
+                        "declared, e.g. a 261x scale ratio")
     return p
 
 
@@ -744,6 +754,10 @@ def _run_one(src, ref, H_true, args, pair_id, tier, config, gsd_mpp):
     """
     r = run_all(src, ref, H_true=H_true, progress=_progress, subpixel=args.subpixel)
     _print_report(r)
+    if getattr(args, "out", None):
+        from core.export import export_bundle
+        files = export_bundle(r, pathlib.Path(args.out) / pair_id, pair_id, src, ref)
+        print(f"  deliverables  {len(files)} files -> {pathlib.Path(args.out) / pair_id}")
 
     logged = True
     if args.log:
@@ -751,7 +765,7 @@ def _run_one(src, ref, H_true, args, pair_id, tier, config, gsd_mpp):
         if m is None:
             print(f"  NOT LOGGED - {r['metrics_note']}")
             logged = False
-        elif m.get("status") != "ok":
+        elif m.get("status") != "ok" and not getattr(args, "allow_failed", False):
             # `evaluate()` returns a full-shaped dict on failure too, with
             # rmse_gt_px and residual_px as None and status 'too_few_matches' or
             # 'ransac_failed'. `log_result` does not check status - its only guard
@@ -788,7 +802,8 @@ def _run_one(src, ref, H_true, args, pair_id, tier, config, gsd_mpp):
             logged, note = _log_row(pair_id, tier, args.method, r["metrics"],
                                     config=(config or "") + rel_cfg,
                                     gsd_mpp=gsd_mpp if gsd_mpp is not None else r["gsd_mpp"],
-                                    notes=(args.notes or "") + rel_notes)
+                                    notes=(args.notes or "") + rel_notes,
+                                    allow_failed=getattr(args, "allow_failed", False))
             print(("  " + note) if logged else f"\n{note}\n")
             fb = r.get("fallback")
             if logged and fb and fb.get("used"):
