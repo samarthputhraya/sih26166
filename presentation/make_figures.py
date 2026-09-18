@@ -126,6 +126,13 @@ def _rows(path):
 
 
 def _delta(r):
+    """The sun-azimuth difference of a NADIR synthetic row, else None.
+
+    Viewpoint rows (18 Sep) carry the same `d_azimuth=15deg` in their config; letting them
+    in moved the 15-degree median from 0.086 to 0.272 px, because tilted and relief-parallax
+    rows measure something else. They are excluded here, by tier and by config."""
+    if r.get("tier") == "synthetic viewpoint" or "VIEWPOINT" in (r.get("config") or ""):
+        return None
     m = re.search(r"d_azimuth=(-?[\d.]+)deg", r.get("config") or "")
     return float(m.group(1)) if m else None
 
@@ -625,6 +632,7 @@ OUTCOME_STYLE = {   # colour AND marker, so identity is never colour-alone
     "false_alarm": (MUTED, "D", "correct, but flagged"),
     "missed_failure": (ORANGE, "X", "failed, NOT caught"),
     "no_transform": (MUTED, "v", "no transform"),
+    "inconclusive": (INK, "P", "image cannot judge"),
 }
 
 
@@ -640,6 +648,12 @@ def fig_real_sun_sweep():
     for r in rows:
         latest[r["pair_id"]] = r
     rows = list(latest.values())
+    # Rule v2 (|NCC|, inconclusive when neither alignment correlates), derived from the
+    # NCCs logged in results_log; the logged `outcome` column is v1 and stays as written.
+    from ops.sun_sweep import outcomes_v2
+    v2 = outcomes_v2(rows, _rows(LOG))
+    for r in rows:
+        r["outcome"] = v2.get(r["pair_id"], r["outcome"])
     fig, ax = plt.subplots(figsize=(7.6, 4.4))
     ax.set_yscale("symlog", linthresh=10)
     ax.grid(True, which="major", color=GRID, linewidth=0.8, zorder=0)
@@ -657,14 +671,14 @@ def fig_real_sun_sweep():
                    label=f"{label} ({len(pts)})")
     ax.set_xlabel("sun-azimuth difference, OHRC vs NAC  (degrees)", fontsize=14)
     ax.set_ylabel("inlier matches per window", fontsize=14)
-    ax.set_title("Real Chandrayaan-2 OHRC vs LRO NAC, one site, 3-153° apart",
+    ax.set_title("Real OHRC vs LRO NAC: one site, sun 3-153° apart",
                  loc="left", fontweight="bold", fontsize=15, pad=10)
     ax.set_xlim(-5, 165)
     ax.set_ylim(0, 20000)
-    ax.legend(loc="upper right", fontsize=11, frameon=False)
+    ax.legend(loc="lower left", fontsize=11, frameon=False)
     n_nac = len({r["reference_product"] for r in rows})
-    fig.text(0.014, 0.006, f"{len(rows)} windows over {n_nac} NAC frames · outcome by image "
-             f"evidence, ops/sun_sweep.py · evaluation/real_pairs_log.csv", fontsize=10, color=MUTED)
+    fig.text(0.014, 0.006, f"{len(rows)} windows, {n_nac} NAC frames · outcome by image "
+             f"evidence, rule v2 (ops/sun_sweep.py)", fontsize=10, color=MUTED)
     fig.tight_layout(rect=(0, 0.045, 1, 1))
     out = OUT / "fig5_real_sun_sweep.png"
     _audit(fig, out.name)
@@ -695,12 +709,11 @@ def fig_trust_real():
     ax.set_ylim(0, 112)
     ax.set_xlabel("planted error  (metres; reference grid ~%.2f m/px)" % gsd, fontsize=14)
     ax.set_ylabel("flagged as wrong  (%)", fontsize=14)
-    ax.set_title("Confident but wrong: does the independent check catch it?",
+    ax.set_title("Planted wrong answers: how many are flagged?",
                  loc="left", fontweight="bold", fontsize=15, pad=10)
     n_win = len({r["pair_id"] for r in rows})
-    fig.text(0.014, 0.006, f"{n_win} real OHRC/NAC windows · every planted match agrees with the "
-             f"wrong answer · 0 m = false-alarm rate · evaluation/trust_real_calibration.csv",
-             fontsize=9.5, color=MUTED)
+    fig.text(0.014, 0.006, f"{n_win} real OHRC/NAC windows · all planted matches agree with the "
+             f"wrong answer · 0 m = false-alarm rate", fontsize=9.5, color=MUTED)
     fig.tight_layout(rect=(0, 0.045, 1, 1))
     out = OUT / "fig6_trust_real_calibration.png"
     _audit(fig, out.name)
