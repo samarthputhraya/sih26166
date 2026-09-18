@@ -230,86 +230,153 @@ def _sha(p):
     return h.hexdigest()
 
 
-def cut(nac_pid, n_windows=6, window_px=640, ohrc_gsd=0.25, coarse_only=False, force_prior=None):
-    from core import geometry as G
-    ohrc, o_read, o_meta = _ohrc()
-    nac, n_read, n_info = _nac(nac_pid)
-    cache = DATA / "overviews"
-    a, va, b, vb, gt = overviews(ohrc, o_read, nac, n_read, cache)
-    prior = coarse_prior(a, va, b, vb, gt)
-    _say_prior("archive geometry", prior)
-    if force_prior is not None:
-        prior["apply"] = bool(force_prior) and prior.get("model") is not None
-    if prior["apply"]:
-        # OHRC content sits at (x+dx, y+dy) relative to the NAC prior on the 4 m grid, so
-        # the NAC map coordinates move by that displacement to line up with the OHRC grid.
-        nac = nac.corrected(prior["model"], "(4 m correlation field vs the OHRC grid)")
-        a, va, b, vb, gt = overviews(ohrc, o_read, nac, n_read, cache)
-        check = coarse_prior(a, va, b, vb, gt)
-        _say_prior("after correction", check)
-        prior["after_correction"] = {k: v for k, v in check.items() if k != "boxes"}
-    if coarse_only:
-        return prior
+GEOM_DIR = DATA / "site_geometry"
 
-    nac_gsd = float(np.mean(nac.gsd()))
-    nac_gsd = round(nac_gsd, 3)
-    window_m = window_px * nac_gsd
-    wins = pick_windows(a, va, b, vb, gt, window_m, n_windows)
-    if not wins:
+
+def nac_frame_corrected(nac_pid, refit=False, verbose=True):
+    """The NAC's frame with its correction field vs the OHRC grid - computed ONCE and
+    saved, so every pair that uses this NAC shares one georeference (loop closure is
+    only meaningful if each image has exactly one)."""
+    ohrc, o_read, _ = _ohrc()
+    nac, n_read, n_info = _nac(nac_pid)
+    GEOM_DIR.mkdir(parents=True, exist_ok=True)
+    gp = GEOM_DIR / f"{nac_pid}.json"
+    if gp.exists() and not refit:
+        prior = json.loads(gp.read_text(encoding="utf-8"))
+    else:
+        cache = DATA / "overviews"
+        a, va, b, vb, gt = overviews(ohrc, o_read, nac, n_read, cache)
+        prior = coarse_prior(a, va, b, vb, gt)
+        if verbose:
+            _say_prior(f"{nac_pid} archive geometry", prior)
+        if prior["apply"]:
+            nac_c = nac.corrected(prior["model"], "(4 m correlation field vs the OHRC grid)")
+            a, va, b, vb, gt = overviews(ohrc, o_read, nac_c, n_read, cache)
+            check = coarse_prior(a, va, b, vb, gt)
+            if verbose:
+                _say_prior(f"{nac_pid} after correction", check)
+            prior["after_correction"] = {k: v for k, v in check.items() if k != "boxes"}
+        prior["nac_pid"] = nac_pid
+        gp.write_text(json.dumps(prior, indent=1), encoding="utf-8")
+    if prior.get("apply"):
+        nac = nac.corrected(prior["model"], "(4 m correlation field vs the OHRC grid)")
+    return nac, n_read, n_info, prior
+
+
+def _frame(kind_or_pid):
+    """('ohrc' | NAC pid) -> (frame, reader, info, gsd_to_write, label)."""
+    if kind_or_pid.lower() == "ohrc":
+        f, rd, meta = _ohrc()
+        info = {"instrument": "Chandrayaan-2 OHRC", "product_id": OHRC_ID + "_d_img_d18",
+                "path": str(OHRC_XML), "native_gsd_mpp": meta.get("gsd_mpp"),
+                "geometry": f.source, "sun": OHRC_SUN}
+        return f, rd, info, None, "ohrc"
+    f, rd, info, prior = nac_frame_corrected(kind_or_pid)
+    info = {"instrument": "LRO LROC NAC", **info, "geometry": f.source,
+            "coarse_prior": {k: v for k, v in prior.items() if k != "boxes"}}
+    return f, rd, info, round(float(np.mean(f.gsd())), 3), kind_or_pid.lower()
+
+
+def _inside(frame, cx, cy, half_m, n=9):
+    """True when a square window lies entirely inside the frame's image."""
+    g = np.linspace(-half_m, half_m, n)
+    X, Y = np.meshgrid(cx + g, cy + g)
+    x, y = frame.from_map(X, Y)
+    rows, cols = frame.shape
+    return bool(np.all(np.isfinite(x)) and x.min() >= 0 and y.min() >= 0
+                and x.max() <= cols - 1 and y.max() <= rows - 1)
+
+
+def cut(nac_pid, n_windows=6, window_px=640, ohrc_gsd=0.25, coarse_only=False,
+        force_prior=None, src="ohrc", centres=None, tag=None, require_inside=(), window_m=None):
+    """Cut `src` (ohrc or a NAC pid) against the reference NAC `nac_pid`.
+
+    centres: reuse these window centres [(cx, cy), ...] in map metres instead of picking
+    new ones - how the three legs of a loop are cut over the same ground.
+    """
+    from core import geometry as G
+    ref_f, ref_read, ref_info, ref_gsd, ref_label = _frame(nac_pid)
+    if coarse_only:
+        return json.loads((GEOM_DIR / f"{nac_pid}.json").read_text(encoding="utf-8"))
+    src_f, src_read, src_info, src_gsd, src_label = _frame(src)
+    src_gsd = ohrc_gsd if src_label == "ohrc" else src_gsd
+    window_m = window_m or window_px * ref_gsd
+    if centres is None:
+        if src_label != "ohrc":
+            raise SystemExit("new windows are picked on OHRC-lit ground; pass --centres-from for NAC-NAC")
+        ohrc, o_read, _ = _ohrc()
+        a, va, b, vb, gt = overviews(ohrc, o_read, ref_f, ref_read, DATA / "overviews")
+        others = [nac_frame_corrected(pid, verbose=False)[0] for pid in require_inside]
+        wins = pick_windows(a, va, b, vb, gt, window_m, n_windows * 8 if others else n_windows)
+        if others:
+            wins = [w for w in wins
+                    if all(_inside(f, w["cx"], w["cy"], window_m * 0.75) for f in others)][:n_windows]
+            print(f"  {len(wins)} windows also lie inside {', '.join(require_inside)}")
+        centres = [(w["cx"], w["cy"], w["lit"]) for w in wins]
+    else:
+        centres = [(c[0], c[1], None) for c in centres]
+    if not centres:
         raise SystemExit("no lit window fits inside the shared footprint")
+    same_sensor = src_label != "ohrc"
+    s_sun = src_info.get("sun") or {"incidence_deg": src_info.get("incidence_deg_at_site"),
+                                    "azimuth_deg_from_north": src_info.get("sun_azimuth_deg_from_north")}
+    r_sun_az, r_inc = ref_info["sun_azimuth_deg_from_north"], ref_info["incidence_deg_at_site"]
+    d_az = round(abs((r_sun_az - s_sun["azimuth_deg_from_north"] + 180) % 360 - 180), 1)
+    d_inc = round(r_inc - s_sun["incidence_deg"], 2)
     out_dirs = []
-    for k, w in enumerate(wins, 1):
-        pair_id = f"site_ohrc_{nac_pid.lower()}_w{k:02d}"
+    for k, (cx, cy, lit) in enumerate(centres, 1):
+        pair_id = f"site_{src_label}_{ref_label}_w{k:02d}" + (f"_{tag}" if tag else "")
         d = PAIRS / pair_id
         d.mkdir(parents=True, exist_ok=True)
-        x0, y1 = w["cx"] - window_m / 2, w["cy"] + window_m / 2
-        tr_n, sh_n = G.map_grid(x0, y1, window_m, window_m, nac_gsd)
-        n_img, n_ok = G.project(nac, n_read, tr_n, sh_n, coarse=16, order="cubic")
-        o_px = int(round(window_m / ohrc_gsd))
-        tr_o, sh_o = G.map_grid(x0, y1, o_px * ohrc_gsd, o_px * ohrc_gsd, ohrc_gsd)
-        o_img, o_ok = G.project(ohrc, o_read, tr_o, sh_o, coarse=32, order="cubic")
-        if n_ok.mean() < 0.998 or o_ok.mean() < 0.998:
-            print(f"  {pair_id}: window not covered (NAC {n_ok.mean():.4f}, "
-                  f"OHRC {o_ok.mean():.4f}) - skipped")
+        x0, y1 = cx - window_m / 2, cy + window_m / 2
+        tr_r, sh_r = G.map_grid(x0, y1, window_m, window_m, ref_gsd)
+        r_img, r_ok = G.project(ref_f, ref_read, tr_r, sh_r, coarse=16, order="cubic")
+        s_px = int(round(window_m / src_gsd))
+        tr_s, sh_s = G.map_grid(x0, y1, s_px * src_gsd, s_px * src_gsd, src_gsd)
+        s_img, s_ok = G.project(src_f, src_read, tr_s, sh_s, coarse=32 if src_label == "ohrc" else 16,
+                                order="cubic")
+        if r_ok.mean() < 0.998 or s_ok.mean() < 0.998:
+            print(f"  {pair_id}: window not covered (ref {r_ok.mean():.4f}, "
+                  f"src {s_ok.mean():.4f}) - skipped")
             continue
-        n_img, n_fill = G.fill_invalid(n_img, n_ok)
-        o_img, o_fill = G.fill_invalid(o_img, o_ok)
+        r_img, r_fill = G.fill_invalid(r_img, r_ok)
+        s_img, s_fill = G.fill_invalid(s_img, s_ok)
         src_p = d / f"{pair_id}_source.tif"
         ref_p = d / f"{pair_id}_ref.tif"
-        G.write_geotiff(src_p, o_img.astype(np.float32), tr_o)
-        G.write_geotiff(ref_p, n_img.astype(np.float32), tr_n)
-        lat, lon = G.ps_south_inv(w["cx"], w["cy"])
+        G.write_geotiff(src_p, s_img.astype(np.float32), tr_s)
+        G.write_geotiff(ref_p, r_img.astype(np.float32), tr_r)
+        lat, lon = G.ps_south_inv(cx, cy)
+        tier = ("A (NAC-NAC real, same sensor)" if same_sensor else "B (OHRC-NAC real)")
+        term = ("same sensor (LROC NAC) - a sun-angle / geometry test, NOT cross-sensor"
+                if same_sensor else
+                "cross-sensor, cross-mission (Chandrayaan-2 OHRC vs LRO LROC NAC); both "
+                "panchromatic, so NOT multi-modal")
         meta = {
-            "pair_id": pair_id, "created_utc": _dt.datetime.now(_dt.timezone.utc).isoformat(timespec="seconds"),
-            "tier": "B (OHRC-NAC real)",
-            "terminology": "cross-sensor, cross-mission (Chandrayaan-2 OHRC vs LRO LROC NAC); both panchromatic, so NOT multi-modal",
-            "crs": G.PS_SOUTH_CRS, "window_centre_map_m": [w["cx"], w["cy"]],
-            "window_centre_latlon": [float(lat), float(lon)], "window_m": window_m,
-            "source": {"instrument": "Chandrayaan-2 OHRC", "product_id": OHRC_ID + "_d_img_d18",
-                       "path": str(OHRC_XML), "native_gsd_mpp": o_meta.get("gsd_mpp"),
-                       "resampled_gsd_mpp": ohrc_gsd, "shape": list(sh_o),
-                       "geometry": ohrc.source, "sun": OHRC_SUN, "lit_fraction_4m": w["lit"]},
-            "reference": {"instrument": "LRO LROC NAC", **n_info, "resampled_gsd_mpp": nac_gsd,
-                          "shape": list(sh_n), "geometry": nac.source},
-            "d_sun_azimuth_deg": round(abs((n_info["sun_azimuth_deg_from_north"]
-                                            - OHRC_SUN["azimuth_deg_from_north"] + 180) % 360 - 180), 1),
-            "d_incidence_deg": round(n_info["incidence_deg_at_site"] - OHRC_SUN["incidence_deg"], 2),
-            "scale_ratio": round(nac_gsd / ohrc_gsd, 3),
-            "coarse_prior": {k: v for k, v in prior.items() if k != "boxes"},
-            "prior_H_source_to_reference": [[ohrc_gsd / nac_gsd, 0, 0], [0, ohrc_gsd / nac_gsd, 0], [0, 0, 1]],
+            "pair_id": pair_id,
+            "created_utc": _dt.datetime.now(_dt.timezone.utc).isoformat(timespec="seconds"),
+            "tier": tier, "terminology": term, "crs": G.PS_SOUTH_CRS,
+            "window_centre_map_m": [cx, cy], "window_centre_latlon": [float(lat), float(lon)],
+            "window_m": window_m,
+            "source": {**src_info, "resampled_gsd_mpp": src_gsd, "shape": list(sh_s),
+                       "transform": list(tr_s), "lit_fraction_4m": lit},
+            "reference": {**ref_info, "resampled_gsd_mpp": ref_gsd, "shape": list(sh_r),
+                          "transform": list(tr_r)},
+            "d_sun_azimuth_deg": d_az, "d_incidence_deg": d_inc,
+            "scale_ratio": round(ref_gsd / src_gsd, 3),
+            "prior_H_source_to_reference": [[src_gsd / ref_gsd, 0, 0], [0, src_gsd / ref_gsd, 0],
+                                            [0, 0, 1]],
             "prior_note": "both files are on the same north-up map grid over the same ground, so the "
-                          "archive-geometry prior is a pure scale (source px * 0.25/NAC gsd); any "
-                          "rotation or offset the pipeline finds is disagreement between the archives",
-            "edge_pixels_filled": {"source": o_fill, "reference": n_fill},
-            "files": {p.name: _sha(p) for p in (src_p, ref_p)},
+                          "archive-geometry prior is a pure scale; any rotation or offset the pipeline "
+                          "finds is disagreement between the (corrected) archive georeferences",
+            "edge_pixels_filled": {"source": s_fill, "reference": r_fill},
+            "files": {q.name: _sha(q) for q in (src_p, ref_p)},
             "command": "python -m ops.cut_site_pairs " + " ".join(sys.argv[1:]),
         }
         (d / "geometry_prior.json").write_text(json.dumps(meta, indent=2), encoding="utf-8")
         (d / "PROVENANCE.md").write_text(_provenance(meta), encoding="utf-8")
         out_dirs.append(d)
-        print(f"  {pair_id}: centre ({lat:.4f}, {lon:.4f}); OHRC {sh_o} @ {ohrc_gsd} m, "
-              f"NAC {sh_n} @ {nac_gsd} m; d_az {meta['d_sun_azimuth_deg']} deg, "
-              f"d_inc {meta['d_incidence_deg']:+} deg")
+        print(f"  {pair_id}: centre ({lat:.4f}, {lon:.4f}); src {sh_s} @ {src_gsd} m, "
+              f"ref {sh_r} @ {ref_gsd} m; d_az {d_az} deg, d_inc {d_inc:+} deg")
     return out_dirs
 
 
@@ -327,7 +394,16 @@ def _say_prior(label, p):
 
 def _provenance(m):
     s, r = m["source"], m["reference"]
-    return f"""# {m['pair_id']} - real Chandrayaan-2 OHRC <-> LRO NAC pair
+
+    def sun(x):
+        if "sun" in x:
+            return f"inc {x['sun']['incidence_deg']} deg, az {x['sun']['azimuth_deg_from_north']} deg (derived)"
+        return f"inc {x.get('incidence_deg_at_site')} deg, az {x.get('sun_azimuth_deg_from_north')} deg"
+
+    def native(x):
+        v = x.get("native_gsd_mpp") or x.get("resolution_mpp")
+        return f"{v:.4f} m/px" if v else "?"
+    return f"""# {m['pair_id']}
 
 Tier **{m['tier']}** - {m['terminology']}.
 Cut {m['created_utc']} by `{m['command']}`.
@@ -336,18 +412,18 @@ Cut {m['created_utc']} by `{m['command']}`.
 |---|---|---|
 | instrument | {s['instrument']} | {r['instrument']} |
 | product | `{s['product_id']}` | `{r['product_id']}` |
-| native GSD | {s['native_gsd_mpp']:.4f} m/px | {r['resolution_mpp']:.4f} m/px |
+| native GSD | {native(s)} | {native(r)} |
 | written at | {s['resampled_gsd_mpp']} m/px, {s['shape']} | {r['resampled_gsd_mpp']} m/px, {r['shape']} |
-| sun at site | inc {s['sun']['incidence_deg']} deg, az {s['sun']['azimuth_deg_from_north']} deg | inc {r['incidence_deg_at_site']} deg, az {r['sun_azimuth_deg_from_north']} deg |
+| sun at site | {sun(s)} | {sun(r)} |
 | geometry | {s['geometry']} | {r['geometry']} |
 
 Window centre ({m['window_centre_latlon'][0]:.5f}, {m['window_centre_latlon'][1]:.5f}), {m['window_m']:.1f} m square,
 map: {m['crs']}. Sun difference: azimuth {m['d_sun_azimuth_deg']} deg, incidence {m['d_incidence_deg']:+} deg.
 Scale ratio {m['scale_ratio']}x.
 
-The OHRC sun angles are derived, not read: {s['sun']['method']}.
-The NAC geometry is LROC's four published footprint corners - a coarse prior; see
-`geometry_prior.json` for the coarse correlation check and whether it was applied.
+OHRC sun angles are derived from the acquisition time, not read (the PDS4 label has none).
+NAC geometry is LROC's four published footprint corners (0.01 deg) plus a correction field
+fitted against the OHRC grid (`site_geometry/<pid>.json`, recorded in geometry_prior.json).
 
 Files (sha256): {', '.join(f'`{k}` {v[:16]}' for k, v in m['files'].items())}
 """
@@ -355,16 +431,30 @@ Files (sha256): {', '.join(f'`{k}` {v[:16]}' for k, v in m['files'].items())}
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--nac", required=True, help="LROC NAC product id, e.g. M1153871873LE")
+    ap.add_argument("--nac", required=True, help="reference LROC NAC product id, e.g. M1153871873LE")
+    ap.add_argument("--src", default="ohrc", help="'ohrc' (default) or a NAC product id")
     ap.add_argument("--windows", type=int, default=6)
     ap.add_argument("--window-px", type=int, default=640)
+    ap.add_argument("--window-m", type=float, help="fixed ground size in metres (same square for every loop leg)")
     ap.add_argument("--ohrc-gsd", type=float, default=0.25)
+    ap.add_argument("--centres-from", help="glob of existing pair dirs whose window centres to reuse")
+    ap.add_argument("--tag", help="suffix for the pair ids")
+    ap.add_argument("--require-inside", nargs="*", default=[],
+                    help="only pick windows that ALSO lie inside these NACs (for loops)")
     ap.add_argument("--coarse-only", action="store_true")
-    ap.add_argument("--no-prior-shift", action="store_true",
-                    help="never apply the coarse correction (cut on archive geometry alone)")
+    ap.add_argument("--refit", action="store_true", help="recompute the saved NAC correction field")
     a = ap.parse_args(argv)
-    r = cut(a.nac, a.windows, a.window_px, a.ohrc_gsd, a.coarse_only,
-            force_prior=False if a.no_prior_shift else None)
+    if a.refit:
+        nac_frame_corrected(a.nac, refit=True)
+    centres = None
+    if a.centres_from:
+        import glob
+        dirs = sorted(glob.glob(str(PAIRS / a.centres_from)))
+        centres = [json.loads((pathlib.Path(d) / "geometry_prior.json").read_text(encoding="utf-8"))
+                   ["window_centre_map_m"] for d in dirs]
+        print(f"reusing {len(centres)} window centres from {a.centres_from}")
+    r = cut(a.nac, a.windows, a.window_px, a.ohrc_gsd, a.coarse_only, src=a.src,
+            centres=centres, tag=a.tag, require_inside=a.require_inside, window_m=a.window_m)
     if a.coarse_only:
         print(json.dumps({k: v for k, v in r.items() if k != "boxes"}, indent=1))
     return 0
