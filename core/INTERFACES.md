@@ -40,7 +40,7 @@ load  ->  to_common_gsd  ->  normalize  ->  match  ->  filter_matches  ->  warp
 | `distribution.counts(pts, shape, grid=8)` | `(8, 8)` int array |
 | `distribution.weak_cells(cell_counts, min_per_cell=2)` | `[(row, col), ...]` |
 | `distribution.redetect(src_img, ref_img, H, cells, match_fn=None, ...)` | `(src_new, ref_new, info)` — **built and tested, NOT called by `run_all`.** "We enforce uniformity" is not a claim this repo supports. |
-| `pipeline.run_all(src_path, ref_path, H_true=None, progress=None, subpixel=True)` | result dict |
+| `pipeline.run_all(src_path, ref_path, H_true=None, progress=None, subpixel=True, matches=None)` | result dict. `matches` (added 19 Sep 2026): stored `(src_matches, ref_matches, match_scores)` from an earlier run - skips LoFTR and sub-pixel refinement, runs everything after unchanged; for re-judging stored matches only |
 | `reliability.reliability_map(ref_shape, src_raw, ref_raw, H, src_in, ref_in, warped_img, ref_img, gsd_mpp=None, H_true=None, ...)` | dict: `state` (8×8 of `verified`/`weak`/`no_evidence`), `counts`, `global` (verdict, contradicted, cell vote), `true_error_px` when `H_true` is given |
 | `reliability.gate(changes, rel, ref_shape, keep_states=("verified",))` | `{"kept", "rejected_weak", "unassessable", "counts"}` |
 | `reliability.xcorr_peak(a, b)` | `(dx, dy, ncc)` — the shift that moves `a` onto `b`; sign pinned by test |

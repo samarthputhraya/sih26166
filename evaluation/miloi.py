@@ -2,6 +2,7 @@
 
     python -m evaluation.miloi --convert        # the three xlsx sheets -> miloi_illumination.csv
     python -m evaluation.miloi --run            # match every pair (ours + SIFT/ORB/AKAZE); resumes
+    python -m evaluation.miloi --retrust        # re-judge ours' stored matches after a trust-layer change
     python -m evaluation.miloi --truth          # per-image corrections -> miloi_truth.json
     python -m evaluation.miloi --score --log    # every method vs that truth -> the two logs
     python -m evaluation.miloi --table          # success rate vs sun difference, from the log
@@ -323,6 +324,43 @@ def run_pair(p: dict, methods=METHODS) -> dict:
     return meta, arrays
 
 
+def retrust(scenes=SCENES) -> int:
+    """Re-judge OURS' stored matches under the CURRENT trust layer: re-crop the pair and call
+    run_all(matches=...) - MAGSAC++, the area check and the fallback run again; LoFTR does not.
+    The earlier verdict is kept under `previous_trust`, so the change is visible, not overwritten."""
+    from core.export import _commit
+    from core.pipeline import run_all
+    illum, miloi, commit, n = illumination(), data_dir() / "miloi", _commit(), 0
+    for scene in scenes:
+        pairs = {p["pair_id"]: p for p in scene_pairs(scene, illum, miloi)}
+        for jp in sorted(runs_dir().glob(f"miloi_{scene}_*.json")):
+            meta, arrays = load_run(jp.stem)
+            o = meta["methods"].get("ours")
+            if o is None or o.get("retrusted_at") == commit:
+                continue
+            with tempfile.TemporaryDirectory() as tmp:
+                c = crop_pair(pairs[meta["pair_id"]], pathlib.Path(tmp))
+                r = run_all(c["src_path"], c["ref_path"], matches=(arrays["ours_src"], arrays["ours_ref"]))
+            rel = r.get("reliability")
+            o.setdefault("previous_trust", {**{k: o.get(k) for k in (
+                "H", "H_final", "declared", "contradicted", "verdict", "counts", "inliers")},
+                "at": meta["git_commit"]})
+            o.update({"H": _mat(r["H"]), "H_final": _mat(r["H_final"]), "declared": r["declared"]["method"],
+                      "contradicted": bool(r["declared"]["contradicted"]),
+                      "verdict": rel["global"].get("verdict") if rel else None,
+                      "counts": rel["counts"] if rel else None,
+                      "inliers": int(len(r["src_inliers"])) if r["H"] is not None else 0,
+                      "retrusted_at": commit})
+            jp.write_text(json.dumps(meta, indent=1))
+            n += 1
+            prev = o["previous_trust"]
+            if (prev["verdict"], prev["declared"]) != (o["verdict"], o["declared"]):
+                print(f"{meta['pair_id']:<42} {prev['verdict']}/{prev['declared']} -> "
+                      f"{o['verdict']}/{o['declared']}", flush=True)
+    print(f"{n} pair(s) re-judged at {commit}")
+    return n
+
+
 def _run_paths(pair_id: str):
     d = runs_dir()
     return d / f"{pair_id}.json", d / f"{pair_id}.npz"
@@ -630,6 +668,8 @@ def main(argv=None) -> int:
                                  description=__doc__.split("\n")[0])
     ap.add_argument("--convert", action="store_true")
     ap.add_argument("--run", action="store_true")
+    ap.add_argument("--retrust", action="store_true",
+                    help="re-judge ours' stored matches under the current trust layer (no LoFTR)")
     ap.add_argument("--truth", action="store_true")
     ap.add_argument("--score", action="store_true")
     ap.add_argument("--table", action="store_true")
@@ -645,6 +685,8 @@ def main(argv=None) -> int:
         print(f"{convert_sheets(data_dir() / 'miloi')} images -> {ILLUM_CSV}")
     if a.run:
         run_all_pairs(a.scenes, a.methods, a.max_pairs)
+    if a.retrust:
+        retrust(a.scenes)
     if a.truth:
         rep = build_truth(a.scenes)
         for s, v in rep["scenes"].items():

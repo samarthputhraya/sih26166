@@ -56,7 +56,7 @@ EXPECTED = {
                                    "grid", "margin", "max_cells"],
     "core.distribution:summary": ["pts", "shape", "grid", "min_per_cell"],
 
-    "core.pipeline:run_all": ["src_path", "ref_path", "H_true", "progress", "subpixel"],
+    "core.pipeline:run_all": ["src_path", "ref_path", "H_true", "progress", "subpixel", "matches"],
 
     # Added 3 Sep 2026 (Phase 2, M1): the trust layer. `run_all` returns its output
     # under result["reliability"], plus "declared", "fallback", "H_final", "warped_final".

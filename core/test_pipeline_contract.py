@@ -86,3 +86,38 @@ def test_inlier_ratio_reflects_the_garbage(tmp_path, monkeypatch, half_garbage_m
         f"inlier_ratio came back {metrics['inlier_ratio']:.3f}; half the matches are deliberate "
         "garbage, so anything near 1.0 means the pipeline pre-filtered the input again"
     )
+
+
+def test_resolve_pair_never_returns_one_file_for_both_roles(tmp_path):
+    """18 Sep 2026: '_aft' contains the source hint '_a'. The pair must still resolve to
+    <id>_source / <id>_ref - never the reference twice."""
+    from core.pipeline import resolve_pair
+    d = tmp_path / "sac_tmc_fore_aft_w01"
+    d.mkdir()
+    for n in ("sac_tmc_fore_aft_w01_ref.tif", "sac_tmc_fore_aft_w01_source.tif"):
+        (d / n).write_bytes(b"x")
+    src, ref = resolve_pair(d)
+    assert src.name == "sac_tmc_fore_aft_w01_source.tif"
+    assert ref.name == "sac_tmc_fore_aft_w01_ref.tif"
+
+
+def test_stored_matches_reproduce_the_run_without_matching(tmp_path, monkeypatch,
+                                                           half_garbage_matches):
+    """run_all(matches=...) must give what run_all gave on the same matches, and never call
+    the matcher - it exists so a changed trust layer can re-judge stored matches."""
+    src, ref = half_garbage_matches
+    src_path, ref_path = _write_pair(tmp_path)
+    monkeypatch.setattr(pipeline, "match",
+                        lambda a, b, progress=None: (src, ref, np.ones(len(src), np.float32)))
+    first = pipeline.run_all(str(src_path), str(ref_path), subpixel=False)
+
+    def refuse(*a, **k):
+        raise AssertionError("run_all(matches=...) called the matcher")
+    monkeypatch.setattr(pipeline, "match", refuse)
+    again = pipeline.run_all(str(src_path), str(ref_path),
+                             matches=(first["src_matches"], first["ref_matches"],
+                                      first["match_scores"]))
+    assert again["n_matches"] == first["n_matches"]
+    np.testing.assert_allclose(again["src_matches"], first["src_matches"])
+    assert again["metrics"]["inlier_count"] == first["metrics"]["inlier_count"]
+    assert (again["H"] is None) == (first["H"] is None)

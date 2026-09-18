@@ -107,13 +107,20 @@ def resolve_pair(target: str | pathlib.Path) -> tuple[pathlib.Path, pathlib.Path
             f"{p if p.is_dir() else p.parent} matching {p.name!r}*"
         )
 
-    def pick(hints):
-        for f in files:
-            if any(h in f.stem.lower() for h in hints):
-                return f
+    def pick(hints, other=None):
+        # A stem that ENDS in a hint first ("..._source", "..._ref"); a hint anywhere in
+        # the stem only as a fallback, and never the file already taken for the other role.
+        # On 18 Sep 2026 "sac_tmc_fore_aft_w01_ref.tif" matched the source hint "_a"
+        # (inside "_aft"), so the reference was registered against ITSELF and logged as a
+        # flawless 0.019 px result (four rows, withdrawn in the logs).
+        for match in (lambda st, h: st.endswith(h), lambda st, h: h in st):
+            for f in files:
+                if f != other and any(match(f.stem.lower(), h) for h in hints):
+                    return f
         return None
 
-    src, ref = pick(SOURCE_HINTS), pick(REF_HINTS)
+    src = pick(SOURCE_HINTS)
+    ref = pick(REF_HINTS, other=src)
     if src and ref:
         return src, ref
     if len(files) == 2:
@@ -322,12 +329,17 @@ def _fallback(a_n, b_n, factors, gsd, ref_shape, H_true, reason, a_raw=None, b_r
     }
 
 
-def run_all(src_path, ref_path, H_true=None, progress=None, subpixel=True) -> dict:
+def run_all(src_path, ref_path, H_true=None, progress=None, subpixel=True, matches=None) -> dict:
     """Register one pair. Returns a result dict; never raises on a bad pair.
 
     subpixel: run NCC refinement on the matches. Default True since 3 Sep 2026 -
         see `_refine_subpixel` for the measurement that changed it. Pass False to
         reproduce the pre-3-Sep rows (`ours_loftr`, Gate 1 residual 0.19452325191421008).
+    matches: (src_matches, ref_matches, match_scores) exactly as a previous run_all
+        returned them (ORIGINAL pixels, after sub-pixel refinement). LoFTR and the
+        refinement are skipped; everything after them - MAGSAC++, evaluate(), the trust
+        layer, the fallback - runs unchanged. For re-judging stored matches when the
+        trust layer changes (evaluation/miloi.py --retrust), never for a first result.
     """
     t0 = time.perf_counter()
     a, meta_a = load(src_path)
@@ -337,17 +349,23 @@ def run_all(src_path, ref_path, H_true=None, progress=None, subpixel=True) -> di
     a_n, illum = _normalise_illumination(a_s, meta_a)
     b_n, _ = _normalise_illumination(b_s, meta_b)
 
-    src_pts, ref_pts, scores = match(a_n, b_n, progress=progress)
-
-    # Back to ORIGINAL pixel coordinates before anything is measured or reported.
-    # Metrics are defined in reference-image pixels (Sec.7); reporting them in
-    # resampled pixels would silently change what the number means.
     subpixel_info = None
-    if subpixel and len(src_pts):
-        src_pts, ref_pts, subpixel_info = _refine_subpixel(src_pts, ref_pts, a_n, b_n)
+    if matches is None:
+        src_pts, ref_pts, scores = match(a_n, b_n, progress=progress)
 
-    src_full = to_original(src_pts, factors["a"]) if len(src_pts) else src_pts
-    ref_full = to_original(ref_pts, factors["b"]) if len(ref_pts) else ref_pts
+        # Back to ORIGINAL pixel coordinates before anything is measured or reported.
+        # Metrics are defined in reference-image pixels (Sec.7); reporting them in
+        # resampled pixels would silently change what the number means.
+        if subpixel and len(src_pts):
+            src_pts, ref_pts, subpixel_info = _refine_subpixel(src_pts, ref_pts, a_n, b_n)
+
+        src_full = to_original(src_pts, factors["a"]) if len(src_pts) else src_pts
+        ref_full = to_original(ref_pts, factors["b"]) if len(ref_pts) else ref_pts
+    else:
+        src_full, ref_full = (np.asarray(m, np.float32).reshape(-1, 2) for m in matches[:2])
+        scores = None if len(matches) < 3 or matches[2] is None else np.asarray(matches[2], np.float32)
+        src_pts = src_full
+        subpixel_info = {"note": "precomputed matches (run_all(matches=...)); no re-matching"}
 
     src_in, ref_in, H, info = filter_matches(src_full, ref_full)
     warped = warp(a, H, b.shape[:2]) if H is not None else None

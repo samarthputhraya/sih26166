@@ -356,6 +356,48 @@ def _kaguya(kind):
     raise KeyError(kind)
 
 
+IIRS_ID = "ch2_iir_nci_20210621T1517513893_d_img_d32"
+IIRS_DIR = DATA / "pradan" / "iirs"
+
+
+def _iirs(kind):
+    """(frame, reader, info, gsd) for Chandrayaan-2 IIRS band `iirs<nm>` (nearest centre wavelength).
+
+    The calibrated cube is ENVI BSQ float32, 256 bands x 16592 lines x 250 samples (its .hdr), in
+    radiance (uW/cm2/sr/um). Geometry from its own `*_g_grd_*.csv` lattice (same layout as the
+    OHRC's), cropped to the rows near the site - the strip is ~1,300 km long and a full
+    triangulation gives needle triangles (ops/cut_pradan_pairs.frame_from_grid)."""
+    import re
+    from core import geometry as G
+    from ops.cut_pradan_pairs import frame_from_grid
+    xml = next(IIRS_DIR.rglob(f"{IIRS_ID}.xml"))
+    qub = xml.with_suffix(".qub")
+    grid = next(IIRS_DIR.rglob(IIRS_ID.replace("_d_img_", "_g_grd_") + ".csv"))
+    label = xml.read_text(encoding="latin1")
+    centres = [float(v) for v in re.findall(r"<center_wavelength[^>]*>([\d.]+)<", label)]
+    want = int(kind[4:])
+    b = int(np.argmin([abs(c - want) for c in centres]))
+    cube = np.memmap(qub, dtype="<f4", mode="r", shape=(256, 16592, 250))
+
+    class _PS:
+        lat_ts, lon0 = SITE_LATLON
+        name = "south polar stereographic (as the rest of the 74 S site)"
+        fwd = staticmethod(G.ps_south)
+    frame = frame_from_grid(grid, (16592, 250), _PS(), kind)
+
+    def reader(x, y, w, h, _b=b):
+        a = np.array(cube[_b, y:y + h, x:x + w], np.float32)
+        a[~np.isfinite(a) | (a <= 0)] = np.nan
+        return a
+    sun = {k: (re.search(r"<isda:" + k + r"[^>]*>(-?[\d.]+)<", label) or [None, None])[1]
+           for k in ("sun_azimuth", "sun_elevation")}
+    info = {"instrument": "Chandrayaan-2 IIRS", "product_id": f"{IIRS_ID} band {b + 1} ({centres[b]:.1f} nm)",
+            "path": str(qub), "band": f"{centres[b]:.1f} nm ({'near-infrared' if centres[b] >= 1000 else 'visible/near-visible'})",
+            "incidence_deg_at_site": None, "sun_azimuth_deg_from_north": None,
+            "sun_note": f"scene-level label: sun azimuth {sun['sun_azimuth']} deg, elevation {sun['sun_elevation']} deg"}
+    return frame, reader, info, round(float(np.mean(frame.gsd())), 2)
+
+
 def _ohrc16():
     """OHRC area-averaged by 16 (3.68 m) - the right way to bring 0.23 m pixels near a
     15 m infrared map without aliasing."""
@@ -440,6 +482,9 @@ def _frame(kind_or_pid):
     kinds: ohrc (0.25 m), ohrc16 (area-averaged 3.68 m), tc_morning, tc_evening, tc_ortho,
     mi<nm> (Kaguya MI band), or an LROC NAC product id."""
     k = kind_or_pid.lower()
+    if k.startswith("iirs") and k[4:].isdigit():
+        f, rd, info, gsd = _iirs(k)
+        return f, rd, {**info, "geometry": f.source}, gsd, k
     if k in TC_MAPS or (k.startswith("mi") and k[2:].isdigit()):
         f, rd, info, gsd = _kaguya(k)
         return f, rd, {**info, "geometry": f.source}, gsd, k
@@ -478,6 +523,8 @@ def _tier(src_label, ref_label):
             return "ohrc"
         if lbl.startswith("tc_"):
             return "tc"
+        if lbl.startswith("iirs"):
+            return "iirs_nir" if int(lbl[4:]) >= 1000 else "iirs_vis"
         if lbl.startswith("mi"):
             return "mi_nir" if int(lbl[2:]) >= 1000 else "mi_vis"
         return "nac"
@@ -489,6 +536,10 @@ def _tier(src_label, ref_label):
         return ("C (visible-infrared real, multi-modal)",
                 f"cross-sensor and multi-modal: visible panchromatic vs Kaguya MI near-infrared "
                 f"({ref_label if b == 'mi_nir' else src_label})")
+    if "iirs_nir" in (a, b):
+        return ("C (visible-infrared real, multi-modal)",
+                f"cross-sensor, cross-mission and multi-modal: visible panchromatic vs Chandrayaan-2 "
+                f"IIRS near-infrared ({ref_label if b == 'iirs_nir' else src_label})")
     if {a, b} == {"ohrc", "nac"}:
         return ("B (OHRC-NAC real)", "cross-sensor, cross-mission (Chandrayaan-2 OHRC vs LRO LROC "
                 "NAC); both panchromatic, so NOT multi-modal")
