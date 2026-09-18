@@ -16,7 +16,6 @@ import csv
 import datetime as _dt
 import pathlib
 import statistics as st
-import subprocess
 import sys
 from collections import Counter, defaultdict
 
@@ -54,13 +53,8 @@ def _latest(rows, key="pair_id"):
 
 
 def _git():
-    try:
-        sha = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], cwd=ROOT, text=True).strip()
-        dirty = subprocess.check_output(["git", "status", "--porcelain", "--", "core", "evaluation", "ops"],
-                                        cwd=ROOT, text=True).strip()
-        return sha + ("-dirty" if dirty else "")
-    except Exception:  # noqa: BLE001
-        return "?"
+    from core.export import _commit
+    return _commit(("core", "evaluation", "ops"))
 
 
 def section_pairs(title, rows, note):

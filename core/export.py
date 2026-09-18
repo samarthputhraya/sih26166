@@ -289,16 +289,32 @@ def _versions() -> dict:
     return out
 
 
-def _commit() -> str:
+# The append-only evidence logs. Appending a row is not a code change.
+EVIDENCE_LOGS = ("evaluation/results_log.csv", "evaluation/real_pairs_log.csv",
+                 "evaluation/trust_real_calibration.csv")
+
+
+def _commit(paths=("core", "evaluation"), root=ROOT) -> str:
+    """Short HEAD sha, `-dirty` when anything under `paths` differs from it.
+
+    EVIDENCE_LOGS are left out of the check. They live in evaluation/, so counting
+    them meant the first `--log` row of a run stamped every later row `-dirty`
+    (18 Sep: every sun-sweep row after `5a3c586`), and no logged number could ever
+    name a clean commit - which is the whole point of the evidence freeze.
+    """
     try:
-        sha = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], cwd=ROOT,
+        sha = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], cwd=root,
                                       text=True, stderr=subprocess.DEVNULL).strip()
-        dirty = subprocess.check_output(["git", "status", "--porcelain", "--", "core",
-                                         "evaluation"], cwd=ROOT, text=True,
-                                        stderr=subprocess.DEVNULL).strip()
-        return sha + ("-dirty" if dirty else "")
     except Exception:  # noqa: BLE001
         return "?"
+    spec = [*paths, *(f":(exclude){p}" for p in EVIDENCE_LOGS)]
+    try:
+        dirty = subprocess.check_output(["git", "status", "--porcelain", "--", *spec],
+                                        cwd=root, text=True,
+                                        stderr=subprocess.DEVNULL).strip()
+    except Exception:  # noqa: BLE001
+        return sha + "-unknown"
+    return sha + ("-dirty" if dirty else "")
 
 
 def _jsonable(o: Any):

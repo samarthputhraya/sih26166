@@ -7,6 +7,8 @@ import csv
 import hashlib
 import json
 import re
+import shutil
+import subprocess
 
 import numpy as np
 import pytest
@@ -159,3 +161,38 @@ def test_bundle_bytes_matches_the_files(tmp_path):
     b = export.bundle_bytes(r, "t", sp, rp)
     assert b["registered_product.tif"][:2] in (b"II", b"MM")
     assert b"-gcp" in b["gcps.txt"]
+
+
+def test_appending_to_the_evidence_logs_does_not_dirty_the_commit_stamp(tmp_path):
+    git = shutil.which("git")
+    if git is None:
+        pytest.skip("git not on PATH")
+
+    def run(*a):
+        subprocess.run([git, "-c", "user.name=t", "-c", "user.email=t@t", *a],
+                       cwd=tmp_path, check=True, capture_output=True)
+
+    (tmp_path / "core").mkdir()
+    (tmp_path / "evaluation").mkdir()
+    (tmp_path / "core" / "m.py").write_text("x = 1\n")
+    for log in export.EVIDENCE_LOGS[:2]:
+        (tmp_path / log).write_text("a,b\n")
+    run("init", "-q")
+    run("add", "-A")
+    run("commit", "-q", "-m", "c")
+    sha = export._commit(root=tmp_path)
+    assert sha != "?" and not sha.endswith("-dirty")
+
+    # A run appends rows and creates the calibration CSV: still the same code.
+    for log in export.EVIDENCE_LOGS[:2]:
+        with open(tmp_path / log, "a") as f:
+            f.write("1,2\n")
+    (tmp_path / export.EVIDENCE_LOGS[2]).write_text("t\n")
+    assert export._commit(root=tmp_path) == sha
+
+    # New or changed code is dirty, including an untracked module beside the logs.
+    (tmp_path / "evaluation" / "new.py").write_text("y = 2\n")
+    assert export._commit(root=tmp_path) == sha + "-dirty"
+    (tmp_path / "evaluation" / "new.py").unlink()
+    (tmp_path / "core" / "m.py").write_text("x = 2\n")
+    assert export._commit(root=tmp_path) == sha + "-dirty"

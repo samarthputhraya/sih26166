@@ -15,7 +15,6 @@ from __future__ import annotations
 import json
 import pathlib
 import pickle
-import subprocess
 import sys
 import time
 from datetime import datetime, timezone
@@ -35,20 +34,10 @@ def _commit() -> str:
     identification plate as provenance. A short SHA on a dirty tree is a claim
     about code that is not what ran, so say so.
     """
-    try:
-        sha = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], cwd=ROOT,
-                                      text=True).strip()
-    except Exception:  # noqa: BLE001
-        return "?"
-    try:
-        # Only the paths that can change what run_all() returns. A dirty README
-        # does not make a cache stale; a dirty core/ does.
-        dirty = subprocess.check_output(
-            ["git", "status", "--porcelain", "--", "core", "evaluation", "app"],
-            cwd=ROOT, text=True).strip()
-    except Exception:  # noqa: BLE001
-        return sha + "-unknown"
-    return sha + "-dirty" if dirty else sha
+    from core.export import _commit as commit
+    # Only the paths that can change what run_all() returns. A dirty README
+    # does not make a cache stale; a dirty core/ does. The evidence logs never do.
+    return commit(("core", "evaluation", "app"))
 
 
 def main(argv: list[str]) -> int:
