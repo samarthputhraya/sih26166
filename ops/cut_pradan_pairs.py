@@ -212,7 +212,10 @@ def cut(kind, n_windows=4, ref_px=384):
         d_inc = round((90 - r_sun["elevation_deg_label"]) - (90 - s_sun["elevation_deg_label"]), 2)
     out = []
     for k, (x, y) in enumerate(zip(cx, cy), 1):
-        pair_id = f"sac_{kind.replace('-', '_')}_w{k:02d}"
+        # No "_a"/"_b" anywhere in a pair id: core.pipeline.resolve_pair takes the source by the
+        # substring hints ("_source", "_src", "_a"), and on 18 Sep "sac_tmc_fore_aft_*" put "_aft"
+        # in BOTH file names - the reference was registered against itself (4 invalid rows).
+        pair_id = {"tmc-fore-aft": "sac_tmcfore_tmcaft", "ohrc-tmc": "sac_ohrc_tmc"}[kind] + f"_w{k:02d}"
         x0, y1 = x - window_m / 2, y + window_m / 2
         tr_r, sh_r = G.map_grid(x0, y1, window_m, window_m, ref_gsd)
         r_img, r_ok = G.project(ref_f, ref_read, tr_r, sh_r, coarse=16, order="cubic")

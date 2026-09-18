@@ -100,7 +100,9 @@ def section_pairs(title, rows, note):
 def main(argv=None):
     real_rows = _rows(REAL)
     latest, counts = _latest(real_rows)
-    reg = [r for r in latest.values() if not r["pair_id"].startswith("loop_")]
+    # A pair whose latest row says INVALIDATED is withdrawn (the row says why); it is not shown.
+    reg = [r for r in latest.values() if not r["pair_id"].startswith("loop_")
+           and (r.get("verdict") or "") != "INVALIDATED"]
     loops = [r for r in latest.values() if r["pair_id"].startswith("loop_")]
     L = ["# SIH26166 - evaluation report", "",
          f"Generated {_dt.datetime.now().isoformat(timespec='minutes')} from commit `{_git()}` by "
