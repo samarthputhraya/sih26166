@@ -467,7 +467,8 @@ def _draw_shift(seed, rng_span=6.0, base=SYNTH_SHIFT_PX):
 
 
 def _synthetic_pair(dem_path, pixel_size_m, sun_delta_deg, shift_px=SYNTH_SHIFT_PX,
-                    seed=0, max_size=640, out_dir=SYNTH_DIR):
+                    seed=0, max_size=640, out_dir=SYNTH_DIR, tilt_deg=0.0,
+                    tilt_azimuth_deg=0.0, parallax=False):
     """Render one DEM under two suns, warp by a KNOWN homography, write two files.
 
     Returns (src_path, ref_path, H_true, meta). `H_true` maps SOURCE pixels to
@@ -524,7 +525,8 @@ def _synthetic_pair(dem_path, pixel_size_m, sun_delta_deg, shift_px=SYNTH_SHIFT_
     sun_b = (SYNTH_REF_AZIMUTH + float(sun_delta_deg), SYNTH_SUN_ELEVATION)
     source, reference, H_true, meta = make_pair(
         dem, pixel_size_m=pixel_size_m, sun_a=sun_a, sun_b=sun_b,
-        rotation_deg=0.0, scale=1.0, shift_px=tuple(shift_px), seed=seed)
+        rotation_deg=0.0, scale=1.0, shift_px=tuple(shift_px), seed=seed,
+        tilt_deg=tilt_deg, tilt_azimuth_deg=tilt_azimuth_deg, parallax=parallax)
 
     # `render_shaded_relief` returns [0, 1]. `matcher.match` divides by 255 with no
     # range check, so on the branch where illumination normalisation is UNAVAILABLE
@@ -542,6 +544,8 @@ def _synthetic_pair(dem_path, pixel_size_m, sun_delta_deg, shift_px=SYNTH_SHIFT_
     # cannot be told apart afterwards.
     stem = (f"synthetic_d{int(round(sun_delta_deg)):03d}"
             f"_x{shift_px[0]:+.2f}_y{shift_px[1]:+.2f}_s{seed}")
+    if tilt_deg:
+        stem += f"_t{tilt_deg:02.0f}a{tilt_azimuth_deg:03.0f}" + ("p" if parallax else "")
     src_path = out_dir / f"{stem}_source.tif"
     ref_path = out_dir / f"{stem}_ref.tif"
     tifffile.imwrite(str(src_path), source)      # no geo tags, on purpose - see (3)
@@ -558,7 +562,11 @@ def _synthetic_pair(dem_path, pixel_size_m, sun_delta_deg, shift_px=SYNTH_SHIFT_
                       f"d_azimuth={float(sun_delta_deg):g}deg at fixed "
                       f"{SYNTH_SUN_ELEVATION:g}deg elevation; "
                       f"shift=({shift_px[0]:+.4f},{shift_px[1]:+.4f}); "
-                      f"rot=0; scale=1; seed={seed}")
+                      f"rot=0; scale=1; seed={seed}"
+                      + (f"; VIEWPOINT tilt={tilt_deg:g}deg toward image azimuth "
+                         f"{tilt_azimuth_deg:g}deg (foreshortening cos(tilt)); relief parallax "
+                         f"{'ON (truth is a field; rmse_gt_px is vs the plane homography)' if parallax else 'OFF'}"
+                         if tilt_deg else ""))
     return src_path, ref_path, H_true, meta
 
 
@@ -744,6 +752,12 @@ def _build_parser() -> argparse.ArgumentParser:
                    help="method name for the logged row; default `ours_loftr+subpixel`, or "
                         "`ours_loftr` with --no-subpixel")
     p.add_argument("--notes", default="", help="free text for the logged row")
+    p.add_argument("--tilt-sweep", help="viewpoint: comma-separated off-nadir tilts in degrees "
+                                        "for the SOURCE, e.g. 0,10,20,30,40 (synthetic only)")
+    p.add_argument("--tilt-azimuth", type=float, default=0.0,
+                   help="image azimuth of the tilt, degrees (0 = +x)")
+    p.add_argument("--parallax", action="store_true",
+                   help="add relief parallax from the DEM to the tilted view")
     p.add_argument("--out", help="write the deliverables (registered product GeoTIFF, "
                                  "match points, GCPs, trust map, report) to OUT/<pair_id>/")
     p.add_argument("--allow-failed", action="store_true",
@@ -961,7 +975,14 @@ def main(argv: list[str]) -> int:
 
         ok_all = logged_all = True
         summary_rows = []
+        tilts = ([float(t) for t in args.tilt_sweep.split(",") if t.strip()]
+                 if getattr(args, "tilt_sweep", None) else [0.0])
+        if len(tilts) > 1 or tilts[0]:
+            print(f"  VIEWPOINT sweep: source tilted {', '.join(f'{t:g}' for t in tilts)} deg off "
+                  f"nadir toward image azimuth {args.tilt_azimuth:g} deg; relief parallax "
+                  f"{'ON' if args.parallax else 'OFF'}.")
         for d in deltas:
+          for tilt in tilts:
             for rep in range(args.repeats):
                 # rep 0 uses the shift the operator asked for; later repeats draw
                 # their own, so the spread comes from the geometry and not from
@@ -969,14 +990,15 @@ def main(argv: list[str]) -> int:
                 shift = (sx, sy) if rep == 0 else _draw_shift(args.seed + rep)
                 src, ref, H_true, meta = _synthetic_pair(
                     args.dem, args.pixel_size, d, shift_px=shift,
-                    seed=args.seed + rep, max_size=args.max_size)
+                    seed=args.seed + rep, max_size=args.max_size, tilt_deg=tilt,
+                    tilt_azimuth_deg=args.tilt_azimuth, parallax=args.parallax)
                 ok, logged, m = _run_one(src, ref, H_true, args,
                                          pair_id=meta["pair_id"],
-                                         tier=args.tier or "synthetic",
+                                         tier=args.tier or ("synthetic viewpoint" if tilt else "synthetic"),
                                          config=meta["config"],
                                          gsd_mpp=args.pixel_size)
                 ok_all, logged_all = ok_all and ok, logged_all and logged
-                summary_rows.append((d, shift, m))
+                summary_rows.append((d if not tilt else tilt, shift, m))
 
         if len(summary_rows) > 1:
             _print_sweep_summary(summary_rows)

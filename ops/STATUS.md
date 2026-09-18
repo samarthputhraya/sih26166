@@ -1,128 +1,86 @@
-# STATUS - 18 September 2026 (Day 20). The college internal round is over. Its result is not in the repo.
+# STATUS - 18 September 2026 (Day 20), evening. National round: nominated. Solo push, Day 0 of 9.
 
 > Rewritten in full at the end of every session. Previous STATUS is in git history.
-> WARNING: the venv is `C:\Users\samar\venvs\sih26166`; call its `python.exe` directly. A bare
-> `python` fails here with `ModuleNotFoundError: numpy` - that is the missing venv, not a broken build.
+> WARNING: the venv is `C:\Users\samar\venvs\sih26166`; call its `python.exe` directly.
+> External data lives in `C:\Users\samar\sih26166_data\` (path in `data_path.txt`, which has a BOM -
+> read it with `encoding="utf-8-sig"`).
 
 ---
 
 ## 🔴 Read this first
 
-1. **The internal round happened on Fri 11 Sep 2026** (Day 13; Day 1 was 30 Aug). The repo's
-   `docs/00_CANONICAL_FACTS.md` and `CLAUDE.md` still say 9 Sep; they are wrong and have not been
-   edited.
-2. **Nobody has recorded the outcome.** Whether we were shortlisted in Round 1, how Round 2 went,
-   and whether the SPOC is nominating us to the national SIH portal are all unknown to this repo.
-   **Write them down at the start of the next session** - everything below depends on them.
-3. **The national idea-submission deadline may be 20 Sep 2026 - two days from today.**
-   `00_CANONICAL_FACTS.md` §10 records 20 Sep for SIH26166 idea submission and 30 Sep for SPOC
-   portal nomination, with an unresolved conflict against a 15 Sep date in the SPOC guidelines.
-   If we were nominated, confirm with the SPOC **tomorrow** which date binds and whether the
-   uploaded PDF (`presentation/SIH26166_deck_UPLOAD.pdf`) is what goes to the portal.
+1. **We cleared the college round and are nominated to the SIH 2026 national stage** (portal team
+   name **LunaXX**). Ideas close **30 Sep 2026**; we submit **27 Sep**. Max two PSs per team; a PS
+   freezes at 500 ideas (SIH26166 had 29 on 18 Sep). Research: `ops/national_round/RESEARCH_REPORT.md`.
+2. **Samartha is building both entries alone** (decision 18 Sep; plan
+   `C:\Users\samar\.claude\plans\wait-lets-do-it-zazzy-liskov.md`). CLAUDE.md Invariant 4 (folder
+   ownership) is suspended for this push; Invariants 1, 2, 3, 5 hold. Second entry **SIH26227**
+   (MoD, satellite change analysis) lives in `C:\Users\samar\dev\sih26227` with its own CLAUDE.md /
+   PLAN.md / venv - run it in a second Claude session. **Go/no-go on SIH26227: 25 Sep evening.**
+3. **The title slide is wrong for the national round**: `presentation/build_deck.py:81-82` still
+   say `SNPSU0192` / `SNPSU LunaX`; the portal name is **LunaXX** and the 2026 rules forbid the
+   institute's name. Fix when the portal's exact Team ID is known.
+4. **`residual_px` is meaningless on real pairs** - it is the RMSE over ALL held-out matches incl.
+   outliers (352 px on a pair whose inliers sit at 0.5 px). Quote `residual_median_px` /
+   `holdout_inlier_rmse_px` (added to `evaluate()` 18 Sep; the app now shows the median).
+
+## Samartha's manual tasks (not code)
+
+- Portal: draft save? edit after submit? title/description limits? exact Team ID and PS-ID format?
+- SPOC: does Student Innovation count toward the two? who uploads? internal-hackathon report and
+  authorisation letter uploaded?
+- PRADAN / chmapbrowse registration (TMC-2, IIRS, SAC's own OHRC products) - bonus track only.
 
 ---
 
-## Position
-
-```
-Day 20  |  Internal round: 11 Sep, DONE, result unrecorded
-Gate 1: PASSED (Day 5)      Gate 2: PASSED (Day 6)
-Gates 3, 4, 5: never recorded in the repo; all scheduled before 11 Sep, so now moot
-Next gate: none defined. The gate plan ended at the internal round.
-Novelty weight: 25% (confirmed Day 5)
-```
-
-## Verified this session, by command (18 Sep)
-
-| Check | Result |
-|---|---|
-| `pytest evaluation/ -q` | **24 passed**, exit 0 |
-| `import core.pipeline` | OK, exit 0 |
-| `git fetch` | origin/main has nothing new; local was 1 commit ahead before tonight's push |
-
----
-
-## What changed since the last STATUS (10 Sep night)
+## What exists now that did not this morning (all on `main`)
 
 | Commit | What |
 |---|---|
-| `e41473c` (11 Sep) | **`ops/ROUND2_SCRIPT_SOLO.md` added.** On the day, Round 2 changed to one presenter, seven-minute cap. The solo script covers context, need, solution, evidence and impact over the five content slides; 844 spoken words = 6:41 at 130 wpm with clicks (6:29 with the bracketed passages dropped); per-slide clock checkpoints; cut-downs to 4 min and 90 s; a numbers table naming the `results_log.csv` row behind every spoken figure; eight Q&A answers. Slide 5 rewritten in plain language as three reasons: landing, finding changes, cost. `ops/ROUND2_SCRIPT.md` got a banner pointing to it. |
-| this commit | This STATUS, and `ops/specs/day_20.md`: five small, outcome-independent specs for Day 21 (README and dataset-card drift fixes in each owner's folder, Saniya's `DECK_STATUS.md`, and a "round record" everyone who was present fills in). `spec-writer` reported BLOCKED: none. |
+| `2e3e41e` | national-round research, PS-count snapshots, `ops/national_round/pull_ps_counts.py` |
+| `e9508bc` | **deliverables**: `core/export.py` - registered-product GeoTIFF, `matches.csv`, GCPs (GDAL + QGIS), ISIS csv, trust map, `report.json/md`; `--out`, `--allow-failed` on the CLI |
+| `42845fe` | **real geometry**: `core/geometry.py` (OHRC grid, LROC corners, equirect maps, GeoTIFF frames -> south polar stereographic), `ops/cut_site_pairs.py`, robust held-out residuals |
+| `057664a` | **26 real OHRC/NAC registrations logged + 6 three-image loops closed** (`ops/run_real_pairs.py`, `ops/loop_closure.py`, `evaluation/real_eval.py`, `evaluation/real_pairs_log.csv`) |
+| `1a62951` | **real multi-modal**: Kaguya TC (visible) vs Kaguya MI 1548 nm (infrared) |
+| `dcd2bc3` | sub-pixel fallback (`xcorr_peak_subpixel`); app shows held-out median + DELIVERABLES downloads |
+| `2429e88` | real sun sweep (`ops/sun_sweep.py`), planted-failure trust calibration (`ops/trust_real_calibration.py`), 100x faster geometry |
+| uncommitted | viewpoint: `evaluation/synthetic_data.make_pair(tilt_deg, tilt_azimuth_deg, parallax)`, `--tilt-sweep` on the CLI |
 
-Also produced in-session on 11 Sep but **not stored in the repo** (they went straight into forms):
-a problem-statement-and-solution overview for a college form, one-word team roles
-(Samartha Architect, Rohan Data, Samrudh Evaluation, Risheeth Benchmarking, Rishabh Detection,
-Saniya Presentation), and a project-title answer. The project has no name of its own; the
-deck's slide-2 line is *"A lunar image-registration engine that knows when it is wrong"*.
+## The evidence so far (results_log rows 277-308, real_pairs_log rows 1-38)
 
----
+The site: Chandrayaan-2 OHRC `ch2_ohr_ncp_20200229T0739312111_d_img_d18` at 74 S 43.6 E (sun
+elevation 6.9 deg, derived). **166 LROC NAC frames overlap it**; 30 downloaded for a sun sweep.
 
-## Per person
+- **OHRC -> NAC (cross-sensor, cross-mission), 20 windows**: 3,000-5,400 inliers per 600 m
+  window at 91-99.8 % inlier ratio and full grid coverage on the lit windows; held-out median
+  0.41-1.0 px on the 0.93-1.25 m NAC grid. (Best public competitor: 5-7 inliers per pair.)
+- **Loop closure**, OHRC -> NAC A -> NAC B vs OHRC -> NAC B, 6 windows: **0.096-0.128 m RMS**
+  (0.08-0.10 px of the 1.245 m grid). Loop closure cancels errors attached to one image
+  (geolocation, its own shading) - it is correspondence consistency, not absolute accuracy.
+- **Multi-modal**: TC vs MI 749 nm (visible): 313-429 inliers, verified. TC vs MI 1548 nm
+  (infrared): the matcher fails (5-6 inliers), the area check contradicts it in all three windows,
+  the fallback lands 0.58-1.13 MI px (8.5-16.7 m) from the visible-band solution.
+- **Archive disagreement found**: LROC NAC corners (0.01 deg) are off ~150 m and drift along the
+  strip; the two Kaguya map products disagree by ~40 m here; TC morning and evening maps are the
+  SAME pixels at this latitude (not a sun pair - not used).
 
-| Person | Last push | Delivered | Blocked on |
-|---|---|---|---|
-| **Samartha** | 11 Sep, `e41473c` | core/, the app, the deck build, all Round 2 scripts | recording the round's outcome |
-| **Rohan** | 2 Sep, `f486e1c` | data pairs, provenance, licences | nothing in the repo; next step depends on the outcome |
-| **Samrudh** | 3 Sep, `580d371` | evaluation/, ground truth, results log | same |
-| **Risheeth** | 3 Sep, `fa40590` | baselines/ (SIFT, ORB, AKAZE) | same |
-| **Rishabh** | 3 Sep, `483dcc2` | `app/change_detection.py`, limitations doc | same |
-| **Saniya** | no commits under her name | portal deck values, team name, deck design | same |
+## Running / pending at the end of the session
 
----
-
-## In flight
-
-**Nothing half-finished in the code.** The one thing to resume first is not code:
-
-> Record the internal-round outcome in this file - shortlisted in Round 1 or not, Round 2 result,
-> national nomination yes/no, and any judge questions people remember. Then decide whether there
-> is a next phase (national idea submission, then a December Grand Finale per §10), and only then
-> write a new gate plan.
-
-If nominated, the two concrete tasks are: (1) confirm the submission deadline and exact portal
-PS-ID format (`SIH26166` vs `26166`, see Open questions); (2) re-verify the deck PDF is the
-submitted version (`SIH26166_deck_UPLOAD.pdf`, sha256 `5f6adbc7931d1896`, gitignored, on this
-machine and in Drive).
-
----
-
-## Open questions
-
-1. **What happened on 11 Sep?** Round 1 shortlist, Round 2 result, nomination. Unrecorded.
-2. **Which national deadline binds - 15 Sep or 20 Sep?** Unresolved since 3 Sep. If 15 Sep, it
-   has passed.
-3. **Does the portal show the PS ID as `SIH26166` or `26166`?** Slide 1 says `SIH26166`. If the
-   portal differs, change `TITLE_META` in `presentation/build_deck.py` and rebuild.
-4. **Is there a next phase at all?** If not, the repo should be tidied and archived, not extended.
-5. **Does `app/README.md` belong to Rishabh?** The ownership rule names only
-   `app/change_detection.py`; all four README commits are his. Confirm before sending his Issue.
-
----
+- `ops/cut_site_pairs.py --correct-chain` over the 30 sweep NACs (28 done; M1258744166RE and
+  M1295016540LE could not be corrected - record as such).
+- `ops/trust_real_calibration.py` on the 18 loop legs + 5 verified windows -> `evaluation/trust_real_calibration.csv`.
+- Next: `python -m ops.sun_sweep --windows 3 --log`; the synthetic viewpoint sweep
+  (`python -m core.pipeline --synthetic --dem <data>/raw/dem_site_60m.npy --pixel-size 60
+  --sun-delta 15 --tilt-sweep 0,10,20,30,40,50 --repeats 3 --log --allow-failed`, with and without
+  `--parallax`); then deck figures from the logs.
 
 ## Known issues - do not re-report these
 
-1. **Gates 3, 4 and 5 have no evidence in the repo** and were all scheduled before the round.
-   They cannot be retroactively passed; treat them as never recorded.
-2. **The Streamlit demo has never been checked by `demo-medic`** against the current build. Run it
-   before any future demo.
-3. **`docs/00_CANONICAL_FACTS.md` and `CLAUDE.md` still say the round was 9 Sep.** It was 11 Sep.
-   Not edited; fix when the docs are next revised.
-4. **`ops/PITCH.md` has drifted from the deck** ("~2 km", "200+ OHRC scenes" with no source).
-   Superseded by `ops/ROUND2_SCRIPT_SOLO.md`.
-5. **PowerPoint on this machine is unlicensed**; COM export is refused (`0x80048240`). PDF export
-   needs File > Export by hand or Print to PDF, then the PyMuPDF crop. Close PowerPoint before any
-   rebuild or `build_deck` fails with PermissionError.
-6. **`64` and `35` on slide 2 count different things.** 64 = every grid cell; 35 = cells the area
-   check could score. Zero of the 35 agreed.
-7. **No teammate has pushed since 3 Sep.** Not a fault; the work after that was the deck and the
-   script. But any new phase starts with everyone pulling `main`.
-8. **`docs/00_CANONICAL_FACTS.md` §7 says `rmse_gt_px` applies to "Synthetic + Tier D only".**
-   The log has exact ground truth only for tiers `synthetic` and `same-frame fractional shift`;
-   the four Tier D rows that fill it measure against an FFT *estimate*. Samartha's file; not
-   edited tonight.
-9. **`docs/00_CANONICAL_FACTS.md` §14 lists `baselines/results_table.csv`;** the real file is
-   `baselines/results.csv`.
-10. **Teammates' READMEs have drifted** (`evaluation/README.md` calls the residual a "lower bound";
-    `app/README.md` predates commit `80f198b`; `data/DATASET_CARD.md` says the never-run B+ pair
-    "proves scale invariance"; `baselines/draw_failure_gallery.py` cannot load a real pair). Each
-    is assigned to its owner in `ops/specs/day_20.md`.
+1. **The sun sweep's first judging rule was wrong** (archive geometry as truth); it is now image
+   evidence, explained in `ops/sun_sweep.py`. The trust layer's detection rate comes ONLY from the
+   planted-failure calibration, never from the sweep.
+2. **Evidence freeze**: every deck number must be re-run on the final commit (Day 7) so the deck
+   cites one code version; rows logged today carry their commit in real_pairs_log.
+3. PowerPoint on this machine is unlicensed; PDF via Print to PDF or another machine.
+4. `docs/00_CANONICAL_FACTS.md` and `CLAUDE.md` still describe the college round (9 Sep, gates);
+   they are stale, not wrong about the invariants.

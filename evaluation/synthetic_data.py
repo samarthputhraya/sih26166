@@ -2,9 +2,37 @@ import numpy as np
 import cv2
 from evaluation.shaded_relief import render_shaded_relief
 
+def view_matrix(shape, tilt_deg, tilt_azimuth_deg):
+    """3x3 map from reference (nadir) pixels to the pixels of a view tilted `tilt_deg`
+    off nadir toward image azimuth `tilt_azimuth_deg` (0 = +x, 90 = +y): the ground is
+    foreshortened by cos(tilt) along that direction, about the image centre. At
+    orbital altitude over a few-km footprint the keystone term is negligible, so this
+    affine IS the viewpoint change for flat terrain; relief adds parallax (below)."""
+    h, w = shape
+    th, ph = np.radians(tilt_deg), np.radians(tilt_azimuth_deg)
+    R = np.array([[np.cos(ph), -np.sin(ph)], [np.sin(ph), np.cos(ph)]])
+    A = R @ np.diag([np.cos(th), 1.0]) @ R.T
+    c = np.array([w / 2.0, h / 2.0])
+    V = np.eye(3)
+    V[:2, :2] = A
+    V[:2, 2] = c - A @ c
+    return V
+
+
+def parallax_field(dem, pixel_size_m, tilt_deg, tilt_azimuth_deg):
+    """Relief displacement of every ground pixel in the tilted view, in pixels:
+    (z - mean z) * tan(tilt) / pixel_size along the tilt direction. The mean is
+    removed - a constant offset is part of any registration's translation."""
+    z = np.asarray(dem, np.float64)
+    mag = (z - z.mean()) * np.tan(np.radians(tilt_deg)) / pixel_size_m
+    ph = np.radians(tilt_azimuth_deg)
+    return mag * np.cos(ph), mag * np.sin(ph)
+
+
 def make_pair(dem, pixel_size_m,
               sun_a=(45, 30), sun_b=(225, 30), 
-              rotation_deg=None, scale=None, shift_px=None, seed=0):
+              rotation_deg=None, scale=None, shift_px=None, seed=0,
+              tilt_deg=0.0, tilt_azimuth_deg=0.0, parallax=False):
     """Returns (source, reference, H_true, meta).
 
     reference = render(dem, sun_a)
@@ -46,6 +74,24 @@ def make_pair(dem, pixel_size_m,
     H_true[0, 2] += shift_px[0]
     H_true[1, 2] += shift_px[1]
 
+    # Viewpoint: the source is seen `tilt_deg` off nadir. V maps nadir (reference)
+    # pixels to the tilted view, so the source -> reference truth gains inv(V).
+    # Defaults (tilt 0) leave H_true exactly as before.
+    truth_field = None
+    if tilt_deg:
+        V = view_matrix((h, w), tilt_deg, tilt_azimuth_deg)
+        H_true = H_true @ np.linalg.inv(V)
+        if parallax:
+            # Relief moves each ground point along the tilt direction before the view
+            # is taken. Rendered by remapping the source-sun render; the truth is no
+            # longer one homography, so a per-pixel truth FIELD is returned in meta.
+            dxp, dyp = parallax_field(dem, pixel_size_m, tilt_deg, tilt_azimuth_deg)
+            gx, gy = np.meshgrid(np.arange(w, dtype=np.float32), np.arange(h, dtype=np.float32))
+            src_base = cv2.remap(src_base.astype(np.float32), gx - dxp.astype(np.float32),
+                                 gy - dyp.astype(np.float32), cv2.INTER_LINEAR,
+                                 borderMode=cv2.BORDER_REFLECT)
+            truth_field = (dxp, dyp)
+
     # 3. Warp src_base to create the Source image 
     # Since H_true maps Source -> Reference, we use its inverse to map Reference -> Source space
     H_inv = np.linalg.inv(H_true)
@@ -62,7 +108,12 @@ def make_pair(dem, pixel_size_m,
         "sun_a": sun_a,
         "sun_b": sun_b,
         "sun_azimuth_diff": abs(sun_a[0] - sun_b[0]),
-        "seed": seed
+        "seed": seed,
+        "tilt_deg": float(tilt_deg), "tilt_azimuth_deg": float(tilt_azimuth_deg),
+        "parallax": bool(parallax and tilt_deg),
+        # (dx, dy) per REFERENCE pixel: the content at reference pixel q appears in the
+        # parallax-rendered plane at q + d(q), i.e. at source pixel inv(H_true)(q + d(q)).
+        "parallax_field_px": truth_field,
     }
 
     return source, ref_base, H_true, meta
