@@ -284,8 +284,10 @@ def _fallback(a_n, b_n, factors, gsd, ref_shape, H_true, reason, a_raw=None, b_r
     # peak's neighbours). The quadrant spread below stays integer - it is an
     # uncertainty, not a measurement - and so does the per-cell area check.
     from core.reliability import xcorr_peak_subpixel
-    ra = dict(reps_a)[rep]
-    rb = dict(reps_b)[rep]
+    if rep == "intensity_inverted":             # see core.reliability.best_peak
+        ra, rb = -dict(reps_a)["intensity"], dict(reps_b)["intensity"]
+    else:
+        ra, rb = dict(reps_a)[rep], dict(reps_b)[rep]
     sdx, sdy, sncc = xcorr_peak_subpixel(ra, rb)
     idx, idy = dx, dy
     if sdx is not None and abs(sdx - idx) <= 1.0 and abs(sdy - idy) <= 1.0:

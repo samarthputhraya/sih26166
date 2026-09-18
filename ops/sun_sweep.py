@@ -113,6 +113,9 @@ def main(argv=None):
     ap.add_argument("--windows", type=int, default=3)
     ap.add_argument("--log", action="store_true")
     ap.add_argument("--only", nargs="*", help="restrict to these NAC ids")
+    ap.add_argument("--rerun", action="store_true",
+                    help="register and log windows that already carry an outcome (after a trust-layer "
+                         "change; reports use the latest row per pair)")
     a = ap.parse_args(argv)
     order = (C.DATA / "nac" / "sweep_order.txt").read_text().split()
     if a.only:
@@ -135,7 +138,7 @@ def main(argv=None):
             continue
         import csv as _csv
         done = set()
-        if a.log and (ROOT / "evaluation" / "real_pairs_log.csv").exists():
+        if a.log and not a.rerun and (ROOT / "evaluation" / "real_pairs_log.csv").exists():
             done = {r["pair_id"] for r in _csv.DictReader(open(ROOT / "evaluation" / "real_pairs_log.csv",
                                                                encoding="utf-8"))
                     if (r.get("outcome") or "").strip()}

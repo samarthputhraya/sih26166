@@ -219,12 +219,25 @@ def representations(img):
 
 
 def best_peak(reps_a, reps_b):
-    """xcorr_peak over paired representations; the strongest peak wins."""
+    """xcorr_peak over paired representations; the strongest peak wins.
+
+    Plain intensity is also tried INVERTED (-a against b), reported as "intensity_inverted".
+    A sun from the opposite side flips the shading of every slope, so a correct alignment is
+    strongly ANTI-correlated and its positive peak sits somewhere else. Measured 18 Sep 2026 on
+    real OHRC/NAC windows 131-143 deg apart in sun azimuth: gradient orientation peaked in the
+    right place in 60-62/64 cells but at NCC 0.13-0.16 (below MIN_CELL_NCC), intensity peaked
+    ~31 px away, and inverted intensity verified 60/64 cells at NCC 0.56-0.66. Without this
+    the area check refused registrations the image evidence says were right.
+    """
     best = (None, None, 0.0, "n/a")
     for (ma, a), (_mb, b) in zip(reps_a, reps_b):
         dx, dy, ncc = xcorr_peak(a, b)
         if dx is not None and ncc > best[2]:
             best = (dx, dy, ncc, ma)
+        if ma == "intensity":
+            dx, dy, ncc = xcorr_peak(-np.asarray(a, dtype=np.float32), b)
+            if dx is not None and ncc > best[2]:
+                best = (dx, dy, ncc, "intensity_inverted")
     return best
 
 
