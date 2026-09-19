@@ -143,36 +143,39 @@ BULLET_INDENT = 0.26                                # hanging indent for wrapped
 S2 = [
     ("Proposed Solution", 0, True, BLUE),
     ("A lunar image-registration engine that knows when it is wrong: it aligns Chandrayaan-2 "
-     "imagery to lunar references across Sun angle, scale and sensor, and certifies region by "
-     "region where that alignment holds.", 1, False, INK),
+     "imagery to lunar references across Sun angle, scale and sensor, and reports region by "
+     "region whether it can be trusted.", 1, False, INK),
     ("Detailed explanation", 0, True, BLUE),
-    ("One ground scale; lighting reduced to edge direction; LoFTR matches; MAGSAC++; sub-pixel "
-     "refinement.", 1, False, INK),
-    ("An independent check never sees a match: it re-correlates raw pixels in an 8×8 grid, "
-     "inverted shading included, and says agrees, unconfirmed or contradicted. Contradicted "
-     "triggers a declared fallback.", 1, False, INK),
+    # core/pipeline.run_all order: LoFTR -> _refine_subpixel -> filter_matches (MAGSAC++).
+    ("One ground scale; lighting reduced to edge direction; LoFTR matches; sub-pixel "
+     "refinement; MAGSAC++.", 1, False, INK),
+    ("An independent area check never uses the matches: it cross-correlates the warped image "
+     "against the reference in 8×8 cells, inverted shading too, and says agrees, "
+     "unconfirmed or contradicted; contradicted falls back.", 1, False, INK),
     ("How it addresses the problem", 0, True, BLUE),
-    # REPORT.md "SAC's own benchmark pair (equatorial ...)": d_sun az, windows agreeing / total.
-    # "(polar ...)": agrees / total.
-    ("SAC's own pairs (arXiv:2509.04775, Table 1), real imagery: OHRC ↔ NAC "
-     "M1350459544RE, Sun [TBD]° apart, [TBD]/[TBD] windows verified; polar M165491149RE, "
-     "[TBD]/[TBD].", 1, False, INK),
-    # "Real sun-angle sweep": NAC frames, azimuth range. "Scale rung: ... TC ortho map": scale.
-    ("Sun: one OHRC frame vs [TBD] NAC frames, [TBD]–[TBD]° apart. Scale: OHRC 0.25 m to NAC "
-     "~1 m, Kaguya TC 7.4 m ([TBD]×) and LOLA 60 m.", 1, False, INK),
-    # "Kaguya TC -> Kaguya MI", "... IIRS": declared method. "Real viewpoint: TMC-2 fore -> aft":
-    # held-out inlier RMSE px.
-    ("Multi-modal: visible to Kaguya MI 1548 nm and IIRS infrared — matcher fails, check "
-     "refuses, fallback declared. Viewpoint: TMC-2 fore vs aft, [TBD] px.", 1, False, INK),
-    ("Innovation and uniqueness", 0, True, ACCENT),
-    # "MiLOI ... (same sensor)": trust verdict vs truth (agrees right / contradicted wrong /
-    # unconfirmed wrong). Tier A, network truth, leave-one-out.
-    ("On [TBD] real same-sensor NAC pairs (MiLOI) with an independent truth: agrees was right "
-     "[TBD]/[TBD]; contradicted was wrong [TBD]/[TBD]; unconfirmed, wrong [TBD]/[TBD].",
+    # REPORT.md "SAC's own benchmark pair (equatorial ...)": Δsun az (an AZIMUTH difference),
+    # count of `agrees` / rows. "(polar ...)": `agrees` / rows.
+    ("SAC's own pairs (arXiv:2509.04775, Table 1), real and cross-sensor: OHRC ↔ NAC "
+     "M1350459544RE, Sun azimuths [TBD]° apart, [TBD]/[TBD] windows accepted; polar "
+     "M165491149RE, [TBD]/[TBD].", 1, False, INK),
+    # "Real sun-angle sweep": "All bins" line (NAC frames, azimuth range).
+    # "Scale rung: ... TC ortho map": scale column, `agrees` / rows. LOLA: "Declared-failure rung".
+    ("Sun: one OHRC frame vs [TBD] NAC frames, azimuths [TBD]–[TBD]° apart. Scale: to NAC ~1 m "
+     "and Kaguya TC 7.4 m ([TBD]×, [TBD]/[TBD] accepted); to LOLA 60 m it declares failure.",
      1, False, INK),
-    # "Trust layer on real imagery: planted ...": false-alarm % at 0-2 m, caught % at >= 5 m.
-    ("Confident-but-wrong answers planted in real OHRC/NAC windows: [TBD]% false alarms at "
-     "0–2 m, [TBD]% caught from 5 m. Shadow is \"no evidence\", never \"aligned\".", 1, True, ACCENT),
+    # "Kaguya TC -> Kaguya MI" + "... IIRS": windows declared fft fallback / total.
+    ("Multi-modal: visible to Kaguya MI 1548 nm and IIRS infrared — learned matching fails; "
+     "[TBD] of [TBD] windows are refused and fall back, the rest stay unconfirmed.", 1, False, INK),
+    ("Innovation and uniqueness", 0, True, ACCENT),
+    # "MiLOI": the verdict table, column "matcher H within 3 px" (what the trust layer judges).
+    # NOT "independent": the truth network is built from OTHER pairs where ours and SIFT agree.
+    ("On [TBD] real same-sensor NAC pairs (MiLOI), truth built leave-one-out from other pairs "
+     "where ours and SIFT agree: agrees within 3 px [TBD]/[TBD]; contradicted wrong "
+     "[TBD]/[TBD]; unconfirmed wrong [TBD]/[TBD].", 1, False, INK),
+    # "Trust layer on real imagery: planted ...": 0 m row = false alarms; 3 m row; >= 5 m rows.
+    ("Planted wrong answers in real OHRC/NAC windows: [TBD]% false alarms on correct ones, "
+     "[TBD]% caught at 3 m, [TBD]% from 5 m; under ~2 m passes. No matches means \"no evidence\", "
+     "never \"verified\".", 1, True, ACCENT),
 ]
 
 S3_LEFT = [
@@ -182,38 +185,41 @@ S3_LEFT = [
      "normalisation · FFT area check.", 1, False, INK),
     ("Data: Chandrayaan-2 OHRC, TMC-2, IIRS (PRADAN) · LRO NAC · Kaguya TC and MI · LOLA.",
      1, False, INK),
-    ("Hardware: any laptop. CPU only, fully offline, no GPU.", 1, True, ACCENT),
+    ("Hardware: a standard laptop, CPU only, no discrete GPU, fully offline.", 1, True, ACCENT),
 ]
 
 S3_RIGHT = [
     ("Methodology and process", 0, True, BLUE),
     ("The flow above is the implemented pipeline, in the order it runs — every box is a "
      "function in the codebase, not a plan.", 1, False, INK),
-    ("Working prototype: a Streamlit app exporting the registered GeoTIFF, QGIS/GDAL and ISIS "
-     "control points, five metrics and the trust map.", 1, False, INK),
-    ("Every run appends to one evidence log, and a generator rebuilds every number in this "
-     "deck from it — nothing is typed by hand.", 1, False, INK),
+    ("Prototype: a Streamlit app exporting the registered GeoTIFF, GDAL/QGIS control points, "
+     "an ISIS-style match list, metrics and the trust map.", 1, False, INK),
+    ("Every run appends to the evidence logs; a generator rebuilds the report from them, and "
+     "every number here is copied from it.", 1, False, INK),
 ]
 
 S4 = [
     ("Analysis of the feasibility", 0, True, BLUE),
-    # REPORT.md: count of real pairs (distinct pair_ids in real_pairs_log, latest rows) and
-    # instrument pairings (sections). "Loop closure": "Loop RMS median".
+    # REPORT.md footer: registered pairs; instrument pairings = its pair sections (OHRC-NAC,
+    # NAC-NAC, OHRC-TMC2, TMC2-TMC2, TC-MI, TC-IIRS, OHRC-TC, OHRC-LOLA). "Loop closure".
     ("Built and measured, not proposed: [TBD] real windows across [TBD] instrument pairings, all "
      "public data, all libraries open-source. Three-image loops close to [TBD] m.", 1, False, INK),
-    # "Chandrayaan-2 OHRC -> LRO NAC": held-out median px range on the NAC grid, metres.
-    ("Sub-pixel on real data, named on its grid: held-out median [TBD] px on the ~0.9 m NAC "
-     "grid ([TBD] m), from matches the fit never saw.", 1, False, INK),
+    # "Chandrayaan-2 OHRC -> LRO NAC": held-out median range, Δsun az range, ref_gsd_m values.
+    ("Held-out residual on real OHRC → NAC windows (Sun [TBD]–[TBD]° apart): median "
+     "[TBD]–[TBD] px on the ~1 m NAC grids ([TBD]–[TBD] m). A residual, not ground truth.",
+     1, False, INK),
     ("Potential challenges and risks", 0, True, ACCENT),
-    # "MiLOI": success at >= 90 deg (ours and classical).
-    ("Past ~90° between the two Sun directions nothing we tested registers — ours or classical "
-     "([TBD] of [TBD] MiLOI pairs). The system says so instead of guessing.", 1, False, INK),
-    # "SAC's own benchmark pair (equatorial ...)": wide-search offset from site_geometry json.
+    # "MiLOI" table rows 90-120, 120-180 (all methods); "Real sun-angle sweep" bins 60-90, 90-120
+    # (accepted / windows) and 120-180.
+    ("The hard band: no method registered a MiLOI pair with the Suns over 90° apart ([TBD] of "
+     "[TBD]); our sweep accepted [TBD] of [TBD] windows at 60–120° azimuth, yet [TBD] of [TBD] at "
+     "120–153°.", 1, False, INK),
+    # "SAC's own benchmark pair (equatorial ...)" note: the wide-search offset.
     ("Archive geometry is not truth: at SAC's site the NAC's published corners sat [TBD] km from "
-     "the OHRC grid; we correct and report it, never hide it.", 1, False, INK),
-    # "Real viewpoint: TMC-2 fore -> aft": held-out inlier RMSE.
-    ("Relief parallax is not a homography: fore/aft TMC-2 leaves [TBD] px; infrared at 62–89 m "
-     "defeats learned matching and falls back to correlation.", 1, False, INK),
+     "the OHRC grid; we correct it and report it.", 1, False, INK),
+    # "Real viewpoint: TMC-2 fore -> aft": held-out median column (NOT the RMSE-within-3-px one).
+    ("Relief parallax is not a homography: TMC-2 fore vs aft (same sensor) leaves a held-out "
+     "median of [TBD]–[TBD] px on its 5.9 m grid.", 1, False, INK),
     ("Strategies for overcoming these challenges", 0, True, BLUE),
     ("Tile-level local transforms and LOLA-based orthorectification for relief.", 1, False, INK),
     ("Full-scene tiled processing of OHRC strips; IIRS band selection for the infrared leg.",
@@ -222,28 +228,30 @@ S4 = [
 
 S5 = [
     ("Potential impact on the target audience", 0, True, BLUE),
+    # "Trust layer on real imagery": >= 5 m rows; the 1-2 m rows are the stated floor.
     ("Landing-site safety at the lunar south pole: a hazard map is only as good as the "
-     "alignment beneath it. Every region carries its own verdict, so a wrong alignment cannot "
-     "quietly become a safety decision.", 1, False, INK),
-    ("OHRC's archive becomes co-registrable with LRO and Kaguya: mosaics, time series and "
-     "change detection gated by trust, from imagery ISRO already holds.", 1, False, INK),
+     "alignment beneath it. Every region carries its own verdict; planted errors of 5 m or more "
+     "were all flagged, and the floor — about 2 m — is stated, not hidden.", 1, False, INK),
+    # distinct OHRC products in real_pairs_log (source_product ch2_ohr_*) and their sites.
+    ("OHRC frames co-register with LRO NAC and Kaguya TC ([TBD] frames at [TBD] sites so far): "
+     "mosaics, time series and change detection gated by trust.", 1, False, INK),
     ("Benefits of the solution", 0, True, ACCENT),
     ("Scientific: a verdict per region instead of one number for a whole image, calibrated "
      "on real imagery (figure).", 1, False, INK),
     ("Economic: open-source and CPU-only. No GPU purchase, no licence cost; outputs load in "
-     "QGIS, GDAL and ISIS today.", 1, False, INK),
+     "QGIS and GDAL today.", 1, False, INK),
     ("Security and privacy: public planetary data only, no personal data, fully offline.",
      1, False, INK),
-    ("Sustainable and reusable: sensor-agnostic, so a new instrument is a configuration "
-     "entry rather than a rewrite.", 1, False, INK),
+    ("Sustainable and reusable: adding an instrument needs a loader, not a new pipeline.",
+     1, False, INK),
 ]
 
 S6 = [
     ("Lunar domain", 0, True, BLUE),
-    ("Makharia, Singla, Amitabh, Dube, Sharma — Space Applications Centre, 2025 · "
-     "arxiv.org/abs/2509.04775", 1, False, INK),
-    ("Singh, Singla, Hemrajani, Dube, Amitabh, Patel — Space Applications Centre, 2026 · "
-     "arxiv.org/abs/2604.25208", 1, False, INK),
+    ("Makharia, Singla, Amitabh, Dube, Sharma — Space Applications Centre (ISRO) and Manipal "
+     "University Jaipur, 2025 · arxiv.org/abs/2509.04775", 1, False, INK),
+    ("Singh, Singla, Hemrajani, Dube, Amitabh, Patel — \"Towards Seamless Lunar Mosaics\", Space "
+     "Applications Centre, 2026 · arxiv.org/abs/2604.25208", 1, False, INK),
     ("Xie, Liu, Di et al. — Remote Sensing 17(13):2302, 2025 (MiLOI dataset)", 1, False, INK),
     ("Methods we build on", 0, True, BLUE),
     ("LoFTR, detector-free local feature matching — Sun et al., CVPR 2021 · "
@@ -251,7 +259,7 @@ S6 = [
     ("MAGSAC++ — Barath et al., CVPR 2020 · arxiv.org/abs/1912.05909", 1, False, INK),
     ("Reliability estimation — the basis of our contribution", 0, True, BLUE),
     ("Uss, Vozel, Lukin, Chehdi — IEEE TGRS 2016 · arxiv.org/abs/1602.02720", 1, False, INK),
-    ("Brown & Lowe — IJCV 2007", 1, False, INK),
+    ("Brown & Lowe — IJCV 2007  ·  Wan, Shao, Li — 2021 · arxiv.org/abs/2106.12738", 1, False, INK),
     ("Truong et al., PDC-Net — CVPR 2021 · arxiv.org/abs/2101.01710", 1, False, INK),
     ("Data sources and licences", 0, True, BLUE),
     ("Chandrayaan-2 OHRC, TMC-2, IIRS — ISRO PRADAN (pradan.issdc.gov.in)  ·  LROC NAC, LOLA — "

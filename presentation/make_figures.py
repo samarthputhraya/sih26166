@@ -579,8 +579,10 @@ def fig_pipeline():
         "Common-GSD\nresample\n(scale invariance)",
         "Illumination\nnormalisation\n(gradient orientation)",
         "LoFTR\ndense matching\n(detector-free)",
-        "MAGSAC++\noutlier rejection",
+        # run_all's order: refinement (pipeline._refine_subpixel) runs BEFORE MAGSAC++
+        # (filter_matches); the 9 Sep figure had the two the other way round.
         "Sub-pixel NCC\nrefinement",
+        "MAGSAC++\noutlier rejection",
         "8×8 distribution\ncheck\n(coverage, CV)",
     ]
     n, w, gap, h, y = len(steps), 1.74, 0.12, 0.96, 2.36
@@ -596,8 +598,8 @@ def fig_pipeline():
     # dogleg whose arrowhead landed on the text.
     cx, cw, cy, ch = 0.60, 11.80, 1.14, 0.74
     placed.append(_box(ax, cx, cy, cw, ch,
-                       "INDEPENDENT AREA CHECK — cross-correlates the raw pixels of every "
-                       "cell against the reference.\nNever sees a match. The cells vote on "
+                       "INDEPENDENT AREA CHECK — cross-correlates the warped image against the "
+                       "reference, cell by cell.\nNever sees a match. The cells vote on "
                        "the matcher's transform.",
                        "#fdeee6", ORANGE, fs=10.8, bold=True, colour="#8a3d10"))
     last_x = x0 + (n - 1) * (w + gap) + w / 2

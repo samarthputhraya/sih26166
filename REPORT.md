@@ -1,6 +1,6 @@
 # SIH26166 - evaluation report
 
-Generated 2026-09-19T11:53 from commit `3917a1b-dirty` by `python -m ops.make_report`. **Do not edit by hand** - every number below is read from the evidence files named in each section.
+Generated 2026-09-19T12:22 from commit `94b4445-dirty` by `python -m ops.make_report`. **Do not edit by hand** - every number below is read from the evidence files named in each section.
 
 All pixel figures are on the REFERENCE image's grid, with its metres stated. Real pairs have no exact ground truth: accuracy on them is reported as held-out residuals (the 20 % of matches the fit never saw) and as loop closure. `residual_px` in results_log.csv is the RMSE over ALL held-out matches including outliers and is not quoted for real pairs.
 
@@ -175,6 +175,8 @@ Outcome by image evidence, rule v2 (`ops/sun_sweep.py` docstring): the matcher i
 | 90-120 | 5 | 2 | 0 | 0 | 0 | 1 | 4 | 8 |
 | 120-180 | 15 | 5 | 10 | 0 | 0 | 0 | 5 | 209 |
 
+All bins: 69 windows over 25 NAC frames, Δsun azimuth 3.3-152.7°. Known issue 2: some windows are logged under two ids (`_sw` and plain) - rows, not distinct ground.
+
 ## MiLOI: real LROC NAC images of one ground under many suns (same sensor)
 
 `evaluation/miloi.py` (Xie et al. 2025, github.com/Bin501/CNSFM @94cebaa). 321 pairs matched; 81 have a truth. The tiles' map geometry is off by metres to hundreds of metres, so truth is a per-image translation network built only from pairs where ours AND SIFT agree within 1.0 px with ≥50 inliers each; a pair that is itself an edge is scored leave-one-out, and a pair its network cannot reach has no truth and is not scored. Same sensor (LROC NAC ↔ LROC NAC) - NOT cross-sensor.
@@ -199,13 +201,13 @@ ours, trust outcomes vs truth: caught_failure 43, correct_accepted 33, missed_fa
 ours, declared transform within 3.0 px of truth: 34/81
 ```
 
-Trust verdict against truth, ours (latest row per pair):
+Trust verdict against truth, ours (latest row per pair). Two definitions of "right", both shown: the MATCHER's homography against truth over the frame (what the trust layer judges - `outcome`), and the success rule of the table above (`rmse_gt_px` of the raw matches). S3's truth has no measurable error of its own.
 
-| verdict | pairs | matcher within 3 px of truth |
-|---|---|---|
-| agrees | 33 | 33 |
-| unconfirmed | 5 | 0 |
-| contradicted | 43 | 0 |
+| verdict | pairs | of which S3 | matcher H within 3 px | rmse_gt_px under 3 px |
+|---|---|---|---|---|
+| agrees | 33 | 13 | 33 | 28 |
+| unconfirmed | 5 | 5 | 0 | 0 |
+| contradicted | 43 | 38 | 0 | 0 |
 
 ## Trust layer on real imagery: planted confident-but-wrong registrations
 
@@ -253,4 +255,4 @@ python -m ops.trust_real_calibration "site_ohrc_m1153871873le_w*_t" ... --log
 python -m ops.make_report
 ```
 
-Rows in real_pairs_log.csv: 234 (324 distinct pairs/loops; where a pair was re-run, the latest row is shown). Rows in results_log.csv: 874.
+Rows in real_pairs_log.csv: 234: 150 distinct pair ids (latest row wins) = 140 registered pairs + 6 loops + 4 withdrawn (INVALIDATED). Rows in results_log.csv: 874.

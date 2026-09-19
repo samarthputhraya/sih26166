@@ -261,7 +261,10 @@ def main(argv=None):
             L.append(f"| {lo}-{hi if hi < 181 else 180} | {len(b)} | {len({r['reference_product'] for r in b})} | "
                      f"{c['correct_accepted']} | {c['caught_failure']} | {c['missed_failure']} | "
                      f"{c['false_alarm']} | {c['inconclusive']} | {int(st.median([float(r['inliers'] or 0) for r in b]))} |")
-        L.append("")
+        az = [float(r["d_sun_azimuth_deg"]) for r in sweep]
+        L += ["", f"All bins: {len(sweep)} windows over {len({r['reference_product'] for r in sweep})} NAC "
+                  f"frames, Δsun azimuth {min(az):.1f}-{max(az):.1f}°. Known issue 2: some windows are "
+                  f"logged under two ids (`_sw` and plain) - rows, not distinct ground.", ""]
 
     # --- MiLOI (real multi-illumination NAC benchmark, network truth) -------------------------
     ml = _rows(ROOT / "evaluation" / "miloi_log.csv")
@@ -270,10 +273,12 @@ def main(argv=None):
         import json as _json
         from evaluation import miloi as _M
         truth = _json.loads(tj.read_text(encoding="utf-8"))
-        latest = {}
+        # NOT `latest`: that name holds the real-pairs rows the footer counts (it printed
+        # "234 rows (324 distinct pairs)" when this block overwrote it - claim-checker, 19 Sep).
+        latest_mm = {}
         for r in ml:
-            latest[(r["pair_id"], r["method"])] = r
-        ours = [r for (_, m), r in latest.items() if m == _M.OURS_METHOD]
+            latest_mm[(r["pair_id"], r["method"])] = r
+        ours = [r for (_, m), r in latest_mm.items() if m == _M.OURS_METHOD]
         n_run = sum(v["pairs_run"] for v in truth["scenes"].values())
         L += ["## MiLOI: real LROC NAC images of one ground under many suns (same sensor)", "",
               f"`evaluation/miloi.py` (Xie et al. 2025, github.com/Bin501/CNSFM @94cebaa). {n_run} pairs "
@@ -290,12 +295,17 @@ def main(argv=None):
                      + (f"median {loo['median']:.2f}, max {loo['max']:.2f} (n={loo['n']})" if loo else
                         "**not measurable** - every edge is a bridge (no redundancy)") + " |")
         L += ["", "```"] + _M.table() + ["```", "",
-              "Trust verdict against truth, ours (latest row per pair):", "",
-              "| verdict | pairs | matcher within 3 px of truth |", "|---|---|---|"]
+              "Trust verdict against truth, ours (latest row per pair). Two definitions of \"right\", "
+              "both shown: the MATCHER's homography against truth over the frame (what the trust layer "
+              "judges - `outcome`), and the success rule of the table above (`rmse_gt_px` of the raw "
+              "matches). S3's truth has no measurable error of its own.", "",
+              f"| verdict | pairs | of which S3 | matcher H within {_M.SUCCESS_PX:g} px | rmse_gt_px under "
+              f"{_M.SUCCESS_PX:g} px |", "|---|---|---|---|---|"]
         for v in ("agrees", "unconfirmed", "contradicted"):
             rs = [r for r in ours if r["verdict"] == v]
             ok = sum(1 for r in rs if r["matcher_err_px"] and float(r["matcher_err_px"]) < _M.SUCCESS_PX)
-            L.append(f"| {v} | {len(rs)} | {ok} |")
+            ok2 = sum(1 for r in rs if r["rmse_gt_px"] and float(r["rmse_gt_px"]) < _M.SUCCESS_PX)
+            L.append(f"| {v} | {len(rs)} | {sum(1 for r in rs if r['scene'] == 'S3')} | {ok} | {ok2} |")
         L.append("")
 
     # --- trust calibration ------------------------------------------------------------------
@@ -346,8 +356,10 @@ def main(argv=None):
           "python -m ops.sun_sweep --windows 3 --log",
           "python -m ops.trust_real_calibration \"site_ohrc_m1153871873le_w*_t\" ... --log",
           "python -m ops.make_report", "```", "",
-          f"Rows in real_pairs_log.csv: {len(real_rows)} ({len(latest)} distinct pairs/loops; where a "
-          f"pair was re-run, the latest row is shown). Rows in results_log.csv: {len(log)}.", ""]
+          f"Rows in real_pairs_log.csv: {len(real_rows)}: {len(latest)} distinct pair ids (latest row "
+          f"wins) = {len(reg)} registered pairs + {len(loops)} loops + "
+          f"{len(latest) - len(reg) - len(loops)} withdrawn (INVALIDATED). Rows in results_log.csv: "
+          f"{len(log)}.", ""]
     OUT.write_text("\n".join(L), encoding="utf-8")
     print(f"wrote {OUT} ({len(L)} lines)")
     return 0
