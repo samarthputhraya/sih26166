@@ -14,6 +14,12 @@ out loud to an ISRO judge. Definitions live here now, once.
 **SIH26166** — *Multi-modal, Sun angle and scale invariant image correspondence using
 Chandrayaan-2 optical images (OHRC, TMC and IIRS)* — ISRO, Space Technology, Software.
 
+> **National round (19 Sep 2026): the "Our evidence" column below is the college round's and is
+> out of date.** Real pairs now exist for every row: Sun angle (a real OHRC ↔ NAC sweep, MiLOI,
+> SAC's own pairs), scale (OHRC ↔ NAC, ↔ Kaguya TC, ↔ LOLA as a declared failure), multi-modal
+> (Kaguya TC ↔ MI 1548 nm and ↔ IIRS, visible ↔ infrared), viewpoint (TMC-2 fore ↔ aft). The
+> evidence and every number are in `REPORT.md` at the freeze commit — quote from there.
+
 The PS names six things. We must be able to point at evidence for each:
 
 | # | PS demands | Our evidence |
