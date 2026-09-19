@@ -611,7 +611,9 @@ def score(log: bool, command: str, scenes=SCENES) -> None:
                     meta["pair_id"], TIER, method, m, config=config, gsd_mpp=meta["ref_gsd_m"],
                     notes=(f"MiLOI {scene} {meta['source']} -> {meta['reference']}; {sun}{extra}; "
                            f"success = rmse_gt_px < {SUCCESS_PX}; matches from run at "
-                           f"{meta['git_commit']}"),
+                           f"{meta['git_commit']}"
+                           + (f", ours' trust verdict re-judged at {mm['retrusted_at']}"
+                              if mm.get("retrusted_at") else "")),
                     allow_failed=True)
                 if not ok_log:
                     raise SystemExit(note)
