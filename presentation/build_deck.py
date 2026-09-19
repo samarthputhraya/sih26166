@@ -87,9 +87,9 @@ BODY_FONT = "Calibri"
 
 # National-round portal values. The team name on the portal is LunaXX (nominated 18 Sep; the
 # 2026 guidelines forbid the institute's name in a team name - the college-round deck said
-# "SNPSU LunaX"). The national Team ID's exact format is still an open question (STATUS, Open
-# questions 1): it stays a placeholder, which the audit reports, until it is read off the portal.
-TEAM_ID = "[TBD - portal Team ID]"
+# "SNPSU LunaX"). The Team ID is the portal's, as Samartha read it on 20 Sep: SNPSU0192. It
+# carries the institute's code, which is allowed - the rule is about the team NAME.
+TEAM_ID = "SNPSU0192"
 TEAM_NAME = "LunaXX"
 
 # Labels copied from the template's own title block, separator included, rather than
@@ -449,7 +449,7 @@ def _add_fig(slide, spec, fig_top=None):
 # the words are allowed - but never next to MiLOI or fore/aft, which are the SAME sensor
 # (checked below, sentence by sentence; claim-checker checks the rest).
 BANNED = ("<", "Your Team Name", "Idea submission", "62,519", "43.9", "0.7 px",
-          "cross sensor", "SNPSU")
+          "cross sensor", "SNPSU LunaX")          # the old team NAME; the ID is SNPSU0192
 SAME_SENSOR_WORDS = ("MiLOI", "fore vs aft", "fore/aft", "NAC pairs")
 
 

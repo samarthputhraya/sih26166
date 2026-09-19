@@ -10,6 +10,7 @@ deck carries the same ones.
 |---|---|
 | Problem Statement | SIH26166: Multi-modal, Sun angle and scale invariant image correspondence using Chandrayaan-2 optical images (OHRC, TMC and IIRS) |
 | Theme / category | Space Technology · Software |
+| Team ID | SNPSU0192 |
 | Team name | LunaXX |
 | PDF | `presentation/SIH26166_LunaXX_deck.pdf`, from `python -m presentation.export_pdf` (it must print `PDF CHECK: clean`) |
 
@@ -54,9 +55,8 @@ Short (498 characters):
 
 ## Before pressing submit
 
-1. Slide 1's Team ID must equal the portal's. Set `TEAM_ID` in `presentation/build_deck.py`,
-   then run `python -m presentation.build_deck` (it must print `AUDIT: clean`) and
-   `python -m presentation.export_pdf` (it must print `PDF CHECK: clean`).
+1. Slide 1's Team ID must equal the portal's: SNPSU0192 (set 20 Sep; `AUDIT: clean`,
+   `PDF CHECK: clean`). Re-run both commands only if anything in the deck changes.
 2. Open the PDF and page through all 6 slides once by eye.
 3. After submitting, take a screenshot of the confirmation. Write the time and the Team ID into
    `ops/STATUS.md`.

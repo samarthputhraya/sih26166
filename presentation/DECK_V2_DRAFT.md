@@ -6,10 +6,9 @@
 >
 > **FILLED 20 Sep 2026 from the evidence freeze at `49bdad9`** (`python -m ops.freeze --check`:
 > FROZEN; 146/146 real-pair rows and 324/324 MiLOI rows at that commit; evidence commit
-> `36de5f4`). A new freeze means re-reading every row of this table. The only open placeholder
-> is the Team ID (slide 1), which comes from the portal, not from the evidence.
-> `python -m presentation.build_deck` exits 1 while it is open;
-> `python -m presentation.export_pdf` refuses to pass a PDF with it.
+> `36de5f4`). A new freeze means re-reading every row of this table. No placeholder is open:
+> the Team ID (SNPSU0192) was read off the portal on 20 Sep. `build_deck`: AUDIT clean;
+> `export_pdf`: PDF CHECK clean.
 >
 > Audience: SAC-ISRO image-processing scientists reading the PDF cold, ranking it against every
 > other SIH26166 idea. Output: `presentation/SIH26166_LunaXX_deck.pptx`. The college-round deck
@@ -57,7 +56,7 @@
 
 | Field | Value | Source |
 |---|---|---|
-| Team ID | `[TBD - portal Team ID]` | the SIH portal (STATUS, open question 1) |
+| Team ID | SNPSU0192 | the SIH portal, read by Samartha 20 Sep (the audit's SNPSU ban now targets only the old team name "SNPSU LunaX") |
 | Team Name | LunaXX | portal, 18 Sep nomination |
 
 ## Slide 2 (idea title)

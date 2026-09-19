@@ -6,14 +6,11 @@
 
 ## To submit (about 15 minutes; do it early - the portal closes Tue 30 Sep)
 
-1. **Team ID.** Read it off the SIH portal.
-   - Set `TEAM_ID` in `presentation/build_deck.py`, spelled exactly as the portal shows it.
-   - `python -m presentation.build_deck` must print `AUDIT: clean`.
-2. **PDF.** Close PowerPoint.
-   - Run `PYTHONPATH=<dir with pymupdf> python -m presentation.export_pdf`; it must print
-     `PDF CHECK: clean`.
-   - Don't touch the keyboard for the ~20 s while windows flash.
-   - Open `presentation/SIH26166_LunaXX_deck.pdf` and read all 6 pages by eye.
+1. **Team ID: DONE** (SNPSU0192, 20 Sep).
+2. **PDF: DONE.** `presentation/SIH26166_LunaXX_deck.pdf` passed `PDF CHECK: clean`; read all 6
+   pages by eye once. If the deck changes, re-run `build_deck` and then
+   `PYTHONPATH=<dir with pymupdf> python -m presentation.export_pdf` (close PowerPoint first,
+   and don't touch the keyboard for the ~20 s while windows flash).
 3. **Portal fields.** Paste from `ops/national_round/SUBMISSION_FIELDS.md`: the PS, then the
    title and description (the longest version that fits). Upload the PDF.
 4. **Record it.** Screenshot the confirmation. Write the time and Team ID into `ops/STATUS.md`,

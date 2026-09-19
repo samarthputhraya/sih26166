@@ -16,13 +16,14 @@
    - `--check` at a later HEAD will say NOT FROZEN, because rows name `49bdad9`, not HEAD. That
      is expected. The test that matters is `git diff 49bdad9 HEAD -- core evaluation ops baselines app`,
      which shows only evidence logs, docs, and the one CLI reporting hunk (Known issue 13).
-2. **The deck is finished except the Team ID.**
+2. **The deck is finished; the PDF is final.**
    - All 44 numbers are filled from REPORT.md at `49bdad9`; each value and its source is in
      `presentation/DECK_V2_DRAFT.md`.
    - `claim-checker` ran twice. The second pass (on the filled deck) found 0 numeric mismatches
      plus 22 scope and label findings; all were fixed except M6 (TC rung), which went to the Q&A
      notes (`27266f8`).
-   - The build audit is clean apart from `TEAM_ID`.
+   - Team ID SNPSU0192 (from the portal, 20 Sep). Build `AUDIT: clean`; `export_pdf` `PDF CHECK: clean`.
+   - The final PDF is `presentation/SIH26166_LunaXX_deck.pdf` (1.10 MB, 6 pages).
 3. **The PDF can now be made on this laptop: `python -m presentation.export_pdf`.**
    - PowerPoint prints to "Microsoft Print to PDF" with `/pt`, even though COM does not work.
      The script answers the save dialog by keystroke and crops each page to the slide with
@@ -50,7 +51,7 @@
 
 ```
 Sun 20 Sep, 01:10  |  submit Sun 27 Sep (7 days)  |  portal closes Tue 30 Sep
-Built: everything. Left: Team ID -> build -> export -> eyeball -> submit (Samartha, ~15 min)
+Built: everything, PDF final. Left: eyeball the PDF -> portal fields -> upload (Samartha, ~10 min)
 ```
 
 ## Verified by command (20 Sep, ~01:00, at `27266f8`)
@@ -60,8 +61,8 @@ Built: everything. Left: Team ID -> build -> export -> eyeball -> submit (Samart
 | `python -m ops.freeze --check` (at 49bdad9, before the evidence commit) | FROZEN |
 | `python -m pytest -q` (whole repo) | 298 passed, exit 0 |
 | `python -m presentation.make_figures` | 7 figures, no overflow |
-| `python -m presentation.build_deck` | 6 slides, pointers unchanged, AUDIT: only `TEAM_ID` |
-| `python -m presentation.export_pdf` | 6 pages at 792×446 pt, 1.10 MB; PDF CHECK: only page 1 `[TBD]` |
+| `python -m presentation.build_deck` | 6 slides, pointers unchanged, AUDIT: clean |
+| `python -m presentation.export_pdf` | 6 pages at 792×446 pt, 1.10 MB; PDF CHECK: clean |
 | `python -m core.pipeline data/pairs/sac_ohrc_nac_w01 --out <dir>` | 8 deliverables, report.md names tier and instruments |
 | AppTest: sac_ohrc_nac_w06 → Align (cached) | tier "B (OHRC-NAC real)", 4 downloads, bundle of 8 files, no exception |
 
@@ -103,11 +104,8 @@ national-round code yet. Plan a walkthrough after 27 Sep, in case LunaXX reaches
 
 ## Samartha - to submit (ops/specs/day_23.md has the full list)
 
-1. **Team ID.** Read it off the portal.
-   - Set `TEAM_ID` in `presentation/build_deck.py`.
-   - Run `python -m presentation.build_deck` (must say `AUDIT: clean`).
-   - Run `python -m presentation.export_pdf` (must say `PDF CHECK: clean`).
-   - Open the PDF and look at all 6 pages.
+1. **PDF: done.** Team ID SNPSU0192 is on slide 1; `presentation/SIH26166_LunaXX_deck.pdf`
+   passed every check. Open it and look at all 6 pages once.
 2. **Portal:** PS, title and description from `SUBMISSION_FIELDS.md`, then upload the PDF.
    Screenshot the confirmation and record it here.
 3. **Optional:**
