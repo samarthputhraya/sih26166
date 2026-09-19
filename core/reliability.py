@@ -91,6 +91,15 @@ MIN_CELLS_FOR_VERDICT = 4  # fewer measurable cells than this -> frame-level che
 AGREE_FRAC = 0.50          # >= this share of measurable cells agree  -> H agrees
 CONTRADICT_FRAC = 0.25     # <  this share agree                       -> H contradicted
                            # in between                                 -> unconfirmed
+# When no cell can vote, one whole-frame peak is the only independent evidence, and a
+# homography fitted to a handful of matches can bend a small frame into agreeing with
+# it: on a 112-px IIRS window, 7 MAGSAC inliers of 16 matches gave a zero-shift peak at
+# NCC 0.48 while H sat ~1 km from where every neighbouring window put the same image
+# (19 Sep 2026, `site_tc_ortho_iirs1555_w10`). So a whole-frame AGREE also needs the
+# inlier count Brown & Lowe 2007 (IJCV 74(1), sec. 3.1) require before accepting an
+# image match at all: inliers > alpha + beta * matches. Their constants, not ours.
+FRAME_ACCEPT_ALPHA = 8.0
+FRAME_ACCEPT_BETA = 0.3
 
 
 def _standardise(x):
@@ -278,7 +287,9 @@ def reliability_map(ref_shape, src_raw, ref_raw, H, src_in, ref_in,
               f"inliers in the cell; H is contradicted when <{CONTRADICT_FRAC:.0%} of measurable "
               f"cells agree (agrees at >={AGREE_FRAC:.0%}, unconfirmed between), whole-frame peak "
               f"shift >{max_global_shift_px:g} px or NCC <{min_global_ncc:g} only when fewer than "
-              f"{MIN_CELLS_FOR_VERDICT} cells are measurable; cells narrower than "
+              f"{MIN_CELLS_FOR_VERDICT} cells are measurable, and then agrees only with inliers "
+              f"> {FRAME_ACCEPT_ALPHA:g} + {FRAME_ACCEPT_BETA:g} x matches (Brown & Lowe 2007), "
+              f"else unconfirmed; cells narrower than "
               f"{MIN_CELL_SIDE_PX} px skip the area check; nothing is verified in a "
               f"contradicted frame")
 
@@ -374,11 +385,21 @@ def reliability_map(ref_shape, src_raw, ref_raw, H, src_in, ref_in,
         elif gdx is not None:
             # Too few cells wide enough to vote (small frames): the whole-frame peak
             # decides, and the basis is said out loud.
+            # A disagreeing peak contradicts H however many inliers it has; an agreeing
+            # one is only enough when the matcher's support clears FRAME_ACCEPT_*.
             glob["basis"] = "whole frame (cells too small to vote)"
-            glob["contradicted"] = bool(np.hypot(gdx, gdy) > max_global_shift_px or gncc < min_global_ncc)
-            glob["verdict"] = "contradicted" if glob["contradicted"] else "agrees"
+            n_need = FRAME_ACCEPT_ALPHA + FRAME_ACCEPT_BETA * len(src_raw)
+            if np.hypot(gdx, gdy) > max_global_shift_px or gncc < min_global_ncc:
+                glob["verdict"], why = "contradicted", ""
+            elif len(src_in) > n_need:
+                glob["verdict"], why = "agrees", ""
+            else:
+                glob["verdict"] = "unconfirmed"
+                why = (f"; {len(src_in)} inliers of {len(src_raw)} matches, an accept needs "
+                       f"> {n_need:.1f} (Brown & Lowe 2007)")
+            glob["contradicted"] = glob["verdict"] == "contradicted"
             glob["note"] = (f"whole-frame check ({gmeth}): peak shift ({gdx:+d},{gdy:+d}) px, "
-                            f"NCC {gncc:+.2f} -> {glob['verdict']}")
+                            f"NCC {gncc:+.2f} -> {glob['verdict']}{why}")
         else:
             # A constant WARPED image with a textured reference means H pushed the
             # source out of the frame. That is not "unmeasurable"; it is wrong.

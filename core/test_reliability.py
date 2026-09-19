@@ -142,6 +142,54 @@ def test_tiny_cells_cannot_be_verified():
     assert rel["counts"][WEAK] > 0
 
 
+def _tiny_frame(n=112, seed=4):
+    import cv2
+    rng = np.random.default_rng(seed)
+    return cv2.GaussianBlur(rng.random((n, n)).astype(np.float32), (0, 0), 1.5) * 255
+
+
+def test_tiny_frame_with_few_inliers_is_unconfirmed_not_agrees():
+    """Known issue 3 (site_tc_ortho_iirs1555_w10): a 112-px reference has 14-px cells, so
+    no cell votes and the whole-frame peak decides. That peak sat at zero shift, but H rested
+    on 7 MAGSAC inliers of 16 matches - under Brown & Lowe's 8 + 0.3 x 16 = 12.8. Agreement
+    that thin is not evidence; the verdict must be unconfirmed, and no fallback fires."""
+    n = 112
+    ref = _tiny_frame(n)
+    rng = np.random.default_rng(6)
+    raw = (rng.random((16, 2)) * (n - 1)).astype(np.float32)
+    inl = raw[:7]
+    rel = reliability_map((n, n), raw, raw, np.eye(3), inl, inl, ref.copy(), ref)
+    g = rel["global"]
+    assert g["n_measurable"] == 0 and g["basis"].startswith("whole frame")
+    assert g["shift_px"] == (0, 0)                     # the pixels alone would have agreed
+    assert g["verdict"] == "unconfirmed", g["note"]
+    assert g["contradicted"] is False
+    assert "Brown & Lowe" in g["note"]
+    assert rel["counts"][VERIFIED] == 0
+
+
+def test_tiny_frame_with_enough_inliers_still_agrees():
+    n = 112
+    ref = _tiny_frame(n)
+    rng = np.random.default_rng(8)
+    raw = (rng.random((40, 2)) * (n - 1)).astype(np.float32)
+    inl = raw[:30]                                     # 30 > 8 + 0.3 x 40 = 20
+    rel = reliability_map((n, n), raw, raw, np.eye(3), inl, inl, ref.copy(), ref)
+    assert rel["global"]["verdict"] == "agrees", rel["global"]["note"]
+
+
+def test_tiny_frame_disagreeing_peak_contradicts_even_with_few_inliers():
+    n = 112
+    ref = _tiny_frame(n)
+    warped = np.roll(ref, (0, 20), axis=(0, 1))       # H is 20 px off
+    rng = np.random.default_rng(10)
+    raw = (rng.random((16, 2)) * (n - 1)).astype(np.float32)
+    inl = raw[:7]
+    rel = reliability_map((n, n), raw, raw, np.eye(3), inl, inl, warped, ref)
+    assert rel["global"]["verdict"] == "contradicted", rel["global"]["note"]
+    assert rel["global"]["contradicted"] is True
+
+
 def test_gate_labels_changes_by_cell_state():
     import cv2
     from core.reliability import gate
