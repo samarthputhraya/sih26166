@@ -211,7 +211,7 @@ class Freeze:
         self.save()
         with open(self.dir / f"{name}.log", "a", encoding="utf-8") as logf:
             ok = fn(logf)
-            if not ok:
+            if ok is False:          # None = a precondition failed; retrying cannot help
                 print(f"   {name}: failed - retrying once (Known issue 11)", flush=True)
                 ok = fn(logf)
         rec.update(ended=_now(), status="done" if ok else "failed")
@@ -252,8 +252,7 @@ class Freeze:
             if legs:
                 print(f"   {len(legs)} leg(s) of this loop are not at {self.commit} "
                       f"({', '.join(legs[:3])}...) - run the `real` step first")
-                ok = False
-                continue
+                return None
             ok &= _run(cmd.split()[1:], logf) == 0      # drop "python"
         return ok
 
