@@ -48,6 +48,7 @@ def _inlier_src_points(pair_id, out_root):
 
 def run(a, b, log=False, out_root=None, tag=""):
     from evaluation.real_eval import _apply, log_real, loop_closure, map_transform, pixel_to_map
+    from core.export import _commit
     out_root = pathlib.Path(out_root or (_data() / "out"))
     a, b = a.lower(), b.lower()
     results = []
@@ -101,7 +102,10 @@ def run(a, b, log=False, out_root=None, tag=""):
                       "ref_gsd_m": gsd_b, "method_declared": ",".join(sorted(set(methods.values()))),
                       "verdict": ",".join(sorted(set(str(v) for v in verdicts.values()))),
                       "command": "python -m ops.loop_closure " + " ".join(sys.argv[1:]),
-                      "notes": f"legs {ids['OA']}, {ids['AB']}, {ids['OB']}; points = O->A source "
+                      # until 19 Sep loop rows carried no commit, so no freeze could vouch for them
+                      "git_commit": _commit(),
+                      "notes": f"legs {ids['OA']}, {ids['AB']}, {ids['OB']} (bundles from commits "
+                               f"{sorted({str(legs[k][0].get('git_commit')) for k in legs})}); points = O->A source "
                                f"inliers mapped to map metres; per-registration estimate = loop/sqrt(3) "
                                f"= {res['per_leg_est_m']:.3f} m (assumes independent, similar errors)"})
     good = [r for r in results if r.get("ok")]

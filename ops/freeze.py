@@ -239,8 +239,21 @@ class Freeze:
                     logf) == 0
 
     def loops(self, logf):
+        # A loop is computed from its three legs' exported bundles; legs from an older commit
+        # would give a loop row stamped with this commit and built on stale registrations.
+        stale = stale_real(self.commit)
         ok = True
         for cmd in plan_real()["loops"]:
+            a_, b_ = (re.search(rf"--{k} (\S+)", cmd).group(1).lower() for k in ("a", "b"))
+            m = re.search(r"--tag (\S+)", cmd)
+            tag = f"_{m.group(1)}" if m else ""
+            legs = [p for p in stale if re.fullmatch(
+                rf"site_(ohrc_{a_}|{a_}_{b_}|ohrc_{b_})_w\d+{tag}", p)]
+            if legs:
+                print(f"   {len(legs)} leg(s) of this loop are not at {self.commit} "
+                      f"({', '.join(legs[:3])}...) - run the `real` step first")
+                ok = False
+                continue
             ok &= _run(cmd.split()[1:], logf) == 0      # drop "python"
         return ok
 
