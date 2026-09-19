@@ -1,6 +1,6 @@
 # SIH26166 - evaluation report
 
-Generated 2026-09-19T12:22 from commit `94b4445-dirty` by `python -m ops.make_report`. **Do not edit by hand** - every number below is read from the evidence files named in each section.
+Generated 2026-09-19T22:24 from commit `29f3cb7-dirty` by `python -m ops.make_report`. **Do not edit by hand** - every number below is read from the evidence files named in each section.
 
 All pixel figures are on the REFERENCE image's grid, with its metres stated. Real pairs have no exact ground truth: accuracy on them is reported as held-out residuals (the 20 % of matches the fit never saw) and as loop closure. `residual_px` in results_log.csv is the RMSE over ALL held-out matches including outliers and is not quoted for real pairs.
 
@@ -50,7 +50,7 @@ Same sensor - NOT cross-sensor.
 
 ## SAC's own benchmark pair (equatorial, 13.3-13.9°S 25.2°E): Chandrayaan-2 OHRC → LRO NAC `M1350459544RE`
 
-The pair in the problem setters' paper (arXiv:2509.04775, Table 1), cut by `ops/cut_pradan_pairs.py` on a local equirectangular grid: OHRC at native ~0.28 m, NAC at native, same ground. Before cutting, the NAC's corner prior disagreed with the OHRC grid by (+488, +1790) m (4/7 wide-search templates, inverted intensity); the 4 m correction field then fits 276/386 boxes at rms 13.2 m (inverted intensity; `site_geometry/M1350459544RE.json`). Cross-sensor and cross-mission; both panchromatic - NOT multi-modal. The paper reports SuperGlue at 0.62 / 0.57 px (X / Y) on the equatorial pair and that only SuperGlue registered the polar one; its figure is an IN-SAMPLE control-point RMSE per axis, ours are held-out (matches the fit never saw) - not the same measure.
+The pair in the problem setters' paper (arXiv:2509.04775, Table 1), cut by `ops/cut_pradan_pairs.py` on a local equirectangular grid: OHRC at ~0.279 m, NAC on a 1.622 m grid (its label resolution 1.61 m; the paper's NAC grid was 1.1179 m, so pixel figures differ in size as well as in kind), same ground. Before cutting, the NAC's corner prior disagreed with the OHRC grid by (+488, +1790) m (4/7 wide-search templates, inverted intensity); the 4 m correction field then fits 276/386 boxes at rms 13.2 m (inverted intensity; `site_geometry/M1350459544RE.json`). Cross-sensor and cross-mission; both panchromatic - NOT multi-modal. The paper reports SuperGlue at 0.62 / 0.57 px (X / Y) on the equatorial pair and that only SuperGlue registered the polar one; its figure is an IN-SAMPLE control-point RMSE per axis, the table above is held-out (matches the fit never saw) - not the same measure. The same in-sample measure for ours follows.
 
 | pair | window (lat, lon) | Δsun az | scale | matches | inliers | ratio | coverage | held-out median px (m) | held-out RMSE ≤3 px | verified / no-evid | verdict | declared | archive offset m |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -63,7 +63,7 @@ The pair in the problem setters' paper (arXiv:2509.04775, Table 1), cut by `ops/
 
 ## SAC's own benchmark pair (polar, 61.6-62.3°S 56.6°E): Chandrayaan-2 OHRC → LRO NAC `M165491149RE`
 
-The pair in the problem setters' paper (arXiv:2509.04775, Table 1), cut by `ops/cut_pradan_pairs.py` on a local equirectangular grid: OHRC at native ~0.28 m, NAC at native, same ground. Before cutting, the NAC's corner prior disagreed with the OHRC grid by (-48, -76) m (4/7 wide-search templates, inverted intensity); the 4 m correction field then fits 169/177 boxes at rms 10.4 m (inverted intensity; `site_geometry/M165491149RE.json`). Cross-sensor and cross-mission; both panchromatic - NOT multi-modal. The paper reports SuperGlue at 0.62 / 0.57 px (X / Y) on the equatorial pair and that only SuperGlue registered the polar one; its figure is an IN-SAMPLE control-point RMSE per axis, ours are held-out (matches the fit never saw) - not the same measure.
+The pair in the problem setters' paper (arXiv:2509.04775, Table 1), cut by `ops/cut_pradan_pairs.py` on a local equirectangular grid: OHRC at ~0.275 m, NAC on a 1.215 m grid (its label resolution 1.22 m; the paper's NAC grid was 0.88779 m, so pixel figures differ in size as well as in kind), same ground. Before cutting, the NAC's corner prior disagreed with the OHRC grid by (-48, -76) m (4/7 wide-search templates, inverted intensity); the 4 m correction field then fits 169/177 boxes at rms 10.4 m (inverted intensity; `site_geometry/M165491149RE.json`). Cross-sensor and cross-mission; both panchromatic - NOT multi-modal. The paper reports SuperGlue at 0.62 / 0.57 px (X / Y) on the equatorial pair and that only SuperGlue registered the polar one; its figure is an IN-SAMPLE control-point RMSE per axis, the table above is held-out (matches the fit never saw) - not the same measure. The same in-sample measure for ours follows.
 
 | pair | window (lat, lon) | Δsun az | scale | matches | inliers | ratio | coverage | held-out median px (m) | held-out RMSE ≤3 px | verified / no-evid | verdict | declared | archive offset m |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|

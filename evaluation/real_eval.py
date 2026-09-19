@@ -38,6 +38,8 @@ REAL_FIELDS = [
     "seconds", "git_commit", "command", "notes",
     # added 18 Sep 2026 for the real sun-angle sweep (older rows leave them empty)
     "matcher_offset_m", "outcome",
+    # added 19 Sep 2026: SAC's measure (in-sample, per axis) beside our held-out one
+    "insample_rmse_x_px", "insample_rmse_y_px", "insample_n",
 ]
 
 
@@ -99,14 +101,43 @@ def loop_closure(T_chain: list, T_direct, pts_map, gsd_m) -> dict:
             "gsd_m": float(gsd_m)}
 
 
+def insample_axis_rmse(H, src_in, ref_in) -> dict:
+    """RMSE per axis of the inliers H was fitted to, under H, in reference pixels.
+
+    This is the measure SAC's benchmark reports (arXiv:2509.04775, Table 1: control-point
+    RMSE in X and Y). It is IN-SAMPLE - the points graded are the points that chose H,
+    and MAGSAC++ keeps only those within its 3 px threshold - so it can only flatter.
+    It is logged beside the held-out residuals, never instead of them.
+    """
+    none = {"x_px": None, "y_px": None, "n": 0}
+    if H is None or src_in is None or ref_in is None:
+        return none
+    s = np.asarray(src_in, np.float64).reshape(-1, 2)
+    r = np.asarray(ref_in, np.float64).reshape(-1, 2)
+    if len(s) < 4 or len(s) != len(r):
+        return none
+    d = _apply(H, s) - r
+    return {"x_px": float(np.sqrt(np.mean(d[:, 0] ** 2))),
+            "y_px": float(np.sqrt(np.mean(d[:, 1] ** 2))), "n": int(len(s))}
+
+
 def log_real(row: dict) -> None:
-    """Append one row to real_pairs_log.csv. Append-only; the header is written once."""
+    """Append one row to real_pairs_log.csv. Append-only; the header is written once.
+
+    When REAL_FIELDS grows, the existing header must be extended by hand first (older rows
+    stay shorter and read back as empty); appending under a stale header would put the new
+    values under nobody's column, so that is refused."""
     new = not REAL_LOG.exists() or REAL_LOG.stat().st_size == 0
     if not new:
         with open(REAL_LOG, "rb") as f:
             f.seek(-1, 2)
             if f.read(1) != b"\n":
                 raise RuntimeError(f"{REAL_LOG} does not end in a newline; refusing to append")
+        with open(REAL_LOG, encoding="utf-8-sig", newline="") as f:
+            header = next(csv.reader(f))
+        if header != REAL_FIELDS:
+            raise RuntimeError(f"{REAL_LOG} header has {len(header)} columns, REAL_FIELDS "
+                               f"{len(REAL_FIELDS)}; extend the header line before appending")
     row = dict(row)
     row.setdefault("timestamp", _dt.datetime.now().isoformat(timespec="seconds"))
     unknown = set(row) - set(REAL_FIELDS)

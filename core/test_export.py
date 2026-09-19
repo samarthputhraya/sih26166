@@ -196,3 +196,21 @@ def test_appending_to_the_evidence_logs_does_not_dirty_the_commit_stamp(tmp_path
     (tmp_path / "evaluation" / "new.py").unlink()
     (tmp_path / "core" / "m.py").write_text("x = 2\n")
     assert export._commit(root=tmp_path) == sha + "-dirty"
+
+
+def test_report_md_leads_with_the_held_out_median_and_names_the_tier(tmp_path):
+    # demo-medic, 19 Sep: the app's headline was the held-out median while the downloaded
+    # report.md led with residual_px (RMSE incl. outliers) and printed "-" for instruments.
+    r, sp, rp = _result(tmp_path)
+    r["metrics"].update(residual_median_px=0.5, holdout_inlier_rmse_px=0.7, holdout_inlier_frac=0.9,
+                        residual_px=40.0)
+    prior = {"tier": "B (OHRC-NAC real)", "terminology": "cross-sensor, cross-mission",
+             "source": {"instrument": "Chandrayaan-2 OHRC"}, "reference": {"instrument": "LRO LROC NAC"}}
+    md = export.export_bundle(r, tmp_path / "out", "t", sp, rp, prior=prior)["report.md"].read_text()
+    metrics = md.split("## Metrics")[1]
+    assert metrics.index("held-out median residual") < metrics.index("residual_px (RMSE over ALL")
+    assert "Tier: **B (OHRC-NAC real)**" in md
+    assert "| Chandrayaan-2 OHRC |" in md or "Chandrayaan-2 OHRC" in md.split("## Inputs")[1]
+    for line in md.splitlines():
+        if re.search(r"\d px", line):
+            assert "grid" in line, line

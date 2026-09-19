@@ -89,9 +89,13 @@
 ## Q&A traps this deck invites (answers must come from REPORT.md)
 
 - **"SuperGlue got 0.62/0.57 px on our pair."** Their figure is an in-sample control-point RMSE
-  per axis, on their resampled NAC grid (1.1179 m). Ours is held out (matches the fit never saw),
-  on the NAC's own grid in our cut (1.62 m). It differs in measure and in grid; say both before
-  comparing anything.
+  per axis, on their resampled NAC grid (1.1179 m). Our headline is held out (matches the fit
+  never saw), on the NAC's own grid in our cut (1.62 m). It differs in measure and in grid; say
+  both before comparing anything. Since 19 Sep the SAME measure is logged for ours too
+  (`insample_rmse_x_px` / `_y_px` in real_pairs_log; REPORT.md's "In-sample, per axis (SAC's
+  measure)" table under each SAC section). Quote it in px AND metres, with the inlier count
+  graded: ours grades thousands of MAGSAC++ inliers up to 3 px, not a handful of control points,
+  so it is not smaller by construction. Compare in metres (their px × 1.1179 m).
 - **"Your MiLOI truth uses your own matcher."** It does, on OTHER pairs: a translation network
   from ours+SIFT agreement, leave-one-out. S3's network has no redundancy, so its error is
   unmeasured. 56 of the 81 scored pairs are S3.

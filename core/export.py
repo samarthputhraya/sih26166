@@ -395,6 +395,10 @@ def report(result: dict, pair_id: str, src_path, ref_path, rows=None,
     return _jsonable(rep)
 
 
+def _frac(v) -> str:
+    return "n/a" if v is None else f"{100 * float(v):.1f} %"
+
+
 def _grid(rep, role="reference"):
     i = rep["inputs"][role]
     g = i.get("gsd_mpp")
@@ -415,13 +419,17 @@ def render_markdown(rep: dict) -> str:
         s = f"{v:.4f} px on the reference grid ({ref_name})"
         return s + (f" = {v * g:.3f} m at {g:.4g} m/px" if g else " (reference has no map scale)")
 
+    pr = rep.get("prior") or {}
     L = [f"# Registration report - {rep['pair_id']}", "",
-         f"Created {rep['created_utc']} from commit `{rep['git_commit']}`.", "",
-         "## Inputs", "",
-         "| role | file | instrument | GSD m/px | shape | sha256 |", "|---|---|---|---|---|---|"]
+         f"Created {rep['created_utc']} from commit `{rep['git_commit']}`.", ""]
+    if pr.get("tier"):
+        L += [f"Tier: **{pr['tier']}**. {pr.get('terminology') or ''}".rstrip(), ""]
+    L += ["## Inputs", "",
+          "| role | file | instrument | GSD m/px | shape | sha256 |", "|---|---|---|---|---|---|"]
     for role in ("source", "reference"):
         i = rep["inputs"][role]
-        L.append(f"| {role} | `{pathlib.Path(i['path']).name}` | {i.get('instrument') or '-'} | "
+        inst = i.get("instrument") or (pr.get(role) or {}).get("instrument") or "-"
+        L.append(f"| {role} | `{pathlib.Path(i['path']).name}` | {inst} | "
                  f"{i.get('gsd_mpp') or '-'} | {i.get('shape')} | `{(i.get('sha256') or '-')[:16]}` |")
     L += ["", "## What the system declared", "",
           f"- Method used: **{d.get('method')}**",
@@ -429,16 +437,27 @@ def render_markdown(rep: dict) -> str:
           f"- Area check contradicted the matcher: {d.get('contradicted')}", "",
           "## Metrics (`evaluation/metrics.py`, raw matches)", "",
           f"- matches from the matcher: {rep.get('n_matches')}",
-          f"- inlier_count: {m.get('inlier_count', 'n/a')}; inlier_ratio: {m.get('inlier_ratio', 'n/a')}",
-          f"- residual_px (20 % held out, not fitted): {px(m.get('residual_px'))}",
+          f"- inlier_count: {m.get('inlier_count', 'n/a')}; inlier_ratio: {m.get('inlier_ratio', 'n/a')}"]
+    # The same headline as the app's readout: on a real pair with outliers the RMSE over
+    # every held-out match measures the outliers (Known issue 1), so the median leads.
+    if m.get("residual_median_px") is not None:
+        L += [f"- **held-out median residual** (residual_median_px; the 20 % of matches the fit "
+              f"never saw): {px(m.get('residual_median_px'))}",
+              f"- held-out RMSE of the matches within 3 px of the fit on the reference grid "
+              f"(holdout_inlier_rmse_px, capped at 3 px by that definition): "
+              f"{px(m.get('holdout_inlier_rmse_px'))}; "
+              f"{_frac(m.get('holdout_inlier_frac'))} of the held-out matches are within 3 px"]
+    L += [f"- residual_px (RMSE over ALL held-out matches, outliers included - the synthetic "
+          f"sweep's measure): {px(m.get('residual_px'))}",
           f"- rmse_gt_px (only with a known transform): {px(m.get('rmse_gt_px'))}",
           f"- grid_coverage_fraction (8x8): {m.get('grid_coverage_fraction', 'n/a')}; "
           f"distribution_cv: {m.get('distribution_cv', 'n/a')}", ""]
     ir = rep.get("inlier_residual_px")
     if ir:
+        lead = "the held-out median" if m.get("residual_median_px") is not None else "`residual_px`"
         L += [f"Exported inliers: {rep['inliers_exported']}; their residual under the matcher's "
               f"homography is in-sample (fitted), median {px(ir['median'])}, p90 {px(ir['p90'])}. "
-              "Read `residual_px` above for accuracy, not this.", ""]
+              f"Read {lead} above for accuracy, not this.", ""]
     if t:
         c = t.get("counts") or {}
         L += ["## Where it can be trusted", "",

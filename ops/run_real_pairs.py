@@ -32,7 +32,7 @@ def _data():
 def run_pair(pair_dir: pathlib.Path, log: bool = False, out_root=None, command=""):
     from core.export import _commit, export_bundle
     from core.pipeline import _log_row, resolve_pair, run_all
-    from evaluation.real_eval import consistency_vs_prior, log_real
+    from evaluation.real_eval import consistency_vs_prior, insample_axis_rmse, log_real
 
     prior = json.loads((pair_dir / "geometry_prior.json").read_text(encoding="utf-8"))
     src, ref = resolve_pair(str(pair_dir))
@@ -44,6 +44,7 @@ def run_pair(pair_dir: pathlib.Path, log: bool = False, out_root=None, command="
     gsd = prior["reference"]["resampled_gsd_mpp"]
     cons = consistency_vs_prior(r["H_final"], prior["prior_H_source_to_reference"],
                                 r["shape_reference"], gsd)
+    ins = insample_axis_rmse(r["H"], r["src_inliers"], r["ref_inliers"])
     out_root = pathlib.Path(out_root or (_data() / "out"))
     export_bundle(r, out_root / pair_dir.name, pair_dir.name, src, ref, prior=prior)
 
@@ -58,7 +59,9 @@ def run_pair(pair_dir: pathlib.Path, log: bool = False, out_root=None, command="
              f"{r['declared']['method']} | archive geometry disagreement after coarse correction: "
              f"median {f(cons['median_px'], 1)} px = {f(cons['median_m'], 1)} m | "
              f"d_sun_az {prior.get('d_sun_azimuth_deg')} deg, d_inc {prior.get('d_incidence_deg')} deg, "
-             f"scale {prior.get('scale_ratio')}x")
+             f"scale {prior.get('scale_ratio')}x | IN-SAMPLE (SAC's measure: the {ins['n']} MAGSAC++ "
+             f"inliers the matcher's H was fitted to, under that H - not held-out): RMSE x "
+             f"{f(ins['x_px'])} px, y {f(ins['y_px'])} px")
     row = {
         "pair_id": pair_dir.name, "tier": prior["tier"],
         "kind": f"{_short(prior['source']['instrument'])}-{_short(prior['reference']['instrument'])}",
@@ -81,6 +84,8 @@ def run_pair(pair_dir: pathlib.Path, log: bool = False, out_root=None, command="
         "verdict": g.get("verdict"),
         "archive_offset_px": cons["median_px"], "archive_offset_m": cons["median_m"],
         "seconds": round(r["seconds"], 1), "git_commit": _commit(), "command": command,
+        "insample_rmse_x_px": ins["x_px"], "insample_rmse_y_px": ins["y_px"],
+        "insample_n": ins["n"] or None,
     }
     logged = None
     if log:

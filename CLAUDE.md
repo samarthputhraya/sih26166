@@ -1,9 +1,25 @@
 # SIH26166 — Lunar Image Registration
 
-Smart India Hackathon 2026, ISRO problem statement SIH26166. Six-person team. **The college
-internal round is 9 September 2026 = Day 11** (Day 1 was 30 Aug); confirmed by the SPOC on Day 5.
-Full context is in `docs/00_CANONICAL_FACTS.md` — **read it before answering anything
-substantive.** The approved plan for Days 5–10 is `ops/PLAN_TO_9_SEP.md`.
+Smart India Hackathon 2026, ISRO problem statement SIH26166. Six-person team. Full context is in
+`docs/00_CANONICAL_FACTS.md` — **read it before answering anything substantive.**
+
+## National round (from 18 Sep 2026) — read this before the college-round text below
+
+- The college internal round was **Fri 11 Sep 2026** (not 9 Sep). On **18 Sep** the institute
+  nominated us to the national stage as team **`LunaXX`**. Ideas close **30 Sep 2026**; we submit
+  **Sun 27 Sep**. The college gates and Days 1–12 below are all past.
+- **Solo push:** Samartha builds alone. **Invariant 4 (one folder per person) is suspended**;
+  Invariants 1, 2, 3, 5 and 7 stand, and no agent writes files. Teammates have no tasks until
+  after submission.
+- **Numbers come from the evidence freeze**: `python -m ops.freeze` re-runs every piece of evidence
+  on one clean commit (`--plan`, `--check` must say FROZEN), `python -m ops.make_report` renders
+  `REPORT.md`, and the deck (`presentation/build_deck.py` → `SIH26166_LunaXX_deck.pptx`) copies
+  from REPORT.md. Invariant 1 now reads: no figure on a slide unless it is in REPORT.md at the
+  freeze commit.
+- Live state is `ops/STATUS.md`; the plan is `ops/specs/day_NN.md`.
+
+The college-round text below is kept as history; where it disagrees with this section, this
+section wins.
 
 ---
 

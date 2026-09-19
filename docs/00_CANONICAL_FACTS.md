@@ -326,6 +326,22 @@ Q&A round. **If you catch a bare number anywhere in these documents that is not 
 
 ## 10. SIH SUBMISSION FACTS
 
+> **NATIONAL ROUND — this box supersedes the college-round lines below (added 19 Sep 2026).**
+> - The internal round was held **Fri 11 Sep 2026** (the college's schedule PDF; the "9 Sep" in
+>   this file was wrong). It was scored on F1–F8 (deck) and F9–F10 (live).
+> - **18 Sep 2026: nominated to the national stage as team `LunaXX`.** The 2026 guidelines forbid
+>   the institute's name in a team name, so the title slide says LunaXX, never "SNPSU LunaX".
+> - **Ideas close 30 Sep 2026** for every PS (sih.gov.in/sih2026PS and the SIH 2026 Guidelines;
+>   this replaces the 15/20 Sep conflict below). We submit **Sun 27 Sep**. Max 2 PS per team;
+>   a PS freezes at 500 ideas; ~4–5 teams per PS reach the finale.
+> - Solo push from 18 Sep: Samartha owns every folder (Invariant 4 suspended); Invariants 1, 2,
+>   3, 5 stand, and agents still never write files.
+> - Numbers for the national deck come only from the **evidence freeze** (`python -m ops.freeze`,
+>   `--check` must say FROZEN), rendered by `python -m ops.make_report` into `REPORT.md`. The deck
+>   is `presentation/SIH26166_LunaXX_deck.pptx` (built by `presentation/build_deck.py`; audit table
+>   `presentation/DECK_V2_DRAFT.md`).
+> - Live state (what is done, what is open) is in `ops/STATUS.md`, not here.
+
 - College SPOC registered before the 14 Aug 2026 deadline ✅. Team registered, SIH26166 submitted ✅.
 - **Internal college hackathon: September 2026, exact date TBC.** Chase your SPOC.
 - SIH26166 submission closes **20 September 2026**; SPOC portal nomination **30 September 2026**.
@@ -389,6 +405,11 @@ Three implications:
 ---
 
 ## 11. GATES — THE ONLY VERSION
+
+> **National round (from 18 Sep 2026):** every gate below belongs to the college round and is
+> past. The national round's checkpoints are, in order: the evidence freeze is FROZEN on one
+> commit → the deck's numbers are filled from that commit's REPORT.md → `claim-checker` is clean
+> → the PDF is exported → the portal submission (27 Sep; closes 30 Sep). See `ops/STATUS.md`.
 
 A failed gate means **cut scope, never extend time.** These supersede any gate list elsewhere.
 

@@ -144,11 +144,18 @@ def main(argv=None):
     nac_nac = sorted([r for r in reg if _kind(r) == "nac-nac" and not r.get("outcome")], key=lambda r: r["pair_id"])
     if nac_nac:
         L += section_pairs("LRO NAC → LRO NAC (same sensor; loop legs)", nac_nac, "Same sensor - NOT cross-sensor.")
-    for stem, pid, where in (("sac_ohrc_nac_", "M1350459544RE", "equatorial, 13.3-13.9°S 25.2°E"),
-                             ("sac_polar_ohrc_nac_", "M165491149RE", "polar, 61.6-62.3°S 56.6°E")):
+    # SAC's grids are the paper's (arXiv:2509.04775, Table 1), cited, not measured here
+    for stem, pid, where, sac_grid in (
+            ("sac_ohrc_nac_", "M1350459544RE", "equatorial, 13.3-13.9°S 25.2°E", "1.1179"),
+            ("sac_polar_ohrc_nac_", "M165491149RE", "polar, 61.6-62.3°S 56.6°E", "0.88779")):
         rows = sorted([r for r in reg if r["pair_id"].startswith(stem)], key=lambda r: r["pair_id"])
         if not rows:
             continue
+        gp = _jsonfile(ROOT / "data" / "pairs" / rows[0]["pair_id"] / "geometry_prior.json") or {}
+        native = (gp.get("reference") or {}).get("resolution_mpp")
+        grid = (f"NAC on a {rows[0]['ref_gsd_m']} m grid (its label resolution "
+                f"{_f(native, 2)} m; the paper's NAC grid was {sac_grid} m, so pixel figures "
+                f"differ in size as well as in kind)")
         geo = _jsonfile(d / "site_geometry" / f"{pid}.json") if d else None
         wide = (geo or {}).get("wide_offset") or {}
         field = (geo or {}).get("model") or {}
@@ -162,12 +169,25 @@ def main(argv=None):
                     f"`site_geometry/{pid}.json`). ")
         L += section_pairs(f"SAC's own benchmark pair ({where}): Chandrayaan-2 OHRC → LRO NAC `{pid}`", rows,
                            f"The pair in the problem setters' paper (arXiv:2509.04775, Table 1), cut by "
-                           f"`ops/cut_pradan_pairs.py` on a local equirectangular grid: OHRC at native "
-                           f"~0.28 m, NAC at native, same ground. {pre}Cross-sensor and cross-mission; "
-                           f"both panchromatic - NOT multi-modal. The paper reports SuperGlue at 0.62 / 0.57 "
-                           f"px (X / Y) on the equatorial pair and that only SuperGlue registered the polar "
-                           f"one; its figure is an IN-SAMPLE control-point RMSE per axis, ours are held-out "
-                           f"(matches the fit never saw) - not the same measure.")
+                           f"`ops/cut_pradan_pairs.py` on a local equirectangular grid: OHRC at "
+                           f"~{rows[0]['src_gsd_m']} m, {grid}, same ground. {pre}Cross-sensor and "
+                           f"cross-mission; both panchromatic - NOT multi-modal. The paper reports SuperGlue "
+                           f"at 0.62 / 0.57 px (X / Y) on the equatorial pair and that only SuperGlue "
+                           f"registered the polar one; its figure is an IN-SAMPLE control-point RMSE per "
+                           f"axis, the table above is held-out (matches the fit never saw) - not the same "
+                           f"measure. The same in-sample measure for ours follows.")
+        ins = [r for r in rows if r.get("insample_n")]
+        if ins:
+            g = float(rows[0]["ref_gsd_m"])
+            L += ["In-sample, per axis (SAC's measure): the MAGSAC++ inliers the matcher's H was "
+                  "fitted to, graded under that H. MAGSAC++ keeps only matches within 3 px, so this "
+                  "can only flatter; it is here for comparison with the paper, never as our accuracy.", "",
+                  "| pair | inliers graded | RMSE X px (m) | RMSE Y px (m) | verdict |", "|---|---|---|---|---|"]
+            for r in ins:
+                x, y = r["insample_rmse_x_px"], r["insample_rmse_y_px"]
+                L.append(f"| `{r['pair_id']}` | {r['insample_n']} | {_f(x)} ({float(x) * g:.3f}) | "
+                         f"{_f(y)} ({float(y) * g:.3f}) | {r['verdict']} |")
+            L.append("")
     other = sorted([r for r in reg if _kind(r) not in ("ohrc-nac", "nac-nac")], key=lambda r: r["pair_id"])
     sac = sorted([r for r in reg if _kind(r) == "ohrc-tmc2"], key=lambda r: r["pair_id"])
     if sac:

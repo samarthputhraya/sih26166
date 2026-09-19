@@ -1,89 +1,121 @@
-# SIH26166 — Lunar Image Registration
+# SIH26166 — lunar image registration that knows when it is wrong
 
-Registering Chandrayaan-2 imagery against reference lunar imagery under different sun angles
-and at different scales, to sub-pixel accuracy, with matches spread across the frame — and, cell
-by cell, telling you **where the alignment is verified, where it is weak, and where there is no
-evidence at all**. When its own matcher is confidently wrong, the system says so and switches
-method (`core/reliability.py`, `core/pipeline.py`).
+Team **LunaXX** · Smart India Hackathon 2026 · ISRO problem statement SIH26166, *"Multi-modal, Sun
+angle and scale invariant image correspondence using Chandrayaan-2 optical images (OHRC, TMC and
+IIRS)"*.
 
-Smart India Hackathon 2026 · ISRO problem statement SIH26166.
+The engine registers a Chandrayaan-2 image to a lunar reference image across Sun angle, scale and
+sensor. It also reports, region by region, whether the result can be trusted:
 
-What is and is not validated is in `docs/00_CANONICAL_FACTS.md` §2 and §11. There is no
-cross-sensor pair in this repository; do not describe any result here as cross-sensor.
+- every cell of an 8×8 grid over the reference is `verified`, `weak` or `no_evidence`;
+- an independent area check, which never sees the matches, cross-correlates the warped image
+  against the reference (inverted shading included) and says `agrees`, `unconfirmed` or
+  `contradicted`;
+- `contradicted` switches to global correlation, and the output says it did.
 
-## Start here
+**Measured results are in [`REPORT.md`](REPORT.md).** That file is generated from the evidence
+logs by `python -m ops.make_report` and is never edited by hand. This README carries no numbers
+on purpose: Invariant 1 (below) allows a figure only where it can be traced to a log row.
 
-`docs/00_CANONICAL_FACTS.md` is the single source of truth — every definition, number and data
-source. `docs/TEAM_TASK_GUIDE.md` is the schedule. If they disagree, Canonical Facts wins.
+## What runs, in order
 
-**The internal hackathon is 9 September 2026 = Day 11.** Confirmed by the SPOC on Day 5. Gates run
-2 → 5 on Days 7 → 10; the full table is Canonical Facts §11, and the approved plan for Days 5–10 is
-`ops/PLAN_TO_9_SEP.md`.
+`core/pipeline.py` `run_all()`:
+
+1. `io_loader`: PDS4 (Chandrayaan-2), PDS3 (LRO, Kaguya) and GeoTIFF, windowed reads.
+2. `scale`: both images to one ground scale (area averaging).
+3. `illumination`: lighting reduced to gradient orientation.
+4. `matcher`: LoFTR on CPU, tiled.
+5. `subpixel`: NCC refinement of every match, in original pixels.
+6. `ransac`: MAGSAC++ (`cv2.USAC_MAGSAC`).
+7. `evaluation/metrics.evaluate`: the five metrics, plus held-out residuals on the 20 % of
+   matches the fit never saw.
+8. `reliability`: the trust map and the area check, then the fallback when contradicted.
+9. `export`: the deliverables, listed below.
+
+The deliverables for every pair are written to `--out DIR`:
+- `registered_product.tif`, a GeoTIFF on the reference grid;
+- `matches.csv`, every raw match with an inlier flag, its residual and its cell state;
+- GDAL/QGIS ground control points;
+- `matches_isis.csv`, an ISIS-style match list;
+- `trust_map.csv`;
+- `report.json` and `report.md`, with metrics, timings, input sha256 and versions.
+
+## Real data it has been run on
+
+Terminology follows `docs/00_CANONICAL_FACTS.md` §2 (Invariant 2).
+
+| Pair | Kind |
+|---|---|
+| Chandrayaan-2 OHRC ↔ LRO NAC, 74 °S site and SAC's two benchmark pairs (arXiv:2509.04775, Table 1) | cross-sensor, cross-mission |
+| OHRC ↔ Kaguya TC ortho map | cross-sensor, cross-mission (scale rung) |
+| OHRC ↔ TMC-2 | cross-sensor, same mission |
+| LRO NAC ↔ LRO NAC (MiLOI benchmark, real Sun sweep) and TMC-2 fore ↔ aft | **same sensor**: Sun-angle and viewpoint tests |
+| Kaguya TC ↔ Kaguya MI 1548 nm, TC ↔ Chandrayaan-2 IIRS | multi-modal (visible ↔ infrared) |
+| OHRC ↔ LOLA shaded relief | multi-modal (optical ↔ elevation), a **declared failure** |
 
 ## Setup
 
-The demo machine has **no GPU**. Everything on the demo path runs on CPU.
+The demo machine has **no GPU**. Everything runs on CPU.
 
 ```
 python -m venv C:\Users\<you>\venvs\sih26166     # OUTSIDE the OneDrive folder
 C:\Users\<you>\venvs\sih26166\Scripts\activate
 pip install -r requirements.txt
+python -m core.fetch_weights                      # LoFTR weights into weights/, once, online
 ```
 
-`python3` fails on Windows (Store alias) — use `python` or `py`.
+- `python3` fails on Windows (Store alias); use `python` or `py`.
+- Activate the venv in every new terminal. A bare `python` here has no numpy, and the failure
+  looks like a broken build.
+- External data (imagery, PDS products) lives outside git. Its path goes in `data_path.txt`, which
+  is gitignored and differs per machine.
 
-**Activate the venv in every new terminal.** Without it, `python` on this machine resolves to a bare
-3.12 install that has none of these packages, and the failure looks like a missing dependency
-(`ModuleNotFoundError: No module named 'numpy'`) rather than a missing venv. Check with
-`python -c "import numpy, torch; print('ok')"` before trusting a green or red test run —
-**that mistake will read as "a teammate broke the build."**
+## Run it
+
+```
+python -m core.pipeline data/pairs/sac_ohrc_nac_w01 --out out/sac_w01   # one pair, all deliverables
+streamlit run app/streamlit_app.py                                     # the demo app (offline)
+python -m ops.run_real_pairs "site_ohrc_*" --log                        # register + log real pairs
+python -m ops.freeze --plan                                             # the evidence freeze: what would run
+python -m ops.freeze                                                    # re-run ALL evidence on this commit
+python -m ops.freeze --check                                            # FROZEN = every number is from this commit
+python -m ops.make_report                                               # REPORT.md from the logs
+python -m pytest -q                                                     # the test suite
+```
+
+The app reads cached results from `demo_cache/`, which `python -m ops.precompute_demo_cache`
+fills. The live demo therefore needs no network and no GPU.
+
+## Evidence, and the two rules that override convenience
+
+| File | Holds |
+|---|---|
+| `evaluation/results_log.csv` | every scored run: the 15-column log (Invariant 1) |
+| `evaluation/real_pairs_log.csv` | real-pair structure: Sun geometry, window, archive offset, held-out and in-sample residuals, loops, sweep outcomes |
+| `evaluation/miloi_log.csv`, `miloi_truth.json` | the MiLOI benchmark and its truth network |
+| `evaluation/trust_real_calibration.csv` | planted wrong registrations on real windows |
+| `REPORT.md` | all of the above, rendered |
+
+**Numbers.** No figure enters a slide, a script, a Q&A answer or this README unless it is in the
+logs above at the freeze commit. REPORT.md is where to copy it from.
+
+**Terminology.** LROC NAC ↔ LROC NAC is the *same sensor*: a Sun-angle test, not cross-sensor.
+"Multi-modal" means visible↔infrared, radar or elevation only; two panchromatic cameras are not.
+"Sub-pixel" always names its pixel grid and gives the metres.
 
 ## Layout
 
-| Folder | Owner | Contents |
-|---|---|---|
-| `core/` | Samartha | io_loader, scale, illumination, matcher, ransac, subpixel, distribution, pipeline |
-| `evaluation/` | Samrudh | synthetic_data, shaded_relief, metrics, **results_log.csv** |
-| `baselines/` | Risheeth | sift/orb/akaze, failure_gallery |
-| `app/change_detection.py` | Rishabh | change detection |
-| `app/streamlit_app.py` | Samartha | the UI |
-| `presentation/` | Saniya | deck, demo script, Q&A bank |
-| `data/` | Rohan | pairs catalogue and dataset card (imagery itself lives in Drive) |
+| Folder | Contents |
+|---|---|
+| `core/` | the pipeline modules above, `geometry` (map projections, NAC corrections), `reliability` (trust layer), `export` |
+| `evaluation/` | `metrics`, synthetic and shaded-relief pairs, `real_eval`, `miloi`, the evidence logs |
+| `baselines/` | SIFT / ORB / AKAZE and their sweeps |
+| `app/` | `streamlit_app.py` (the demo), `change_detection.py` (gated by the trust map) |
+| `ops/` | data cutting (`cut_site_pairs`, `cut_pradan_pairs`), runners, `freeze`, `make_report`, `STATUS.md` |
+| `presentation/` | `build_deck.py` (the deck text lives there), `make_figures.py`, the audit table |
+| `docs/` | `00_CANONICAL_FACTS.md`, the single source of truth for definitions |
 
-One folder per person. **Never edit someone else's folder** — that is how six people avoid merge
-conflicts, and how each person stays able to explain their own module cold.
-
-## Two rules that override convenience
-
-**Numbers.** No figure enters a slide, demo script, Q&A answer or this README until it exists in
-`evaluation/results_log.csv`. Until then write `[TBD — results_log.csv]`.
-
-**Terminology.** `00_CANONICAL_FACTS.md` §2 defines a five-tier validation ladder. LROC NAC ↔ LROC
-NAC is the *same sensor* — a sun-angle test, not cross-sensor. "Multi-modal" means visible↔infrared,
-radar or elevation only. "Sub-pixel" must always name the pixel grid and give the metres equivalent.
-
-## Data and weights
-
-Code in git, imagery and model weights in Google Drive. Nothing over ~5 MB or binary goes in the
-repo. `weights/` and `demo_cache/` are gitignored but must be populated locally before the offline
-demo gate.
-
-## The trust layer
-
-```
-python -m core.pipeline data/pairs/pair_04_tierD_native        # prints WHERE IT CAN BE TRUSTED
-python -m core.reliability_calibrate --dem <dem.npy> --pixel-size 60 --sweep 0,15,30,45 --repeats 5
-python -m ops.gate_tier_d_changes                              # change detection, gated by the map
-python -m ops.precompute_demo_cache                            # cache run_all() for the demo
-```
-
-Every cell of the reference frame is `verified`, `weak` or `no_evidence`. The verdict on the
-whole transform is a vote of the cells' own pixel correlations, which never see the matches. The
-calibration run writes `core/reliability_calibration.csv` (one row per cell, with the true error)
-and logs one row per pair to `evaluation/results_log.csv`.
-
-## Performance
-
-CPU latency, tile size and match quality: `[TBD — results_log.csv]`.
-Raw Day-1 measurements are in `core/bench_loftr_cpu_results.csv`; they become quotable only once
-they are reproduced into `evaluation/results_log.csv`.
+Imagery and model weights are never committed (anything over ~5 MB or binary).
+`weights/`, `demo_cache/` and `data/pairs/*` are gitignored. Each pair directory carries its own
+`geometry_prior.json` (the product ids, grids, Sun geometry and the command that cut it), and
+REPORT.md lists every downloaded product with its sha256, so the pairs can be cut again.

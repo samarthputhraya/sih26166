@@ -49,7 +49,8 @@ def test_every_real_pair_is_offered():
     at = _fresh_app()
     if not at.selectbox:
         pytest.skip("data/pairs is not synced on this machine (files are gitignored)")
-    offered = at.selectbox[0].options
+    # options are the DISPLAYED labels; pairs with a cached result say so (19 Sep)
+    offered = [o.replace("  (cached)", "") for o in at.selectbox[0].options]
     assert offered, "data/pairs has directories but none were offered"
     for expected in ("pair_01",):
         assert expected in offered, f"{expected} missing from {offered}"
@@ -610,3 +611,23 @@ def test_the_readout_argues_in_sans_and_prints_figures_in_mono():
     m = re.search(r"\.readout__x\s*\{[^}]*?font-family:\s*var\(--(\w+)\)", skin)
     assert m and m.group(1) == "sans", "the readout's explanatory line must be sans"
     assert re.search(r"^\.fig\s*\{", skin, re.M), ".fig must be usable outside .verdict__body"
+
+
+def test_real_pairs_take_tier_and_same_sensor_from_their_geometry_prior(tmp_path, monkeypatch):
+    """demo-medic, 19 Sep: only six pairs are catalogued, so every real pair said
+    "Tier unknown" and the same-sensor note never fired on TMC-2 fore/aft."""
+    m = _app_module()
+    d = tmp_path / "sac_tmcfore_tmcaft_w01"
+    d.mkdir()
+    (d / "geometry_prior.json").write_text(
+        '{"tier": "A (same sensor, viewpoint, real)", "terminology": "same instrument (TMC-2 fore '
+        'vs aft): a VIEWPOINT test, NOT cross-sensor", "source": {"instrument": "TMC-2 fore"}, '
+        '"reference": {"instrument": "TMC-2 aft"}}', encoding="utf-8")
+    monkeypatch.setattr(m, "PAIRS_DIR", tmp_path)
+    m.pair_prior.clear()
+    meta = m.pair_meta("sac_tmcfore_tmcaft_w01")
+    assert meta["tier"] == "A (same sensor, viewpoint, real)" and meta["same_sensor"]
+    assert m.pair_identity("sac_tmcfore_tmcaft_w01", "Bundled pair") == (
+        "A (same sensor, viewpoint, real)", "TMC-2 fore vs TMC-2 aft")
+    assert m.pair_meta("no_such_pair") == {}
+    m.pair_prior.clear()

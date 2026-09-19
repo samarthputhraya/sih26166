@@ -371,25 +371,60 @@ def catalogue_row(pair_id: str) -> dict:
     return {}
 
 
-def pair_identity(pair_label: str | None, mode: str | None) -> tuple[str, str]:
-    """(tier, sensors) for a pair, from the catalogue - never guessed.
+@st.cache_data(show_spinner=False)
+def pair_prior(pair_id: str) -> dict:
+    """The pair's own geometry_prior.json, written by the tool that cut it, or {}."""
+    try:
+        return json.loads((PAIRS_DIR / pair_id / "geometry_prior.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
 
-    Uploads are "unknown (upload)"; a bundled pair with no catalogue row is
-    "unknown". This is what the rail prints, and it is looked up for the pair the
-    RESULT came from, so the rail can never describe a different pair than the
-    panel below it.
+
+def pair_meta(pair_id: str | None) -> dict:
+    """Tier, instruments and the Invariant-2 wording for a bundled pair - never guessed.
+
+    From Rohan's catalogue row when there is one, else from the pair's own
+    geometry_prior.json: every real pair cut since 18 Sep carries its tier and its
+    terminology there, and only six pairs are catalogued. {} when neither exists.
+    `same_sensor` drives the "not cross-sensor" note: equal instruments, or a prior
+    whose terminology says NOT cross-sensor (TMC-2 fore vs aft are one instrument
+    under two names).
+    """
+    if not pair_id:
+        return {}
+    row = catalogue_row(pair_id)
+    if row:
+        a = (row.get("source_instrument") or "?").strip()
+        b = (row.get("ref_instrument") or "?").strip()
+        return {"tier": (row.get("tier") or "uncatalogued").strip(), "source": a, "reference": b,
+                "same_sensor": bool(a) and a == b, "note": (row.get("notes") or "").strip(),
+                "from": "pairs_catalogue.csv"}
+    pr = pair_prior(pair_id)
+    if pr.get("tier"):
+        term = (pr.get("terminology") or "").strip()
+        a = ((pr.get("source") or {}).get("instrument") or "?").strip()
+        b = ((pr.get("reference") or {}).get("instrument") or "?").strip()
+        return {"tier": pr["tier"], "source": a, "reference": b,
+                "same_sensor": a == b or "not cross-sensor" in term.lower(), "note": term,
+                "from": "geometry_prior.json"}
+    return {}
+
+
+def pair_identity(pair_label: str | None, mode: str | None) -> tuple[str, str]:
+    """(tier, sensors) for a pair, from the catalogue or its geometry prior - never guessed.
+
+    Uploads are "unknown (upload)"; a bundled pair with neither is "unknown". This is
+    what the rail prints, and it is looked up for the pair the RESULT came from, so
+    the rail can never describe a different pair than the panel below it.
     """
     if not pair_label:
         return "--", "--"
     if mode == "Upload two images":
         return "unknown (upload)", "unknown"
-    row = catalogue_row(pair_label)
-    if not row:
+    meta = pair_meta(pair_label)
+    if not meta:
         return "unknown", "unknown"
-    tier = (row.get("tier") or "uncatalogued").strip()
-    inst_a = (row.get("source_instrument") or "?").strip()
-    inst_b = (row.get("ref_instrument") or "?").strip()
-    return tier, f"{inst_a} vs {inst_b}"
+    return meta["tier"], f"{meta['source']} vs {meta['reference']}"
 
 
 def to_display(img) -> np.ndarray | None:
@@ -572,6 +607,14 @@ def load_cached_result(path: pathlib.Path) -> tuple[dict, dict]:
     """(result dict, sidecar info) from ops/precompute_demo_cache.py's files."""
     with open(path, "rb") as f:
         result = pickle.load(f)
+    # The pickle holds the absolute paths of the machine that wrote it. On another
+    # machine (or a moved repo) look for the same files under this repo's data/pairs.
+    for k in ("source", "reference"):
+        p = pathlib.Path(str(result.get(k) or ""))
+        if result.get(k) and not p.exists():
+            local = PAIRS_DIR / p.parent.name / p.name
+            if local.exists():
+                result[k] = str(local)
     return result, cached_sidecar(path)
 
 
@@ -715,6 +758,11 @@ def readout_for(resid, ref_gsd, ref_name: str, aligned_ok: bool, fallback_used: 
     label = label or "HELD-OUT FIT RESIDUAL &middot; residual_px"
     grid = f"reference grid of {esc(ref_name)}"
     if resid is None:
+        if fallback_used:
+            return readout_html("void", label, "&mdash;", "", "",
+                                f"the matcher produced nothing to measure on the {grid}; the "
+                                f"declared alignment is the fallback's, and its uncertainty is "
+                                f"in the verdict above, in metres")
         return readout_html("void", label, "&mdash;", "", "",
                             f"no transform &mdash; nothing to measure on the {grid}")
     value = esc(f"{resid:.4f}")
@@ -838,13 +886,17 @@ with st.sidebar:
     st.html('<div class="panellabel">SELECT PAIR</div>')
 
     pairs = discover_pairs()
-    labels = [p.name for p in pairs]
+    # Pairs with a cached result first: they open at once and are the ones the demo
+    # uses. Any other pair runs the matcher live - 5 s on a quiet laptop, a minute on
+    # a busy one (demo-medic, 19 Sep) - so the list says which is which.
+    labels = sorted((p.name for p in pairs), key=lambda n: (cached_result_path(n) is None, n))
     # Changing the source is changing the pair: the previous result goes with it.
     mode = st.radio("Source", ["Bundled pair", "Upload two images"], on_change=reset_results)
 
     src_path = ref_path = None
     pair_label = None
     catalogue_note = ""
+    note_from = ""
 
     if mode == "Bundled pair":
         if not labels:
@@ -857,7 +909,8 @@ with st.sidebar:
             # Open on the demo pair, not on whatever sorts first: pair_00_dryrun is
             # uncatalogued and would greet the Gate-3 stranger with a warning.
             default = labels.index("pair_01") if "pair_01" in labels else 0
-            choice = st.selectbox("Pair", labels, index=default, on_change=reset_results)
+            choice = st.selectbox("Pair", labels, index=default, on_change=reset_results,
+                                  format_func=lambda n: f"{n}  (cached)" if cached_result_path(n) else n)
             pair_label = choice
             try:
                 src_path, ref_path = resolve_pair(PAIRS_DIR / choice)
@@ -865,23 +918,22 @@ with st.sidebar:
                 st.error(str(e))
                 src_path = ref_path = None
 
-            row = catalogue_row(choice)
-            if row:
-                inst_a = (row.get("source_instrument") or "?").strip()
-                inst_b = (row.get("ref_instrument") or "?").strip()
+            meta = pair_meta(choice)
+            if meta:
                 # Tier and sensors are printed in the rail above the result; here
                 # only the sentence that matters. Invariant 2, enforced in the UI
                 # so a demo cannot imply otherwise.
-                if inst_a and inst_a == inst_b:
+                if meta["same_sensor"]:
                     st.info(
                         "Same instrument on both sides - this is **not** a "
                         "cross-sensor result, whatever else it shows."
                     )
-                catalogue_note = (row.get("notes") or "").strip()
+                catalogue_note = meta["note"]
+                note_from = meta["from"]
             else:
                 st.warning(
-                    f"`{choice}` is not in pairs_catalogue.csv, so its tier is "
-                    "unknown. A number without its tier is not evidence."
+                    f"`{choice}` has no pairs_catalogue.csv row and no geometry_prior.json, "
+                    "so its tier is unknown. A number without its tier is not evidence."
                 )
     else:
         up_a = st.file_uploader("Source image", type=["tif", "tiff", "png", "jpg"],
@@ -924,7 +976,7 @@ with st.sidebar:
                    f"by ops/precompute_demo_cache.py ({took_txt}). Untick the box to run the "
                    f"matcher live.")
     if catalogue_note:
-        with st.expander("Catalogue note"):
+        with st.expander(f"Pair note ({note_from})"):
             st.caption(catalogue_note)
 
     st.html('<div class="panellabel">DISPLAY</div>')
@@ -1214,8 +1266,10 @@ if r is not None:
     if st.session_state.get("bundle_key") != _key:
         try:
             from core.export import bundle_bytes
-            st.session_state["bundle"] = bundle_bytes(
-                r, pathlib.Path(str(r.get("reference"))).parent.name or "pair")
+            _pid = pathlib.Path(str(r.get("reference"))).parent.name or "pair"
+            # The pair's own prior carries its tier and instruments; without it the
+            # downloaded report.md printed "-" for both instruments (demo-medic, 19 Sep).
+            st.session_state["bundle"] = bundle_bytes(r, _pid, prior=pair_prior(_pid) or None)
         except Exception as _e:  # noqa: BLE001 - the demo must not crash on an export
             st.session_state["bundle"] = {}
             st.session_state["bundle_error"] = str(_e)

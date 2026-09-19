@@ -50,6 +50,10 @@ textColor                = "#14171A"
 # Invariant 3: wifi is OFF at the demo. Usage stats are a network call on
 # startup - off is both correct and one less thing to time out.
 gatherUsageStats = false
+# Headless starts (`--server.headless true`) otherwise look up this machine's
+# external IP on the web to print an "External URL" (demo-medic, 19 Sep). Naming
+# the address skips that lookup; the demo is served on this laptop only.
+serverAddress = "localhost"
 
 [client]
 # Removes the "Deploy" button and the developer items from the top-right menu.
