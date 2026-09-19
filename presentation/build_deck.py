@@ -7,9 +7,10 @@ Inputs   presentation/sih_template.pptx   (924,505 bytes, sha256 ce3e5dee...)
 Output   presentation/SIH26166_LunaXX_deck.pptx   (national round, v2 - 19 Sep 2026)
 
 V2 (NATIONAL ROUND). The text below is rebuilt around the real-data evidence of 18-19 Sep
-(REPORT.md). Until the evidence freeze every number on a slide is "[TBD]" and the comment
-beside it names the REPORT.md section / log it will be read from; "TBD" is in BANNED, so the
-audit fails - on purpose - until every one is filled from the freeze commit. The college-round
+(REPORT.md). Every number on a slide was copied from REPORT.md at the evidence-freeze commit
+49bdad9 (FROZEN 20 Sep 00:36; evidence commit 36de5f4), and the comment beside it names the
+REPORT.md section it came from. A new freeze means re-reading every one of them. The audit
+still counts "TBD": the Team ID stays a placeholder until it is read off the portal. The college-round
 deck (SIH26166_deck.pptx, built by this file up to 1864ad3) is not overwritten.
 
 WHAT THE OFFICIAL INSTRUCTIONS SLIDE ACTUALLY SAYS, and how each line is honoured here:
@@ -135,7 +136,7 @@ BULLET_INDENT = 0.26                                # hanging indent for wrapped
 # solution" at all, because the how-it-works had been left on slide 3. Round 1 is screened
 # from the file with nobody presenting, so an evaluator reads down the grey pointers and
 # looks for each one in turn. Each is now a heading directly beneath them.
-# V2 CONTENT. Every "[TBD]" is filled at the evidence freeze from the source in its comment
+# V2 CONTENT. Every number was filled at the evidence freeze (49bdad9) from the source in its comment
 # (REPORT.md section names are the headings `python -m ops.make_report` writes). Invariant 2:
 # OHRC<->NAC / OHRC<->TC are cross-sensor AND cross-mission; OHRC<->TMC-2 is cross-sensor, same
 # mission; NAC<->NAC (MiLOI, the sweep's NAC legs) and TMC-2 fore<->aft are SAME sensor; only
@@ -156,26 +157,27 @@ S2 = [
     # REPORT.md "SAC's own benchmark pair (equatorial ...)": Δsun az (an AZIMUTH difference),
     # count of `agrees` / rows. "(polar ...)": `agrees` / rows.
     ("SAC's own pairs (arXiv:2509.04775, Table 1), real and cross-sensor: OHRC ↔ NAC "
-     "M1350459544RE, Sun azimuths [TBD]° apart, [TBD]/[TBD] windows accepted; polar "
-     "M165491149RE, [TBD]/[TBD].", 1, False, INK),
+     "M1350459544RE, Sun azimuths 174° apart, 6/6 windows accepted; polar "
+     "M165491149RE, Suns 132° apart, 4/6, the other two flagged.", 1, False, INK),
     # "Real sun-angle sweep": "All bins" line (NAC frames, azimuth range).
     # "Scale rung: ... TC ortho map": scale column, `agrees` / rows. LOLA: "Declared-failure rung".
-    ("Sun: one OHRC frame vs [TBD] NAC frames, azimuths [TBD]–[TBD]° apart. Scale: to NAC ~1 m "
-     "and Kaguya TC 7.4 m ([TBD]×, [TBD]/[TBD] accepted); to LOLA 60 m it declares failure.",
+    # Polar: 4 agrees, 1 unconfirmed, 1 contradicted (fallback) = "the other two flagged".
+    ("Sun: one OHRC frame vs 25 NAC frames, azimuths 3–153° apart. Scale: to NAC ~1 m "
+     "and Kaguya TC 7.4 m (29.6×, 3/4 accepted); to LOLA 60 m it declares failure.",
      1, False, INK),
     # "Kaguya TC -> Kaguya MI" + "... IIRS": windows declared fft fallback / total.
     ("Multi-modal: visible to Kaguya MI 1548 nm and IIRS infrared — learned matching fails; "
-     "[TBD] of [TBD] windows are refused and fall back, the rest stay unconfirmed.", 1, False, INK),
+     "13 of 14 windows are refused and fall back, the other stays unconfirmed.", 1, False, INK),
     ("Innovation and uniqueness", 0, True, ACCENT),
     # "MiLOI": the verdict table, column "matcher H within 3 px" (what the trust layer judges).
     # NOT "independent": the truth network is built from OTHER pairs where ours and SIFT agree.
-    ("On [TBD] real same-sensor NAC pairs (MiLOI), truth built leave-one-out from other pairs "
-     "where ours and SIFT agree: agrees within 3 px [TBD]/[TBD]; contradicted wrong "
-     "[TBD]/[TBD]; unconfirmed wrong [TBD]/[TBD].", 1, False, INK),
+    ("On 81 real same-sensor NAC pairs (MiLOI), truth built leave-one-out from other pairs "
+     "where ours and SIFT agree: agrees within 3 px 33/33; contradicted wrong "
+     "43/43; unconfirmed wrong 5/5.", 1, False, INK),
     # "Trust layer on real imagery: planted ...": 0 m row = false alarms; 3 m row; >= 5 m rows.
-    ("Planted wrong answers in real OHRC/NAC windows: [TBD]% false alarms on correct ones, "
-     "[TBD]% caught at 3 m, [TBD]% from 5 m; under ~2 m passes. No matches means \"no evidence\", "
-     "never \"verified\".", 1, True, ACCENT),
+    ("Planted wrong answers in real OHRC/NAC windows: 0% false alarms on correct ones, "
+     "81% caught at 3 m, 100% from 5 m; 2 m or less almost always passes. No matches means "
+     "\"no evidence\", never \"verified\".", 1, True, ACCENT),
 ]
 
 S3_LEFT = [
@@ -202,24 +204,24 @@ S4 = [
     ("Analysis of the feasibility", 0, True, BLUE),
     # REPORT.md footer: registered pairs; instrument pairings = its pair sections (OHRC-NAC,
     # NAC-NAC, OHRC-TMC2, TMC2-TMC2, TC-MI, TC-IIRS, OHRC-TC, OHRC-LOLA). "Loop closure".
-    ("Built and measured, not proposed: [TBD] real windows across [TBD] instrument pairings, all "
-     "public data, all libraries open-source. Three-image loops close to [TBD] m.", 1, False, INK),
+    ("Built and measured, not proposed: 136 real windows across 8 instrument pairings, all "
+     "public data, all libraries open-source. Three-image loops close to 0.10 m.", 1, False, INK),
     # "Chandrayaan-2 OHRC -> LRO NAC": held-out median range, Δsun az range, ref_gsd_m values.
-    ("Held-out residual on real OHRC → NAC windows (Sun [TBD]–[TBD]° apart): median "
-     "[TBD]–[TBD] px on the ~1 m NAC grids ([TBD]–[TBD] m). A residual, not ground truth.",
+    ("Held-out residual on real OHRC → NAC windows (Sun 3.3–5.8° apart): median "
+     "0.41–1.0 px on the ~1 m NAC grids (0.51–0.94 m). A residual, not ground truth.",
      1, False, INK),
     ("Potential challenges and risks", 0, True, ACCENT),
     # "MiLOI" table rows 90-120, 120-180 (all methods); "Real sun-angle sweep" bins 60-90, 90-120
-    # (accepted / windows) and 120-180.
-    ("The hard band: no method registered a MiLOI pair with the Suns over 90° apart ([TBD] of "
-     "[TBD]); our sweep accepted [TBD] of [TBD] windows at 60–120° azimuth, yet [TBD] of [TBD] at "
-     "120–153°.", 1, False, INK),
+    # (accepted / windows) and 120-180. "SAC's benchmark site: OHRC -> TMC-2": Δsun az, verdicts.
+    ("The hard band: no method registered a MiLOI pair with the Suns over 90° apart (0 of "
+     "16); our sweep accepted 0 of 12 windows at 60–120° azimuth, yet 10 of 15 at "
+     "120–153°. OHRC → TMC-2 at SAC's site, Suns 120° apart: 0 of 4, all refused.", 1, False, INK),
     # "SAC's own benchmark pair (equatorial ...)" note: the wide-search offset.
-    ("Archive geometry is not truth: at SAC's site the NAC's published corners sat [TBD] km from "
+    ("Archive geometry is not truth: at SAC's site the NAC's published corners sat 1.9 km from "
      "the OHRC grid; we correct it and report it.", 1, False, INK),
     # "Real viewpoint: TMC-2 fore -> aft": held-out median column (NOT the RMSE-within-3-px one).
     ("Relief parallax is not a homography: TMC-2 fore vs aft (same sensor) leaves a held-out "
-     "median of [TBD]–[TBD] px on its 5.9 m grid.", 1, False, INK),
+     "median of 2.6–49 px on its 5.9 m grid.", 1, False, INK),
     ("Strategies for overcoming these challenges", 0, True, BLUE),
     ("Tile-level local transforms and LOLA-based orthorectification for relief.", 1, False, INK),
     ("Full-scene tiled processing of OHRC strips; IIRS band selection for the infrared leg.",
@@ -233,7 +235,7 @@ S5 = [
      "alignment beneath it. Every region carries its own verdict; planted errors of 5 m or more "
      "were all flagged, and the floor — about 2 m — is stated, not hidden.", 1, False, INK),
     # distinct OHRC products in real_pairs_log (source_product ch2_ohr_*) and their sites.
-    ("OHRC frames co-register with LRO NAC and Kaguya TC ([TBD] frames at [TBD] sites so far): "
+    ("OHRC frames co-register with LRO NAC and Kaguya TC (3 frames at 3 sites so far): "
      "mosaics, time series and change detection gated by trust.", 1, False, INK),
     ("Benefits of the solution", 0, True, ACCENT),
     ("Scientific: a verdict per region instead of one number for a whole image, calibrated "
@@ -270,8 +272,8 @@ S6 = [
 
 # Per slide: text blocks (box, items, heading pt, body pt) and an optional figure
 # (file, left, width). A side figure is centred vertically in the content band.
-# fig3 (the stacked trust map) is still built from the college-round demo pairs; a real-data
-# version (OHRC->NAC accepted beside TC->MI refused) is an open item before the freeze.
+# fig3 (the stacked trust map) is drawn from two real pairs: SAC's OHRC->NAC w06 (accepted)
+# above Kaguya TC->MI 1548 nm w01 (refused), re-cached by the freeze's report step.
 SLIDES = {
     2: {"text": [(S2_COL, S2, 15, 12.5)],
         "fig": ("fig3_trust_map.jpg",) + S2_FIG},
