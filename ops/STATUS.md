@@ -1,4 +1,4 @@
-# STATUS - 19 September 2026 (Day 21), ~22:15 IST, session wrapped. National round, solo push.
+# STATUS - 20 September 2026 (Day 22), ~01:10 IST, session wrapped. National round, solo push.
 
 > Rewritten in full at the end of every session. Previous STATUS is in git history.
 > The venv is `C:\Users\samar\venvs\sih26166`; call its `python.exe` directly (bare `python` has no numpy).
@@ -9,143 +9,151 @@
 
 ## Read this first
 
-1. **The evidence freeze is one command now: `python -m ops.freeze`** (`b325a60`..`bae82b2`).
-   - `--plan` shows the work and last run times.
-   - `--check` says whether every latest row names the current commit.
-   - The work list is read from the logs by EXACT pair id. It is resumable per step and per pair.
-   - It keeps Windows awake while running (lid must stay open). State and per-step logs live in
-     `<data>/freeze/<commit>/`.
-   - Steps: real (71 pairs) · sweep (69 windows) · loops · trust (22 distinct windows) · miloi
-     (retrust, truth, score) · viewpoint · calib · gate2 · report.
-   - Last-run estimate: real ~13 min, sweep ~15 min.
-   - Tested end to end only on `loops`, which correctly refused because its legs were at an older
-     commit. It has NOT been run in full: that is tomorrow's item 1.
-2. **SAC's own benchmark pairs are registered** (arXiv:2509.04775, Table 1).
-   - Equatorial (`M1350459544RE`, Sun azimuths 174° apart): 6/6 `agrees`, 3.2-4.2k inliers.
-   - Polar (`M165491149RE`, 132°): 4 agree, 1 unconfirmed, 1 contradicted (fallback).
-   - The NAC's published corners sat (+488, +1790) m from the OHRC grid at the equatorial site.
-     The new wide search (`cut_pradan_pairs.wide_offset`) fixes that. REPORT.md has both sections.
-3. **Deck v2 text is in `presentation/build_deck.py`**; output `SIH26166_LunaXX_deck.pptx`.
-   - Every number is `[TBD]`: 44 across slides 2, 4 and 5, plus the Team ID.
-   - `presentation/DECK_V2_DRAFT.md` maps each placeholder to its REPORT.md source and lists the
-     Q&A traps.
-   - `claim-checker` ran and all 19 findings were fixed (`64760ab`).
-   - The build exits 1 on purpose until the freeze fills the placeholders.
-4. **Trust layer, Known issue 3 fixed** (`1c21e18`). A whole-frame "agrees" on a frame too small for
-   cells to vote now also needs the Brown & Lowe inlier count; otherwise it is "unconfirmed".
-   - IIRS `iirs1555_w10` is now unconfirmed.
-   - The MiLOI re-judge changed 0 of 321 verdicts; the Tier D pair is unchanged.
-5. **Deck title slide now says `LunaXX`.** The Team ID is a placeholder until read off the portal.
+1. **The evidence freeze is DONE: FROZEN at `49bdad9`.**
+   - `python -m ops.freeze` ran 9/9 steps in 108 min (19 Sep 22:48 to 20 Sep 00:36).
+   - Every latest real-pair row (146/146) and MiLOI row (324/324) names `49bdad9`.
+   - The evidence is committed in `36de5f4`; REPORT.md is regenerated from it.
+   - `--check` at a later HEAD will say NOT FROZEN, because rows name `49bdad9`, not HEAD. That
+     is expected. The test that matters is `git diff 49bdad9 HEAD -- core evaluation ops baselines app`,
+     which shows only evidence logs, docs, and the one CLI reporting hunk (Known issue 13).
+2. **The deck is finished except the Team ID.**
+   - All 44 numbers are filled from REPORT.md at `49bdad9`; each value and its source is in
+     `presentation/DECK_V2_DRAFT.md`.
+   - `claim-checker` ran twice. The second pass (on the filled deck) found 0 numeric mismatches
+     plus 22 scope and label findings; all were fixed except M6 (TC rung), which went to the Q&A
+     notes (`27266f8`).
+   - The build audit is clean apart from `TEAM_ID`.
+3. **The PDF can now be made on this laptop: `python -m presentation.export_pdf`.**
+   - PowerPoint prints to "Microsoft Print to PDF" with `/pt`, even though COM does not work.
+     The script answers the save dialog by keystroke and crops each page to the slide with
+     PyMuPDF.
+   - It checks 6 pages, each title, no `[TBD]`, and **no text running into the footer bar**.
+     That last check exists because the build audit missed an overflow on slides 2 and 4 today.
+   - PyMuPDF is not in the venv. Run it with
+     `PYTHONPATH=<dir with pymupdf>`; this session installed one with
+     `pip install --target <scratchpad>/pylib pymupdf`.
+   - Output: `presentation/SIH26166_LunaXX_deck.pdf` (gitignored). While it prints, windows flash
+     on screen; do not type during those ~20 s.
+4. **Portal text is drafted:** `ops/national_round/SUBMISSION_FIELDS.md` has the title
+   (107 or 71 characters) and the description (1,322 or 498 characters). Every number in it
+   is from `49bdad9`.
+5. **Demo (demo-medic, 19 Sep): all HIGH and MEDIUM findings are fixed and re-checked with AppTest.**
+   - Real pairs show their tier and instruments from `geometry_prior.json`.
+   - The same-sensor note fires on NAC↔NAC and TMC-2 fore/aft.
+   - The downloaded report.md leads with the held-out median, as the screen does.
+   - Cached pairs are listed first; old absolute paths are re-rooted.
+   - All 6 caches are at the current code.
+   - Gate 4 itself is still a human job: 3 consecutive offline runs, with the procedure in the
+     demo-medic report.
 
 ## Position
 
 ```
-Day 21 (Sat 19 Sep)  |  submit Sun 27 Sep - 8 days  |  portal closes Tue 30 Sep
-Next: Sun 20 freeze REHEARSAL | Thu 24 the freeze | Fri 25 deck numbers + SIH26227 go/no-go
+Sun 20 Sep, 01:10  |  submit Sun 27 Sep (7 days)  |  portal closes Tue 30 Sep
+Built: everything. Left: Team ID -> build -> export -> eyeball -> submit (Samartha, ~15 min)
 ```
-The college-round gates are all past (internal round 11 Sep; nominated 18 Sep). Nothing for the
-national round is at risk tonight. The riskiest item is the untested full freeze run, hence the
-rehearsal.
 
-## Verified by command (19 Sep, ~22:10, at `bae82b2`)
+## Verified by command (20 Sep, ~01:00, at `27266f8`)
 
 | Check | Result |
 |---|---|
-| `python -m pytest evaluation/ -q` | 42 passed, exit 0 |
-| `import core.pipeline` | OK, exit 0 |
-| `python -m pytest -q` (whole repo, now includes `ops/`) | 291 passed, exit 0 |
-| `python -m presentation.make_figures` | 7 figures, audit clean |
-| `python -m presentation.build_deck` | 6 slides, pointers unchanged; 4 audit lines, all `[TBD]` counts (by design) |
-| `python -m ops.freeze --plan` | code clean; MiLOI matching code unchanged since the stored matches |
+| `python -m ops.freeze --check` (at 49bdad9, before the evidence commit) | FROZEN |
+| `python -m pytest -q` (whole repo) | 298 passed, exit 0 |
+| `python -m presentation.make_figures` | 7 figures, no overflow |
+| `python -m presentation.build_deck` | 6 slides, pointers unchanged, AUDIT: only `TEAM_ID` |
+| `python -m presentation.export_pdf` | 6 pages at 792×446 pt, 1.10 MB; PDF CHECK: only page 1 `[TBD]` |
+| `python -m core.pipeline data/pairs/sac_ohrc_nac_w01 --out <dir>` | 8 deliverables, report.md names tier and instruments |
+| AppTest: sac_ohrc_nac_w06 → Align (cached) | tier "B (OHRC-NAC real)", 4 downloads, bundle of 8 files, no exception |
 
-## What landed this session (`1c21e18`..`bae82b2`, 13 commits, not yet pushed at time of writing)
+## What landed this session (`49bdad9`..`27266f8`)
 
-| Area | What |
+| Commit | What |
 |---|---|
-| Trust layer | Brown & Lowe floor for whole-frame agrees (`core/reliability.py` FRAME_ACCEPT_*); tests |
-| SAC pairs | `ops/cut_pradan_pairs.py` kinds `ohrc-nac`, `ohrc-nac-polar`; `wide_offset`; NAC pages `<data>/nac/nac_sac_pages.json`; EDR sha256 `<data>/nac_sac_manifest_done.csv`; corrections `<data>/site_geometry/M1350459544RE.json`, `M165491149RE.json` |
-| Scale rungs | `cut_site_pairs` kinds `tc_ortho` (from OHRC) and `lola` (shaded relief under the OHRC's sun); 4 + 4 windows logged |
-| Geometry | `core.geometry.project`: border value 0 and a geometric validity test. OpenCV 5's cubic remap with a NaN border blanked interior rows. Test: `core/test_geometry.py` |
-| Figures | fig7 (MiLOI); fig3 on real pairs (SAC accepted / TC→MI 1548 nm refused); fig4 order (refine before MAGSAC++); fig6 names both grids and counts distinct windows |
-| Report | SAC, scale-rung and LOLA sections; sweep azimuth range; both MiLOI "right" definitions; footer count fixed |
-| Freeze | `ops/freeze.py` + tests. MiLOI `--score --log` dedupes per SCORING commit (it used to log nothing on a re-score). `run_real_pairs` takes several ids. Generated evidence files don't stamp `-dirty`. Loop rows carry `git_commit` |
-| Deck | v2 text, LunaXX, audit counts `[TBD]`s and checks same-sensor wording; `DECK_V2_DRAFT.md` rewritten as the numbers audit |
+| `49bdad9` | SAC's measure logged: in-sample per-axis RMSE (`evaluation/real_eval.insample_axis_rmse`, 3 new real_pairs_log columns, REPORT table). demo-medic fixes to the app and export. Browser server address pinned. National-round sections in CLAUDE.md, canonical facts and README |
+| `36de5f4` | The freeze's evidence: 146 real rows, 324 MiLOI rows, trust re-run on 22 distinct windows, synthetic sweeps, REPORT.md, figures |
+| `3214e8a` | Deck numbers filled; `presentation/export_pdf.py` |
+| `27266f8` | claim-checker fixes (scope and labels); fig4/fig5; slides 2 and 4 fit; footer check; CLI `--out` passes the prior; `SUBMISSION_FIELDS.md` |
 
-## Evidence logged (results_log 874 rows · real_pairs_log 234 rows, 150 pair ids · miloi_log 324 · trust trials 1,702)
+## Evidence at the freeze (REPORT.md, `49bdad9`)
 
-- **SAC equatorial:** 6/6 agree. Held-out median 0.69-1.68 px on the 1.62 m NAC grid.
-- **SAC polar:** held-out median 2.4-4.5 px on the 1.22 m grid (accepted windows); w06 is 88.5 px,
-  contradicted, fallback.
-- **OHRC → TC ortho (29.6×):** 3 agree, 1 unconfirmed. Archive offset 381-431 m, consistent across
-  all 4 windows.
-- **OHRC → LOLA (240×):** 0 matches, fallback, unconfirmed (the declared failure).
-- **IIRS re-logged:** 10 contradicted + fallback, 1 unconfirmed (w10).
-- **MiLOI verdict vs truth:** agrees 33/33 by matcher-H error, but 28/33 by `rmse_gt_px`.
-  Contradicted 43/43 wrong; unconfirmed 5/5 wrong. S3 accounts for 13, 38 and 5 of those.
-- **Everything else** (sun sweep 69 windows, loops 0.104 m median, planted failures) is unchanged
-  from 18-19 Sep. It is all re-run at the freeze.
+- **SAC equatorial:** 6/6 accepted, Sun azimuths 174° apart, held-out median 0.69–1.68 px on
+  the 1.622 m grid. **In-sample per axis** (SAC's own measure) is X 0.66–1.15 px and
+  Y 0.73–1.07 px, which is **not better than SuperGlue's 0.62 / 0.57 px**. Q&A only; see
+  DECK_V2_DRAFT.
+- **SAC polar:** 4/6 accepted, 1 unconfirmed, 1 contradicted + fallback.
+- **74 °S OHRC → NAC:** 20/20 accepted, held-out median 0.41–1.0 px (0.51–0.94 m).
+- **Loops:** 6, median 0.104 m.
+- **Sun sweep:** 69 windows over 25 NAC frames.
+- **TC rung:** 3/4 accepted.
+- **Infrared:** 13/14 fall back.
+- **OHRC → TMC-2:** 0/4 accepted, all refused.
+- **Trust layer, planted failures:** 0/44 false alarms; 81.2% flagged at 3 m; 100% from 5 m;
+  2/352 flagged at 1–2 m.
+- **MiLOI:** 81 scored pairs, 56 of them in scene S3. Agrees 33/33 right; contradicted 43/43 wrong.
 
 ## In flight - resume here
 
-Nothing is running and the tree is clean at wrap.
-- **First thing: `ops/specs/day_22.md` item 1**, the full freeze rehearsal.
-- `demo_cache/results/` now also holds `sac_ohrc_nac_w06` and `site_tc_morning_mi1548_w01` (fig3's
-  pairs; gitignored; `ops.freeze` re-caches them).
-- The automation Chrome window may still be logged in to PRADAN; it can be closed.
+Nothing is running. The tree is clean and pushed. No PowerPoint process is left open.
 
 ## Per person
 
-The team split is suspended for the national push (decision 18 Sep). No teammate has a task and
-nobody is blocked on Samartha. The last teammate pushes were 2-3 Sep (Rohan 2 Sep; Risheeth,
-Samrudh, Rishabh 3 Sep; Saniya earlier), so nobody can explain the national-round code yet. Plan a
-walkthrough after submission (27 Sep) in case LunaXX reaches the finale.
+The team split is suspended for the national push. No teammate has a task, and nobody is
+blocked on Samartha. Nobody has pushed since 2–3 Sep, so no teammate can explain the
+national-round code yet. Plan a walkthrough after 27 Sep, in case LunaXX reaches the finale.
 
-## Tomorrow - `ops/specs/day_22.md`
+## Samartha - to submit (ops/specs/day_23.md has the full list)
 
-1. Freeze rehearsal, overnight. 2. `demo-medic` on the app. 3. (Optional) a logged, SAC-comparable
-in-sample per-axis RMSE for Q&A. 4. A short "national round" note in CLAUDE.md and the canonical
-facts. Track B: SIH26227 continues.
+1. **Team ID.** Read it off the portal.
+   - Set `TEAM_ID` in `presentation/build_deck.py`.
+   - Run `python -m presentation.build_deck` (must say `AUDIT: clean`).
+   - Run `python -m presentation.export_pdf` (must say `PDF CHECK: clean`).
+   - Open the PDF and look at all 6 pages.
+2. **Portal:** PS, title and description from `SUBMISSION_FIELDS.md`, then upload the PDF.
+   Screenshot the confirmation and record it here.
+3. **Optional:**
+   - a 2-min narrated demo video (unlisted), with its link added to slide 6;
+   - making the GitHub repo public only if a link to it goes on a slide (it is private now);
+   - Gate 4 by hand: 3 offline runs.
 
 ## Open questions
 
-1. Portal: draft save? Editable after submit? Title/description limits? Exact Team ID format
-   (slide 1 placeholder)?
+1. Portal: is there a draft save? Can the submission be edited after submit? What are the
+   title and description limits? (SUBMISSION_FIELDS has short and long versions.)
 2. SPOC: does Student Innovation count toward the two PSs? Who uploads? Is the authorisation
    letter uploaded?
 
 ## Known issues - do not re-report these
 
-1. **`residual_px` is meaningless on real pairs** (RMSE over ALL held-out matches, outliers
-   included). Quote `residual_median_px`, or `holdout_inlier_rmse_px`. The latter is capped at 3 px
-   by definition, so it can never show parallax.
-2. **Duplicate windows under two ids.** The sweep's `site_ohrc_m1153871873le_w0N_sw` are the same
-   windows as `…_w0N`, and `…_w01_t` = `…_w04`. Count distinct windows
-   (`presentation.make_figures._distinct_windows`), not rows. The freeze's trust step drops the
-   duplicate.
-3. ~~Tiny frames decide on the whole frame~~: FIXED `1c21e18`.
-4. **MiLOI truth:** only 81/321 pairs are reachable. S3's truth has no redundancy, so its error is
-   unknown; quote S3 separately. MiLOI "right" has two definitions (see Evidence); the deck uses
-   matcher-H error.
-5. **LoFTR is weak under near-overhead Sun** (MiLOI S2): the trust layer catches it.
-6. **Withdrawn rows:** `sac_tmc_fore_aft_w01..w04` (INVALIDATED). Never quote 0.019 px.
-7. **NACs without a usable correction:** M1258744166RE, M1295016540LE, M1338673330RE. **No lit
-   shared window:** M159642518LE, M1258737127RE.
-8. `trust_real_calibration.csv` is appended by every run. `ops.freeze` deletes it first; do the
-   same by hand.
-9. **Rows from before the freeze name many commits.** The 12 SAC rows say `1c21e18-dirty`, and
-   loop rows before 19 Sep have no `git_commit` at all. The freeze fixes both.
-10. **Every deck number must come from the freeze commit.** 44 `[TBD]`s, mapped in
-    `DECK_V2_DRAFT.md`.
-11. **Fresh Python processes intermittently die in `cv2.resize`** ("Unknown C++ exception"). Not an
-    import-order bug. `ops.freeze` retries a failed step once. Related: one full `pytest` run at
-    ~22:05 on 19 Sep had 62 failures and did not reproduce in 4 reruns. No output was captured; if
-    it recurs, run with `-rf` and keep the output.
-12. **PowerPoint on this machine is unlicensed.** Make the PDF via Print to PDF or another machine.
-13. **Stale docs:** `docs/00_CANONICAL_FACTS.md`, `CLAUDE.md` and `ops/specs/day_20.md` describe
-    the college round (day_22 item 4).
-14. **Pairs cut before `3917a1b` have up to 16 nearest-filled edge pixels** (`edge_pixels_filled`
-    in their geometry_prior.json), from the OpenCV NaN-border quirk. It is recorded, negligible,
-    and not re-cut.
-15. **REPORT.md's SAC sections say "NAC at native"**; the cut grids are 1.622 and 1.215 m, while
-    SAC's paper used 1.1179 and 0.88779 m. Any SuperGlue comparison differs in grid as well as in
-    in-sample vs held-out.
+1. **`residual_px` is meaningless on real pairs:** it is the RMSE over ALL held-out matches,
+   outliers included. Quote `residual_median_px` or `holdout_inlier_rmse_px`; the latter is
+   capped at 3 px by definition.
+2. **Duplicate windows under two ids:** `…_w0N_sw` = `…_w0N`, and `…_w01_t` = `…_w04`. Count
+   distinct windows with `presentation.make_figures._distinct_windows` (136 of 140).
+3. **MiLOI truth:** only 81 of 321 pairs are reachable. S3 (56 of the 81) has no redundancy,
+   so its truth error is unmeasured. The deck names S3 on both slides.
+4. **LoFTR is weak under near-overhead Sun** (MiLOI S2). The trust layer catches it.
+5. **Withdrawn rows:** `sac_tmc_fore_aft_w01..w04` are INVALIDATED. Never quote 0.019 px.
+6. **NACs without a usable correction:** M1258744166RE, M1295016540LE, M1338673330RE.
+   **No lit shared window:** M159642518LE, M1258737127RE.
+7. **`trust_real_calibration.csv` is appended by every run.** `ops.freeze` deletes it first; do
+   the same by hand.
+8. **Intermittent cv2 failures are most likely memory-commit exhaustion.** Commit charge runs
+   at 38–41 of 46 GB: about 22 idle `claude` processes from 17–19 Sep (~12 GB) plus Chrome
+   (~8 GB). One pytest run next to a 3.5 GB app process had 47 cv2 failures; the same run
+   alone was clean. Run heavy jobs one at a time, and close old Claude sessions.
+9. **The MiLOI matches were made at six earlier commits.** Only the re-judge and scoring ran at
+   `49bdad9`. `--plan` verified that the matching code is unchanged since.
+10. **Pairs cut before `3917a1b`** have up to 16 nearest-filled edge pixels. This is recorded
+    and negligible.
+11. **The build audit checks text boxes, not rendered text.** Overflow is caught only by
+    `export_pdf`'s footer check, so always export before trusting a deck edit.
+12. **Live align on a busy laptop takes 48–61 s** (demo-medic). Demo from the cached pairs,
+    listed first and marked "(cached)".
+13. **One post-freeze code change:** `core/pipeline.py` CLI `--out` now passes the prior to
+    `export_bundle` (`27266f8`). It is reporting only; no evidence path uses it and no logged
+    number changes.
+14. **13 pair folders have no images** (`site_m…re_w01..05,07,08`,
+    `site_ohrc_m1363141432re_w01,02,03,05,07,08`). The picker hides them. No deck or doc names
+    them.
+15. **Docs below the national-round sections** (CLAUDE.md, canonical facts §1 and §10–11)
+    are the college round's, kept as history. The national sections at the top win.
