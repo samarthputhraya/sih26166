@@ -424,29 +424,47 @@ def _reference_image(result: dict, pair: str) -> np.ndarray:
     return img
 
 
-def fig_trust_map():
-    """Two real pairs through the SAME code path: one the system accepts, one it refuses.
+# fig3's two pairs (19 Sep, national round). ops.freeze re-caches exactly these before drawing.
+FIG3_PAIRS = ("sac_ohrc_nac_w06", "site_tc_morning_mi1548_w01")
+# Short enough for a 3.4 in panel title at 11 pt (measured: the long names ran off the canvas).
+_SHORT = {"Chandrayaan-2 OHRC": "CH-2 OHRC", "LRO LROC NAC": "LRO NAC",
+          "SELENE (Kaguya) Terrain Camera": "Kaguya TC", "SELENE (Kaguya) Multiband Imager": "MI"}
 
-    Left: pair_01 - two overlapping 640x640 crops of one real Chandrayaan-2 OHRC frame,
-    known offset, zero sun difference. NOT a validation tier (its PROVENANCE.md says so);
-    it is here because it is a real OHRC picture and the map is genuinely almost all
-    verified. Right: pair_04_tierD_native - a Kaguya TC photograph against a LOLA
-    elevation hillshade rendered on the Kaguya grid: the one multi-modal pair we own,
-    where the matcher's homography is contradicted by the pixels and the system says so.
-    Every count and every metre on this figure is read from the cached result dict.
+
+def _panel_label(pair: str) -> tuple[str, str]:
+    """(instruments and reference grid, what differs) from the pair's own geometry_prior.json."""
+    import json
+    g = json.loads((ROOT / "data" / "pairs" / pair / "geometry_prior.json").read_text(encoding="utf-8"))
+    s, r = g["source"], g["reference"]
+    ref = _SHORT.get(r["instrument"], r["instrument"])
+    if r.get("band"):
+        ref += " " + r["band"].split(" (")[0]
+    what = f"{_SHORT.get(s['instrument'], s['instrument'])} → {ref} · {r['resampled_gsd_mpp']:.3g} m/px"
+    if g.get("benchmark"):
+        how = f"SAC's own pair · Sun azimuths {g['d_sun_azimuth_deg']:.0f}° apart"
+    elif "infrared" in (r.get("band") or ""):
+        how = "visible ↔ near-infrared (multi-modal)"
+    else:
+        how = g.get("terminology", "")
+    return what, how
+
+
+def fig_trust_map():
+    """Two REAL pairs through the SAME code path: one the system accepts, one it refuses.
+
+    Top: sac_ohrc_nac_w06 - Chandrayaan-2 OHRC against LRO NAC M1350459544RE, a window of the
+    pair SAC's own paper benchmarks (arXiv:2509.04775 Table 1), Sun azimuths ~174 deg apart.
+    Bottom: site_tc_morning_mi1548_w01 - Kaguya TC (visible) against Kaguya MI at 1548 nm:
+    learned matching fails, the pixels contradict the homography, the system refuses it and
+    declares the fallback. Until 19 Sep this figure showed pair_01 (two crops of ONE OHRC
+    frame, not a validation tier) and a Tier D pair. Every count on it is read from the cached
+    result dict, and matches the pair's row in evaluation/real_pairs_log.csv.
     """
     # STACKED, not side by side. Slide 2 answers four template pointers, so its text needs
     # width; a wide two-panel figure left the column 5% too narrow whatever was trimmed.
     # Stacked, the same two panels occupy 3.6 in instead of 5.5 in and are TALLER, so they
     # read at least as well - and the text column gains 1.4 in.
-    panels = [
-        ("pair_01",
-         "Chandrayaan-2 OHRC · 0.23 m/px",
-         "two crops of one real frame"),
-        ("pair_04_tierD_native",
-         "Kaguya TC vs LOLA elevation · 9.4 m/px",
-         "optical ↔ elevation"),
-    ]
+    panels = [(p, *_panel_label(p)) for p in FIG3_PAIRS]
     fig = plt.figure(figsize=(5.0, 7.2))
     # top leaves room for a TWO-LINE suptitle plus the first panel's own two-line title;
     # at 0.925 the suptitle printed straight through "Chandrayaan-2 OHRC · 0.23 m/px".
@@ -466,14 +484,13 @@ def fig_trust_map():
         ax.set_title(f"{what}\n{how}", fontsize=11, loc="left", pad=4, color=INK)
         counts, n_cells = rel["counts"], int(rel["n_cells"])
         if r["declared"]["contradicted"]:
-            fb = r["fallback"] or {}
             # "0 of 64 verified" is the OUTPUT; the verdict comes from the cells the area
             # check could score. An arrow between them implied a causality that does not
             # hold, and the slide text names the other denominator - so state the count,
-            # then the verdict, rather than deriving one from the other.
+            # then the verdict, rather than deriving one from the other. The fallback's
+            # metres are not printed: no log row carries them.
             verdict = (f"{counts['verified']} of {n_cells} cells verified\n"
-                       f"CONTRADICTED — refused, fallback "
-                       f"{fb['shift_m']:.0f} m ± {fb['spread_m']:.0f} m")
+                       f"CONTRADICTED — refused, fallback declared")
             colour = ORANGE
         else:
             verdict = (f"{counts['verified']} of {n_cells} cells verified, "
@@ -500,7 +517,7 @@ def fig_trust_map():
         leg.text(0.095, 2.5 - i, f"{head} — {gloss}", fontsize=11, va="center",
                  color=INK)                                               # data units
     fig.text(0.02, 0.008, "8×8 cells on the reference grid · rows in "
-             "evaluation/results_log.csv", fontsize=9, color=MUTED)
+             "evaluation/real_pairs_log.csv", fontsize=9, color=MUTED)
     fig.suptitle("The trust map: one the system\naccepts, one it refuses",
                  x=0.02, ha="left", fontsize=14, fontweight="bold", y=0.995,
                  va="top", linespacing=1.2)
@@ -692,6 +709,19 @@ def fig_real_sun_sweep():
     return out
 
 
+def _distinct_windows(pair_ids) -> dict:
+    """{ground window: [pair ids]}, a window being (source, reference, centre, size) from each
+    pair's geometry_prior.json. Known issue 2: some windows were cut twice under two ids."""
+    import json
+    out = {}
+    for pid in sorted(pair_ids):
+        g = json.loads((ROOT / "data" / "pairs" / pid / "geometry_prior.json").read_text(encoding="utf-8"))
+        key = (g["source"]["product_id"], g["reference"]["product_id"],
+               round(g["window_centre_map_m"][0]), round(g["window_centre_map_m"][1]), round(g["window_m"]))
+        out.setdefault(key, []).append(pid)
+    return out
+
+
 def fig_trust_real():
     """Planted confident-wrong registrations on real windows: how often does the area check
     contradict them, by displacement? d = 0 is the false-alarm rate."""
@@ -701,7 +731,9 @@ def fig_trust_real():
     ds = sorted({float(r["displacement_m"]) for r in rows})
     rate = [np.mean([r["contradicted"] == "True" for r in rows if float(r["displacement_m"]) == d]) for d in ds]
     n = [sum(1 for r in rows if float(r["displacement_m"]) == d) for d in ds]
-    gsd = np.median([float(r["gsd_ref_m"]) for r in rows])
+    # Every reference grid, not the median: 11 windows are on the 0.931 m NAC grid and 12 on
+    # the 1.245 m one, and the 18 Sep label named only 1.245 (claim-checker, 19 Sep).
+    grids = sorted({float(r["gsd_ref_m"]) for r in rows})
     fig, ax = plt.subplots(figsize=(7.6, 4.4))
     ax.grid(True, which="major", color=GRID, linewidth=0.8, zorder=0)
     ax.set_axisbelow(True)
@@ -712,14 +744,19 @@ def fig_trust_real():
     ax.set_xticks(xs)
     ax.set_xticklabels([f"{d:g}" for d in ds], fontsize=13)
     ax.set_ylim(0, 112)
-    ax.set_xlabel("planted error  (metres; reference grid ~%.2f m/px)" % gsd, fontsize=14)
+    ax.set_xlabel("planted error  (metres; reference grids " + " and ".join(f"{g:.2f}" for g in grids)
+                  + " m/px)", fontsize=14)
     ax.set_ylabel("flagged as wrong  (%)", fontsize=14)
     ax.set_title("Planted wrong answers: how many are flagged?",
                  loc="left", fontweight="bold", fontsize=15, pad=10)
-    n_win = len({r["pair_id"] for r in rows})
-    fig.text(0.014, 0.006, f"{n_win} real OHRC/NAC windows · all planted matches agree with the "
-             f"wrong answer · 0 m = false-alarm rate", fontsize=9.5, color=MUTED)
-    fig.tight_layout(rect=(0, 0.045, 1, 1))
+    ids = {r["pair_id"] for r in rows}
+    n_win, n_ground = len(ids), len(_distinct_windows(ids))
+    wins = f"{n_win} real windows" + (f" ({n_ground} distinct)" if n_ground != n_win else "")
+    fig.text(0.014, 0.008, f"{wins}, OHRC→NAC and NAC→NAC · 0 m = false-alarm rate\n"
+             f"all planted matches agree with the wrong answer", fontsize=9.5, color=MUTED,
+             linespacing=1.35, va="bottom")
+    fig.set_figheight(4.7)
+    fig.tight_layout(rect=(0, 0.085, 1, 1))
     out = OUT / "fig6_trust_real_calibration.png"
     _audit(fig, out.name)
     fig.savefig(out, dpi=200)

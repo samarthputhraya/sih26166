@@ -262,7 +262,13 @@ class Freeze:
             wins = sorted({r["pair_id"] for r in _rows(TRUST_CSV)})
             if not wins:
                 print("   no trust_real_calibration.csv to take the windows from")
-                return False
+                return None
+            # one id per GROUND window: w01_t and w04 of M1153871873LE are the same window cut
+            # twice (Known issue 2), which counted its 74 trials twice
+            from presentation.make_figures import _distinct_windows
+            dup = [ids[1:] for ids in _distinct_windows(wins).values() if len(ids) > 1]
+            wins = [w for w in wins if not any(w in d for d in dup)]
+            self.state["trust_windows_dropped_as_duplicates"] = [w for d in dup for w in d]
             self.state["trust_windows"] = wins
             self.save()
         if TRUST_CSV.exists():
@@ -297,6 +303,9 @@ class Freeze:
         return a in (0, 1) and b == 0
 
     def report(self, logf):
+        from presentation.make_figures import FIG3_PAIRS    # fig3 draws cached run_all dicts
+        if _run(["-m", "ops.precompute_demo_cache", *FIG3_PAIRS], logf) != 0:
+            return False
         a = _run(["-m", "ops.make_report"], logf)
         b = _run(["-m", "presentation.make_figures"], logf)
         c = _run(["-m", "presentation.build_deck"], logf)    # 1 while [TBD]s remain

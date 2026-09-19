@@ -80,10 +80,10 @@
 
 | Slide | Figure | Built from |
 |---|---|---|
-| 2 | `fig3_trust_map.jpg` | college-round demo cache. **Open:** a real-data version (OHRC→NAC accepted beside TC→MI refused). Its "accepted" example (`pair_01`) is two crops of one OHRC frame |
+| 2 | `fig3_trust_map.jpg` | real pairs since 19 Sep: `sac_ohrc_nac_w06` (SAC's pair, accepted) above `site_tc_morning_mi1548_w01` (1548 nm, refused), from `demo_cache/results/` - `ops.freeze` re-caches both before drawing; counts match their real_pairs_log rows |
 | 3 | `fig4_pipeline.png` | `core/pipeline.py` order (refinement before MAGSAC++, fixed 19 Sep) |
 | 4 | `fig5_real_sun_sweep.png` | `real_pairs_log.csv` outcome rows (rule v2) |
-| 5 | `fig6_trust_real_calibration.png` | `trust_real_calibration.csv`. Re-run at the freeze, deleting the file first (Known issue 8: every run appends to it). Its axis label uses one grid (1.245 m); 11 of the windows are on 0.931 m |
+| 5 | `fig6_trust_real_calibration.png` | `trust_real_calibration.csv`, re-run at the freeze (file deleted first; the duplicate window `w01_t` = `w04` dropped, so 22 windows). Axis names both grids (0.93 and 1.25 m) |
 | backup | `fig7_miloi_sun.png` | `miloi_log.csv` |
 
 ## Q&A traps this deck invites (answers must come from REPORT.md)
