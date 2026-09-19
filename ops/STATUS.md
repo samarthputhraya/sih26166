@@ -1,4 +1,4 @@
-# STATUS - 19 September 2026 (Day 21), ~11:15 IST. National round, solo push.
+# STATUS - 19 September 2026 (Day 21), ~11:30 IST, session wrapped. National round, solo push.
 
 > Rewritten in full at the end of every session. Previous STATUS is in git history.
 > The venv is `C:\Users\samar\venvs\sih26166`; call its `python.exe` directly (bare `python` has no numpy).
@@ -37,7 +37,9 @@ Next: Thu 24 Sep evidence freeze begins | Fri 25 Sep SIH26227 go/no-go + numbers
 
 | Check | Result |
 |---|---|
-| `python -m pytest -q` (whole repo) | **281 passed**, exit 0 (at `ac4524b`) |
+| `python -m pytest evaluation/ -q` | 42 passed, exit 0 (at wrap, `aa31229`) |
+| `import core.pipeline` | OK, exit 0 |
+| `python -m pytest -q` (whole repo) | **281 passed**, exit 0 (at wrap) |
 | `python -m ops.make_report` | REPORT.md, 13 sections, every number from the logs |
 | `python -m presentation.make_figures` | fig1 unchanged (15 deg ours 0.086 px); fig5, fig6 rewritten |
 
@@ -67,7 +69,22 @@ Next: Thu 24 Sep evidence freeze begins | Fri 25 Sep SIH26227 go/no-go + numbers
   1 `agrees` on a 112-px frame (see Known issue 3).
 - **MiLOI**: see Read-first 2 and REPORT.md.
 
-## Tomorrow / next
+## In flight - resume here
+
+Nothing is running. Every background job finished and is committed (tree clean at wrap).
+- The automation Chrome window (chrome-devtools MCP) is still logged in to PRADAN; it can be closed.
+  Re-login is needed next time (session expires after 30 min idle).
+- MiLOI raw matches live in `<data>/miloi_runs/` (321 json+npz, re-judged at `ac4524b`). After any
+  further trust-layer change: `python -m evaluation.miloi --retrust --truth --score --log --table`.
+- The first thing to resume is `ops/specs/day_22.md` item 1 (scale rungs).
+
+## Per person
+
+Team split suspended for the national push (decision 18 Sep). No teammate has a task; nobody is
+blocked on Samartha. Last teammate pushes predate 18 Sep. If LunaXX reaches the finale, everyone will
+need to explain the code - plan a walkthrough after submission (27 Sep).
+
+## Tomorrow / next - `ops/specs/day_22.md`
 
 1. Scale rungs: OHRC <-> Kaguya TC (40.8x; chunked reference) and OHRC <-> LOLA (declared failure).
 2. SAC's own pair: fetch LRO NAC `M1350459544RE` (public) and cut OHRC <-> NAC at the SAC frame;
