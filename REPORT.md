@@ -1,6 +1,6 @@
 # SIH26166 - evaluation report
 
-Generated 2026-09-20T00:36 from commit `49bdad9` by `python -m ops.make_report`. **Do not edit by hand** - every number below is read from the evidence files named in each section.
+Generated 2026-09-20T04:27 from commit `b678272` by `python -m ops.make_report`. **Do not edit by hand** - every number below is read from the evidence files named in each section.
 
 All pixel figures are on the REFERENCE image's grid, with its metres stated. Real pairs have no exact ground truth: accuracy on them is reported as held-out residuals (the 20 % of matches the fit never saw) and as loop closure. `residual_px` in results_log.csv is the RMSE over ALL held-out matches including outliers and is not quoted for real pairs.
 
@@ -96,9 +96,9 @@ In-sample, per axis (SAC's measure): the MAGSAC++ inliers the matcher's H was fi
 | `sac_polar_ohrc_nac_w05` | 165 | 1.219 (1.481) | 1.175 (1.428) | unconfirmed |
 | `sac_polar_ohrc_nac_w06` | 80 | 0.923 (1.121) | 1.157 (1.406) | contradicted |
 
-## SAC's benchmark site: Chandrayaan-2 OHRC → TMC-2 nadir (cross-sensor, same mission)
+## SAC's benchmark site: Chandrayaan-2 OHRC → TMC-2 nadir, pass 20250707T1853 (cross-sensor, same mission)
 
-OHRC frame `ch2_ohr_ncp_20210401T2357376656` (arXiv:2509.04775, Table 1), 13.1-13.9°S 25.2°E, vs TMC-2 pass `20250707T1853` (`ops/cut_pradan_pairs.py`). OHRC area-averaged 4×4 (~1.1 m) before resampling; TMC-2 ~5.6 m. Label sun: OHRC elevation 9.9°, TMC-2 69.4°, azimuths 120° apart. Both panchromatic - NOT multi-modal; same mission - NOT cross-mission.
+OHRC frame `ch2_ohr_ncp_20210401T2357376656_d_img_d18` (arXiv:2509.04775, Table 1), 13.1-13.9°S 25.2°E, vs TMC-2 pass `ch2_tmc_ncn_20250707T1853051045_d_img_d18` (`ops/cut_pradan_pairs.py`). OHRC area-averaged 4×4 (~1.114 m) before resampling; TMC-2 ~5.576 m. Label sun: OHRC elevation 9.9°, TMC-2 69.4°, azimuths 120.2° apart. Both panchromatic - NOT multi-modal; same mission - NOT cross-mission.
 
 | pair | window (lat, lon) | Δsun az | scale | matches | inliers | ratio | coverage | held-out median px (m) | held-out RMSE ≤3 px | verified / no-evid | verdict | declared | archive offset m |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -120,7 +120,7 @@ Same instrument, same sun, seconds apart: only the viewing direction differs (~5
 
 ## Kaguya TC → Kaguya MI (cross-sensor; 749 nm visible and 1548 nm infrared)
 
-Tier C rows are multi-modal (visible vs near-infrared). On them the declared method is the global-correlation fallback; compare its archive offset with the visible-band rows on the same windows.
+Tier C rows are multi-modal (visible vs near-infrared). On them the declared method is the global-correlation fallback; the table after this one measures that fallback against the visible-band registration of the same window.
 
 | pair | window (lat, lon) | Δsun az | scale | matches | inliers | ratio | coverage | held-out median px (m) | held-out RMSE ≤3 px | verified / no-evid | verdict | declared | archive offset m |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -130,6 +130,14 @@ Tier C rows are multi-modal (visible vs near-infrared). On them the declared met
 | `site_tc_morning_mi749_w01` | -74.1077, 43.5487 | n/a | 2.0 | 334 | 313 | 0.937 | 0.97 | 0.468 (6.926) | 0.692 | 45 / 2 | agrees | loftr+magsac++ | 41.0 |
 | `site_tc_morning_mi749_w02` | -74.2982, 43.7217 | n/a | 2.0 | 436 | 429 | 0.984 | 0.95 | 0.387 (5.720) | 0.562 | 56 / 3 | agrees | loftr+magsac++ | 46.4 |
 | `site_tc_morning_mi749_w03` | -74.2100, 43.4127 | n/a | 2.0 | 416 | 413 | 0.993 | 1.00 | 0.234 (3.464) | 0.445 | 54 / 0 | agrees | loftr+magsac++ | 38.9 |
+
+**Fallback vs the visible band, same window.** The declared transform on the infrared band against the LoFTR registration on the visible band of the SAME window (same TC source file, same MI grid; `ops/multimodal_check.py`): how far apart the two put the same source point, median over a 20 × 20 lattice of reference points. It is the fallback's error relative to the visible-band registration - the nearest thing to a truth the infrared band has. A fallback that had merely kept the archive alignment would sit as far from the visible-band answer as the archive offset (last column).
+
+| pair | against | declared (pair / against) | against inliers | disagreement median px (m) | p90 px | max px | fallback NCC | archive offset m (pair / against) |
+|---|---|---|---|---|---|---|---|---|
+| `site_tc_morning_mi1548_w01` | `site_tc_morning_mi749_w01` | fft_phase_correlation (fallback) / loftr+magsac++ | 313 | 0.283 (4.2) | 0.431 | 0.620 | 0.61 | 41.5 / 41.0 |
+| `site_tc_morning_mi1548_w02` | `site_tc_morning_mi749_w02` | fft_phase_correlation (fallback) / loftr+magsac++ | 429 | 1.093 (16.2) | 1.205 | 1.245 | 0.51 | 37.8 / 46.4 |
+| `site_tc_morning_mi1548_w03` | `site_tc_morning_mi749_w03` | fft_phase_correlation (fallback) / loftr+magsac++ | 413 | 0.227 (3.4) | 0.356 | 0.475 | 0.47 | 38.2 / 38.9 |
 
 ## Kaguya TC → Chandrayaan-2 IIRS near-infrared (cross-sensor, cross-mission, multi-modal)
 
@@ -148,6 +156,16 @@ IIRS calibrated cube `ch2_iir_nci_20210621T1517513893` (bands 18 = 999 nm and 51
 | `site_tc_ortho_iirs1555_w08` | -73.9455, 44.1439 | n/a | 12.019 | 16 | 6 | 0.375 | 0.08 | 59.978 (5334.418) | n/a | 0 / 59 | contradicted | fft_phase_correlation (fallback) | 956.9 |
 | `site_tc_ortho_iirs1555_w10` | -74.2131, 43.8865 | n/a | 12.019 | 16 | 6 | 0.375 | 0.09 | 45.876 (4080.178) | n/a | 0 / 57 | unconfirmed | loftr+magsac++ | 2041.2 |
 | `site_tc_ortho_iirs1555_w11` | -74.2112, 44.1704 | n/a | 12.019 | 13 | 5 | 0.385 | 0.06 | 19.699 (1752.009) | n/a | 0 / 60 | contradicted | fft_phase_correlation (fallback) | 1048.6 |
+
+**Band against band, same window.** The two IIRS bands' declared transforms against each other (same TC source, same IIRS grid). Two fallbacks that agree are only self-consistent; two that disagree prove at least one of them wrong. No visible band exists on the IIRS side, so this is not an accuracy.
+
+| pair | against | declared (pair / against) | against inliers | disagreement median px (m) | p90 px | max px | fallback NCC | archive offset m (pair / against) |
+|---|---|---|---|---|---|---|---|---|
+| `site_tc_ortho_iirs1000_w05` | `site_tc_ortho_iirs1555_w05` | fft_phase_correlation (fallback) / fft_phase_correlation (fallback) | 5 | 0.000 (0.0) | 0.000 | 0.000 | 0.22 | 981.8 / 981.8 |
+| `site_tc_ortho_iirs1000_w07` | `site_tc_ortho_iirs1555_w07` | fft_phase_correlation (fallback) / fft_phase_correlation (fallback) | 5 | 0.000 (0.0) | 0.000 | 0.000 | 0.19 | 1472.2 / 1472.2 |
+| `site_tc_ortho_iirs1000_w08` | `site_tc_ortho_iirs1555_w08` | fft_phase_correlation (fallback) / fft_phase_correlation (fallback) | 6 | 38.639 (3436.6) | 38.639 | 38.639 | 0.19 | 3514.6 / 956.9 |
+| `site_tc_ortho_iirs1000_w10` | `site_tc_ortho_iirs1555_w10` | fft_phase_correlation (fallback) / loftr+magsac++ | 6 | 21.793 (1938.2) | 156.091 | 35929.140 | 0.56 | 1041.8 / 2041.2 |
+| `site_tc_ortho_iirs1000_w11` | `site_tc_ortho_iirs1555_w11` | fft_phase_correlation (fallback) / fft_phase_correlation (fallback) | 5 | 1.414 (125.8) | 1.414 | 1.414 | 0.38 | 1169.2 / 1048.6 |
 
 ## Scale rung: Chandrayaan-2 OHRC → SELENE (Kaguya) TC ortho map (cross-sensor, cross-mission)
 
@@ -233,20 +251,41 @@ Trust verdict against truth, ours (latest row per pair). Two definitions of "rig
 
 ## Trust layer on real imagery: planted confident-but-wrong registrations
 
-`ops/trust_real_calibration.py`: 22 real windows whose registration is independently good; the true transform shifted by d metres and a match set that agrees with the WRONG transform perfectly. d = 0 is the false-alarm rate.
+`ops/trust_real_calibration.py`: 30 real windows whose registration is independently good (declared LoFTR, `agrees`, |NCC| of the true alignment ≥ 0.5, ≥ 50 inliers); the true transform shifted by d metres and a match set that agrees with the WRONG transform perfectly. d = 0 is the false-alarm rate. The two Sun populations are shown separately and never pooled.
+
+### Sun azimuths under 10° apart (the 74 °S OHRC/NAC windows): 22 windows
+
+Sun azimuth differences 3.3, 5.8, 9.1°; |NCC| of the true alignment 0.81-0.96 (sign positive).
 
 | planted error (m) | ~px on the reference grid | trials | flagged as wrong | mean verified cells /64 |
 |---|---|---|---|---|
 | 0 | 0.00 | 44 | 0.0% | 62.2 |
 | 1 | 0.80 | 176 | 0.0% | 60.7 |
-| 2 | 1.61 | 176 | 1.1% | 42.9 |
-| 3 | 2.41 | 176 | 81.2% | 7.3 |
+| 2 | 1.61 | 176 | 0.6% | 44.4 |
+| 3 | 2.41 | 176 | 73.9% | 10.9 |
 | 5 | 4.02 | 176 | 100.0% | 0.0 |
 | 10 | 8.03 | 176 | 100.0% | 0.0 |
 | 20 | 16.06 | 176 | 100.0% | 0.0 |
 | 50 | 40.16 | 176 | 100.0% | 0.0 |
 | 100 | 80.32 | 176 | 100.0% | 0.0 |
 | 200 | 160.64 | 176 | 100.0% | 0.0 |
+
+### Sun azimuths 132-174° apart (SAC's own OHRC/NAC pairs): 8 windows
+
+Sun azimuth differences 132.2, 132.3, 173.5, 173.6, 173.7°; |NCC| of the true alignment 0.53-0.90 (sign negative: opposite Suns anti-correlate). Windows: `sac_ohrc_nac_w01`, `sac_ohrc_nac_w02`, `sac_ohrc_nac_w03`, `sac_ohrc_nac_w04`, `sac_ohrc_nac_w05`, `sac_ohrc_nac_w06`, `sac_polar_ohrc_nac_w01`, `sac_polar_ohrc_nac_w03`.
+
+| planted error (m) | ~px on the reference grid | trials | flagged as wrong | mean verified cells /64 |
+|---|---|---|---|---|
+| 0 | 0.00 | 16 | 0.0% | 40.5 |
+| 1 | 0.62 | 64 | 0.0% | 39.6 |
+| 2 | 1.23 | 64 | 6.2% | 33.2 |
+| 3 | 1.85 | 64 | 12.5% | 25.1 |
+| 5 | 3.08 | 64 | 93.8% | 1.0 |
+| 10 | 6.17 | 64 | 100.0% | 0.0 |
+| 20 | 12.33 | 64 | 100.0% | 0.0 |
+| 50 | 30.83 | 64 | 100.0% | 0.0 |
+| 100 | 61.65 | 64 | 100.0% | 0.0 |
+| 200 | 123.31 | 64 | 100.0% | 0.0 |
 
 ## Viewpoint (synthetic, exact truth)
 
@@ -265,6 +304,24 @@ Off-nadir tilt applied to one image of a rendered pair (sun 15° apart), latest 
 | 40 | on | 3 | 13.327 | 13.694 |
 | 50 | on | 3 | 16.063 | 22.174 |
 
+## Sub-pixel accuracy, with the pixel grid named
+
+"Sub-pixel" means nothing without its grid. Every figure below is on the REFERENCE grid with its metres, and says what its truth is. None is a new measurement: each is the row or table above it came from.
+
+| evidence | what the truth is | reference grid | result |
+|---|---|---|---|
+| Synthetic rendered pair (LOLA DEM), Sun azimuths 0° / 15° / 30° / 45° apart, medians over the off-grid shifts (the fig1 rows) | exact: a known transform | 60 m | rmse_gt_px 0.086 / 0.086 / 0.314 / 1.096 px = 5.1 / 5.1 / 18.8 / 65.8 m |
+| Real Chandrayaan-2 OHRC → LRO NAC, 74 °S, 20 windows | held-out matches (the 20 % the fit never saw) - no ground truth | 0.931 and 1.245 m | median per window 0.41-1.01 px = 0.51-0.94 m |
+| Real OHRC → LRO NAC, SAC's equatorial pair, 6 windows, Sun azimuths 173.5-173.7° apart | held-out matches | 1.622 m | median per window 0.69-1.68 px = 1.1-2.7 m |
+| Loop closure OHRC → NAC A → NAC B vs OHRC → NAC B, 6 loops | consistency of three registrations (cancels per-image error) | 1.245 m (NAC B) | RMS median 0.083 px = 0.104 m |
+| MiLOI LRO NAC ↔ NAC (same sensor), the `agrees` pairs: the matcher's transform vs the network truth | a translation network from ours+SIFT agreement on OTHER pairs; its own leave-one-out error is in the MiLOI section (S3: not measurable) | per pair | S1 median 0.52 px (n=9, grids 1.12-1.53 m); S2 median 1.18 px (n=11, grids 0.88-1.21 m); S3 median 1.12 px (n=13, grids 0.62-0.95 m) |
+
+## Runtime and match distribution
+
+Wall time of `run_all` per window (the `seconds` column; LoFTR on CPU, tiled; no GPU), latest rows: median 10.7 s over the 89 OHRC → NAC windows at 74 °S (the loop legs and the sun sweep; 640-px NAC references), 10.4 s over all 140 registered windows (Intel64 Family 6 Model 170 Stepping 4, GenuineIntel; Windows-11-10.0.26200-SP0).
+
+Uniform distribution (PS demand): `grid_coverage_fraction` is the share of the 8 × 8 reference cells holding at least one inlier. On the 20 OHRC → NAC windows at 74 °S it is 0.19-1.00, median 1.00; 17 of 20 windows are at 0.95 or above (the lowest: `site_ohrc_m1153871873le_w01` 0.19, `site_ohrc_m1153871873le_w05` 0.44).
+
 ## Reproduce
 
 ```
@@ -277,4 +334,4 @@ python -m ops.trust_real_calibration "site_ohrc_m1153871873le_w*_t" ... --log
 python -m ops.make_report
 ```
 
-Rows in real_pairs_log.csv: 380: 150 distinct pair ids (latest row wins) = 140 registered pairs + 6 loops + 4 withdrawn (INVALIDATED). Rows in results_log.csv: 1594.
+Rows in real_pairs_log.csv: 526: 150 distinct pair ids (latest row wins) = 140 registered pairs + 6 loops + 4 withdrawn (INVALIDATED). Rows in results_log.csv: 2314.

@@ -3,7 +3,7 @@
 The portal asks for four things (2026 Guidelines p.11): the chosen PS, an **idea title**, an
 **idea description**, and the **idea presentation as a PDF**. The character limits were not found
 in any official source, so a short and a long version of each is given below. Paste the longest
-one that fits. Every number here is in `REPORT.md` at the evidence-freeze commit `49bdad9`; the
+one that fits. Every number here is in `REPORT.md` at the evidence-freeze commit `b678272` (20 Sep 2026, after the audit); the
 deck carries the same ones.
 
 | Field | Value |
@@ -37,12 +37,14 @@ Long (1,322 characters):
 > LRO NAC pair (arXiv:2509.04775), with Sun azimuths 174° apart, all 6 windows are accepted. On
 > the polar pair 4 of 6 are accepted and the other two are flagged. Across 136 real windows and 8
 > instrument pairings (OHRC, TMC-2, IIRS, LRO NAC, Kaguya TC and MI, LOLA), the held-out residual
-> on OHRC → NAC is a median of 0.41–1.0 px on the ~1 m NAC grids, and three-image loops close to
-> 0.10 m. Planted wrong answers in real windows: 0% false alarms, 100% flagged from 5 m.
-> Visible ↔ infrared: 13 of 14 windows are refused rather than silently misregistered. Outputs:
-> a GeoTIFF on the reference grid, match points (CSV, GDAL/QGIS, ISIS), metrics and the trust
-> map. Runs on a CPU laptop, offline, with open-source libraries only. Every number is
-> regenerated from logs by one command.
+> on OHRC → NAC is a median of 0.41–1.01 px on the ~1 m NAC grids, and three-image loops close to
+> 0.10 m. Planted wrong answers on 30 real windows: 0% false alarms, 100% flagged from 5 m on the
+> 22 near-Sun windows and from 10 m on SAC's opposite-Sun pairs.
+> Visible ↔ infrared (Kaguya TC → MI 1548 nm): the matcher is refused on all 3 windows and the
+> declared fallback lands 3.4–16.2 m (0.23–1.09 px on MI's 14.8 m grid) from the visible-band
+> registration of the same window. Outputs: a GeoTIFF on the reference grid, match points (CSV, GDAL/QGIS, ISIS), metrics
+> and the trust map. Median 10.7 s per 640-px window on a CPU laptop, offline, open-source
+> libraries only. Every number is regenerated from logs by one command.
 
 Short (498 characters):
 
@@ -50,7 +52,7 @@ Short (498 characters):
 > Sun angle, scale and sensor. It also says, region by region, whether the result can be trusted,
 > using an independent area check that never sees the matches. On SAC's own OHRC ↔ NAC pair, with
 > Suns 174° apart, 6 of 6 windows are accepted. Planted wrong answers in real windows are 100%
-> flagged from 5 m, with 0% false alarms. It outputs a GeoTIFF, match points and metrics, and runs
+> flagged from 10 m, with 0% false alarms. It outputs a GeoTIFF, match points and metrics, and runs
 > CPU-only and offline.
 
 ## Before pressing submit

@@ -93,7 +93,8 @@ fills. The live demo therefore needs no network and no GPU.
 | `evaluation/results_log.csv` | every scored run: the 15-column log (Invariant 1) |
 | `evaluation/real_pairs_log.csv` | real-pair structure: Sun geometry, window, archive offset, held-out and in-sample residuals, loops, sweep outcomes |
 | `evaluation/miloi_log.csv`, `miloi_truth.json` | the MiLOI benchmark and its truth network |
-| `evaluation/trust_real_calibration.csv` | planted wrong registrations on real windows |
+| `evaluation/trust_real_calibration.csv` | planted wrong registrations on real windows (two Sun populations: under 10° apart, and SAC's 132-174°) |
+| `evaluation/multimodal_check.csv` | the infrared fallback measured against the visible-band registration of the same window (`ops/multimodal_check.py`) |
 | `REPORT.md` | all of the above, rendered |
 
 **Numbers.** No figure enters a slide, a script, a Q&A answer or this README unless it is in the

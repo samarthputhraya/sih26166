@@ -747,22 +747,30 @@ def fig_trust_real():
     ax.set_axisbelow(True)
     xs = np.arange(len(ds))
     az_lo = sorted({float(r.get("d_sun_azimuth_deg") or 0) for r in rows})
-    lo_label = (f"Sun azimuths {az_lo[0]:.0f}–{az_lo[-1]:.0f}° apart, {len({r['pair_id'] for r in rows})} windows"
-                if az_lo and az_lo[-1] > 0 else "Sun azimuths under 10° apart")
+    # two-line labels: the legend must fit inside the empty 0-2 m columns (x < 2.5 bars)
+    lo_label = (f"Suns {az_lo[0]:.0f}–{az_lo[-1]:.0f}° apart\n{len({r['pair_id'] for r in rows})} windows"
+                if az_lo and az_lo[-1] > 0 else "Suns under 10° apart")
     ax.bar(xs, [100 * v for v in rate], color=[MUTED if d == 0 else BLUE for d in ds], zorder=3, width=0.7,
            label=lo_label if hard else None)
-    for x, v, k in zip(xs, rate, n):
-        ax.text(x, 100 * v + 2, f"{100 * v:.0f}%", ha="center", va="bottom", fontsize=12, color=INK)
+    hx, hr = [], []
     if hard:
         hd = sorted({float(r["displacement_m"]) for r in hard})
         hx = [ds.index(d) for d in hd if d in ds]
         hr = [100 * np.mean([r["contradicted"] == "True" for r in hard if float(r["displacement_m"]) == d])
               for d in hd if d in ds]
+    for x, v, k in zip(xs, rate, n):
+        # the bar's label sits above the bar AND above the hard-Sun marker at that x (20 Sep:
+        # the 2 m marker printed over the "1%")
+        top = max(100 * v, max([h for hxi, h in zip(hx, hr) if hxi == x], default=0) + 4)
+        ax.text(x, top + 2, f"{100 * v:.0f}%", ha="center", va="bottom", fontsize=12, color=INK)
+    if hard:
         az_hi = sorted({float(r["d_sun_azimuth_deg"]) for r in hard})
         ax.scatter(hx, hr, s=90, marker="D", c=ORANGE, edgecolors=SURFACE, linewidths=1.2, zorder=6,
-                   label=f"Sun azimuths {az_hi[0]:.0f}–{az_hi[-1]:.0f}° apart, "
-                         f"{len({r['pair_id'] for r in hard})} windows (SAC's pairs)")
-        ax.legend(loc="center right", fontsize=10.5, frameon=False)
+                   label=f"Suns {az_hi[0]:.0f}–{az_hi[-1]:.0f}° apart\n"
+                         f"{len({r['pair_id'] for r in hard})} SAC windows")
+        # the 0-2 m columns are empty below ~75 %: the legend sits there, clear of the 3 m bar
+        ax.legend(loc="upper left", bbox_to_anchor=(0.0, 0.72), fontsize=10, frameon=False,
+                  labelspacing=0.9)
     ax.set_xticks(xs)
     ax.set_xticklabels([f"{d:g}" for d in ds], fontsize=13)
     ax.set_ylim(0, 112)
