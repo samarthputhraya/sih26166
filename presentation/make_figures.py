@@ -9,12 +9,15 @@ back out of `evaluation/results_log.csv`, `core/reliability_calibration.csv` or 
 cached `run_all()` result dicts in `demo_cache/results/` at run time. If a figure and a
 slide ever disagree, re-run this - do not edit the picture.
 
-Four figures:
+Figures:
   fig1_sun_angle_vs_error   ours vs best classical across the sun-azimuth sweep
   fig2_trust_calibration    do the three trust states separate by TRUE error?
   fig3_trust_map            the actual output: two real pairs, one accepted, one refused
   fig4_pipeline             the method as a flowchart (drawn here so it cannot drift from
                             what core/pipeline.py does; there is no hand-drawn diagram)
+  fig5_real_sun_sweep       real OHRC vs NAC windows across 3-153 deg of sun difference
+  fig6_trust_real_calibration  planted wrong answers on real windows: how many are flagged
+  fig7_miloi_sun            MiLOI success vs sun angle, ours and SIFT/ORB/AKAZE (miloi_log.csv)
 
 Colour: slots 1/2/3 of the validated categorical palette (blue #2a78d6, orange #eb6834,
 aqua #1baf7a). Checked with the palette validator - all six checks pass; aqua's 2.74:1
@@ -722,6 +725,74 @@ def fig_trust_real():
     return out
 
 
+YELLOW = "#eda100"   # categorical slot 4; the 4-slot set passes validate_palette.js (contrast WARN
+                     # for aqua and yellow -> marker shapes and a legend carry identity, never colour alone)
+MILOI_STYLE = {"ours_loftr+subpixel": (BLUE, "o", "ours (LoFTR + trust layer)"),
+               "SIFT": (ORANGE, "s", "SIFT"), "AKAZE": (AQUA, "D", "AKAZE"), "ORB": (YELLOW, "^", "ORB")}
+
+
+def fig_miloi():
+    """MiLOI (real LROC NAC pairs of the same ground under many suns): share of pairs each method
+    registers within SUCCESS_PX of the network truth, per sun-vector-angle bin, n under each bin.
+    Read from evaluation/miloi_log.csv only (latest row per pair and method), exactly as
+    `python -m evaluation.miloi --table` counts it."""
+    from evaluation.miloi import BINS, LOG as MILOI_LOG, SUCCESS_PX
+    if not MILOI_LOG.exists():
+        return None
+    latest = {}
+    for r in _rows(MILOI_LOG):
+        latest[(r["pair_id"], r["method"])] = r
+    methods = [m for m in MILOI_STYLE if any(mm == m for _, mm in latest)]
+    fig, ax = plt.subplots(figsize=(7.6, 4.4))
+    ax.grid(True, axis="y", color=GRID, linewidth=0.8, zorder=0)
+    ax.set_axisbelow(True)
+    xs = np.arange(len(BINS))
+    ns, rates = [], []
+    for m in methods:
+        rate, n_m = [], []
+        for lo, hi in BINS:
+            rs = [r for (_, mm), r in latest.items() if mm == m and lo <= float(r["d_sun_angle_deg"]) < hi]
+            n_m.append(len(rs))
+            rate.append(100.0 * sum(int(r["success"]) for r in rs) / len(rs) if rs else np.nan)
+        ns.append(n_m)
+        rates.append(np.array(rate))
+    for j, (m, rate) in enumerate(zip(methods, rates)):
+        col, mk, label = MILOI_STYLE[m]
+        dodge = (j - (len(methods) - 1) / 2) * 0.07          # identical values stay visible
+        ax.plot(xs + dodge, rate, color=col, linewidth=2, marker=mk, markersize=8,
+                markeredgecolor=SURFACE, markeredgewidth=1.2, zorder=4 if j == 0 else 3, label=label)
+    # direct label on ours, at the bin where it leads the best classical by the most
+    lead = rates[0] - np.nanmax(np.vstack(rates[1:]), axis=0)
+    k = int(np.nanargmax(lead))
+    ax.annotate(MILOI_STYLE[methods[0]][2].split(" (")[0], (xs[k], rates[0][k]), xytext=(12, 6),
+                textcoords="offset points", fontsize=12, color=INK, fontweight="bold")
+    if len({tuple(n) for n in ns}) != 1:
+        print("    !! fig7: methods have different pair counts per bin - n below is ours'")
+    ax.set_xticks(xs)
+    ax.set_xticklabels([f"{lo}-{min(hi, 180)}°\nn={n}" for (lo, hi), n in zip(BINS, ns[0])], fontsize=12)
+    ax.set_ylim(-4, 104)
+    ax.set_ylabel(f"pairs registered within {SUCCESS_PX:g} px  (%)", fontsize=14)
+    ax.set_xlabel("angle between the two sun directions", fontsize=14)
+    ax.set_title("MiLOI: real NAC pairs of one ground under many suns",
+                 loc="left", fontweight="bold", fontsize=15, pad=10)
+    ax.legend(loc="upper right", fontsize=11, frameon=False)
+    scenes = {}
+    for (_, mm), r in latest.items():
+        if mm == methods[0]:
+            scenes[r["scene"]] = scenes.get(r["scene"], 0) + 1
+    fig.text(0.014, 0.008, f"{sum(ns[0])} same-sensor LROC NAC pairs with a truth (MiLOI, Xie et al. 2025) · "
+             f"truth = a translation network\nfrom ours+SIFT agreement on OTHER pairs · S3 "
+             f"({scenes.get('S3', 0)} pairs): no redundancy, its own error is not measurable",
+             fontsize=9.5, color=MUTED, linespacing=1.35, va="bottom")
+    fig.set_figheight(4.7)
+    fig.tight_layout(rect=(0, 0.085, 1, 1))
+    out = OUT / "fig7_miloi_sun.png"
+    _audit(fig, out.name)
+    fig.savefig(out, dpi=200)
+    plt.close(fig)
+    return out
+
+
 def main() -> int:
     OUT.mkdir(parents=True, exist_ok=True)
     deltas, ours, best, nscored, ntried = load_curves()
@@ -734,7 +805,7 @@ def main() -> int:
     print(f"  wrote {fig_trust_calibration().name}")
     print(f"  wrote {fig_trust_map().name}")
     print(f"  wrote {fig_pipeline().name}")
-    for f in (fig_real_sun_sweep, fig_trust_real):
+    for f in (fig_real_sun_sweep, fig_trust_real, fig_miloi):
         out = f()
         print(f"  wrote {out.name}" if out else f"  skipped {f.__name__} (no evidence file yet)")
     _report_slide_legibility()
