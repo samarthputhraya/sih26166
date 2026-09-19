@@ -1,12 +1,12 @@
 # SIH26166 - evaluation report
 
-Generated 2026-09-18T22:04 from commit `e10deb0-dirty` by `python -m ops.make_report`. **Do not edit by hand** - every number below is read from the evidence files named in each section.
+Generated 2026-09-19T11:03 from commit `12245b2-dirty` by `python -m ops.make_report`. **Do not edit by hand** - every number below is read from the evidence files named in each section.
 
 All pixel figures are on the REFERENCE image's grid, with its metres stated. Real pairs have no exact ground truth: accuracy on them is reported as held-out residuals (the 20 % of matches the fit never saw) and as loop closure. `residual_px` in results_log.csv is the RMSE over ALL held-out matches including outliers and is not quoted for real pairs.
 
 ## Products downloaded (sha256 recorded)
 
-139 files: miloi 90, mimap 2, nac 4, nac_sweep 30, pradan_ohrc 2, pradan_tmc2 5, tcevem 2, tcmorm 2, tcort 2. Full list with URLs and sha256: `C:\Users\samar\sih26166_data\download_manifest_done.csv` and `nac_sweep_manifest_done.csv`. The Chandrayaan-2 OHRC frame `ch2_ohr_ncp_20200229T0739312111_d_img_d18` was already on disk (archive.org mirror).
+143 files: miloi 90, mimap 2, nac 4, nac_sweep 30, pradan_iirs 4, pradan_ohrc 2, pradan_tmc2 5, tcevem 2, tcmorm 2, tcort 2. Full list with URLs and sha256: `C:\Users\samar\sih26166_data\download_manifest_done.csv` and `nac_sweep_manifest_done.csv`. The Chandrayaan-2 OHRC frame `ch2_ohr_ncp_20200229T0739312111_d_img_d18` was already on disk (archive.org mirror).
 
 ## Chandrayaan-2 OHRC → LRO NAC (cross-sensor, cross-mission)
 
@@ -83,6 +83,24 @@ Tier C rows are multi-modal (visible vs near-infrared). On them the declared met
 | `site_tc_morning_mi749_w02` | -74.2982, 43.7217 | n/a | 2.0 | 436 | 429 | 0.984 | 0.95 | 0.387 (5.720) | 0.562 | 56 / 3 | agrees | loftr+magsac++ | 46.4 |
 | `site_tc_morning_mi749_w03` | -74.2100, 43.4127 | n/a | 2.0 | 416 | 413 | 0.993 | 1.00 | 0.234 (3.464) | 0.445 | 55 / 0 | agrees | loftr+magsac++ | 38.9 |
 
+## Kaguya TC → Chandrayaan-2 IIRS near-infrared (cross-sensor, cross-mission, multi-modal)
+
+IIRS calibrated cube `ch2_iir_nci_20210621T1517513893` (bands 18 = 999 nm and 51 = 1555 nm, streamed out of the zip by HTTP range - see ops/national_round/PRADAN_GUIDE.md) vs the Kaguya TC ortho map at the 74 S site; IIRS ~89 m, TC ~7.4 m, 112-px IIRS windows. A 112-px frame is too small for the per-cell area check, so the whole-frame check decides the verdict.
+
+| pair | window (lat, lon) | Δsun az | scale | matches | inliers | ratio | coverage | held-out median px (m) | held-out RMSE ≤3 px | verified / no-evid | verdict | declared | archive offset m |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| `site_tc_ortho_iirs1000_w04` | -73.6817, 43.8428 | n/a | 12.019 | 17 | 7 | 0.412 | 0.06 | 8.811 (783.652) | n/a | 0 / 59 | contradicted | fft_phase_correlation (fallback) | 981.8 |
+| `site_tc_ortho_iirs1000_w05` | -73.6798, 44.1181 | n/a | 12.019 | 12 | 5 | 0.417 | 0.08 | 33.673 (2994.866) | n/a | 0 / 59 | contradicted | fft_phase_correlation (fallback) | 981.8 |
+| `site_tc_ortho_iirs1000_w07` | -73.9474, 43.8643 | n/a | 12.019 | 14 | 5 | 0.357 | 0.08 | 116.280 (10341.971) | n/a | 0 / 58 | contradicted | fft_phase_correlation (fallback) | 1472.2 |
+| `site_tc_ortho_iirs1000_w08` | -73.9455, 44.1439 | n/a | 12.019 | 21 | 6 | 0.286 | 0.08 | 16.087 (1430.752) | n/a | 0 / 59 | contradicted | fft_phase_correlation (fallback) | 3514.6 |
+| `site_tc_ortho_iirs1000_w10` | -74.2131, 43.8865 | n/a | 12.019 | 13 | 4 | 0.308 | 0.06 | 23.011 (2046.608) | n/a | 0 / 59 | contradicted | fft_phase_correlation (fallback) | 1041.8 |
+| `site_tc_ortho_iirs1000_w11` | -74.2112, 44.1704 | n/a | 12.019 | 16 | 5 | 0.312 | 0.08 | 66.906 (5950.589) | n/a | 0 / 58 | contradicted | fft_phase_correlation (fallback) | 1169.2 |
+| `site_tc_ortho_iirs1555_w05` | -73.6798, 44.1181 | n/a | 12.019 | 13 | 5 | 0.385 | 0.08 | 8.564 (761.710) | n/a | 0 / 59 | contradicted | fft_phase_correlation (fallback) | 981.8 |
+| `site_tc_ortho_iirs1555_w07` | -73.9474, 43.8643 | n/a | 12.019 | 13 | 5 | 0.385 | 0.08 | 62.763 (5582.168) | n/a | 0 / 59 | contradicted | fft_phase_correlation (fallback) | 1472.2 |
+| `site_tc_ortho_iirs1555_w08` | -73.9455, 44.1439 | n/a | 12.019 | 16 | 6 | 0.375 | 0.08 | 59.978 (5334.418) | n/a | 0 / 59 | contradicted | fft_phase_correlation (fallback) | 956.9 |
+| `site_tc_ortho_iirs1555_w10` | -74.2131, 43.8865 | n/a | 12.019 | 16 | 6 | 0.375 | 0.09 | 45.876 (4080.178) | n/a | 0 / 57 | agrees | loftr+magsac++ | 2041.2 |
+| `site_tc_ortho_iirs1555_w11` | -74.2112, 44.1704 | n/a | 12.019 | 13 | 5 | 0.385 | 0.06 | 19.699 (1752.009) | n/a | 0 / 60 | contradicted | fft_phase_correlation (fallback) | 1048.6 |
+
 ## Loop closure (OHRC → NAC A → NAC B vs OHRC → NAC B)
 
 6 closed loops. Loop RMS median **0.104 m**, max 0.128 m (`ops/loop_closure.py`). Loop closure cancels any error attached to a single image (its geolocation, its own shading), so it measures correspondence consistency, not absolute ground accuracy.
@@ -98,7 +116,7 @@ Tier C rows are multi-modal (visible vs near-infrared). On them the declared met
 
 ## Real sun-angle sweep (one OHRC frame vs LRO NAC frames)
 
-Outcome by image evidence, rule v2 (`ops/sun_sweep.py` docstring): the matcher is right when |NCC| of its warp against the reference is ≥ 0.30 and at least the archive alignment's |NCC| − 0.05; when neither reaches 0.30 the image cannot judge (inconclusive). |NCC| because opposite suns anti-correlate a correct alignment. Derived from the logged NCCs; v2 moved 27 of 69 logged v1 labels (caught_failure → false_alarm 11, caught_failure → inconclusive 14, missed_failure → correct_accepted 1, missed_failure → inconclusive 1). This sweep is NOT the trust layer's detection evidence - see the next section.
+Outcome by image evidence, rule v2 (`ops/sun_sweep.py` docstring): the matcher is right when |NCC| of its warp against the reference is ≥ 0.30 and at least the archive alignment's |NCC| − 0.05; when neither reaches 0.30 the image cannot judge (inconclusive). |NCC| because opposite suns anti-correlate a correct alignment. All 69 latest rows were logged under rule v2. This sweep is NOT the trust layer's detection evidence - see the next section.
 
 | Δsun az (deg) | windows | NAC frames | registered & accepted | failed & caught | failed, not caught | correct but refused | inconclusive | median inliers |
 |---|---|---|---|---|---|---|---|---|
@@ -107,7 +125,39 @@ Outcome by image evidence, rule v2 (`ops/sun_sweep.py` docstring): the matcher i
 | 30-60 | 12 | 4 | 11 | 0 | 0 | 0 | 1 | 559 |
 | 60-90 | 7 | 3 | 0 | 1 | 0 | 1 | 5 | 58 |
 | 90-120 | 5 | 2 | 0 | 0 | 0 | 1 | 4 | 8 |
-| 120-180 | 15 | 5 | 0 | 0 | 0 | 10 | 5 | 209 |
+| 120-180 | 15 | 5 | 10 | 0 | 0 | 0 | 5 | 209 |
+
+## MiLOI: real LROC NAC images of one ground under many suns (same sensor)
+
+`evaluation/miloi.py` (Xie et al. 2025, github.com/Bin501/CNSFM @94cebaa). 321 pairs matched; 81 have a truth. The tiles' map geometry is off by metres to hundreds of metres, so truth is a per-image translation network built only from pairs where ours AND SIFT agree within 1.0 px with ≥50 inliers each; a pair that is itself an edge is scored leave-one-out, and a pair its network cannot reach has no truth and is not scored. Same sensor (LROC NAC ↔ LROC NAC) - NOT cross-sensor.
+
+| scene | edges | images without truth | truth's own error (leave-one-out, px) |
+|---|---|---|---|
+| S1 | 8 | 0 | median 0.22, max 0.29 (n=3) |
+| S2 | 7 | 4 | median 0.26, max 0.40 (n=5) |
+| S3 | 14 | 5 | **not measurable** - every edge is a bridge (no redundancy) |
+
+```
+success = rmse_gt_px < 3.0 px on the reference grid, vs the MiLOI network truth (miloi_truth.json)
+d_sun_angle_deg      ours_loftr+subpixel                 AKAZE                   ORB                  SIFT
+   0-15   deg                  2/2 (100%)            2/2 (100%)            2/2 (100%)            2/2 (100%)
+  15-30   deg                 13/16 (81%)           14/16 (88%)           13/16 (81%)           12/16 (75%)
+  30-60   deg                 11/29 (38%)           10/29 (34%)            5/29 (17%)            8/29 (28%)
+  60-90   deg                  2/18 (11%)             0/18 (0%)             0/18 (0%)             0/18 (0%)
+  90-120  deg                    0/9 (0%)              0/9 (0%)              0/9 (0%)              0/9 (0%)
+ 120-181  deg                    0/7 (0%)              0/7 (0%)              0/7 (0%)              0/7 (0%)
+
+ours, trust outcomes vs truth: caught_failure 43, correct_accepted 33, missed_failure 5
+ours, declared transform within 3.0 px of truth: 34/81
+```
+
+Trust verdict against truth, ours (latest row per pair):
+
+| verdict | pairs | matcher within 3 px of truth |
+|---|---|---|
+| agrees | 33 | 33 |
+| unconfirmed | 5 | 0 |
+| contradicted | 43 | 0 |
 
 ## Trust layer on real imagery: planted confident-but-wrong registrations
 
@@ -155,4 +205,4 @@ python -m ops.trust_real_calibration "site_ohrc_m1153871873le_w*_t" ... --log
 python -m ops.make_report
 ```
 
-Rows in real_pairs_log.csv: 123 (119 distinct pairs/loops; where a pair was re-run, the latest row is shown). Rows in results_log.csv: 439.
+Rows in real_pairs_log.csv: 203 (324 distinct pairs/loops; where a pair was re-run, the latest row is shown). Rows in results_log.csv: 843.

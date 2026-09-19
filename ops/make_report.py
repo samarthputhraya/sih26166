@@ -158,6 +158,13 @@ def main(argv=None):
                            "method is the global-correlation fallback; compare its archive offset with the "
                            "visible-band rows on the same windows.")
 
+    iirs = sorted([r for r in reg if _kind(r) == "tc-iirs"], key=lambda r: r["pair_id"])
+    if iirs:
+        L += section_pairs("Kaguya TC → Chandrayaan-2 IIRS near-infrared (cross-sensor, cross-mission, multi-modal)", iirs,
+                           "IIRS calibrated cube `ch2_iir_nci_20210621T1517513893` (bands 18 = 999 nm and 51 = 1555 nm, "
+                           "streamed out of the zip by HTTP range - see ops/national_round/PRADAN_GUIDE.md) vs the Kaguya "
+                           "TC ortho map at the 74 S site; IIRS ~89 m, TC ~7.4 m, 112-px IIRS windows. A 112-px frame "
+                           "is too small for the per-cell area check, so the whole-frame check decides the verdict.")
     # --- loops ----------------------------------------------------------------------------
     if loops:
         rms = [float(r["loop_rms_m"]) for r in loops]
@@ -186,8 +193,10 @@ def main(argv=None):
               "right when |NCC| of its warp against the reference is ≥ 0.30 and at least the archive "
               "alignment's |NCC| − 0.05; when neither reaches 0.30 the image cannot judge "
               "(inconclusive). |NCC| because opposite suns anti-correlate a correct alignment. "
-              f"Derived from the logged NCCs; v2 moved {sum(moved.values())} of {len(sweep)} logged "
-              "v1 labels (" + ", ".join(f"{a} → {b} {n}" for (a, b), n in sorted(moved.items())) + "). "
+              + (f"Derived from the logged NCCs; v2 moved {sum(moved.values())} of {len(sweep)} logged v1 "
+                 "labels (" + ", ".join(f"{a} → {b} {n}" for (a, b), n in sorted(moved.items())) + "). "
+                 if moved else f"All {len(sweep)} latest rows were logged under rule v2. ")
+              + 
               "This sweep is NOT the trust layer's detection evidence - see the next section.", "",
               "| Δsun az (deg) | windows | NAC frames | registered & accepted | failed & caught | failed, not caught | correct but refused | inconclusive | median inliers |",
               "|---|---|---|---|---|---|---|---|---|"]
@@ -199,6 +208,41 @@ def main(argv=None):
             L.append(f"| {lo}-{hi if hi < 181 else 180} | {len(b)} | {len({r['reference_product'] for r in b})} | "
                      f"{c['correct_accepted']} | {c['caught_failure']} | {c['missed_failure']} | "
                      f"{c['false_alarm']} | {c['inconclusive']} | {int(st.median([float(r['inliers'] or 0) for r in b]))} |")
+        L.append("")
+
+    # --- MiLOI (real multi-illumination NAC benchmark, network truth) -------------------------
+    ml = _rows(ROOT / "evaluation" / "miloi_log.csv")
+    tj = ROOT / "evaluation" / "miloi_truth.json"
+    if ml and tj.exists():
+        import json as _json
+        from evaluation import miloi as _M
+        truth = _json.loads(tj.read_text(encoding="utf-8"))
+        latest = {}
+        for r in ml:
+            latest[(r["pair_id"], r["method"])] = r
+        ours = [r for (_, m), r in latest.items() if m == _M.OURS_METHOD]
+        n_run = sum(v["pairs_run"] for v in truth["scenes"].values())
+        L += ["## MiLOI: real LROC NAC images of one ground under many suns (same sensor)", "",
+              f"`evaluation/miloi.py` (Xie et al. 2025, github.com/Bin501/CNSFM @94cebaa). {n_run} pairs "
+              f"matched; {len(ours)} have a truth. The tiles' map geometry is off by metres to hundreds of "
+              f"metres, so truth is a per-image translation network built only from pairs where ours AND "
+              f"SIFT agree within {_M.AGREE_PX} px with ≥{_M.EDGE_MIN_INLIERS} inliers each; a pair that is "
+              f"itself an edge is scored leave-one-out, and a pair its network cannot reach has no truth "
+              f"and is not scored. Same sensor (LROC NAC ↔ LROC NAC) - NOT cross-sensor.", "",
+              "| scene | edges | images without truth | truth's own error (leave-one-out, px) |",
+              "|---|---|---|---|"]
+        for s, v in truth["scenes"].items():
+            loo = v["loo_err_px"]
+            L.append(f"| {s} | {len(v['edges'])} | {len(v['images_without_truth'])} | "
+                     + (f"median {loo['median']:.2f}, max {loo['max']:.2f} (n={loo['n']})" if loo else
+                        "**not measurable** - every edge is a bridge (no redundancy)") + " |")
+        L += ["", "```"] + _M.table() + ["```", "",
+              "Trust verdict against truth, ours (latest row per pair):", "",
+              "| verdict | pairs | matcher within 3 px of truth |", "|---|---|---|"]
+        for v in ("agrees", "unconfirmed", "contradicted"):
+            rs = [r for r in ours if r["verdict"] == v]
+            ok = sum(1 for r in rs if r["matcher_err_px"] and float(r["matcher_err_px"]) < _M.SUCCESS_PX)
+            L.append(f"| {v} | {len(rs)} | {ok} |")
         L.append("")
 
     # --- trust calibration ------------------------------------------------------------------

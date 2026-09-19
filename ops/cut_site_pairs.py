@@ -364,7 +364,10 @@ def _iirs(kind):
     """(frame, reader, info, gsd) for Chandrayaan-2 IIRS band `iirs<nm>` (nearest centre wavelength).
 
     The calibrated cube is ENVI BSQ float32, 256 bands x 16592 lines x 250 samples (its .hdr), in
-    radiance (uW/cm2/sr/um). Geometry from its own `*_g_grd_*.csv` lattice (same layout as the
+    radiance (uW/cm2/sr/um). The whole 3.36 GB zip never downloaded (three attempts died on
+    18 Sep), so bands 3, 18, 33 and 51 were streamed out of it by HTTP range and are stored as
+    `<id>_band<NNN>.f32` (16592 x 250 each; provenance in `<id>_bands_PROVENANCE.json`). A full
+    `.qub`, if one ever lands, is used instead. Geometry from its own `*_g_grd_*.csv` lattice (same layout as the
     OHRC's), cropped to the rows near the site - the strip is ~1,300 km long and a full
     triangulation gives needle triangles (ops/cut_pradan_pairs.frame_from_grid)."""
     import re
@@ -376,8 +379,16 @@ def _iirs(kind):
     label = xml.read_text(encoding="latin1")
     centres = [float(v) for v in re.findall(r"<center_wavelength[^>]*>([\d.]+)<", label)]
     want = int(kind[4:])
-    b = int(np.argmin([abs(c - want) for c in centres]))
-    cube = np.memmap(qub, dtype="<f4", mode="r", shape=(256, 16592, 250))
+    if qub.exists():
+        have = list(range(len(centres)))
+        cube = np.memmap(qub, dtype="<f4", mode="r", shape=(256, 16592, 250))
+    else:
+        files = {int(f.stem.rsplit("band", 1)[1]) - 1: f for f in xml.parent.glob(f"{IIRS_ID}_band*.f32")}
+        have = sorted(files)
+        cube = {b_: np.memmap(f, dtype="<f4", mode="r", shape=(16592, 250)) for b_, f in files.items()}
+    b = min(have, key=lambda i: abs(centres[i] - want))
+    if abs(centres[b] - want) > 20:
+        raise SystemExit(f"no IIRS band near {want} nm on disk (have {[round(centres[i]) for i in have]} nm)")
 
     class _PS:
         lat_ts, lon0 = SITE_LATLON
@@ -386,7 +397,7 @@ def _iirs(kind):
     frame = frame_from_grid(grid, (16592, 250), _PS(), kind)
 
     def reader(x, y, w, h, _b=b):
-        a = np.array(cube[_b, y:y + h, x:x + w], np.float32)
+        a = np.array(cube[_b][y:y + h, x:x + w], np.float32)
         a[~np.isfinite(a) | (a <= 0)] = np.nan
         return a
     sun = {k: (re.search(r"<isda:" + k + r"[^>]*>(-?[\d.]+)<", label) or [None, None])[1]
