@@ -1,6 +1,6 @@
 # SIH26166 - evaluation report
 
-Generated 2026-09-19T11:40 from commit `1c21e18-dirty` by `python -m ops.make_report`. **Do not edit by hand** - every number below is read from the evidence files named in each section.
+Generated 2026-09-19T11:53 from commit `3917a1b-dirty` by `python -m ops.make_report`. **Do not edit by hand** - every number below is read from the evidence files named in each section.
 
 All pixel figures are on the REFERENCE image's grid, with its metres stated. Real pairs have no exact ground truth: accuracy on them is reported as held-out residuals (the 20 % of matches the fit never saw) and as loop closure. `residual_px` in results_log.csv is the RMSE over ALL held-out matches including outliers and is not quoted for real pairs.
 
@@ -127,6 +127,28 @@ IIRS calibrated cube `ch2_iir_nci_20210621T1517513893` (bands 18 = 999 nm and 51
 | `site_tc_ortho_iirs1555_w10` | -74.2131, 43.8865 | n/a | 12.019 | 16 | 6 | 0.375 | 0.09 | 45.876 (4080.178) | n/a | 0 / 57 | unconfirmed | loftr+magsac++ | 2041.2 |
 | `site_tc_ortho_iirs1555_w11` | -74.2112, 44.1704 | n/a | 12.019 | 13 | 5 | 0.385 | 0.06 | 19.699 (1752.009) | n/a | 0 / 60 | contradicted | fft_phase_correlation (fallback) | 1048.6 |
 
+## Scale rung: Chandrayaan-2 OHRC → SELENE (Kaguya) TC ortho map (cross-sensor, cross-mission)
+
+The same OHRC source at 0.25 m against the TC ortho mosaic at 7.4 m (the scale column is the ratio the pipeline bridges: it area-averages the OHRC down to the TC grid itself). Windows ~1.5 km square, the most an axis-aligned square fits inside the ~2.8 km OHRC swath at 74 S; 200-px references, 25-px trust cells. Both panchromatic - NOT multi-modal. The TC mosaic has no single sun, so Δsun is n/a.
+
+| pair | window (lat, lon) | Δsun az | scale | matches | inliers | ratio | coverage | held-out median px (m) | held-out RMSE ≤3 px | verified / no-evid | verdict | declared | archive offset m |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| `site_ohrc_tc_ortho_w01` | -74.2443, 43.5705 | n/a | 29.6 | 152 | 134 | 0.882 | 0.52 | 0.545 (4.032) | 0.858 | 26 / 31 | agrees | loftr+magsac++ | 430.7 |
+| `site_ohrc_tc_ortho_w02` | -73.9472, 43.6896 | n/a | 29.6 | 56 | 17 | 0.304 | 0.19 | 33.923 (251.031) | 1.265 | 1 / 52 | agrees | loftr+magsac++ | 406.8 |
+| `site_ohrc_tc_ortho_w03` | -74.0829, 43.6162 | n/a | 29.6 | 71 | 39 | 0.549 | 0.25 | 4.847 (35.870) | 2.008 | 7 / 48 | agrees | loftr+magsac++ | 381.3 |
+| `site_ohrc_tc_ortho_w04` | -73.9979, 43.6237 | n/a | 29.6 | 83 | 46 | 0.554 | 0.30 | 2.165 (16.025) | 1.574 | 6 / 45 | unconfirmed | loftr+magsac++ | 402.2 |
+
+## Declared-failure rung: OHRC → LOLA elevation rendered as shaded relief (Tier D, multi-modal)
+
+Same windows as the TC rung. LOLA `ldem_60s_60m` rendered under the OHRC's own derived sun, so Δsun is 0 by construction and what remains is the modality and a 240× scale: the reference is 25 × 25 px. The matcher finds nothing, the system says so and falls back; the fallback's translation on a 25-px frame is not evidence of anything and the verdict stays `unconfirmed`. This row exists to show the declared failure, not a registration.
+
+| pair | window (lat, lon) | Δsun az | scale | matches | inliers | ratio | coverage | held-out median px (m) | held-out RMSE ≤3 px | verified / no-evid | verdict | declared | archive offset m |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| `site_ohrc_lola_w01` | -74.2443, 43.5705 | 0.0 | 240.0 | 0 | 0 | 0.000 | n/a | n/a | n/a | 0 / 64 | unconfirmed | fft_phase_correlation (fallback) | 29.6 |
+| `site_ohrc_lola_w02` | -73.9472, 43.6896 | 0.0 | 240.0 | 0 | 0 | 0.000 | n/a | n/a | n/a | 0 / 64 | unconfirmed | fft_phase_correlation (fallback) | 30.3 |
+| `site_ohrc_lola_w03` | -74.0829, 43.6162 | 0.0 | 240.0 | 0 | 0 | 0.000 | n/a | n/a | n/a | 0 / 64 | unconfirmed | fft_phase_correlation (fallback) | 137.7 |
+| `site_ohrc_lola_w04` | -73.9979, 43.6237 | 0.0 | 240.0 | 0 | 0 | 0.000 | n/a | n/a | n/a | 0 / 64 | unconfirmed | fft_phase_correlation (fallback) | 45.1 |
+
 ## Loop closure (OHRC → NAC A → NAC B vs OHRC → NAC B)
 
 6 closed loops. Loop RMS median **0.104 m**, max 0.128 m (`ops/loop_closure.py`). Loop closure cancels any error attached to a single image (its geolocation, its own shading), so it measures correspondence consistency, not absolute ground accuracy.
@@ -231,4 +253,4 @@ python -m ops.trust_real_calibration "site_ohrc_m1153871873le_w*_t" ... --log
 python -m ops.make_report
 ```
 
-Rows in real_pairs_log.csv: 226 (324 distinct pairs/loops; where a pair was re-run, the latest row is shown). Rows in results_log.csv: 866.
+Rows in real_pairs_log.csv: 234 (324 distinct pairs/loops; where a pair was re-run, the latest row is shown). Rows in results_log.csv: 874.

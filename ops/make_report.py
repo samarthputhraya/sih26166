@@ -80,6 +80,8 @@ def _kind(r):
             return "tc"
         if pid.startswith("MI_MAP"):
             return "mi"
+        if pid.startswith("ldem_"):
+            return "lola"
         return "nac" if re.match(r"^M\d+[LR]E$", pid) else "other"
     if r["pair_id"].startswith("loop_"):
         return r["kind"]
@@ -198,6 +200,24 @@ def main(argv=None):
                            "is too small for the per-cell area check, so the whole-frame check decides the verdict, and "
                            "it can only say `agrees` when the inliers also exceed 8 + 0.3 × matches (Brown & Lowe "
                            "2007); below that an agreeing peak is `unconfirmed` (`core/reliability.py` FRAME_ACCEPT_*).")
+    rung_tc = sorted([r for r in reg if _kind(r) == "ohrc-tc"], key=lambda r: r["pair_id"])
+    if rung_tc:
+        L += section_pairs("Scale rung: Chandrayaan-2 OHRC → SELENE (Kaguya) TC ortho map (cross-sensor, cross-mission)",
+                           rung_tc,
+                           "The same OHRC source at 0.25 m against the TC ortho mosaic at 7.4 m (the scale column is "
+                           "the ratio the pipeline bridges: it area-averages the OHRC down to the TC grid itself). "
+                           "Windows ~1.5 km square, the most an axis-aligned square fits inside the ~2.8 km OHRC swath "
+                           "at 74 S; 200-px references, 25-px trust cells. Both panchromatic - NOT multi-modal. The TC "
+                           "mosaic has no single sun, so Δsun is n/a.")
+    rung_lola = sorted([r for r in reg if _kind(r) == "ohrc-lola"], key=lambda r: r["pair_id"])
+    if rung_lola:
+        L += section_pairs("Declared-failure rung: OHRC → LOLA elevation rendered as shaded relief (Tier D, multi-modal)",
+                           rung_lola,
+                           "Same windows as the TC rung. LOLA `ldem_60s_60m` rendered under the OHRC's own derived sun, "
+                           "so Δsun is 0 by construction and what remains is the modality and a 240× scale: the "
+                           "reference is 25 × 25 px. The matcher finds nothing, the system says so and falls back; the "
+                           "fallback's translation on a 25-px frame is not evidence of anything and the verdict stays "
+                           "`unconfirmed`. This row exists to show the declared failure, not a registration.")
     # --- loops ----------------------------------------------------------------------------
     if loops:
         rms = [float(r["loop_rms_m"]) for r in loops]
