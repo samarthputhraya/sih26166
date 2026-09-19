@@ -290,8 +290,13 @@ def _versions() -> dict:
 
 
 # The append-only evidence logs. Appending a row is not a code change.
+# Evidence the runs WRITE - append-only logs and regenerated outputs. A freeze regenerates
+# the calibration CSVs and miloi_truth.json mid-run; counting them as code would stamp every
+# later row "-dirty".
 EVIDENCE_LOGS = ("evaluation/results_log.csv", "evaluation/real_pairs_log.csv",
-                 "evaluation/trust_real_calibration.csv", "evaluation/miloi_log.csv")
+                 "evaluation/trust_real_calibration.csv", "evaluation/miloi_log.csv",
+                 "evaluation/miloi_truth.json", "core/reliability_calibration.csv",
+                 "core/reliability_calibration_summary.csv")
 
 
 def _commit(paths=("core", "evaluation"), root=ROOT) -> str:

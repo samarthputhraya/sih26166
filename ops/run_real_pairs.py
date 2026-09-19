@@ -109,13 +109,15 @@ def _short(instrument: str) -> str:
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("pattern", help='pair directory glob under data/pairs, e.g. "site_ohrc_*"')
+    ap.add_argument("pattern", nargs="+",
+                    help='pair directory globs or exact ids under data/pairs, e.g. "site_ohrc_*"')
     ap.add_argument("--log", action="store_true")
     ap.add_argument("--out", help="deliverables root (default <data_path>/out)")
     a = ap.parse_args(argv)
-    dirs = sorted(pathlib.Path(p) for p in glob.glob(str(ROOT / "data" / "pairs" / a.pattern)))
+    dirs = sorted({pathlib.Path(p) for pat in a.pattern
+                   for p in glob.glob(str(ROOT / "data" / "pairs" / pat))})
     if not dirs:
-        print(f"no pair directories match {a.pattern}")
+        print(f"no pair directories match {' '.join(a.pattern)}")
         return 2
     cmd = "python -m ops.run_real_pairs " + " ".join(argv if argv is not None else sys.argv[1:])
     print(f"{'pair':34} {'n':>5} {'inl':>5} {'ratio':>6} {'cov':>5} {'hold_med':>8} "

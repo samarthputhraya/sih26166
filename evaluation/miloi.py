@@ -529,10 +529,14 @@ def truth_for(meta: dict, truth: dict) -> tuple[np.ndarray | None, str]:
 
 # --- --score: every method against the truth -> the logs ------------------------------
 
-def _logged() -> set:
+def _logged(commit=None) -> set:
+    """(pair, method) already logged - by the scoring commit `commit` when given. Until 19 Sep
+    this ignored the commit, so `--score --log` after a trust-layer change appended nothing:
+    every pair was "done" from the first scoring, and the freeze could never re-log MiLOI."""
     if not LOG.exists():
         return set()
-    return {(r["pair_id"], r["method"]) for r in csv.DictReader(open(LOG, encoding="utf-8"))}
+    return {(r["pair_id"], r["method"]) for r in csv.DictReader(open(LOG, encoding="utf-8"))
+            if commit is None or (r.get("git_commit") or "").endswith(f"scored {commit}")}
 
 
 def _append(row: dict) -> None:
@@ -563,8 +567,8 @@ def score(log: bool, command: str, scenes=SCENES) -> None:
     if not TRUTH_JSON.exists():
         raise SystemExit(f"{TRUTH_JSON} missing - run --truth first")
     truth = json.loads(TRUTH_JSON.read_text())
-    done = _logged() if log else set()
     commit = _commit()
+    done = _logged(commit) if log else set()
     for scene in scenes:
         for jp in sorted(runs_dir().glob(f"miloi_{scene}_*.json")):
             meta, arrays = load_run(jp.stem)
