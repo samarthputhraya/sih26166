@@ -148,7 +148,7 @@ def _boxes(support, box, step):
     return out
 
 
-def coarse_prior(a, va, b, vb, gt, box=128, min_lit=0.8, min_peak=0.3, thresh_m=30.0):
+def coarse_prior(a, va, b, vb, gt, box=128, min_lit=0.8, min_peak=0.3, thresh_m=30.0, invert=False):
     """How far the NAC corner prior is from the OHRC grid, as an affine field.
 
     Boxes lying fully inside both footprints and lit on the OHRC side are phase-
@@ -157,6 +157,8 @@ def coarse_prior(a, va, b, vb, gt, box=128, min_lit=0.8, min_peak=0.3, thresh_m=
     orientation is kept for the matcher). Box offsets drift along the 45 km NAC strip -
     a four-corner bilinear model at 0.01 deg cannot be right everywhere - so a single
     translation is the wrong model: an affine displacement field is fitted robustly.
+    `invert` correlates the NEGATED first image: under opposite suns every slope's shading
+    flips (see core.reliability.best_peak). Default off - every 74 S field was fitted without.
     Returns a dict; `apply` says whether it is trustworthy enough to cut windows on.
     """
     import cv2
@@ -175,13 +177,16 @@ def coarse_prior(a, va, b, vb, gt, box=128, min_lit=0.8, min_peak=0.3, thresh_m=
         if lit < min_lit:
             continue
         An, Bn = logstd(A), logstd(B)
+        if invert:
+            An = -An
         (dx, dy), pk = cv2.phaseCorrelate((Bn * w).astype(np.float64), (An * w).astype(np.float64))
         cx = gt[0] + (x + box / 2) * gt[1]
         cy = gt[3] + (y + box / 2) * gt[5]
         rows.append((cx, cy, lit, dx, dy, pk))
     good = [r for r in rows if r[5] >= min_peak]
     out = {"boxes_tested": len(rows), "boxes_above_peak": len(good), "box_px": box,
-           "grid_gsd_m": OVERVIEW_GSD, "min_peak": min_peak, "apply": False, "model": None}
+           "grid_gsd_m": OVERVIEW_GSD, "min_peak": min_peak, "apply": False, "model": None,
+           "polarity": "inverted" if invert else "direct"}
     if len(good) >= 6:
         P = [(r[0], r[1]) for r in good]
         Dm = [(r[3] * OVERVIEW_GSD, -r[4] * OVERVIEW_GSD) for r in good]

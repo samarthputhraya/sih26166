@@ -126,17 +126,19 @@ class Frame:
                    ys.astype(float), X, Y, source=f"OHRC geolocation grid {pathlib.Path(csv_path).name}")
 
     @classmethod
-    def from_corners(cls, ul, ur, lr, ll, shape, name="", step=256, source=""):
+    def from_corners(cls, ul, ur, lr, ll, shape, name="", step=256, source="", fwd=None):
         """Four (lat, lon) corners of the image: UL = pixel (0, 0), UR = (cols-1, 0),
         LR = (cols-1, rows-1), LL = (0, rows-1). Bilinear in map metres between them.
 
         This is what LROC publishes for a NAC EDR, to 0.01 deg (~300 m in latitude).
         It is a coarse prior, not a georeference, and `source` says so.
+        `fwd` is the (lat, lon) -> map metres projection; default south polar stereographic.
         """
         rows, cols = shape
         xs = np.unique(np.r_[np.arange(0, cols, step), cols - 1]).astype(float)
         ys = np.unique(np.r_[np.arange(0, rows, step), rows - 1]).astype(float)
-        P = {k: np.array(ps_south(*v)) for k, v in dict(ul=ul, ur=ur, lr=lr, ll=ll).items()}
+        fwd = fwd or ps_south
+        P = {k: np.array(fwd(*v)) for k, v in dict(ul=ul, ur=ur, lr=lr, ll=ll).items()}
         u = (xs / (cols - 1))[None, :]
         v = (ys / (rows - 1))[:, None]
         X = ((1 - u) * (1 - v) * P["ul"][0] + u * (1 - v) * P["ur"][0]

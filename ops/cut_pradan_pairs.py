@@ -3,6 +3,8 @@
     python -m ops.cut_pradan_pairs tmc-fore-aft      # TMC-2 fore vs aft, one pass: a REAL viewpoint test
     python -m ops.cut_pradan_pairs ohrc-tmc          # OHRC vs TMC-2 nadir (cross-sensor, same mission)
     python -m ops.cut_pradan_pairs ohrc-tmc --windows 5
+    python -m ops.cut_pradan_pairs ohrc-nac          # SAC's own OHRC <-> LRO NAC pair, 13 S
+    python -m ops.cut_pradan_pairs ohrc-nac-polar    # SAC's polar OHRC <-> LRO NAC pair, 62 S
 
 THE SITE is SAC's own benchmark OHRC frame `ch2_ohr_ncp_20210401T2357376656` (arXiv:2509.04775,
 Table 1; 13.06-13.89 S, 25.13-25.24 E). No TMC-2 strip covers our 74 S site (checked 18 Sep against
@@ -30,6 +32,19 @@ WHAT EACH PAIR IS (Invariant 2):
                 multi-modal, NOT cross-mission. Sun from the labels: OHRC az 270.9 / elev 9.9 deg,
                 TMC-2 az 31.1 / elev 69.4 deg - a large illumination change on top of ~6x scale
                 (the native ratio is ~23x; the area-averaging is stated, not hidden).
+  ohrc-nac      SAC's Table 1 pairs, both halves: OHRC `20210401T2357376656` vs LRO NAC
+  ohrc-nac-polar  `M1350459544RE` (13-14 S), and OHRC `20200824T0806596861` vs NAC `M165491149RE`
+                (61.5-62.3 S). Cross-sensor AND cross-mission; both panchromatic - NOT
+                multi-modal. OHRC at its native ~0.26 m, NAC at its native 1.2-1.6 m. The NAC's
+                geometry is LROC's four published corners (0.01 deg), corrected by an affine
+                field fitted against the OHRC grid at 4 m (`ops.cut_site_pairs.coarse_prior`,
+                tried on direct AND inverted intensity - SAC's equatorial pair has the sun on
+                opposite sides - and saved to <data>/site_geometry/<pid>.json). The NAC EDRs are
+                public (<data>/nac/nac_sac_pages.json: product page fields; sha256 in
+                <data>/nac_sac_manifest_done.csv). At 62 S the local equirectangular map's
+                x-scale drifts by tan(62 deg) x d_lat ~ 1.9 % per degree of latitude away from
+                lat_ts; each window is ~0.01 deg tall, so within a pair it is a constant
+                anisotropy common to both images, recorded per window.
 """
 from __future__ import annotations
 
@@ -64,8 +79,15 @@ PRODUCTS = {
     "tmca": (P / "tmc2/data/calibrated/20250707/ch2_tmc_nca_20250707T1853051045_d_img_d18.xml",
              P / "tmc2/geometry/calibrated/20250707/ch2_tmc_nca_20250707T1853051045_g_grd_d18.csv",
              "Chandrayaan-2 TMC-2 aft (-25 deg)"),
+    "ohrc_polar": (P / "ohrc/data/calibrated/20200824/ch2_ohr_ncp_20200824T0806596861_d_img_d18.xml",
+                   P / "ohrc/geometry/calibrated/20200824/ch2_ohr_ncp_20200824T0806596861_g_grd_d18.csv",
+                   "Chandrayaan-2 OHRC"),
 }
 OHRC_BLOCK = 4          # OHRC area-averaged 4x4 before projection (0.26 m -> ~1.05 m)
+# SAC's OHRC <-> NAC pairs (arXiv:2509.04775, Table 1): kind -> (OHRC key, NAC pid, pair-id stem)
+SAC_NAC = {"ohrc-nac": ("ohrc", "M1350459544RE", "sac_ohrc_nac"),
+           "ohrc-nac-polar": ("ohrc_polar", "M165491149RE", "sac_polar_ohrc_nac")}
+SAC_PAGES = DATA / "nac" / "nac_sac_pages.json"
 
 
 # --- the local map ------------------------------------------------------------------------
@@ -153,8 +175,8 @@ def _sha(p):
     return h.hexdigest()
 
 
-def product(key, proj):
-    """(frame, reader, info, native_gsd) for one product; OHRC is area-averaged OHRC_BLOCK x."""
+def product(key, proj, block=OHRC_BLOCK):
+    """(frame, reader, info) for one product; an OHRC is area-averaged `block` x (1 = native)."""
     from core.io_loader import load
     xml, grid, instrument = PRODUCTS[key]
     _, meta = load(xml, window=(0, 0, 8, 8))
@@ -165,9 +187,9 @@ def product(key, proj):
             "sun": {"azimuth_deg_label": meta.get("sun_azimuth"),
                     "elevation_deg_label": meta.get("sun_elevation")},
             "geometry": frame.source}
-    if key != "ohrc":
+    if not key.startswith("ohrc") or block == 1:
         return frame, (lambda x, y, w, h: load(xml, window=(x, y, w, h))[0]), info
-    f = OHRC_BLOCK
+    f = block
 
     def read(x, y, w, h):
         a = load(xml, window=(x * f, y * f, w * f, h * f))[0]
@@ -262,6 +284,208 @@ def cut(kind, n_windows=4, ref_px=384):
     return out
 
 
+def nac_product(pid, proj):
+    """(frame, reader, info) for an LRO NAC EDR on `proj`, from its product-page corners."""
+    from core import geometry as G
+    from core.io_loader import load
+    page = next((d for d in json.loads(SAC_PAGES.read_text(encoding="utf-8")) if d["pid"] == pid), None)
+    if page is None:
+        raise SystemExit(f"{pid} is not in {SAC_PAGES}")
+    path = DATA / "nac" / f"{pid}.IMG"
+    if not path.exists():
+        raise SystemExit(f"{path} not downloaded yet ({page['edr_url']})")
+    c = lambda k: (page[f"{k} latitude"], page[f"{k} longitude"])  # noqa: E731
+    shape = (int(page["Image lines"]), int(page["Line samples"]))
+    frame = G.Frame.from_corners(c("Upper left"), c("Upper right"), c("Lower right"), c("Lower left"),
+                                 shape, "NAC " + pid, fwd=proj.fwd,
+                                 source=f"LROC footprint corners (0.01 deg), bilinear - coarse prior; {proj.name}")
+    info = {"instrument": "LRO LROC NAC", "product_id": pid, "path": str(path), "page": page["url"],
+            "edr_url": page["edr_url"], "resolution_mpp": page["Resolution"],
+            "emission_deg": page["Emission angle"],
+            "subsolar": [page["Sub solar latitude"], page["Sub solar longitude"]],
+            "start_time": page.get("Start time"),
+            "corners_latlon": {k: c(k) for k in ("Upper left", "Upper right", "Lower right", "Lower left")}}
+    return frame, (lambda x, y, w, h: load(path, window=(x, y, w, h))[0]), info
+
+
+def wide_offset(a, va, b, vb, invert=False, gsd=4.0, tpl=300, search=700, blur=2.0, n=7, agree_m=60.0):
+    """One translation between two ~4 m overviews, for a prior too far off for the box field.
+
+    `coarse_prior` phase-correlates 512 m boxes, so it can only see offsets under ~256 m. At
+    SAC's equatorial site the NAC corner prior and the OHRC grid disagree by ~1.9 km (measured
+    19 Sep: 5 of 7 templates agree within 100 m, peaks 0.72-0.90, inverted intensity only). So
+    `n` templates of `tpl` px, spread along the OHRC, are searched +/- `search` px in the NAC
+    overview (normalised cross-correlation on blurred log intensity), and the offset most of
+    them agree on (within `agree_m`) is kept. Returns the NAC map correction (the negated offset)."""
+    import cv2
+
+    def prep(z, v):
+        z = np.log1p(np.clip(np.nan_to_num(z), 0, None)).astype(np.float32)
+        z[~v] = z[v].mean()
+        z = cv2.GaussianBlur(z, (0, 0), blur) if blur else z
+        return (z - z[v].mean()) / (z[v].std() + 1e-6)
+    A, B = prep(a, va), prep(b, vb)
+    A = -A if invert else A
+    h = tpl // 2
+    rows = np.nonzero((va & vb).any(axis=1))[0]
+    found = []
+    for cy in np.linspace(rows.min() + h + 20, rows.max() - h - 20, n).astype(int):
+        cx = int(np.median(np.nonzero(va[cy])[0]))
+        if not va[cy - h: cy + h, cx - h: cx + h].all():
+            continue
+        y0, x0 = max(0, cy - h - search), max(0, cx - h - search)
+        r = cv2.matchTemplate(B[y0: cy + h + search, x0: cx + h + search], A[cy - h: cy + h, cx - h: cx + h],
+                              cv2.TM_CCOEFF_NORMED)
+        _, peak, _, (lx, ly) = cv2.minMaxLoc(r)
+        dxp, dyp = lx + x0 - (cx - h), ly + y0 - (cy - h)
+        found.append((float(dxp * gsd), float(-dyp * gsd), round(float(peak), 3), int(cy)))
+    out = {"polarity": "inverted" if invert else "direct", "templates": found, "n_templates": len(found),
+           "n_agree": 0, "apply": False, "tpl_m": tpl * gsd, "search_m": search * gsd}
+    if not found:
+        return out
+    P = np.array([f[:2] for f in found])
+    near = [np.hypot(*(P - p).T) <= agree_m for p in P]
+    best = max(range(len(P)), key=lambda i: (near[i].sum(), found[i][2]))
+    agree = near[best]
+    off = np.median(P[agree], axis=0)
+    out.update(n_agree=int(agree.sum()), offset_m=off.tolist(), correction_m=(-off).tolist(),
+               mean_peak_agreeing=round(float(np.mean([f[2] for f, k in zip(found, agree) if k])), 3),
+               apply=bool(agree.sum() >= max(3, len(found) // 2 + 1)))
+    return out
+
+
+def nac_corrected(pid, ohrc_key, proj, ohrc_f, o_read, refit=False):
+    """The NAC frame with an affine correction field fitted against the OHRC grid at 4 m, saved
+    once per NAC (<data>/site_geometry/<pid>.json) so every window shares one georeference.
+    First a wide translation search (`wide_offset`) in case the prior is off by more than the
+    box field can see, then the box field. Both intensity polarities are tried at each step;
+    the better one is kept and the other recorded beside it."""
+    from ops import cut_site_pairs as S
+    nac_f, n_read, info = nac_product(pid, proj)
+    gp = S.GEOM_DIR / f"{pid}.json"
+    if gp.exists() and not refit:
+        prior = json.loads(gp.read_text(encoding="utf-8"))
+        wide = prior.get("wide_offset") or {}
+        if wide.get("apply"):
+            nac_f = nac_f.shifted(*wide["correction_m"], note=f"(wide search vs {prior['against']})")
+    else:
+        cache = DATA / "overviews"
+        okey = PRODUCTS[ohrc_key][0].stem
+        a, va, b, vb, gt = S.overviews_between(ohrc_f, o_read, okey, nac_f, n_read, pid, cache)
+        wides = [wide_offset(a, va, b, vb, invert=inv) for inv in (False, True)]
+        wide = max(wides, key=lambda q: (q["n_agree"], q.get("mean_peak_agreeing", 0)))
+        for q in wides:
+            print(f"wide search ({pid} vs {okey}, {q['polarity']} intensity): {q['n_agree']}/{q['n_templates']} "
+                  f"templates agree" + (f" on ({q['offset_m'][0]:+.0f}, {q['offset_m'][1]:+.0f}) m, mean peak "
+                                        f"{q['mean_peak_agreeing']}" if q["n_agree"] else ""))
+        wide["other_polarity"] = wides[1] if wide is wides[0] else wides[0]
+        if wide["apply"]:
+            nac_f = nac_f.shifted(*wide["correction_m"], note=f"(wide search vs {okey})")
+            a, va, b, vb, gt = S.overviews_between(ohrc_f, o_read, okey, nac_f, n_read, pid, cache)
+        tries = [S.coarse_prior(a, va, b, vb, gt, invert=inv) for inv in (False, True)]
+        rank = lambda p: (p["apply"], (p["model"] or {}).get("inliers", 0), p["boxes_above_peak"])  # noqa: E731
+        prior = max(tries, key=rank)
+        other = tries[1] if prior is tries[0] else tries[0]
+        for p in tries:
+            S._say_prior(f"{pid} vs {okey}, {p['polarity']} intensity", p)
+        prior["other_polarity"] = {k: v for k, v in other.items() if k != "boxes"}
+        if prior["apply"]:
+            nac_c = nac_f.corrected(prior["model"], f"(4 m correlation field vs {okey})")
+            a, va, b, vb, gt = S.overviews_between(ohrc_f, o_read, okey, nac_c, n_read, pid, cache)
+            check = S.coarse_prior(a, va, b, vb, gt, invert=prior["polarity"] == "inverted")
+            S._say_prior(f"{pid} after correction", check)
+            prior["after_correction"] = {k: v for k, v in check.items() if k != "boxes"}
+        prior.update(nac_pid=pid, against=okey, crs=proj.name, wide_offset=wide)
+        S.GEOM_DIR.mkdir(parents=True, exist_ok=True)
+        gp.write_text(json.dumps(prior, indent=1), encoding="utf-8")
+    if prior.get("apply"):
+        nac_f = nac_f.corrected(prior["model"], f"(4 m correlation field vs {prior['against']}, "
+                                                f"{prior['polarity']} intensity)")
+    return nac_f, n_read, info, prior
+
+
+def cut_ohrc_nac(kind, n_windows=6, ref_px=640, refit=False):
+    """SAC's OHRC <-> NAC pairs: OHRC (native) source, NAC (native) reference, windows picked in
+    shared, lit, textured ground on the corrected 4 m overviews."""
+    from core import geometry as G
+    from ops import cut_site_pairs as S
+    ohrc_key, pid, stem = SAC_NAC[kind]
+    proj = LocalEqc(*_frame_centre_latlon(PRODUCTS[ohrc_key][1]))
+    ohrc_f, o_read, o_info = product(ohrc_key, proj, block=1)
+    nac_f, n_read, n_info, prior = nac_corrected(pid, ohrc_key, proj, ohrc_f, o_read, refit=refit)
+    n_info["coarse_prior"] = {k: v for k, v in prior.items() if k != "boxes"}
+    n_info["geometry"] = nac_f.source
+    src_gsd = round(float(np.mean(ohrc_f.gsd())), 3)
+    ref_gsd = round(float(np.mean(nac_f.gsd())), 3)
+    window_m = ref_px * ref_gsd
+    a, va, b, vb, gt = S.overviews_between(ohrc_f, o_read, PRODUCTS[ohrc_key][0].stem, nac_f, n_read, pid,
+                                           DATA / "overviews")
+    wins = S.pick_windows(a, va, b, vb, gt, window_m, n_windows)
+    if not wins:
+        raise SystemExit("no lit window fits inside the shared footprint")
+    tier, term = S._tier("ohrc", pid.lower())
+    o_sun = o_info["sun"]
+    ss_lat, ss_lon = n_info["subsolar"]
+    out = []
+    for k, w in enumerate(wins, 1):
+        pair_id = f"{stem}_w{k:02d}"
+        x, y = w["cx"], w["cy"]
+        x0, y1 = x - window_m / 2, y + window_m / 2
+        tr_r, sh_r = G.map_grid(x0, y1, window_m, window_m, ref_gsd)
+        r_img, r_ok = G.project(nac_f, n_read, tr_r, sh_r, coarse=16, order="cubic")
+        s_px = int(round(window_m / src_gsd))
+        tr_s, sh_s = G.map_grid(x0, y1, s_px * src_gsd, s_px * src_gsd, src_gsd)
+        s_img, s_ok = G.project(ohrc_f, o_read, tr_s, sh_s, coarse=32, order="cubic")
+        if r_ok.mean() < 0.998 or s_ok.mean() < 0.998:
+            print(f"  {pair_id}: window not covered (ref {r_ok.mean():.4f}, src {s_ok.mean():.4f}) - skipped")
+            continue
+        r_img, r_fill = G.fill_invalid(r_img, r_ok)
+        s_img, s_fill = G.fill_invalid(s_img, s_ok)
+        lat, lon = proj.inv(x, y)
+        n_inc, n_az = G.sun_direction(float(lat), float(lon), ss_lat, ss_lon)
+        o_inc, o_az = 90.0 - o_sun["elevation_deg_label"], o_sun["azimuth_deg_label"]
+        d_az = round(abs((n_az - o_az + 180) % 360 - 180), 1)
+        d_inc = round(n_inc - o_inc, 2)
+        d = PAIRS / pair_id
+        d.mkdir(parents=True, exist_ok=True)
+        src_p, ref_p = d / f"{pair_id}_source.tif", d / f"{pair_id}_ref.tif"
+        import tifffile
+        tifffile.imwrite(str(src_p), s_img.astype(np.float32), photometric="minisblack",
+                         extratags=proj.geotiff_tags(tr_s))
+        tifffile.imwrite(str(ref_p), r_img.astype(np.float32), photometric="minisblack",
+                         extratags=proj.geotiff_tags(tr_r))
+        meta = {
+            "pair_id": pair_id,
+            "created_utc": _dt.datetime.now(_dt.timezone.utc).isoformat(timespec="seconds"),
+            "tier": tier, "terminology": term, "crs": proj.name,
+            "window_centre_map_m": [float(x), float(y)], "window_centre_latlon": [float(lat), float(lon)],
+            "window_m": window_m,
+            "map_x_scale_anisotropy": round(math.cos(math.radians(float(lat))) /
+                                            math.cos(math.radians(proj.lat_ts)) - 1.0, 5),
+            "source": {**o_info, "resampled_gsd_mpp": src_gsd, "shape": list(sh_s), "transform": list(tr_s),
+                       "lit_fraction_4m": w["lit"]},
+            "reference": {**n_info, "resampled_gsd_mpp": ref_gsd, "shape": list(sh_r), "transform": list(tr_r),
+                          "incidence_deg_at_site": round(n_inc, 2), "sun_azimuth_deg_from_north": round(n_az, 1)},
+            "d_sun_azimuth_deg": d_az, "d_incidence_deg": d_inc,
+            "sun_note": "OHRC: scene-level label (isda:sun_azimuth / sun_elevation); NAC: computed at the "
+                        "window from LROC's published sub-solar point (core.geometry.sun_direction)",
+            "scale_ratio": round(ref_gsd / src_gsd, 3),
+            "prior_H_source_to_reference": [[src_gsd / ref_gsd, 0, 0], [0, src_gsd / ref_gsd, 0], [0, 0, 1]],
+            "prior_note": "both files are on the same north-up local map grid over the same ground, so the "
+                          "archive-geometry prior is a pure scale; any rotation or offset the pipeline finds "
+                          "is disagreement between the (corrected) archive georeferences",
+            "benchmark": "SAC's own pair, arXiv:2509.04775 Table 1",
+            "edge_pixels_filled": {"source": s_fill, "reference": r_fill},
+            "files": {q.name: _sha(q) for q in (src_p, ref_p)},
+            "command": "python -m ops.cut_pradan_pairs " + " ".join(sys.argv[1:]),
+        }
+        (d / "geometry_prior.json").write_text(json.dumps(meta, indent=2), encoding="utf-8")
+        out.append(d)
+        print(f"  {pair_id}: centre ({lat:.4f}, {lon:.4f}); src {sh_s} @ {src_gsd} m, ref {sh_r} @ "
+              f"{ref_gsd} m; d_az {d_az} deg, d_inc {d_inc} deg")
+    return out
+
+
 def _frame_centre_latlon(grid_csv):
     g = np.loadtxt(grid_csv, delimiter=",", skiprows=1)
     return float(np.median(g[:, 1])), float(np.median(g[:, 0]))
@@ -269,11 +493,15 @@ def _frame_centre_latlon(grid_csv):
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("kind", choices=("tmc-fore-aft", "ohrc-tmc"))
-    ap.add_argument("--windows", type=int, default=4)
-    ap.add_argument("--ref-px", type=int, default=384)
+    ap.add_argument("kind", choices=("tmc-fore-aft", "ohrc-tmc", *SAC_NAC))
+    ap.add_argument("--windows", type=int, help="default 4 (TMC-2 kinds) or 6 (OHRC-NAC)")
+    ap.add_argument("--ref-px", type=int, help="default 384 (TMC-2 kinds) or 640 (OHRC-NAC)")
+    ap.add_argument("--refit", action="store_true", help="recompute the saved NAC correction field")
     a = ap.parse_args(argv)
-    dirs = cut(a.kind, a.windows, a.ref_px)
+    if a.kind in SAC_NAC:
+        dirs = cut_ohrc_nac(a.kind, a.windows or 6, a.ref_px or 640, refit=a.refit)
+    else:
+        dirs = cut(a.kind, a.windows or 4, a.ref_px or 384)
     print(f"{len(dirs)} pair(s) written under {PAIRS}")
     return 0
 

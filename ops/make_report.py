@@ -7,6 +7,7 @@ Nothing in the report is typed: every number is read from
     evaluation/real_pairs_log.csv         (real-pair structure: sun, window, loops, outcomes)
     evaluation/trust_real_calibration.csv (planted-failure trials on real windows)
     <data>/download_manifest_done.csv     (every downloaded product with its sha256)
+    <data>/site_geometry/<pid>.json       (the saved NAC correction fields)
 Where a pair was run more than once, the LATEST row wins and the table says how many
 rows exist. Re-run this after the evidence freeze; never edit REPORT.md by hand.
 """
@@ -36,6 +37,11 @@ def _rows(p):
     if not pathlib.Path(p).exists():
         return []
     return list(csv.DictReader(open(p, encoding="utf-8-sig")))
+
+
+def _jsonfile(p):
+    import json
+    return json.loads(pathlib.Path(p).read_text(encoding="utf-8")) if pathlib.Path(p).exists() else None
 
 
 def _f(v, nd=3):
@@ -115,18 +121,19 @@ def main(argv=None):
 
     # --- products -----------------------------------------------------------------------
     d = _data()
-    man = _rows(d / "download_manifest_done.csv") + _rows(d / "nac_sweep_manifest_done.csv") if d else []
+    man = (_rows(d / "download_manifest_done.csv") + _rows(d / "nac_sweep_manifest_done.csv")
+           + _rows(d / "nac_sac_manifest_done.csv")) if d else []
     if man:
         by = Counter(r["group"] for r in man)
         L += ["## Products downloaded (sha256 recorded)", "",
               f"{len(man)} files: " + ", ".join(f"{k} {v}" for k, v in sorted(by.items())) +
               f". Full list with URLs and sha256: `{d / 'download_manifest_done.csv'}` and "
-              f"`nac_sweep_manifest_done.csv`. The Chandrayaan-2 OHRC frame "
+              f"`nac_sweep_manifest_done.csv`, `nac_sac_manifest_done.csv`. The Chandrayaan-2 OHRC frame "
               f"`ch2_ohr_ncp_20200229T0739312111_d_img_d18` was already on disk (archive.org mirror).", ""]
 
     # --- cross-sensor, same ground -----------------------------------------------------
-    ohrc_nac = sorted([r for r in reg if _kind(r) == "ohrc-nac" and not r.get("outcome")],
-                      key=lambda r: r["pair_id"])
+    ohrc_nac = sorted([r for r in reg if _kind(r) == "ohrc-nac" and not r.get("outcome")
+                       and not r["pair_id"].startswith("sac_")], key=lambda r: r["pair_id"])
     L += section_pairs("Chandrayaan-2 OHRC → LRO NAC (cross-sensor, cross-mission)", ohrc_nac,
                        "Windows cut at 0.25 m (OHRC) and the NAC's native ~0.9-1.25 m over the same "
                        "ground on a south-polar-stereographic grid (`ops/cut_site_pairs.py`). "
@@ -135,6 +142,30 @@ def main(argv=None):
     nac_nac = sorted([r for r in reg if _kind(r) == "nac-nac" and not r.get("outcome")], key=lambda r: r["pair_id"])
     if nac_nac:
         L += section_pairs("LRO NAC → LRO NAC (same sensor; loop legs)", nac_nac, "Same sensor - NOT cross-sensor.")
+    for stem, pid, where in (("sac_ohrc_nac_", "M1350459544RE", "equatorial, 13.3-13.9°S 25.2°E"),
+                             ("sac_polar_ohrc_nac_", "M165491149RE", "polar, 61.6-62.3°S 56.6°E")):
+        rows = sorted([r for r in reg if r["pair_id"].startswith(stem)], key=lambda r: r["pair_id"])
+        if not rows:
+            continue
+        geo = _jsonfile(d / "site_geometry" / f"{pid}.json") if d else None
+        wide = (geo or {}).get("wide_offset") or {}
+        field = (geo or {}).get("model") or {}
+        pre = (f"Before cutting, the NAC's corner prior disagreed with the OHRC grid by "
+               f"({wide['offset_m'][0]:+.0f}, {wide['offset_m'][1]:+.0f}) m ({wide['n_agree']}/"
+               f"{wide['n_templates']} wide-search templates, {wide['polarity']} intensity); "
+               if wide.get("apply") else "")
+        if field:
+            pre += (f"the 4 m correction field then fits {field.get('inliers')}/{field.get('n')} boxes at "
+                    f"rms {_f(field.get('rms_m'), 1)} m ({(geo or {}).get('polarity')} intensity; "
+                    f"`site_geometry/{pid}.json`). ")
+        L += section_pairs(f"SAC's own benchmark pair ({where}): Chandrayaan-2 OHRC → LRO NAC `{pid}`", rows,
+                           f"The pair in the problem setters' paper (arXiv:2509.04775, Table 1), cut by "
+                           f"`ops/cut_pradan_pairs.py` on a local equirectangular grid: OHRC at native "
+                           f"~0.28 m, NAC at native, same ground. {pre}Cross-sensor and cross-mission; "
+                           f"both panchromatic - NOT multi-modal. The paper reports SuperGlue at 0.62 / 0.57 "
+                           f"px (X / Y) on the equatorial pair and that only SuperGlue registered the polar "
+                           f"one; its figure is an IN-SAMPLE control-point RMSE per axis, ours are held-out "
+                           f"(matches the fit never saw) - not the same measure.")
     other = sorted([r for r in reg if _kind(r) not in ("ohrc-nac", "nac-nac")], key=lambda r: r["pair_id"])
     sac = sorted([r for r in reg if _kind(r) == "ohrc-tmc2"], key=lambda r: r["pair_id"])
     if sac:
@@ -164,7 +195,9 @@ def main(argv=None):
                            "IIRS calibrated cube `ch2_iir_nci_20210621T1517513893` (bands 18 = 999 nm and 51 = 1555 nm, "
                            "streamed out of the zip by HTTP range - see ops/national_round/PRADAN_GUIDE.md) vs the Kaguya "
                            "TC ortho map at the 74 S site; IIRS ~89 m, TC ~7.4 m, 112-px IIRS windows. A 112-px frame "
-                           "is too small for the per-cell area check, so the whole-frame check decides the verdict.")
+                           "is too small for the per-cell area check, so the whole-frame check decides the verdict, and "
+                           "it can only say `agrees` when the inliers also exceed 8 + 0.3 × matches (Brown & Lowe "
+                           "2007); below that an agreeing peak is `unconfirmed` (`core/reliability.py` FRAME_ACCEPT_*).")
     # --- loops ----------------------------------------------------------------------------
     if loops:
         rms = [float(r["loop_rms_m"]) for r in loops]
