@@ -1,102 +1,78 @@
-# SIH26166 national deck — v2 draft (18 Sep 2026)
+# SIH26166 national deck, v2: the numbers audit (19 Sep 2026)
 
-> Draft text for the six-slide SIH 2026 template, rebuilt around the real-data evidence of
-> 18 Sep. **Every figure is `[TBD — log]` until the evidence freeze (Day 7)**, when every run is
-> repeated on the final commit and this file's audit table names the row behind each number.
-> The template pointers stay byte-identical (`build_deck._check_pointers`). Audience: SAC-ISRO
-> image-processing scientists reading the PDF cold, ranking us against every ISRO PS finalist.
+> The slide text lives in `presentation/build_deck.py` (S2-S6) and nowhere else. This file is
+> the audit table for it. Each `[TBD]` on a slide is listed here with the evidence it will be
+> read from. **Fill them only from the evidence-freeze commit** (Thu 24 Sep onwards), after the
+> freeze has re-run every pair, the MiLOI re-judge and both trust calibrations on that commit.
+> Then re-run `python -m ops.make_report`, copy each number from REPORT.md, and run
+> `claim-checker`. `python -m presentation.build_deck` reports every placeholder still open and
+> exits 1 until none are left.
+>
+> Audience: SAC-ISRO image-processing scientists reading the PDF cold, ranking it against every
+> other SIH26166 idea. Output: `presentation/SIH26166_LunaXX_deck.pptx`. The college-round deck
+> (`SIH26166_deck.pptx`) is left as it was.
 
-## Slide 1 · TITLE PAGE
+## Terminology (Invariant 2), as the slides use it
 
-Problem Statement ID – `[portal format]` · title as the portal writes it · Space Technology ·
-Software · Team ID `[portal]` · Team Name **LunaXX** (the 2026 rules forbid the institute's name).
+| Pair | Say | Never say |
+|---|---|---|
+| OHRC ↔ LRO NAC (74 S site; SAC's two pairs) | cross-sensor, cross-mission | multi-modal |
+| OHRC ↔ Kaguya TC | cross-sensor, cross-mission | multi-modal |
+| OHRC ↔ TMC-2 | cross-sensor, same mission | cross-mission, multi-modal |
+| TMC-2 fore ↔ aft | same sensor, viewpoint | cross-sensor |
+| MiLOI (NAC ↔ NAC), the sweep's NAC legs | same sensor, Sun-angle test | cross-sensor |
+| TC ↔ MI 1548 nm, TC ↔ IIRS 999/1555 nm | multi-modal (visible ↔ infrared) | — |
+| OHRC ↔ LOLA shaded relief | multi-modal (optical ↔ elevation), declared failure | registered |
 
-## Slide 2 · IDEA TITLE
+Sub-pixel always names its grid: "px on the ~0.9 m NAC grid (x m)".
 
-**Figure:** two real pairs side by side from the same site (74° S 43.6° E):
-(a) Chandrayaan-2 OHRC → LRO NAC, 64/64 cells verified, `[inliers]` inliers;
-(b) Kaguya TC → MI 1548 nm infrared: matcher fails, the independent check refuses it, the
-fallback lands within one infrared pixel of the visible-band answer.
+## Slide 1 (title page)
 
-**Proposed Solution**
-- A registration engine that aligns Chandrayaan-2 OHRC to lunar reference images to sub-pixel
-  precision — and certifies, region by region, where that alignment can be trusted.
+| Field | Value | Source |
+|---|---|---|
+| Team ID | `[TBD - portal Team ID]` | the SIH portal (STATUS, open question 1) |
+| Team Name | LunaXX | portal, 18 Sep nomination |
 
-**Detailed explanation**
-- Common ground scale; lighting removed so only edge direction survives; a learned matcher
-  (LoFTR) finds thousands of correspondences; MAGSAC++ keeps the consistent ones; NCC refines
-  each to sub-pixel.
-- An independent check re-derives the alignment from raw pixels in an 8×8 grid, never seeing
-  a match. Output: the registered product (GeoTIFF), the match points (CSV, GDAL/QGIS GCPs),
-  five metrics and a trust map — verified / weak / no evidence.
+## Slide 2 (idea title): 19 placeholders
 
-**How it addresses the problem** (each on REAL data unless marked)
-- Sun angle: one OHRC frame against `[n]` NAC frames `[3–153]°` apart in sun azimuth;
-  `[k/n]` windows registered and verified.
-- Scale: OHRC 0.25 m → NAC 0.93–1.25 m (3.7–5×), Kaguya 7.4 m, MI 14.8 m.
-- Multi-modal: visible → 1548 nm infrared (Kaguya MI), declared and handled.
-- Viewpoint: `[synthetic tilt sweep result]` (synthetic, exact truth).
-- Sub-pixel, uniform: held-out median `[x] px` on the 0.93 m NAC grid; 3-image loops close to
-  `[0.10] m`; full 8×8 coverage on lit windows.
+| Text | Source (REPORT.md section → column) |
+|---|---|
+| Sun `[TBD]`° apart (SAC equatorial) | "SAC's own benchmark pair (equatorial …)" → Δsun az |
+| `[TBD]/[TBD]` windows verified | same section → count of `agrees` / rows |
+| polar `[TBD]/[TBD]` | "SAC's own benchmark pair (polar …)" → count of `agrees` / rows |
+| `[TBD]` NAC frames, `[TBD]–[TBD]`° apart | "Real sun-angle sweep" → NAC frames, min–max Δsun az |
+| TC `[TBD]`× | "Scale rung: … TC ortho map" → scale |
+| fore vs aft `[TBD]` px | "Real viewpoint: TMC-2 fore → aft" → held-out RMSE ≤ 3 px (median over windows) |
+| On `[TBD]` MiLOI pairs | "MiLOI" → pairs with a truth |
+| agrees right `[TBD]/[TBD]`, contradicted wrong `[TBD]/[TBD]`, unconfirmed wrong `[TBD]/[TBD]` | "MiLOI" → trust verdict vs truth cross-tab |
+| `[TBD]`% false alarms at 0-2 m, `[TBD]`% caught from 5 m | "Trust layer on real imagery: planted …" → rate by displacement |
 
-**Innovation and uniqueness**
-- Registration that knows when it is wrong — measured on real imagery: planted confident-but-
-  wrong alignments caught `[x]%` at ≥ `[d]` m, `[y]%` false alarms.
-- "No evidence" is its own state: in 6.9° polar sunlight, shadowed ground is reported as
-  unmeasured, never as aligned.
+## Slide 4 (feasibility): 9 placeholders
 
-## Slide 3 · TECHNICAL APPROACH
+| Text | Source |
+|---|---|
+| `[TBD]` real windows across `[TBD]` instrument pairings | REPORT.md footer (distinct pairs) and its section count |
+| loops close to `[TBD]` m | "Loop closure" → loop RMS median |
+| held-out median `[TBD]` px on the NAC grid (`[TBD]` m) | "Chandrayaan-2 OHRC → LRO NAC" → held-out median range |
+| `[TBD]` of `[TBD]` MiLOI pairs past 90° | "MiLOI" table → the 90-120° and 120-180° rows, all methods |
+| NAC corners `[TBD]` km off at SAC's site | "SAC's own benchmark pair (equatorial …)" note → wide-search offset (`site_geometry/M1350459544RE.json`) |
+| fore/aft leaves `[TBD]` px | as slide 2 |
 
-**Figure:** pipeline (drawn from `core/pipeline.py`) + thumbnails of the two deliverables.
+## Figures
 
-**Technologies to be used**
-- Python · OpenCV · PyTorch (CPU) · kornia LoFTR (Apache-2.0) · MAGSAC++ · tifffile/GeoTIFF.
-- Data: Chandrayaan-2 OHRC (PDS4, geolocation grid) · LRO NAC EDR · Kaguya TC & MI maps · LOLA.
-- Runs on a laptop CPU, offline: `[s]` s per 600 m window.
+| Slide | Figure | Built from |
+|---|---|---|
+| 2 | `fig3_trust_map.jpg` | college-round demo cache. **Open:** a real-data version (OHRC→NAC accepted beside TC→MI refused) |
+| 3 | `fig4_pipeline.png` | `core/pipeline.py` order |
+| 4 | `fig5_real_sun_sweep.png` | `real_pairs_log.csv` outcome rows (rule v2) |
+| 5 | `fig6_trust_real_calibration.png` | `trust_real_calibration.csv`. Re-run at the freeze, deleting the file first (Known issue 8: every run appends to it) |
+| backup | `fig7_miloi_sun.png` | `miloi_log.csv` |
 
-**Methodology and process**
-- Archive geometry → common south-polar map → illumination normalisation → matching →
-  MAGSAC++ → sub-pixel → independent area check → fallback if contradicted → export.
-- Every run appends to one evidence log; the report generator rebuilds every number on this
-  deck from it (`ops/make_report.py`).
-- 36-hour finale plan: `[one line]`.
+## Q&A traps this deck invites (answers must come from REPORT.md)
 
-## Slide 4 · FEASIBILITY AND VIABILITY
-
-**Figure:** the real sun sweep (`fig5_real_sun_sweep`) or the trust calibration (`fig6`).
-
-**Analysis of the feasibility**
-- Built and measured on real Chandrayaan-2 data, not proposed. Requirement checklist:
-  illumination ✔ real · scale ✔ real · multi-modal ✔ real (infrared) · viewpoint ◐ synthetic ·
-  sub-pixel ✔ held-out + loop closure · uniform distribution ✔ · registered product ✔ ·
-  match points ✔ · metrics ✔.
-
-**Potential challenges and risks**
-- Shadow: at 6.9° sun elevation much of the OHRC frame is dark; those cells are "no evidence".
-- Archive geometry: LRO NAC footprint corners (0.01°) are off ~150 m here — we correct them
-  from the images, and report the disagreement.
-- Relief parallax is not a homography; `[viewpoint + parallax result]`.
-- Infrared at 62 m native: learned matching fails; correlation fallback is `[x]` px.
-
-**Strategies for overcoming these challenges**
-- Tile-level local transforms for relief; DEM-aware orthorectification with LOLA.
-- IIRS / TMC-2 from PRADAN (registration requested); full-scene tiled processing.
-
-## Slide 5 · IMPACT AND BENEFITS
-
-- Landing-site safety at the lunar south pole (Chandrayaan-4 class sites; our test site is
-  74° S): hazard maps are only as good as the alignment under them — every region carries its
-  own verdict.
-- OHRC's archive becomes co-registrable to LRO and Kaguya — mosaics, time series and change
-  detection gated by trust.
-- Economic: open source, CPU-only, offline; outputs load in QGIS/GDAL/ISIS today.
-
-## Slide 6 · RESEARCH AND REFERENCES
-
-- Makharia, Singla, Amitabh, Dube, Sharma — SAC ISRO 2025, arXiv:2509.04775 (the benchmark).
-- Singh, Singla, Hemrajani, Dube, Amitabh, Patel — SAC 2026, arXiv:2604.25208 ("does not
-  address geometric misalignment").
-- Sun et al., LoFTR, CVPR 2021 · Barath et al., MAGSAC++, CVPR 2020 · Truong et al., PDC-Net 2021
-  · Uss et al., IEEE TGRS 2016.
-- Data: Chandrayaan-2 OHRC (ISRO PRADAN) · LRO LROC NAC (NASA PDS) · SELENE TC/MI (JAXA) · LOLA.
-- Demo video `[unlisted link]` · code `[repo]`.
+- "SuperGlue got 0.62/0.57 px on our pair." Their figure is an in-sample control-point RMSE per
+  axis. Ours is held out (matches the fit never saw). Not the same measure. Say so before
+  comparing.
+- "Your MiLOI truth uses your own matcher." It does, on OTHER pairs: a translation network from
+  ours+SIFT agreement, leave-one-out. S3's network has no redundancy, so its error is unmeasured.
+- "Is OHRC ↔ NAC multi-modal?" No. Both are panchromatic. It is cross-sensor and cross-mission.
