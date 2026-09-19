@@ -1,125 +1,151 @@
-# STATUS - 19 September 2026 (Day 21), ~11:30 IST, session wrapped. National round, solo push.
+# STATUS - 19 September 2026 (Day 21), ~22:15 IST, session wrapped. National round, solo push.
 
 > Rewritten in full at the end of every session. Previous STATUS is in git history.
 > The venv is `C:\Users\samar\venvs\sih26166`; call its `python.exe` directly (bare `python` has no numpy).
 > External data: `C:\Users\samar\sih26166_data\` (path in `data_path.txt`, BOM - read with `utf-8-sig`).
-> **Keep the laptop from sleeping during long runs** - on 19 Sep 02:00-10:00 every background job paused.
+> Set `PYTHONIOENCODING=utf-8` for scripts that print → ° ↔ (cp1252 console crashes on them).
 
 ---
 
 ## Read this first
 
-1. **The trust layer changed (`ac4524b`)**: the area check also correlates INVERTED intensity. Opposite
-   suns anti-correlate a correct alignment; before this, every real window at 131-152 deg was refused.
-   Measured before landing: planted-failure calibration identical (1,702 trials: 0 % false alarms at
-   0-2 m, 81.5 % caught at 3 m, 100 % at >= 5 m); the sweep's false alarms fell 12 -> 2. Every number
-   produced before `ac4524b` that involves a trust verdict is superseded - the freeze reruns all.
-2. **MiLOI is scored** (`evaluation/miloi_log.csv`, REPORT.md section). Its truth is a translation
-   network from ours+SIFT agreement, because the tiles' map geometry is off by 4-253 m. Only 81 of 321
-   pairs have truth; S3's truth error is NOT measurable (tree network). Ours is roughly level with
-   AKAZE/SIFT up to 60 deg, slightly ahead at 60-90 deg (2/18 vs 0), and nothing works > 90 deg there.
-   Trust vs truth: `agrees` 33/33 right, `contradicted` 43/43 wrong, `unconfirmed` 5/5 wrong.
-3. **PRADAN is done** (registered 18 Sep). No TMC-2 strip covers our 74 S site; TMC-2 is used at SAC's
-   own benchmark OHRC frame instead. IIRS: 4 bands streamed out of the zip by HTTP range (full file
-   never downloaded). Everything, with sha256: `ops/national_round/PRADAN_GUIDE.md` section 3a.
-4. **SIH26227**: session 2 exists (`C:\Users\samar\dev\sih26227`); go/no-go is **Fri 25 Sep evening**.
-5. Deck title slide still says `SNPSU0192` / `SNPSU LunaX` (`presentation/build_deck.py:81-82`); the
-   portal name is **LunaXX**.
+1. **The evidence freeze is one command now: `python -m ops.freeze`** (`b325a60`..`bae82b2`).
+   - `--plan` shows the work and last run times.
+   - `--check` says whether every latest row names the current commit.
+   - The work list is read from the logs by EXACT pair id. It is resumable per step and per pair.
+   - It keeps Windows awake while running (lid must stay open). State and per-step logs live in
+     `<data>/freeze/<commit>/`.
+   - Steps: real (71 pairs) · sweep (69 windows) · loops · trust (22 distinct windows) · miloi
+     (retrust, truth, score) · viewpoint · calib · gate2 · report.
+   - Last-run estimate: real ~13 min, sweep ~15 min.
+   - Tested end to end only on `loops`, which correctly refused because its legs were at an older
+     commit. It has NOT been run in full: that is tomorrow's item 1.
+2. **SAC's own benchmark pairs are registered** (arXiv:2509.04775, Table 1).
+   - Equatorial (`M1350459544RE`, Sun azimuths 174° apart): 6/6 `agrees`, 3.2-4.2k inliers.
+   - Polar (`M165491149RE`, 132°): 4 agree, 1 unconfirmed, 1 contradicted (fallback).
+   - The NAC's published corners sat (+488, +1790) m from the OHRC grid at the equatorial site.
+     The new wide search (`cut_pradan_pairs.wide_offset`) fixes that. REPORT.md has both sections.
+3. **Deck v2 text is in `presentation/build_deck.py`**; output `SIH26166_LunaXX_deck.pptx`.
+   - Every number is `[TBD]`: 44 across slides 2, 4 and 5, plus the Team ID.
+   - `presentation/DECK_V2_DRAFT.md` maps each placeholder to its REPORT.md source and lists the
+     Q&A traps.
+   - `claim-checker` ran and all 19 findings were fixed (`64760ab`).
+   - The build exits 1 on purpose until the freeze fills the placeholders.
+4. **Trust layer, Known issue 3 fixed** (`1c21e18`). A whole-frame "agrees" on a frame too small for
+   cells to vote now also needs the Brown & Lowe inlier count; otherwise it is "unconfirmed".
+   - IIRS `iirs1555_w10` is now unconfirmed.
+   - The MiLOI re-judge changed 0 of 321 verdicts; the Tier D pair is unchanged.
+5. **Deck title slide now says `LunaXX`.** The Team ID is a placeholder until read off the portal.
 
 ## Position
 
 ```
-Day 21 (Sat 19 Sep)  |  submit Sun 27 Sep - 8 days  |  portal closes 30 Sep
-Next: Thu 24 Sep evidence freeze begins | Fri 25 Sep SIH26227 go/no-go + numbers frozen
+Day 21 (Sat 19 Sep)  |  submit Sun 27 Sep - 8 days  |  portal closes Tue 30 Sep
+Next: Sun 20 freeze REHEARSAL | Thu 24 the freeze | Fri 25 deck numbers + SIH26227 go/no-go
 ```
+The college-round gates are all past (internal round 11 Sep; nominated 18 Sep). Nothing for the
+national round is at risk tonight. The riskiest item is the untested full freeze run, hence the
+rehearsal.
 
-## Verified by command (19 Sep, ~11:00)
+## Verified by command (19 Sep, ~22:10, at `bae82b2`)
 
 | Check | Result |
 |---|---|
-| `python -m pytest evaluation/ -q` | 42 passed, exit 0 (at wrap, `aa31229`) |
+| `python -m pytest evaluation/ -q` | 42 passed, exit 0 |
 | `import core.pipeline` | OK, exit 0 |
-| `python -m pytest -q` (whole repo) | **281 passed**, exit 0 (at wrap) |
-| `python -m ops.make_report` | REPORT.md, 13 sections, every number from the logs |
-| `python -m presentation.make_figures` | fig1 unchanged (15 deg ours 0.086 px); fig5, fig6 rewritten |
+| `python -m pytest -q` (whole repo, now includes `ops/`) | 291 passed, exit 0 |
+| `python -m presentation.make_figures` | 7 figures, audit clean |
+| `python -m presentation.build_deck` | 6 slides, pointers unchanged; 4 audit lines, all `[TBD]` counts (by design) |
+| `python -m ops.freeze --plan` | code clean; MiLOI matching code unchanged since the stored matches |
 
-## What landed (18 Sep evening - 19 Sep, commits `a4f7838`..HEAD)
+## What landed this session (`1c21e18`..`bae82b2`, 13 commits, not yet pushed at time of writing)
 
 | Area | What |
 |---|---|
-| Provenance | `core.export._commit()` ignores the append-only logs (every row used to say `-dirty`) |
-| Sweep rule v2 | `ops/sun_sweep.py`: |NCC|, "at least as good as archive", `inconclusive`; `--rerun` |
-| Trust layer | `core/reliability.best_peak` + `_fallback`: inverted intensity (see Read-first 1) |
-| Safety | `resolve_pair` never uses one file as both source and reference (test); `run_all(matches=)` |
-| MiLOI | `evaluation/miloi.py`: `--run`, `--retrust`, `--truth`, `--score --log`, `--table`; 321 pairs |
-| PRADAN pairs | `ops/cut_pradan_pairs.py` (local equirectangular at 13 S): OHRC vs TMC-2, TMC-2 fore vs aft |
-| IIRS | `ops/cut_site_pairs.py` kind `iirs<nm>` (per-band files); IIRS vs Kaguya TC at 74 S |
-| Viewpoint | synthetic tilt sweep logged (tilt <= 40 deg median <= 0.26 px; 50 deg 0.61 px; parallax 2.3-16 px) |
-| Report/figs | MiLOI, SAC, fore/aft, IIRS sections; pair kind from product ids; fig1 no longer reads viewpoint rows |
+| Trust layer | Brown & Lowe floor for whole-frame agrees (`core/reliability.py` FRAME_ACCEPT_*); tests |
+| SAC pairs | `ops/cut_pradan_pairs.py` kinds `ohrc-nac`, `ohrc-nac-polar`; `wide_offset`; NAC pages `<data>/nac/nac_sac_pages.json`; EDR sha256 `<data>/nac_sac_manifest_done.csv`; corrections `<data>/site_geometry/M1350459544RE.json`, `M165491149RE.json` |
+| Scale rungs | `cut_site_pairs` kinds `tc_ortho` (from OHRC) and `lola` (shaded relief under the OHRC's sun); 4 + 4 windows logged |
+| Geometry | `core.geometry.project`: border value 0 and a geometric validity test. OpenCV 5's cubic remap with a NaN border blanked interior rows. Test: `core/test_geometry.py` |
+| Figures | fig7 (MiLOI); fig3 on real pairs (SAC accepted / TC→MI 1548 nm refused); fig4 order (refine before MAGSAC++); fig6 names both grids and counts distinct windows |
+| Report | SAC, scale-rung and LOLA sections; sweep azimuth range; both MiLOI "right" definitions; footer count fixed |
+| Freeze | `ops/freeze.py` + tests. MiLOI `--score --log` dedupes per SCORING commit (it used to log nothing on a re-score). `run_real_pairs` takes several ids. Generated evidence files don't stamp `-dirty`. Loop rows carry `git_commit` |
+| Deck | v2 text, LunaXX, audit counts `[TBD]`s and checks same-sensor wording; `DECK_V2_DRAFT.md` rewritten as the numbers audit |
 
-## Evidence logged (results_log 843 rows; real_pairs_log 203; miloi_log 324)
+## Evidence logged (results_log 874 rows · real_pairs_log 234 rows, 150 pair ids · miloi_log 324 · trust trials 1,702)
 
-- **Sun sweep (re-logged at `ac4524b`, 69 windows)**: 51 correct_accepted, 2 false_alarm,
-  15 inconclusive, 1 caught_failure, **0 missed_failure**.
-- **SAC site, OHRC vs TMC-2 nadir** (4 windows): matcher fails (6-7 inliers), all contradicted,
-  fallback declared - a correct refusal (sun elev 9.9 vs 69.4 deg, azimuths 120 deg apart).
-- **SAC site, TMC-2 fore vs aft** (4 windows, real viewpoint ~50 deg): 52-368 inliers, held-out inlier
-  RMSE ~1.85 px (~11 m) on the 5.9 m grid; 1 agrees, 3 unconfirmed; archive disagreement 96-1,078 m.
-- **IIRS 999/1555 nm vs Kaguya TC at 74 S** (11 windows): matcher fails (4-7 inliers), 10 contradicted,
-  1 `agrees` on a 112-px frame (see Known issue 3).
-- **MiLOI**: see Read-first 2 and REPORT.md.
+- **SAC equatorial:** 6/6 agree. Held-out median 0.69-1.68 px on the 1.62 m NAC grid.
+- **SAC polar:** held-out median 2.4-4.5 px on the 1.22 m grid (accepted windows); w06 is 88.5 px,
+  contradicted, fallback.
+- **OHRC → TC ortho (29.6×):** 3 agree, 1 unconfirmed. Archive offset 381-431 m, consistent across
+  all 4 windows.
+- **OHRC → LOLA (240×):** 0 matches, fallback, unconfirmed (the declared failure).
+- **IIRS re-logged:** 10 contradicted + fallback, 1 unconfirmed (w10).
+- **MiLOI verdict vs truth:** agrees 33/33 by matcher-H error, but 28/33 by `rmse_gt_px`.
+  Contradicted 43/43 wrong; unconfirmed 5/5 wrong. S3 accounts for 13, 38 and 5 of those.
+- **Everything else** (sun sweep 69 windows, loops 0.104 m median, planted failures) is unchanged
+  from 18-19 Sep. It is all re-run at the freeze.
 
 ## In flight - resume here
 
-Nothing is running. Every background job finished and is committed (tree clean at wrap).
-- The automation Chrome window (chrome-devtools MCP) is still logged in to PRADAN; it can be closed.
-  Re-login is needed next time (session expires after 30 min idle).
-- MiLOI raw matches live in `<data>/miloi_runs/` (321 json+npz, re-judged at `ac4524b`). After any
-  further trust-layer change: `python -m evaluation.miloi --retrust --truth --score --log --table`.
-- The first thing to resume is `ops/specs/day_22.md` item 1 (scale rungs).
+Nothing is running and the tree is clean at wrap.
+- **First thing: `ops/specs/day_22.md` item 1**, the full freeze rehearsal.
+- `demo_cache/results/` now also holds `sac_ohrc_nac_w06` and `site_tc_morning_mi1548_w01` (fig3's
+  pairs; gitignored; `ops.freeze` re-caches them).
+- The automation Chrome window may still be logged in to PRADAN; it can be closed.
 
 ## Per person
 
-Team split suspended for the national push (decision 18 Sep). No teammate has a task; nobody is
-blocked on Samartha. Last teammate pushes predate 18 Sep. If LunaXX reaches the finale, everyone will
-need to explain the code - plan a walkthrough after submission (27 Sep).
+The team split is suspended for the national push (decision 18 Sep). No teammate has a task and
+nobody is blocked on Samartha. The last teammate pushes were 2-3 Sep (Rohan 2 Sep; Risheeth,
+Samrudh, Rishabh 3 Sep; Saniya earlier), so nobody can explain the national-round code yet. Plan a
+walkthrough after submission (27 Sep) in case LunaXX reaches the finale.
 
-## Tomorrow / next - `ops/specs/day_22.md`
+## Tomorrow - `ops/specs/day_22.md`
 
-1. Scale rungs: OHRC <-> Kaguya TC (40.8x; chunked reference) and OHRC <-> LOLA (declared failure).
-2. SAC's own pair: fetch LRO NAC `M1350459544RE` (public) and cut OHRC <-> NAC at the SAC frame;
-   same for `M165491149RE` vs the 2020-08-24 OHRC (61.5-62.4 S).
-3. Fix Known issue 3 (tiny-frame verdict) before any IIRS number is quoted.
-4. Deck v2 text from REPORT.md; title slide fix; `claim-checker`.
-5. Freeze plan (Thu 24): rerun synthetic trust calibration (`core/reliability_calibrate.py`, fig2 -
-   predates `ac4524b`), real calibration, sweep, MiLOI `--retrust --score`, every pair, on one commit.
+1. Freeze rehearsal, overnight. 2. `demo-medic` on the app. 3. (Optional) a logged, SAC-comparable
+in-sample per-axis RMSE for Q&A. 4. A short "national round" note in CLAUDE.md and the canonical
+facts. Track B: SIH26227 continues.
 
 ## Open questions
 
-1. Portal: draft save? editable after submit? title/description limits? exact Team ID / PS-ID format?
-2. SPOC: does Student Innovation count toward the two PSs? who uploads? authorisation letter uploaded?
+1. Portal: draft save? Editable after submit? Title/description limits? Exact Team ID format
+   (slide 1 placeholder)?
+2. SPOC: does Student Innovation count toward the two PSs? Who uploads? Is the authorisation
+   letter uploaded?
 
 ## Known issues - do not re-report these
 
-1. **`residual_px` is meaningless on real pairs** (RMSE over ALL held-out matches incl. outliers). Quote
-   `residual_median_px` / `holdout_inlier_rmse_px`.
-2. **Duplicate windows under two ids**: the sweep's `site_ohrc_m1153871873le_w0k_sw` are the same windows
-   as `site_ohrc_m1153871873le_w0k`. Count distinct windows, not rows.
-3. **Tiny frames decide on the whole frame**: a reference under ~8 x MIN_CELL_SIDE_PX has 0 measurable
-   cells; `site_tc_ortho_iirs1555_w10` got `agrees` on 6 inliers and a 2 km archive offset. A frame with
-   no measurable cells and few inliers should be `unconfirmed`. Not fixed.
-4. **MiLOI truth**: only 81/321 pairs reachable; S3 (polar) truth has no redundancy, so its error is
-   unknown - quote S3 separately and say so. The 5 `missed_failure` are all `unconfirmed` (3.2-9.1 px).
-5. **LoFTR is weak under near-overhead sun** (MiLOI S2, Apollo 11 site): 12-14 inliers where SIFT/ORB/
-   AKAZE get 170-320 on some pairs; the trust layer catches it.
-6. **Withdrawn rows**: `sac_tmc_fore_aft_w01..w04` (18 Sep 21:4x) registered the reference against
-   itself; superseded by INVALIDATED rows; real pairs are `sac_tmcfore_tmcaft_w0N`. Never quote 0.019 px.
-7. **NACs without a usable correction** (`apply=false`): M1258744166RE, M1295016540LE, M1338673330RE.
-   **No lit shared window:** M159642518LE, M1258737127RE.
-8. `trust_real_calibration.csv` is appended by every run - delete it before a deliberate rerun.
-9. Plan W8 (tiled driver) not built; the 40.8x OHRC<->TC rung needs it or a chunked reference.
-10. Every deck number must be re-run on the final commit (evidence freeze).
-11. Fresh scratch Python processes intermittently die in `cv2.resize` ("Unknown C++ exception"); not an
-    import-order bug; wrap `run_all`/`warp` in a retry in scratch runners.
-12. PowerPoint on this machine is unlicensed; PDF via Print to PDF or another machine.
-13. `docs/00_CANONICAL_FACTS.md`, `CLAUDE.md`, `ops/specs/day_20.md` describe the college round; stale.
+1. **`residual_px` is meaningless on real pairs** (RMSE over ALL held-out matches, outliers
+   included). Quote `residual_median_px`, or `holdout_inlier_rmse_px`. The latter is capped at 3 px
+   by definition, so it can never show parallax.
+2. **Duplicate windows under two ids.** The sweep's `site_ohrc_m1153871873le_w0N_sw` are the same
+   windows as `…_w0N`, and `…_w01_t` = `…_w04`. Count distinct windows
+   (`presentation.make_figures._distinct_windows`), not rows. The freeze's trust step drops the
+   duplicate.
+3. ~~Tiny frames decide on the whole frame~~: FIXED `1c21e18`.
+4. **MiLOI truth:** only 81/321 pairs are reachable. S3's truth has no redundancy, so its error is
+   unknown; quote S3 separately. MiLOI "right" has two definitions (see Evidence); the deck uses
+   matcher-H error.
+5. **LoFTR is weak under near-overhead Sun** (MiLOI S2): the trust layer catches it.
+6. **Withdrawn rows:** `sac_tmc_fore_aft_w01..w04` (INVALIDATED). Never quote 0.019 px.
+7. **NACs without a usable correction:** M1258744166RE, M1295016540LE, M1338673330RE. **No lit
+   shared window:** M159642518LE, M1258737127RE.
+8. `trust_real_calibration.csv` is appended by every run. `ops.freeze` deletes it first; do the
+   same by hand.
+9. **Rows from before the freeze name many commits.** The 12 SAC rows say `1c21e18-dirty`, and
+   loop rows before 19 Sep have no `git_commit` at all. The freeze fixes both.
+10. **Every deck number must come from the freeze commit.** 44 `[TBD]`s, mapped in
+    `DECK_V2_DRAFT.md`.
+11. **Fresh Python processes intermittently die in `cv2.resize`** ("Unknown C++ exception"). Not an
+    import-order bug. `ops.freeze` retries a failed step once. Related: one full `pytest` run at
+    ~22:05 on 19 Sep had 62 failures and did not reproduce in 4 reruns. No output was captured; if
+    it recurs, run with `-rf` and keep the output.
+12. **PowerPoint on this machine is unlicensed.** Make the PDF via Print to PDF or another machine.
+13. **Stale docs:** `docs/00_CANONICAL_FACTS.md`, `CLAUDE.md` and `ops/specs/day_20.md` describe
+    the college round (day_22 item 4).
+14. **Pairs cut before `3917a1b` have up to 16 nearest-filled edge pixels** (`edge_pixels_filled`
+    in their geometry_prior.json), from the OpenCV NaN-border quirk. It is recorded, negligible,
+    and not re-cut.
+15. **REPORT.md's SAC sections say "NAC at native"**; the cut grids are 1.622 and 1.215 m, while
+    SAC's paper used 1.1179 and 0.88779 m. Any SuperGlue comparison differs in grid as well as in
+    in-sample vs held-out.
