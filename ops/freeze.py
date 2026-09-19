@@ -20,8 +20,11 @@ exact command that produced it:
   sweep     `ops.sun_sweep --rerun --log`, only for the NACs whose windows are stale.
   loops     each `ops.loop_closure` command exactly as logged (after `real`: it reads the legs'
             exported bundles).
+  mmcheck   `ops.multimodal_check --log`: the infrared fallback against the visible-band
+            registration of the same window, from the bundles `real` exported.
   trust     `ops.trust_real_calibration` on the same windows the current calibration used,
-            after deleting its per-trial CSV (Known issue 8: every run appends to it).
+            plus the pinned hard-Sun patterns (`trust_real_calibration.EXTRA_WINDOWS`), after
+            deleting its per-trial CSV (Known issue 8: every run appends to it).
   miloi     `evaluation.miloi --retrust --truth --score --log --table`: re-judges the stored
             matches under the current trust layer, rebuilds the truth, re-scores every method.
             Matching itself (LoFTR, SIFT/ORB/AKAZE, ~50 s a pair, ~4.5 h) is not redone: --plan
@@ -65,7 +68,8 @@ PY = sys.executable
 # and scoring code does, and listing the whole file made every change look like a re-match.
 MATCHING_CODE = ["core/matcher.py", "core/subpixel.py", "core/illumination.py", "core/scale.py",
                  "core/io_loader.py", "baselines"]
-STEPS = ("real", "sweep", "loops", "trust", "miloi", "viewpoint", "calib", "gate2", "report")
+MM_CSV = ROOT / "evaluation" / "multimodal_check.csv"
+STEPS = ("real", "sweep", "loops", "mmcheck", "trust", "miloi", "viewpoint", "calib", "gate2", "report")
 CHUNK = 12          # pair ids per run_real_pairs process
 
 
@@ -256,13 +260,32 @@ class Freeze:
             ok &= _run(cmd.split()[1:], logf) == 0      # drop "python"
         return ok
 
+    def mmcheck(self, logf):
+        # Compares the bundles `real` exported; a bundle from an older commit would be compared
+        # against one from this commit.
+        from ops.multimodal_check import pairings
+        stale = stale_real(self.commit)
+        need = [p for pr in pairings(latest_real()) for p in (pr["pair_id"], pr["against"])]
+        old = [p for p in need if p in stale]
+        if old:
+            print(f"   {len(old)} multi-modal pair(s) not at {self.commit} ({', '.join(old[:3])}...) "
+                  f"- run the `real` step first")
+            return None
+        return _run(["-m", "ops.multimodal_check", "--log"], logf) == 0
+
     def trust(self, logf):
         wins = self.state.get("trust_windows")
         if not wins:                                    # read BEFORE the CSV is deleted
-            wins = sorted({r["pair_id"] for r in _rows(TRUST_CSV)})
+            import glob
+            from ops.trust_real_calibration import EXTRA_WINDOWS
+            wins = {r["pair_id"] for r in _rows(TRUST_CSV)}
             if not wins:
                 print("   no trust_real_calibration.csv to take the windows from")
                 return None
+            # The hard-Sun windows (20 Sep 2026): the script itself skips any that fail its rule.
+            for pat in EXTRA_WINDOWS:
+                wins |= {pathlib.Path(p).name for p in glob.glob(str(ROOT / "data" / "pairs" / pat))}
+            wins = sorted(wins)
             # one id per GROUND window: w01_t and w04 of M1153871873LE are the same window cut
             # twice (Known issue 2), which counted its 74 trials twice
             from presentation.make_figures import _distinct_windows
@@ -331,11 +354,16 @@ def check(commit: str) -> int:
         latest[(r["pair_id"], r["method"])] = r
     ms = [k for k, r in latest.items() if not (r.get("git_commit") or "").endswith(f"scored {commit}")]
     print(f"miloi_log: {len(latest) - len(ms)}/{len(latest)} latest rows scored at {commit}")
+    mm = {}
+    for r in _rows(MM_CSV):
+        mm[r["pair_id"]] = r
+    mms = [k for k, r in mm.items() if r.get("git_commit") != commit]
+    print(f"multimodal_check: {len(mm) - len(mms)}/{len(mm)} latest rows at {commit}")
     st_p = _data() / "freeze" / commit / "state.json"
     steps = json.loads(st_p.read_text(encoding="utf-8"))["steps"] if st_p.exists() else {}
     for s in STEPS:
         print(f"   step {s:10} {steps.get(s, {}).get('status', 'not run')}")
-    n = len(stale) + len(ms) + sum(1 for s in STEPS if steps.get(s, {}).get("status") != "done")
+    n = len(stale) + len(ms) + len(mms) + sum(1 for s in STEPS if steps.get(s, {}).get("status") != "done")
     print("FROZEN" if n == 0 else f"NOT FROZEN: {n} stale item(s)")
     return n
 
@@ -353,7 +381,11 @@ def plan() -> None:
     for c in p["loops"]:
         print(f"loops  {c}")
     wins = sorted({r['pair_id'] for r in _rows(TRUST_CSV)})
-    print(f"trust  {len(wins)} windows (the current calibration's), CSV deleted first")
+    from ops.trust_real_calibration import EXTRA_WINDOWS
+    print(f"trust  {len(wins)} windows (the current calibration's) + the hard-Sun patterns "
+          f"{' '.join(EXTRA_WINDOWS)}, CSV deleted first")
+    from ops.multimodal_check import pairings
+    print(f"mmcheck {len(pairings(latest_real(rows)))} window pairings from the bundles")
     changed = miloi_matching_changed()
     print("miloi  --retrust --truth --score --log --table; matching code "
           + ("UNCHANGED since the stored matches" if not changed else "CHANGED since the stored "

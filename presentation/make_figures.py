@@ -730,7 +730,12 @@ def fig_trust_real():
     contradict them, by displacement? d = 0 is the false-alarm rate."""
     if not TRUST_REAL.exists():
         return None
-    rows = _rows(TRUST_REAL)
+    all_rows = _rows(TRUST_REAL)
+    # Two populations (20 Sep 2026): the 74 °S windows with Sun azimuths under 10° apart (the
+    # bars, as before) and SAC's hard-Sun windows at 132-174° (markers), never pooled. Rows
+    # written before the column existed are the ≤10° population.
+    rows = [r for r in all_rows if float(r.get("d_sun_azimuth_deg") or 0) < 10]
+    hard = [r for r in all_rows if float(r.get("d_sun_azimuth_deg") or 0) >= 10]
     ds = sorted({float(r["displacement_m"]) for r in rows})
     rate = [np.mean([r["contradicted"] == "True" for r in rows if float(r["displacement_m"]) == d]) for d in ds]
     n = [sum(1 for r in rows if float(r["displacement_m"]) == d) for d in ds]
@@ -741,9 +746,23 @@ def fig_trust_real():
     ax.grid(True, which="major", color=GRID, linewidth=0.8, zorder=0)
     ax.set_axisbelow(True)
     xs = np.arange(len(ds))
-    ax.bar(xs, [100 * v for v in rate], color=[MUTED if d == 0 else BLUE for d in ds], zorder=3, width=0.7)
+    az_lo = sorted({float(r.get("d_sun_azimuth_deg") or 0) for r in rows})
+    lo_label = (f"Sun azimuths {az_lo[0]:.0f}–{az_lo[-1]:.0f}° apart, {len({r['pair_id'] for r in rows})} windows"
+                if az_lo and az_lo[-1] > 0 else "Sun azimuths under 10° apart")
+    ax.bar(xs, [100 * v for v in rate], color=[MUTED if d == 0 else BLUE for d in ds], zorder=3, width=0.7,
+           label=lo_label if hard else None)
     for x, v, k in zip(xs, rate, n):
         ax.text(x, 100 * v + 2, f"{100 * v:.0f}%", ha="center", va="bottom", fontsize=12, color=INK)
+    if hard:
+        hd = sorted({float(r["displacement_m"]) for r in hard})
+        hx = [ds.index(d) for d in hd if d in ds]
+        hr = [100 * np.mean([r["contradicted"] == "True" for r in hard if float(r["displacement_m"]) == d])
+              for d in hd if d in ds]
+        az_hi = sorted({float(r["d_sun_azimuth_deg"]) for r in hard})
+        ax.scatter(hx, hr, s=90, marker="D", c=ORANGE, edgecolors=SURFACE, linewidths=1.2, zorder=6,
+                   label=f"Sun azimuths {az_hi[0]:.0f}–{az_hi[-1]:.0f}° apart, "
+                         f"{len({r['pair_id'] for r in hard})} windows (SAC's pairs)")
+        ax.legend(loc="center right", fontsize=10.5, frameon=False)
     ax.set_xticks(xs)
     ax.set_xticklabels([f"{d:g}" for d in ds], fontsize=13)
     ax.set_ylim(0, 112)

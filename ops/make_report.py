@@ -25,6 +25,7 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 LOG = ROOT / "evaluation" / "results_log.csv"
 REAL = ROOT / "evaluation" / "real_pairs_log.csv"
 TRUST = ROOT / "evaluation" / "trust_real_calibration.csv"
+MM = ROOT / "evaluation" / "multimodal_check.csv"
 OUT = ROOT / "REPORT.md"
 
 
@@ -86,6 +87,38 @@ def _kind(r):
     if r["pair_id"].startswith("loop_"):
         return r["kind"]
     return f"{one(r['source_product'])}-{one(r['reference_product'])}"
+
+
+def mm_table(kind):
+    """The multi-modal check (`ops/multimodal_check.py`), latest row per window, for one kind."""
+    latest = {}
+    for r in _rows(MM):
+        latest[r["pair_id"]] = r
+    rows = sorted([r for r in latest.values() if r["kind"] == kind], key=lambda r: r["pair_id"])
+    if not rows:
+        return []
+    if kind == "tc-mi":
+        note = ("**Fallback vs the visible band, same window.** The declared transform on the infrared "
+                "band against the LoFTR registration on the visible band of the SAME window (same TC "
+                "source file, same MI grid; `ops/multimodal_check.py`): how far apart the two put the "
+                "same source point, median over a 20 × 20 lattice of reference points. It is the "
+                "fallback's error relative to the visible-band registration - the nearest thing to a "
+                "truth the infrared band has. A fallback that had merely kept the archive alignment "
+                "would sit as far from the visible-band answer as the archive offset (last column).")
+    else:
+        note = ("**Band against band, same window.** The two IIRS bands' declared transforms against "
+                "each other (same TC source, same IIRS grid). Two fallbacks that agree are only "
+                "self-consistent; two that disagree prove at least one of them wrong. No visible band "
+                "exists on the IIRS side, so this is not an accuracy.")
+    L = [note, "",
+         "| pair | against | declared (pair / against) | against inliers | disagreement median px (m) | p90 px | max px | fallback NCC | archive offset m (pair / against) |",
+         "|---|---|---|---|---|---|---|---|---|"]
+    for r in rows:
+        L.append(f"| `{r['pair_id']}` | `{r['against']}` | {r['declared']} / {r['against_declared']} | "
+                 f"{r['against_inliers'] or 'n/a'} | {_f(r['disagreement_median_px'])} ({_f(r['disagreement_median_m'], 1)}) | "
+                 f"{_f(r['disagreement_p90_px'])} | {_f(r['disagreement_max_px'])} | {_f(r['fallback_ncc'], 2)} | "
+                 f"{_f(r['archive_offset_m'], 1)} / {_f(r['against_archive_offset_m'], 1)} |")
+    return L + [""]
 
 
 def section_pairs(title, rows, note):
@@ -190,13 +223,22 @@ def main(argv=None):
             L.append("")
     other = sorted([r for r in reg if _kind(r) not in ("ohrc-nac", "nac-nac")], key=lambda r: r["pair_id"])
     sac = sorted([r for r in reg if _kind(r) == "ohrc-tmc2"], key=lambda r: r["pair_id"])
-    if sac:
-        L += section_pairs("SAC's benchmark site: Chandrayaan-2 OHRC → TMC-2 nadir (cross-sensor, same mission)", sac,
-                           "OHRC frame `ch2_ohr_ncp_20210401T2357376656` (arXiv:2509.04775, Table 1), 13.1-13.9°S "
-                           "25.2°E, vs TMC-2 pass `20250707T1853` (`ops/cut_pradan_pairs.py`). OHRC area-averaged "
-                           "4×4 (~1.1 m) before resampling; TMC-2 ~5.6 m. Label sun: OHRC elevation 9.9°, TMC-2 "
-                           "69.4°, azimuths 120° apart. Both panchromatic - NOT multi-modal; same mission - NOT "
-                           "cross-mission.")
+    by_pass = {}
+    for r in sac:
+        by_pass.setdefault(r["reference_product"], []).append(r)
+    for ref_pid, rows in by_pass.items():         # one section per TMC-2 pass (20 Sep: a second pass may land)
+        gp = _jsonfile(ROOT / "data" / "pairs" / rows[0]["pair_id"] / "geometry_prior.json") or {}
+        ss = (gp.get("source") or {}).get("sun") or {}
+        rs = (gp.get("reference") or {}).get("sun") or {}
+        m = re.search(r"_(\d{8}T\d{4})", ref_pid)
+        L += section_pairs(f"SAC's benchmark site: Chandrayaan-2 OHRC → TMC-2 nadir, pass "
+                           f"{m.group(1) if m else ref_pid} (cross-sensor, same mission)", rows,
+                           f"OHRC frame `{rows[0]['source_product']}` (arXiv:2509.04775, Table 1), 13.1-13.9°S "
+                           f"25.2°E, vs TMC-2 pass `{ref_pid}` (`ops/cut_pradan_pairs.py`). OHRC area-averaged "
+                           f"4×4 (~{rows[0]['src_gsd_m']} m) before resampling; TMC-2 ~{rows[0]['ref_gsd_m']} m. "
+                           f"Label sun: OHRC elevation {_f(ss.get('elevation_deg_label'), 1)}°, TMC-2 "
+                           f"{_f(rs.get('elevation_deg_label'), 1)}°, azimuths {rows[0]['d_sun_azimuth_deg']}° "
+                           f"apart. Both panchromatic - NOT multi-modal; same mission - NOT cross-mission.")
     fa = sorted([r for r in reg if _kind(r) == "tmc2-tmc2"], key=lambda r: r["pair_id"])
     if fa:
         L += section_pairs("Real viewpoint: TMC-2 fore (+25°) → aft (−25°), one pass (same sensor)", fa,
@@ -208,8 +250,9 @@ def main(argv=None):
         L += section_pairs("Kaguya TC → Kaguya MI (cross-sensor; 749 nm visible and 1548 nm infrared)",
                            sorted(mm, key=lambda r: r["pair_id"]),
                            "Tier C rows are multi-modal (visible vs near-infrared). On them the declared "
-                           "method is the global-correlation fallback; compare its archive offset with the "
-                           "visible-band rows on the same windows.")
+                           "method is the global-correlation fallback; the table after this one measures that "
+                           "fallback against the visible-band registration of the same window.")
+        L += mm_table("tc-mi")
 
     iirs = sorted([r for r in reg if _kind(r) == "tc-iirs"], key=lambda r: r["pair_id"])
     if iirs:
@@ -220,6 +263,7 @@ def main(argv=None):
                            "is too small for the per-cell area check, so the whole-frame check decides the verdict, and "
                            "it can only say `agrees` when the inliers also exceed 8 + 0.3 × matches (Brown & Lowe "
                            "2007); below that an agreeing peak is `unconfirmed` (`core/reliability.py` FRAME_ACCEPT_*).")
+        L += mm_table("tc-iirs")
     rung_tc = sorted([r for r in reg if _kind(r) == "ohrc-tc"], key=lambda r: r["pair_id"])
     if rung_tc:
         L += section_pairs("Scale rung: Chandrayaan-2 OHRC → SELENE (Kaguya) TC ortho map (cross-sensor, cross-mission)",
@@ -331,21 +375,41 @@ def main(argv=None):
     # --- trust calibration ------------------------------------------------------------------
     tr = _rows(TRUST)
     if tr:
-        by = defaultdict(list)
-        for r in tr:
-            by[float(r["displacement_m"])].append(r)
+        # Two populations, never pooled (20 Sep 2026): rows written before the column existed
+        # are the 74 °S windows, all under 10° of Sun-azimuth difference.
+        pops = [("Sun azimuths under 10° apart (the 74 °S OHRC/NAC windows)",
+                 [r for r in tr if float(r.get("d_sun_azimuth_deg") or 0) < 10]),
+                ("Sun azimuths 132-174° apart (SAC's own OHRC/NAC pairs)",
+                 [r for r in tr if float(r.get("d_sun_azimuth_deg") or 0) >= 10])]
         L += ["## Trust layer on real imagery: planted confident-but-wrong registrations", "",
               f"`ops/trust_real_calibration.py`: {len({r['pair_id'] for r in tr})} real windows whose "
-              f"registration is independently good; the true transform shifted by d metres and a match "
-              f"set that agrees with the WRONG transform perfectly. d = 0 is the false-alarm rate.", "",
-              "| planted error (m) | ~px on the reference grid | trials | flagged as wrong | mean verified cells /64 |",
-              "|---|---|---|---|---|"]
-        for dm in sorted(by):
-            t = by[dm]
-            rate = sum(r["contradicted"] == "True" for r in t) / len(t)
-            L.append(f"| {dm:g} | {st.median(float(r['displacement_px']) for r in t):.2f} | {len(t)} | "
-                     f"{rate:.1%} | {st.mean(float(r['verified']) for r in t):.1f} |")
-        L.append("")
+              f"registration is independently good (declared LoFTR, `agrees`, |NCC| of the true alignment "
+              f"≥ 0.5, ≥ 50 inliers); the true transform shifted by d metres and a match set that agrees "
+              f"with the WRONG transform perfectly. d = 0 is the false-alarm rate. The two Sun populations "
+              f"are shown separately and never pooled.", ""]
+        for title, rows_p in pops:
+            if not rows_p:
+                continue
+            by = defaultdict(list)
+            for r in rows_p:
+                by[float(r["displacement_m"])].append(r)
+            wins = sorted({r["pair_id"] for r in rows_p})
+            az = sorted({float(r["d_sun_azimuth_deg"]) for r in rows_p if r.get("d_sun_azimuth_deg")})
+            nccs = [float(r["ncc_true"]) for r in rows_p if r.get("ncc_true")]
+            L += [f"### {title}: {len(wins)} windows", "",
+                  (f"Sun azimuth differences {', '.join(f'{a:g}' for a in az)}°" if az else
+                   "Sun azimuth differences under 10° (these rows predate the per-trial column)")
+                  + (f"; |NCC| of the true alignment {min(abs(v) for v in nccs):.2f}-{max(abs(v) for v in nccs):.2f}"
+                     f" (sign {'negative: opposite Suns anti-correlate' if max(nccs) < 0 else 'positive'})" if nccs else "")
+                  + (f". Windows: {', '.join(f'`{w}`' for w in wins)}." if len(wins) <= 12 else "."), "",
+                  "| planted error (m) | ~px on the reference grid | trials | flagged as wrong | mean verified cells /64 |",
+                  "|---|---|---|---|---|"]
+            for dm in sorted(by):
+                t = by[dm]
+                rate = sum(r["contradicted"] == "True" for r in t) / len(t)
+                L.append(f"| {dm:g} | {st.median(float(r['displacement_px']) for r in t):.2f} | {len(t)} | "
+                         f"{rate:.1%} | {st.mean(float(r['verified']) for r in t):.1f} |")
+            L.append("")
 
     # --- synthetic (exact truth) ------------------------------------------------------------------
     log = _rows(LOG)
@@ -367,6 +431,91 @@ def main(argv=None):
             v = v[-3:]
             L.append(f"| {t} | {'on' if par else 'off'} | {len(v)} | {st.median(v):.3f} | {max(v):.3f} |")
         L.append("")
+
+    # --- sub-pixel, by grid; runtime; coverage (20 Sep 2026: gathered here so the deck can name
+    # the grid beside every sub-pixel figure - nothing below is a new measurement) ---------------
+    L += ["## Sub-pixel accuracy, with the pixel grid named", "",
+          "\"Sub-pixel\" means nothing without its grid. Every figure below is on the REFERENCE grid "
+          "with its metres, and says what its truth is. None is a new measurement: each is the row "
+          "or table above it came from.", "",
+          "| evidence | what the truth is | reference grid | result |", "|---|---|---|---|"]
+    try:
+        from presentation.make_figures import load_curves
+        deltas, ours_med, _b, _ns, _nt = load_curves()
+        want = [(d, o) for d, o in zip(deltas, ours_med) if d in (0.0, 15.0, 30.0, 45.0)]
+        if want:
+            L.append("| Synthetic rendered pair (LOLA DEM), Sun azimuths "
+                     + " / ".join(f"{d:g}°" for d, _ in want) + " apart, medians over the off-grid shifts "
+                     "(the fig1 rows) | exact: a known transform | 60 m | rmse_gt_px "
+                     + " / ".join(f"{o:.3f}" for _, o in want) + " px = "
+                     + " / ".join(f"{o * 60:.1f}" for _, o in want) + " m |")
+    except Exception as e:  # noqa: BLE001 - the report must still be written
+        L.append(f"| Synthetic rendered pair | exact | 60 m | not available ({type(e).__name__}) |")
+    if ohrc_nac:
+        med = [float(r["residual_median_px"]) for r in ohrc_nac if r.get("residual_median_px")]
+        med_m = [float(r["residual_median_px"]) * float(r["ref_gsd_m"]) for r in ohrc_nac if r.get("residual_median_px")]
+        grids = sorted({r["ref_gsd_m"] for r in ohrc_nac})
+        L.append(f"| Real Chandrayaan-2 OHRC → LRO NAC, 74 °S, {len(ohrc_nac)} windows | held-out matches "
+                 f"(the 20 % the fit never saw) - no ground truth | {' and '.join(grids)} m | median per window "
+                 f"{min(med):.2f}-{max(med):.2f} px = {min(med_m):.2f}-{max(med_m):.2f} m |")
+    sac_eq = sorted([r for r in reg if r["pair_id"].startswith("sac_ohrc_nac_")], key=lambda r: r["pair_id"])
+    if sac_eq:
+        med = [float(r["residual_median_px"]) for r in sac_eq if r.get("residual_median_px")]
+        g = float(sac_eq[0]["ref_gsd_m"])
+        azs = sorted(float(r["d_sun_azimuth_deg"]) for r in sac_eq if r.get("d_sun_azimuth_deg"))
+        L.append(f"| Real OHRC → LRO NAC, SAC's equatorial pair, {len(sac_eq)} windows, Sun azimuths "
+                 f"{azs[0]:g}-{azs[-1]:g}° apart | held-out matches | {g} m | median per window "
+                 f"{min(med):.2f}-{max(med):.2f} px = {min(med) * g:.1f}-{max(med) * g:.1f} m |")
+    if loops:
+        px = [float(r["loop_rms_px"]) for r in loops]
+        L.append(f"| Loop closure OHRC → NAC A → NAC B vs OHRC → NAC B, {len(loops)} loops | consistency of "
+                 f"three registrations (cancels per-image error) | {loops[0]['ref_gsd_m'] or '1.245'} m (NAC B) | "
+                 f"RMS median {st.median(px):.3f} px = {st.median(float(r['loop_rms_m']) for r in loops):.3f} m |")
+    ml = _rows(ROOT / "evaluation" / "miloi_log.csv")
+    if ml:
+        latest_mm = {}
+        for r in ml:
+            latest_mm[(r["pair_id"], r["method"])] = r
+        ag = [r for (_, m), r in latest_mm.items() if m == "ours_loftr+subpixel" and r["verdict"] == "agrees"
+              and r.get("matcher_err_px")]
+        parts = []
+        for sc in ("S1", "S2", "S3"):
+            rs = [r for r in ag if r["scene"] == sc]
+            if rs:
+                gs = sorted(float(r["ref_gsd_m"]) for r in rs)
+                parts.append(f"{sc} median {st.median(float(r['matcher_err_px']) for r in rs):.2f} px "
+                             f"(n={len(rs)}, grids {gs[0]:.2f}-{gs[-1]:.2f} m)")
+        if parts:
+            L.append("| MiLOI LRO NAC ↔ NAC (same sensor), the `agrees` pairs: the matcher's transform vs the "
+                     "network truth | a translation network from ours+SIFT agreement on OTHER pairs; its own "
+                     "leave-one-out error is in the MiLOI section (S3: not measurable) | per pair | "
+                     + "; ".join(parts) + " |")
+    L.append("")
+    # runtime and coverage, from the latest rows
+    secs = [float(r["seconds"]) for r in reg if r.get("seconds")]
+    on = [float(r["seconds"]) for r in reg if r.get("seconds") and _kind(r) == "ohrc-nac"
+          and not r["pair_id"].startswith("sac_")]
+    cpu = ""
+    try:
+        import json as _j
+        rep = _j.loads((d / "out" / ohrc_nac[0]["pair_id"] / "report.json").read_text(encoding="utf-8"))
+        env = rep.get("environment") or {}
+        cpu = f" ({env.get('cpu', '')}; {env.get('platform', '')})".replace(" (; )", "")
+    except Exception:  # noqa: BLE001
+        pass
+    cov = [float(r["grid_coverage_fraction"]) for r in ohrc_nac if r.get("grid_coverage_fraction")]
+    L += ["## Runtime and match distribution", "",
+          f"Wall time of `run_all` per window (the `seconds` column; LoFTR on CPU, tiled; no GPU), latest "
+          f"rows: median {st.median(on):.1f} s over the {len(on)} OHRC → NAC windows at 74 °S "
+          f"(the loop legs and the sun sweep; 640-px NAC references), {st.median(secs):.1f} s over all "
+          f"{len(secs)} registered windows{cpu}.", "",
+          f"Uniform distribution (PS demand): `grid_coverage_fraction` is the share of the 8 × 8 reference "
+          f"cells holding at least one inlier. On the {len(cov)} OHRC → NAC windows at 74 °S it is "
+          f"{min(cov):.2f}-{max(cov):.2f}, median {st.median(cov):.2f}; {sum(c >= 0.95 for c in cov)} of "
+          f"{len(cov)} windows are at 0.95 or above (the lowest: "
+          + ", ".join(f"`{r['pair_id']}` {float(r['grid_coverage_fraction']):.2f}"
+                      for r in sorted(ohrc_nac, key=lambda r: float(r.get('grid_coverage_fraction') or 1))[:2])
+          + ").", ""]
 
     L += ["## Reproduce", "", "```",
           "python -m ops.cut_site_pairs --nac M1153871873LE --windows 8 --refit",

@@ -295,7 +295,8 @@ def _versions() -> dict:
 # later row "-dirty".
 EVIDENCE_LOGS = ("evaluation/results_log.csv", "evaluation/real_pairs_log.csv",
                  "evaluation/trust_real_calibration.csv", "evaluation/miloi_log.csv",
-                 "evaluation/miloi_truth.json", "core/reliability_calibration.csv",
+                 "evaluation/miloi_truth.json", "evaluation/multimodal_check.csv",
+                 "core/reliability_calibration.csv",
                  "core/reliability_calibration_summary.csv")
 
 

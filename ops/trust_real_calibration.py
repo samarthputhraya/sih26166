@@ -20,6 +20,15 @@ Chandrayaan-2 OHRC / LROC NAC windows, with ground truth we control:
 d = 0 is the false-alarm baseline (the planted matches then agree with the true H).
 Every trial is written to evaluation/trust_real_calibration.csv; with --log one summary
 row per displacement goes to results_log.csv (method `reliability_real_calibration`).
+
+HARD-SUN WINDOWS (20 Sep 2026). Until then every window used had Sun azimuths under 10 deg
+apart (the 74 S OHRC/NAC site), because step 1 demanded NCC >= 0.5 on plain intensity and an
+opposite Sun anti-correlates a correct alignment: SAC's equatorial pair (azimuths 174 deg apart)
+registers at NCC about -0.6. The rule is now |NCC| >= 0.5 - the same sign change the sun
+sweep's rule v2 made on 18 Sep (ops/sun_sweep.py). Every window used before has NCC > +0.5, so
+their trials are unchanged; the SAC windows (132-174 deg) can now be used, and each trial row
+carries the window's d_sun_azimuth_deg and its true-alignment NCC so REPORT.md can show the two
+populations separately. Nothing else - thresholds, displacements, directions, seed - changed.
 """
 from __future__ import annotations
 
@@ -36,6 +45,10 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 OUT_CSV = ROOT / "evaluation" / "trust_real_calibration.csv"
 DISPLACEMENTS_M = [0.0, 1.0, 2.0, 3.0, 5.0, 10.0, 20.0, 50.0, 100.0, 200.0]
 N_DIRECTIONS = 8
+# SAC's own OHRC <-> NAC pairs, Sun azimuths 132-174 deg apart: the hard-Sun population the
+# evidence freeze adds to the calibration's own window list (ops.freeze, step `trust`). Windows
+# that fail the rule above (|NCC| < 0.5, not `agrees`, < 50 inliers) are skipped and printed.
+EXTRA_WINDOWS = ("sac_ohrc_nac_w*", "sac_polar_ohrc_nac_w*")
 
 
 def _apply(H, pts):
@@ -64,8 +77,9 @@ def main(argv=None):
         A, B = load(sp)[0], load(rp)[0]
         rel = r["reliability"] or {}
         ncc = warp_ncc(A, B, r["H"])
+        # |NCC|: an opposite Sun anti-correlates a correct alignment (see the docstring).
         good = (r["declared"]["method"] == "loftr+magsac++" and rel.get("global", {}).get("verdict") == "agrees"
-                and ncc is not None and ncc >= 0.5 and len(r["src_inliers"]) >= 50)
+                and ncc is not None and abs(ncc) >= 0.5 and len(r["src_inliers"]) >= 50)
         print(f"{d.name}: declared {r['declared']['method']}, verdict {rel.get('global', {}).get('verdict')}, "
               f"NCC {ncc if ncc is None else round(ncc, 3)}, inliers {len(r['src_inliers'])} -> "
               f"{'USED' if good else 'skipped'}", flush=True)
@@ -91,13 +105,25 @@ def main(argv=None):
                 trials.append({"pair_id": d.name, "gsd_ref_m": gsd_ref, "displacement_m": dm,
                                "displacement_px": round(dpx, 3), "direction_deg": round(np.degrees(th), 1),
                                "contradicted": bool(g.get("contradicted")), "verdict": g.get("verdict"),
-                               "verified": c["verified"], "weak": c["weak"], "no_evidence": c["no_evidence"]})
+                               "verified": c["verified"], "weak": c["weak"], "no_evidence": c["no_evidence"],
+                               "d_sun_azimuth_deg": prior.get("d_sun_azimuth_deg"),
+                               "ncc_true": round(ncc, 3)})
     if not trials:
         print("no usable windows")
         return 1
-    new = not OUT_CSV.exists()
+    fields = list(trials[0])
+    new = not OUT_CSV.exists() or OUT_CSV.stat().st_size == 0
+    if not new:
+        with open(OUT_CSV, encoding="utf-8-sig", newline="") as f:
+            header = next(csv.reader(f))
+        if header != fields:
+            # An older CSV has fewer columns; appending under its header would put values in
+            # the wrong columns. The freeze deletes the file first; do the same by hand.
+            print(f"refusing to append: {OUT_CSV.name} has columns {header}, this run writes "
+                  f"{fields}. Delete the file (ops.freeze does) and re-run.")
+            return 2
     with open(OUT_CSV, "a", newline="", encoding="utf-8") as f:
-        w = csv.DictWriter(f, fieldnames=list(trials[0]))
+        w = csv.DictWriter(f, fieldnames=fields)
         if new:
             w.writeheader()
         w.writerows(trials)
@@ -113,6 +139,7 @@ def main(argv=None):
         print(f"{dm:6.1f} {dpx:7.2f} {len(t):4d} {rate:13.1%} {ver:20.1f}")
     if a.log:
         from core.pipeline import _log_row
+        az = sorted({str(t["d_sun_azimuth_deg"]) for t in trials})
         for dm, dpx, n, rate, ver in rows:
             ok, note = _log_row(
                 f"trust_real_calibration_d{dm:g}m", "B (OHRC-NAC real) + A (NAC-NAC real), planted failures",
@@ -123,7 +150,8 @@ def main(argv=None):
                         f"the reference grid), all matches consistent with the wrong H (0.3 px noise); "
                         f"{len(used)} real windows x {N_DIRECTIONS if dm > 0 else 2} directions; seed {a.seed}"),
                 notes=(f"area check contradicted {rate:.1%} of {n} trials; mean verified cells "
-                       f"{ver:.1f}/64. d=0 is the false-alarm baseline. windows: {', '.join(used)}. "
+                       f"{ver:.1f}/64. d=0 is the false-alarm baseline. windows: {', '.join(used)} "
+                       f"(Sun azimuth differences {', '.join(az)} deg; window selection by |NCC| >= 0.5). "
                        f"per-trial table: evaluation/trust_real_calibration.csv"))
             print(("  " + note) if ok else f"  NOT LOGGED: {note}")
     return 0

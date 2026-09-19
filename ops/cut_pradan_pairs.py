@@ -54,6 +54,7 @@ import hashlib
 import json
 import math
 import pathlib
+import re
 import sys
 
 import numpy as np
@@ -84,6 +85,20 @@ PRODUCTS = {
                    "Chandrayaan-2 OHRC"),
 }
 OHRC_BLOCK = 4          # OHRC area-averaged 4x4 before projection (0.26 m -> ~1.05 m)
+
+
+def tmc_nadir(product_id: str):
+    """PRODUCTS-style tuple for any calibrated TMC-2 nadir product, from its id alone
+    (`ch2_tmc_ncn_<yyyymmddThhmmss><4 digits>_d_img_<stn>`): the zip unpacks to
+    <data>/pradan/tmc2/{data,geometry}/calibrated/<yyyymmdd>/. Added 20 Sep 2026 so a second pass
+    over SAC's site (`--tmc-product`) needs no code change - only its download."""
+    m = re.match(r"^ch2_tmc_ncn_(\d{8})T\d+_d_img_[a-z0-9]+$", product_id)
+    if not m:
+        raise SystemExit(f"{product_id!r} is not a calibrated TMC-2 nadir product id")
+    day = m.group(1)
+    return (P / "tmc2/data/calibrated" / day / f"{product_id}.xml",
+            P / "tmc2/geometry/calibrated" / day / f"{product_id.replace('_d_img_', '_g_grd_')}.csv",
+            "Chandrayaan-2 TMC-2 nadir")
 # SAC's OHRC <-> NAC pairs (arXiv:2509.04775, Table 1): kind -> (OHRC key, NAC pid, pair-id stem)
 SAC_NAC = {"ohrc-nac": ("ohrc", "M1350459544RE", "sac_ohrc_nac"),
            "ohrc-nac-polar": ("ohrc_polar", "M165491149RE", "sac_polar_ohrc_nac")}
@@ -209,7 +224,8 @@ def _tier(kind):
             "panchromatic, so NOT multi-modal")
 
 
-def cut(kind, n_windows=4, ref_px=384):
+def cut(kind, n_windows=4, ref_px=384, stem=None):
+    """`stem` overrides the pair-id stem (default per kind) - used for a second TMC-2 pass."""
     from core import geometry as G
     from core.io_loader import load
     _, om = load(PRODUCTS["ohrc"][0], window=(0, 0, 8, 8))
@@ -237,7 +253,7 @@ def cut(kind, n_windows=4, ref_px=384):
         # No "_a"/"_b" anywhere in a pair id: core.pipeline.resolve_pair takes the source by the
         # substring hints ("_source", "_src", "_a"), and on 18 Sep "sac_tmc_fore_aft_*" put "_aft"
         # in BOTH file names - the reference was registered against itself (4 invalid rows).
-        pair_id = {"tmc-fore-aft": "sac_tmcfore_tmcaft", "ohrc-tmc": "sac_ohrc_tmc"}[kind] + f"_w{k:02d}"
+        pair_id = (stem or {"tmc-fore-aft": "sac_tmcfore_tmcaft", "ohrc-tmc": "sac_ohrc_tmc"}[kind]) + f"_w{k:02d}"
         x0, y1 = x - window_m / 2, y + window_m / 2
         tr_r, sh_r = G.map_grid(x0, y1, window_m, window_m, ref_gsd)
         r_img, r_ok = G.project(ref_f, ref_read, tr_r, sh_r, coarse=16, order="cubic")
@@ -497,11 +513,21 @@ def main(argv=None):
     ap.add_argument("--windows", type=int, help="default 4 (TMC-2 kinds) or 6 (OHRC-NAC)")
     ap.add_argument("--ref-px", type=int, help="default 384 (TMC-2 kinds) or 640 (OHRC-NAC)")
     ap.add_argument("--refit", action="store_true", help="recompute the saved NAC correction field")
+    ap.add_argument("--tmc-product", help="a calibrated TMC-2 nadir product id other than the "
+                                          f"{TMC_PASS} pass, for ohrc-tmc; the pair ids become "
+                                          "sac_ohrc_tmc<yyyymmdd>_wNN")
     a = ap.parse_args(argv)
+    stem = None
+    if a.tmc_product:
+        if a.kind != "ohrc-tmc":
+            raise SystemExit("--tmc-product applies to the ohrc-tmc kind only")
+        PRODUCTS["tmcn"] = tmc_nadir(a.tmc_product)
+        # no "_a"/"_b" anywhere in the stem (core.pipeline.resolve_pair's hints)
+        stem = f"sac_ohrc_tmc{a.tmc_product[12:20]}"
     if a.kind in SAC_NAC:
         dirs = cut_ohrc_nac(a.kind, a.windows or 6, a.ref_px or 640, refit=a.refit)
     else:
-        dirs = cut(a.kind, a.windows or 4, a.ref_px or 384)
+        dirs = cut(a.kind, a.windows or 4, a.ref_px or 384, stem=stem)
     print(f"{len(dirs)} pair(s) written under {PAIRS}")
     return 0
 
