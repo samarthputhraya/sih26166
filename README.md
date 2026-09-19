@@ -8,8 +8,8 @@ The engine registers a Chandrayaan-2 image to a lunar reference image across Sun
 sensor. It also reports, region by region, whether the result can be trusted:
 
 - every cell of an 8×8 grid over the reference is `verified`, `weak` or `no_evidence`;
-- an independent area check, which never sees the matches, cross-correlates the warped image
-  against the reference (inverted shading included) and says `agrees`, `unconfirmed` or
+- an independent area check, which never uses the match positions, cross-correlates the warped
+  image against the reference (inverted shading included) and says `agrees`, `unconfirmed` or
   `contradicted`;
 - `contradicted` switches to global correlation, and the output says it did.
 
@@ -46,10 +46,10 @@ Terminology follows `docs/00_CANONICAL_FACTS.md` §2 (Invariant 2).
 
 | Pair | Kind |
 |---|---|
-| Chandrayaan-2 OHRC ↔ LRO NAC, 74 °S site and SAC's two benchmark pairs (arXiv:2509.04775, Table 1) | cross-sensor, cross-mission |
+| Chandrayaan-2 OHRC ↔ LRO NAC: 74 °S site, a real Sun sweep across many NAC frames, and SAC's two benchmark pairs (arXiv:2509.04775, Table 1) | cross-sensor, cross-mission |
 | OHRC ↔ Kaguya TC ortho map | cross-sensor, cross-mission (scale rung) |
 | OHRC ↔ TMC-2 | cross-sensor, same mission |
-| LRO NAC ↔ LRO NAC (MiLOI benchmark, real Sun sweep) and TMC-2 fore ↔ aft | **same sensor**: Sun-angle and viewpoint tests |
+| LRO NAC ↔ LRO NAC (MiLOI benchmark, loop legs) and TMC-2 fore ↔ aft | **same sensor**: Sun-angle and viewpoint tests |
 | Kaguya TC ↔ Kaguya MI 1548 nm, TC ↔ Chandrayaan-2 IIRS | multi-modal (visible ↔ infrared) |
 | OHRC ↔ LOLA shaded relief | multi-modal (optical ↔ elevation), a **declared failure** |
 

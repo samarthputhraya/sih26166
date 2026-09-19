@@ -150,15 +150,15 @@ S2 = [
     # core/pipeline.run_all order: LoFTR -> _refine_subpixel -> filter_matches (MAGSAC++).
     ("One ground scale; lighting reduced to edge direction; LoFTR matches; sub-pixel "
      "refinement; MAGSAC++.", 1, False, INK),
-    ("An independent area check never uses the matches: it cross-correlates the warped image "
-     "against the reference in 8×8 cells, inverted shading too, and says agrees, "
-     "unconfirmed or contradicted; contradicted falls back.", 1, False, INK),
+    ("An independent area check, blind to match positions, cross-correlates the warped image "
+     "with the reference in 8×8 cells: agrees, unconfirmed, or contradicted, which falls back.",
+     1, False, INK),
     ("How it addresses the problem", 0, True, BLUE),
     # REPORT.md "SAC's own benchmark pair (equatorial ...)": Δsun az (an AZIMUTH difference),
     # count of `agrees` / rows. "(polar ...)": `agrees` / rows.
-    ("SAC's own pairs (arXiv:2509.04775, Table 1), real and cross-sensor: OHRC ↔ NAC "
-     "M1350459544RE, Sun azimuths 174° apart, 6/6 windows accepted; polar "
-     "M165491149RE, Suns 132° apart, 4/6, the other two flagged.", 1, False, INK),
+    ("SAC's own pairs (arXiv:2509.04775, Table 1), cross-sensor: OHRC ↔ NAC M1350459544RE, "
+     "Sun azimuths 174° apart, 6/6 windows accepted; polar M165491149RE, 132°, 4/6, the "
+     "other two flagged.", 1, False, INK),
     # "Real sun-angle sweep": "All bins" line (NAC frames, azimuth range).
     # "Scale rung: ... TC ortho map": scale column, `agrees` / rows. LOLA: "Declared-failure rung".
     # Polar: 4 agrees, 1 unconfirmed, 1 contradicted (fallback) = "the other two flagged".
@@ -166,17 +166,18 @@ S2 = [
      "and Kaguya TC 7.4 m (29.6×, 3/4 accepted); to LOLA 60 m it declares failure.",
      1, False, INK),
     # "Kaguya TC -> Kaguya MI" + "... IIRS": windows declared fft fallback / total.
-    ("Multi-modal: visible to Kaguya MI 1548 nm and IIRS infrared — learned matching fails; "
+    ("Multi-modal: Kaguya TC (visible) to Kaguya MI 1548 nm and Chandrayaan-2 IIRS infrared — "
+     "learned matching fails; "
      "13 of 14 windows are refused and fall back, the other stays unconfirmed.", 1, False, INK),
     ("Innovation and uniqueness", 0, True, ACCENT),
     # "MiLOI": the verdict table, column "matcher H within 3 px" (what the trust layer judges).
     # NOT "independent": the truth network is built from OTHER pairs where ours and SIFT agree.
-    ("On 81 real same-sensor NAC pairs (MiLOI), truth built leave-one-out from other pairs "
-     "where ours and SIFT agree: agrees within 3 px 33/33; contradicted wrong "
-     "43/43; unconfirmed wrong 5/5.", 1, False, INK),
+    ("MiLOI, 81 real same-sensor NAC pairs, truth from other pairs where ours and SIFT agree "
+     "(56 in scene S3, where it has no redundancy): agrees within 3 px 33/33, contradicted "
+     "wrong 43/43, unconfirmed wrong 5/5.", 1, False, INK),
     # "Trust layer on real imagery: planted ...": 0 m row = false alarms; 3 m row; >= 5 m rows.
-    ("Planted wrong answers in real OHRC/NAC windows: 0% false alarms on correct ones, "
-     "81% caught at 3 m, 100% from 5 m; 2 m or less almost always passes. No matches means "
+    ("Planted wrong answers, 22 real OHRC/NAC windows (Sun azimuths under 10° apart): 0/44 "
+     "false alarms; flagged 81% at 3 m, 100% from 5 m, 2/352 at 1–2 m. No matches means "
      "\"no evidence\", never \"verified\".", 1, True, ACCENT),
 ]
 
@@ -197,31 +198,34 @@ S3_RIGHT = [
     ("Prototype: a Streamlit app exporting the registered GeoTIFF, GDAL/QGIS control points, "
      "an ISIS-style match list, metrics and the trust map.", 1, False, INK),
     ("Every run appends to the evidence logs; a generator rebuilds the report from them, and "
-     "every number here is copied from it.", 1, False, INK),
+     "every number here traces to it.", 1, False, INK),
 ]
 
 S4 = [
     ("Analysis of the feasibility", 0, True, BLUE),
     # REPORT.md footer: registered pairs; instrument pairings = its pair sections (OHRC-NAC,
     # NAC-NAC, OHRC-TMC2, TMC2-TMC2, TC-MI, TC-IIRS, OHRC-TC, OHRC-LOLA). "Loop closure".
-    ("Built and measured, not proposed: 136 real windows across 8 instrument pairings, all "
-     "public data, all libraries open-source. Three-image loops close to 0.10 m.", 1, False, INK),
+    ("Built and measured, not proposed: 136 real window pairs, 8 instrument pairings, public "
+     "data, open-source libraries. Six three-image loops close to a median 0.10 m "
+     "(consistency, not ground accuracy).", 1, False, INK),
     # "Chandrayaan-2 OHRC -> LRO NAC": held-out median range, Δsun az range, ref_gsd_m values.
-    ("Held-out residual on real OHRC → NAC windows (Sun 3.3–5.8° apart): median "
-     "0.41–1.0 px on the ~1 m NAC grids (0.51–0.94 m). A residual, not ground truth.",
+    ("Held-out residual, OHRC → NAC, median per window: 0.41–1.0 px (0.51–0.94 m) at 74 °S, "
+     "Sun azimuths 3–6° apart, ~1 m grids; 0.69–1.7 px (1.1–2.7 m) on SAC's equatorial pair, "
+     "174° apart, 1.62 m grid. Not ground truth.",
      1, False, INK),
     ("Potential challenges and risks", 0, True, ACCENT),
     # "MiLOI" table rows 90-120, 120-180 (all methods); "Real sun-angle sweep" bins 60-90, 90-120
     # (accepted / windows) and 120-180. "SAC's benchmark site: OHRC -> TMC-2": Δsun az, verdicts.
-    ("The hard band: no method registered a MiLOI pair with the Suns over 90° apart (0 of "
-     "16); our sweep accepted 0 of 12 windows at 60–120° azimuth, yet 10 of 15 at "
-     "120–153°. OHRC → TMC-2 at SAC's site, Suns 120° apart: 0 of 4, all refused.", 1, False, INK),
+    ("The hard band: no method registered any of the 16 MiLOI pairs with Suns over 90° apart "
+     "(all scene S3); our sweep accepted 0 of 12 at 60–120° azimuth, 10 of 15 at 120–153°; "
+     "OHRC → TMC-2 at SAC's site (azimuths 120°, incidence 59° apart): all 4 refused.",
+     1, False, INK),
     # "SAC's own benchmark pair (equatorial ...)" note: the wide-search offset.
-    ("Archive geometry is not truth: at SAC's site the NAC's published corners sat 1.9 km from "
-     "the OHRC grid; we correct it and report it.", 1, False, INK),
+    ("Archive geometry is not truth: at SAC's equatorial site the NAC's published corners and "
+     "the OHRC grid disagree by 1.9 km; a wide search removes it before matching.", 1, False, INK),
     # "Real viewpoint: TMC-2 fore -> aft": held-out median column (NOT the RMSE-within-3-px one).
-    ("Relief parallax is not a homography: TMC-2 fore vs aft (same sensor) leaves a held-out "
-     "median of 2.6–49 px on its 5.9 m grid.", 1, False, INK),
+    ("Relief parallax is not a homography: TMC-2 fore vs aft (same sensor, same Sun) accepts 1 "
+     "window of 4, held-out median 2.6 px (16 m) on its 5.9 m grid.", 1, False, INK),
     ("Strategies for overcoming these challenges", 0, True, BLUE),
     ("Tile-level local transforms and LOLA-based orthorectification for relief.", 1, False, INK),
     ("Full-scene tiled processing of OHRC strips; IIRS band selection for the infrared leg.",
@@ -233,9 +237,10 @@ S5 = [
     # "Trust layer on real imagery": >= 5 m rows; the 1-2 m rows are the stated floor.
     ("Landing-site safety at the lunar south pole: a hazard map is only as good as the "
      "alignment beneath it. Every region carries its own verdict; planted errors of 5 m or more "
-     "were all flagged, and the floor — about 2 m — is stated, not hidden.", 1, False, INK),
+     "were all flagged, 81% at 3 m, and at 2 m or less almost none — that floor is stated, "
+     "not hidden.", 1, False, INK),
     # distinct OHRC products in real_pairs_log (source_product ch2_ohr_*) and their sites.
-    ("OHRC frames co-register with LRO NAC and Kaguya TC (3 frames at 3 sites so far): "
+    ("OHRC frames co-register with LRO NAC (3 frames at 3 sites) and Kaguya TC (1 site) so far: "
      "mosaics, time series and change detection gated by trust.", 1, False, INK),
     ("Benefits of the solution", 0, True, ACCENT),
     ("Scientific: a verdict per region instead of one number for a whole image, calibrated "

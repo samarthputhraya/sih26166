@@ -1,0 +1,62 @@
+# SIH 2026 portal: what to type (SIH26166, team LunaXX)
+
+The portal asks for four things (2026 Guidelines p.11): the chosen PS, an **idea title**, an
+**idea description**, and the **idea presentation as a PDF**. The character limits were not found
+in any official source, so a short and a long version of each is given below. Paste the longest
+one that fits. Every number here is in `REPORT.md` at the evidence-freeze commit `49bdad9`; the
+deck carries the same ones.
+
+| Field | Value |
+|---|---|
+| Problem Statement | SIH26166: Multi-modal, Sun angle and scale invariant image correspondence using Chandrayaan-2 optical images (OHRC, TMC and IIRS) |
+| Theme / category | Space Technology · Software |
+| Team name | LunaXX |
+| PDF | `presentation/SIH26166_LunaXX_deck.pdf`, from `python -m presentation.export_pdf` (it must print `PDF CHECK: clean`) |
+
+## Idea title
+
+Long (107 characters):
+
+> Lunar image registration that knows when it is wrong: Sun-, scale- and sensor-robust Chandrayaan-2 matching
+
+Short (71 characters):
+
+> Trust-aware Sun-, scale- and sensor-robust Chandrayaan-2 image matching
+
+## Idea description
+
+Long (1,322 characters):
+
+> We register Chandrayaan-2 images to lunar references across Sun angle, scale and sensor, and
+> report, region by region, whether each alignment can be trusted. The pipeline runs in this
+> order: one ground scale; illumination reduced to gradient orientation; LoFTR dense matching;
+> sub-pixel refinement; MAGSAC++. An independent area check never sees the matches. It
+> cross-correlates the warped image against the reference in 8×8 cells and returns agrees,
+> unconfirmed or contradicted; a contradicted result falls back and says so. On SAC's own OHRC ↔
+> LRO NAC pair (arXiv:2509.04775), with Sun azimuths 174° apart, all 6 windows are accepted. On
+> the polar pair 4 of 6 are accepted and the other two are flagged. Across 136 real windows and 8
+> instrument pairings (OHRC, TMC-2, IIRS, LRO NAC, Kaguya TC and MI, LOLA), the held-out residual
+> on OHRC → NAC is a median of 0.41–1.0 px on the ~1 m NAC grids, and three-image loops close to
+> 0.10 m. Planted wrong answers in real windows: 0% false alarms, 100% flagged from 5 m.
+> Visible ↔ infrared: 13 of 14 windows are refused rather than silently misregistered. Outputs:
+> a GeoTIFF on the reference grid, match points (CSV, GDAL/QGIS, ISIS), metrics and the trust
+> map. Runs on a CPU laptop, offline, with open-source libraries only. Every number is
+> regenerated from logs by one command.
+
+Short (498 characters):
+
+> A lunar image-registration engine that aligns Chandrayaan-2 imagery to lunar references across
+> Sun angle, scale and sensor. It also says, region by region, whether the result can be trusted,
+> using an independent area check that never sees the matches. On SAC's own OHRC ↔ NAC pair, with
+> Suns 174° apart, 6 of 6 windows are accepted. Planted wrong answers in real windows are 100%
+> flagged from 5 m, with 0% false alarms. It outputs a GeoTIFF, match points and metrics, and runs
+> CPU-only and offline.
+
+## Before pressing submit
+
+1. Slide 1's Team ID must equal the portal's. Set `TEAM_ID` in `presentation/build_deck.py`,
+   then run `python -m presentation.build_deck` (it must print `AUDIT: clean`) and
+   `python -m presentation.export_pdf` (it must print `PDF CHECK: clean`).
+2. Open the PDF and page through all 6 slides once by eye.
+3. After submitting, take a screenshot of the confirmation. Write the time and the Team ID into
+   `ops/STATUS.md`.

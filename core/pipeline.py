@@ -72,6 +72,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import json
 import pathlib
 import sys
 import time
@@ -800,7 +801,11 @@ def _run_one(src, ref, H_true, args, pair_id, tier, config, gsd_mpp):
     _print_report(r)
     if getattr(args, "out", None):
         from core.export import export_bundle
-        files = export_bundle(r, pathlib.Path(args.out) / pair_id, pair_id, src, ref)
+        # A cut pair carries its tier and instruments in geometry_prior.json beside the images;
+        # without it report.md printed "-" for both instruments (20 Sep). Reporting only.
+        gp = pathlib.Path(ref).parent / "geometry_prior.json"
+        prior = json.loads(gp.read_text(encoding="utf-8")) if gp.is_file() else None
+        files = export_bundle(r, pathlib.Path(args.out) / pair_id, pair_id, src, ref, prior=prior)
         print(f"  deliverables  {len(files)} files -> {pathlib.Path(args.out) / pair_id}")
 
     logged = True

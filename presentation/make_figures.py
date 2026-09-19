@@ -593,7 +593,7 @@ def fig_pipeline():
 
     steps = [
         "Input pair\nCH-2 optical +\nlunar reference",
-        "Common-GSD\nresample\n(scale invariance)",
+        "Common-GSD\nresample\n(one ground scale)",
         "Illumination\nnormalisation\n(gradient orientation)",
         "LoFTR\ndense matching\n(detector-free)",
         # run_all's order: refinement (pipeline._refine_subpixel) runs BEFORE MAGSAC++
@@ -616,16 +616,17 @@ def fig_pipeline():
     cx, cw, cy, ch = 0.60, 11.80, 1.14, 0.74
     placed.append(_box(ax, cx, cy, cw, ch,
                        "INDEPENDENT AREA CHECK — cross-correlates the warped image against the "
-                       "reference, cell by cell.\nNever sees a match. The cells vote on "
+                       "reference, cell by cell.\nNever uses match positions. The cells vote on "
                        "the matcher's transform.",
                        "#fdeee6", ORANGE, fs=10.8, bold=True, colour="#8a3d10"))
     last_x = x0 + (n - 1) * (w + gap) + w / 2
     _arrow(ax, last_x, y, last_x, cy + ch)
 
     # Two outcomes, and the second one is the point.
-    oy, oh = 0.10, 0.82
+    oy, oh = 0.02, 0.96
     placed.append(_box(ax, 0.60, oy, 5.80, oh,
                        "agrees →  aligned image + trust map: verified / weak / no evidence\n"
+                       "unconfirmed →  kept and labelled, not certified\n"
                        "RMSE, inlier count, inlier ratio, grid coverage, distribution CV",
                        "#e9f5ee", "#146b3c", fs=10, colour="#0f4d2b"))
     placed.append(_box(ax, 6.60, oy, 5.80, oh,
@@ -649,7 +650,7 @@ def fig_pipeline():
 REAL_LOG = ROOT / "evaluation" / "real_pairs_log.csv"
 TRUST_REAL = ROOT / "evaluation" / "trust_real_calibration.csv"
 OUTCOME_STYLE = {   # colour AND marker, so identity is never colour-alone
-    "correct_accepted": (AQUA, "o", "registered, verified"),
+    "correct_accepted": (AQUA, "o", "registered, accepted"),
     "caught_failure": (BLUE, "s", "failed, and the system said so"),
     "false_alarm": (MUTED, "D", "correct, but flagged"),
     "missed_failure": (ORANGE, "X", "failed, NOT caught"),
@@ -689,11 +690,13 @@ def fig_real_sun_sweep():
             continue
         counts[key] = len(pts)
         x, y = zip(*pts)
-        ax.scatter(x, y, s=70, c=col, marker=mk, edgecolors=SURFACE, linewidths=1.2, zorder=3,
+        ax.scatter(x, y, s=70, c=col, marker=mk, edgecolors=SURFACE, linewidths=1.2,
+                   zorder=5 if key in ("caught_failure", "missed_failure") else 3,
                    label=f"{label} ({len(pts)})")
     ax.set_xlabel("sun-azimuth difference, OHRC vs NAC  (degrees)", fontsize=14)
     ax.set_ylabel("inlier matches per window", fontsize=14)
-    ax.set_title("Real OHRC vs LRO NAC: one site, sun 3-153° apart",
+    az = [float(r["d_sun_azimuth_deg"]) for r in rows if r.get("d_sun_azimuth_deg")]
+    ax.set_title(f"Real OHRC vs LRO NAC: Sun azimuths {min(az):.0f}–{max(az):.0f}° apart",
                  loc="left", fontweight="bold", fontsize=15, pad=10)
     ax.set_xlim(-5, 165)
     ax.set_ylim(0, 20000)

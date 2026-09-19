@@ -15,6 +15,18 @@
 > other SIH26166 idea. Output: `presentation/SIH26166_LunaXX_deck.pptx`. The college-round deck
 > (`SIH26166_deck.pptx`) is left as it was.
 >
+> Revised 20 Sep after `claim-checker` on the filled deck (3214e8a: 0 numeric mismatches; 3 HIGH,
+> 7 MEDIUM, 12 LOW on scope and labels). Fixed: the held-out residual now says it is the 74 °S
+> site with Suns 3–6° apart and puts SAC's equatorial pair beside it; OHRC → TMC-2 gives azimuth
+> AND incidence difference; fig5's legend says "accepted", not "verified"; MiLOI's scene S3 is
+> named on both slides; the planted-error scope (22 windows, Sun azimuths under 10° apart) and
+> the 1–2 m behaviour are stated; the NAC corner offset is a disagreement, removed by a wide
+> search before matching; loops are "consistency, not ground accuracy"; the visible side of the
+> multi-modal pairs is named (Kaguya TC); "never uses match positions"; fig4 shows the
+> unconfirmed branch; "traces to", not "copied from"; fore/aft quotes the one accepted window.
+> Slides 2 and 4 then overflowed the footer in the PowerPoint render and were tightened;
+> `presentation/export_pdf.py` now fails on any text in the footer band.
+>
 > Revised 19 Sep after `claim-checker` (19 findings). Fixed in the text: the "nothing registers
 > past 90°" claim (the sweep accepts near-opposite Suns), "one log / nothing typed", the fore/aft
 > statistic, "independent truth", the false-alarm label, the shadow claim, the safety absolute,
@@ -53,32 +65,33 @@
 | Text on the slide | Value at 49bdad9 | Source (REPORT.md section → column) |
 |---|---|---|
 | Sun azimuths … apart, … accepted (SAC equatorial) | 174° (173.5–173.7); 6/6 | "SAC's own benchmark pair (equatorial …)" → Δsun az; `agrees` / rows |
-| polar: Suns … apart, …, the other two flagged | 132° (132.2–132.3); 4/6; w05 unconfirmed, w06 contradicted + fallback | "SAC's own benchmark pair (polar …)" → Δsun az; verdicts |
+| polar …°, …, the other two flagged | 132° (132.2–132.3); 4/6; w05 unconfirmed, w06 contradicted + fallback | "SAC's own benchmark pair (polar …)" → Δsun az; verdicts |
 | … NAC frames, azimuths …–…° apart | 25; 3–153 (3.3–152.7) | "Real sun-angle sweep" → the "All bins" line |
 | TC …×, … accepted | 29.6×; 3/4 (w04 unconfirmed) | "Scale rung: … TC ortho map" → scale; `agrees` / rows |
-| infrared: … of … refused and fall back, the other stays unconfirmed | 13 of 14 (MI 1548 nm 3/3, IIRS 10/11; IIRS 1555 w10 unconfirmed) | "Kaguya TC → Kaguya MI" 1548 nm rows + "… IIRS" rows → declared / verdict |
-| MiLOI: … pairs; agrees within 3 px; contradicted wrong; unconfirmed wrong | 81; 33/33; 43/43; 5/5 | "MiLOI" → the verdict table, column **matcher H within 3 px** (what the trust layer judges). `rmse_gt_px` for agrees is 28/33: have both ready for Q&A |
-| …% false alarms, …% caught at 3 m, …% from 5 m; 2 m or less almost always passes | 0% (0/44); 81% (143/176 = 81.2 %); 100% (176/176 at each of 5–200 m); 2 m: 2/176 flagged, 1 m: 0/176 | "Trust layer on real imagery: planted …" → the 0, 1, 2, 3 and ≥ 5 m rows |
+| Kaguya TC (visible) to MI 1548 nm and Chandrayaan-2 IIRS: … of … refused and fall back, the other stays unconfirmed | 13 of 14 (MI 1548 nm 3/3, IIRS 10/11; IIRS 1555 w10 unconfirmed) | "Kaguya TC → Kaguya MI" 1548 nm rows + "… IIRS" rows → declared / verdict |
+| MiLOI, … pairs (… in scene S3); agrees within 3 px; contradicted wrong; unconfirmed wrong | 81 (56 in S3); 33/33; 43/43; 5/5 | "MiLOI" → the verdict table, column **matcher H within 3 px** (what the trust layer judges). `rmse_gt_px` for agrees is 28/33: have both ready for Q&A |
+| … real windows (Sun azimuths under …° apart): …/44 false alarms; flagged …% at 3 m, …% from 5 m, …/352 at 1–2 m | 22 (3.3, 5.8, 9.1°); 0/44; 81% (143/176 = 81.2 %); 100% (176/176 at each of 5–200 m); 2/352 (1 m 0/176; 2 m 2/176 contradicted, 58 unconfirmed, 116 agrees) | "Trust layer on real imagery: planted …" → the 0, 1, 2, 3 and ≥ 5 m rows |
 
 ## Slide 4 (feasibility)
 
 | Text on the slide | Value at 49bdad9 | Source |
 |---|---|---|
-| … real windows | 136 | REPORT.md footer: 140 registered pairs, minus 4 duplicate windows of Known issue 2 (`presentation.make_figures._distinct_windows`: `w01`=`w01_sw`, `w02`=`w02_sw`, `w03`=`w03_sw`, `w01_t`=`w04` of M1153871873LE) |
-| … instrument pairings | 8 | REPORT.md pair sections: OHRC-NAC, NAC-NAC, OHRC-TMC2, TMC2-TMC2, TC-MI, TC-IIRS, OHRC-TC, OHRC-LOLA. Not the log's `kind` column (the TC→MI rows say `nac-nac`) |
-| loops close to … m | 0.10 (median 0.104, max 0.128, 6 loops) | "Loop closure" → loop RMS median |
-| OHRC → NAC residual: Sun …°, median … px, … m | 3.3–5.8°; 0.41–1.0 px (0.410–1.005); 0.51–0.94 m; 20/20 agree | "Chandrayaan-2 OHRC → LRO NAC" → Δsun az range, held-out median range, the (m) values. Two NAC grids (0.931 and 1.245 m) |
-| MiLOI past 90°: … of … | 0 of 16 (9 + 7 pairs, every method) | "MiLOI" table → rows 90-120 and 120-181 |
+| … real window pairs | 136 | REPORT.md footer: 140 registered pairs, minus 4 duplicate windows of Known issue 2 (`presentation.make_figures._distinct_windows`: `w01`=`w01_sw`, `w02`=`w02_sw`, `w03`=`w03_sw`, `w01_t`=`w04` of M1153871873LE) |
+| … instrument pairings | 8 | REPORT.md pair sections: OHRC-NAC, NAC-NAC, OHRC-TMC2, TMC2-TMC2, TC-MI, TC-IIRS, OHRC-TC, OHRC-LOLA. (Some pre-18-Sep rows' `kind` said `nac-nac` for TC→MI; the latest rows say `tc-mi`, and REPORT.md derives the kind from the product ids anyway.) |
+| Six three-image loops close to a median … m | 0.10 (median 0.104, max 0.128, 6 loops) | "Loop closure" → loop RMS median |
+| OHRC → NAC residual: 74 °S, Sun azimuths …° apart, median … px, … m | 3–6° (3.3, 5.8); 0.41–1.0 px (0.410–1.005); 0.51–0.94 m; 20/20 agree | "Chandrayaan-2 OHRC → LRO NAC" → Δsun az range, held-out median range, the (m) values. Two NAC grids (0.931 and 1.245 m) |
+| … on SAC's equatorial pair, 174° apart, 1.62 m grid | 0.69–1.7 px (0.690–1.676); 1.1–2.7 m (1.120–2.718) | "SAC's own benchmark pair (equatorial …)" → held-out median column and its (m) |
+| MiLOI past 90°: any of the … pairs (all scene S3) | 16 (9 + 7 pairs, every method 0; all S3 in miloi_log) | "MiLOI" table → rows 90-120 and 120-181 |
 | sweep: … of … at 60-120°, … of … at 120-153° | 0 of 12 (7 + 5); 10 of 15 | "Real sun-angle sweep" → bins 60-90 + 90-120, and 120-180 (registered & accepted / windows) |
-| OHRC → TMC-2 at SAC's site, Suns … apart: … of 4, all refused | 120° (120.2); 0 of 4, all contradicted + fallback | "SAC's benchmark site: OHRC → TMC-2 nadir" → Δsun az; verdict; declared |
-| NAC corners … km off at SAC's site | 1.9 km (+488, +1790 m → 1.86 km) | "SAC's own benchmark pair (equatorial …)" note → wide-search offset (`site_geometry/M1350459544RE.json`) |
-| fore/aft held-out median …–… px | 2.6–49 px (2.617–49.358) on the 5.929 m grid; verdicts 1 agrees, 2 unconfirmed, 1 contradicted | "Real viewpoint: TMC-2 fore → aft" → **held-out median** column, not "RMSE ≤ 3 px" (capped at 3 px by definition) |
+| OHRC → TMC-2 at SAC's site (azimuths …°, incidence …° apart): all 4 refused | 120° (120.2); 59° (d_incidence −59.44); 4/4 contradicted + fallback | "SAC's benchmark site: OHRC → TMC-2 nadir" → Δsun az; verdict; declared |
+| NAC's published corners and the OHRC grid disagree by … km | 1.9 km (+488, +1790 m → 1.86 km); applied before cutting by `cut_pradan_pairs.wide_offset` | "SAC's own benchmark pair (equatorial …)" note → wide-search offset (`site_geometry/M1350459544RE.json`) |
+| fore/aft accepts … window of 4, held-out median … px (… m) | 1 (w04 agrees; w02, w03 unconfirmed; w01 contradicted + fallback); 2.6 px (2.617) × 5.929 m = 16 m (15.5) | "Real viewpoint: TMC-2 fore → aft" → **held-out median** column, not "RMSE ≤ 3 px" (capped at 3 px by definition) |
 
 ## Slide 5 (impact)
 
 | Text on the slide | Value at 49bdad9 | Source |
 |---|---|---|
-| … OHRC frames at … sites | 3 at 3 | distinct `ch2_ohr_*` source products in the latest real_pairs_log rows: `…20200229T0739312111` (74 °S; NAC + TC + LOLA), `…20200824T0806596861` (62 °S, SAC polar; NAC), `…20210401T2357376656` (14 °S, SAC equatorial; NAC + TMC-2) |
+| LRO NAC (… frames at … sites) and Kaguya TC (… site) | 3 at 3; TC 1 site (74 °S) | distinct `ch2_ohr_*` source products in the latest real_pairs_log rows: `…20200229T0739312111` (74 °S; NAC + TC + LOLA), `…20200824T0806596861` (62 °S, SAC polar; NAC), `…20210401T2357376656` (14 °S, SAC equatorial; NAC + TMC-2) |
 
 ## Figures
 
@@ -114,5 +127,14 @@
   labelled unconfirmed and not certified (the log calls them `missed_failure`).
 - **"Is OHRC ↔ NAC multi-modal?"** No. Both are panchromatic. It is cross-sensor and
   cross-mission.
-- **"What does the check miss?"** Planted errors of 1-2 m (under ~2 px) pass; at 3 m some still
-  agree. State the floor.
+- **"What does the check miss?"** Planted errors of 1-2 m (under ~2 px) are not contradicted (2
+  of 352), though at 2 m a third come back `unconfirmed`; at 3 m 19 % still pass. State the floor.
+  The test was on 22 windows at 74 °S with Sun azimuths under 10° apart; nothing was planted on
+  the 132°/174° pairs.
+- **"Your TC rung: 3 of 4 accepted?"** w01 is dense (134 inliers, held-out median 0.55 px =
+  4.0 m); w02 (17 inliers, median 33.9 px) and w03 (39 inliers, 4.8 px) are thin. The defence:
+  the archive offset is 381–431 m on all four windows, consistent. Do not claim more.
+- **"Is everything from one commit?"** Every registration, sweep, loop, trust trial and the
+  MiLOI re-judge ran at 49bdad9. The MiLOI MATCHES themselves (LoFTR/SIFT/ORB/AKAZE, ~4.5 h)
+  were made at six earlier commits (3 of ours' 81 rows on `c9fb875-dirty`); `ops.freeze --plan`
+  checks that the matching code has not changed since, and it had not.

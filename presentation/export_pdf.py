@@ -15,6 +15,7 @@ demo venv on purpose (it is not on the demo path):
     pip install --target <some dir> pymupdf ; set PYTHONPATH=<some dir>
 
 Checks on the result, all printed: 6 pages, the slide aspect ratio, each page's title text,
+no text running into the footer bar (the one overflow the build audit cannot see),
 no "[TBD]" left, the file size. Do not upload a PDF this script did not pass.
 """
 from __future__ import annotations
@@ -29,6 +30,7 @@ HERE = pathlib.Path(__file__).resolve().parent
 DECK = HERE / "SIH26166_LunaXX_deck.pptx"
 PDF = DECK.with_suffix(".pdf")
 POWERPNT = r"C:\Program Files\Microsoft Office\root\Office16\POWERPNT.EXE"
+FOOTER_TOP_IN = 6.95                      # the template's footer bar starts here (build_deck)
 TITLES = ("TITLE PAGE", "IDEA TITLE", "TECHNICAL APPROACH", "FEASIBILITY AND VIABILITY",
           "IMPACT AND BENEFITS", "RESEARCH")
 
@@ -104,6 +106,15 @@ def crop_and_check(printed: pathlib.Path, final: pathlib.Path) -> int:
             problems.append(f"page {i + 1}: title {TITLES[i]!r} not found")
         if "TBD" in text:
             problems.append(f"page {i + 1}: a [TBD] placeholder is still on the page")
+        # Text that runs into the footer bar (from 6.95 in of 7.5). build_deck's audit checks
+        # the text BOXES; only the rendered page shows text overflowing its box, and on 20 Sep
+        # slides 2 and 4 did exactly that. The page number is the one thing allowed there.
+        if i:
+            r = page.rect
+            foot = r.y0 + r.height * FOOTER_TOP_IN / 7.5
+            for b in page.get_text("blocks"):
+                if b[3] > foot + 1 and not b[4].strip().isdigit():
+                    problems.append(f"page {i + 1}: text runs into the footer: {b[4].strip()[:50]!r}")
     doc.set_metadata({"title": "SIH26166 - LunaXX", "author": "Team LunaXX",
                       "subject": "Smart India Hackathon 2026, problem statement SIH26166"})
     doc.save(str(final), garbage=3, deflate=True)
