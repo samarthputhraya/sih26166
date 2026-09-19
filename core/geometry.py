@@ -361,10 +361,16 @@ def project(frame: Frame, read_window, transform, shape, coarse=16, fill=np.nan,
               "nearest": cv2.INTER_NEAREST}[order]
     mxl = np.where(ok, mx - x_lo, -1).astype(np.float32)
     myl = np.where(ok, my - y_lo, -1).astype(np.float32)
+    # Border value 0, and validity decided GEOMETRICALLY (every kernel tap inside the crop).
+    # With a NaN border value OpenCV 5.0's cubic remap returned NaN for whole blocks of
+    # interior samples - the last row of any window under ~30 px, 2 rows of a 200-px one
+    # (core/test_geometry.py) - which cut_* then nearest-filled as "edge_pixels_filled".
+    # NaN in the SOURCE (invalid pixels) still propagates, so isfinite(out) stays.
+    lo, hi = {"linear": (0, 1), "cubic": (1, 2), "nearest": (0, 0)}[order]
     out = cv2.remap(src, mxl, myl, interpolation=interp, borderMode=cv2.BORDER_CONSTANT,
-                    borderValue=float("nan"))
-    valid = ok & (mxl >= 0) & (myl >= 0) & (mxl <= src.shape[1] - 1) & (myl <= src.shape[0] - 1) \
-        & np.isfinite(out)
+                    borderValue=0.0)
+    valid = ok & (mxl >= lo) & (myl >= lo) & (mxl <= src.shape[1] - 1 - hi) \
+        & (myl <= src.shape[0] - 1 - hi) & np.isfinite(out)
     img[valid] = out[valid]
     return img, valid
 

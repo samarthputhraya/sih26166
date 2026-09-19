@@ -361,6 +361,45 @@ def _kaguya(kind):
     raise KeyError(kind)
 
 
+LOLA_BAND = DATA / "raw" / "ldem_60s_60m_9380_9836.raw"   # lines 9380-9835, all samples (fetch_lola_dem)
+
+
+def _lola():
+    """(frame, reader, info, gsd) - LOLA `ldem_60s_60m` around the site, rendered as shaded relief
+    under the OHRC's own sun (OHRC_SUN), so the only differences left are the modality (elevation
+    vs reflectance: no albedo, no cast shadows) and a 240x scale ratio. The declared-failure rung.
+
+    The grid is LOLA's own polar stereographic (60 m, offset 15519.5 px; ops/fetch_lola_dem), the
+    same CRS as everything else at the site. `render_shaded_relief` takes the sun azimuth clockwise
+    from image-up; in south polar stereographic image-up is map +Y, and local north at longitude
+    lon points `lon` degrees clockwise from +Y, so azimuth_from_up = azimuth_from_north + lon."""
+    from core import geometry as G
+    from evaluation.shaded_relief import render_shaded_relief
+    from ops.fetch_lola_dem import ELEV_SCALE, N, OFFSET_PX, SCALE_M, latlon_to_pixel
+    l0, l1 = (int(v) for v in LOLA_BAND.stem.rsplit("_", 2)[1:])
+    band = np.fromfile(LOLA_BAND, dtype="<i2").reshape(l1 - l0, N)
+    _, samp = latlon_to_pixel(*SITE_LATLON)
+    s0 = int(samp) - 300
+    dem = band[:, s0:s0 + 600].astype(np.float32) * ELEV_SCALE
+    az_up = (OHRC_SUN["azimuth_deg_from_north"] + SITE_LATLON[1]) % 360.0
+    elev = 90.0 - OHRC_SUN["incidence_deg"]
+    img = render_shaded_relief(dem, az_up, elev, SCALE_M)
+    x0 = (s0 - 0.5 - OFFSET_PX) * SCALE_M
+    y0 = (OFFSET_PX - (l0 - 0.5)) * SCALE_M
+    frame = G.Frame.from_transform((x0, SCALE_M, 0.0, y0, 0.0, -SCALE_M), img.shape, "lola",
+                                   source=f"LOLA ldem_60s_60m lines {l0}-{l1 - 1}, samples {s0}-{s0 + 599} "
+                                          f"(PDS label: polar stereographic, 60 m, offset {OFFSET_PX})")
+    info = {"instrument": "LRO LOLA (elevation, rendered)", "product_id": f"ldem_60s_60m lines {l0}-{l1 - 1}",
+            "path": str(LOLA_BAND), "native_gsd_mpp": SCALE_M,
+            "band": f"shaded relief of the DEM, sun az {OHRC_SUN['azimuth_deg_from_north']} deg from north "
+                    f"({az_up:.1f} from image-up), elevation {elev:.2f} deg - the OHRC's sun",
+            "incidence_deg_at_site": OHRC_SUN["incidence_deg"],
+            "sun_azimuth_deg_from_north": OHRC_SUN["azimuth_deg_from_north"],
+            "sun_note": "rendered under the OHRC's derived sun (OHRC_SUN), by construction"}
+    # a COPY: cv2.remap read a strided view wrongly (the last output row came back NaN)
+    return frame, (lambda x, y, w, h: np.array(img[y:y + h, x:x + w])), info, SCALE_M
+
+
 IIRS_ID = "ch2_iir_nci_20210621T1517513893_d_img_d32"
 IIRS_DIR = DATA / "pradan" / "iirs"
 
@@ -498,6 +537,9 @@ def _frame(kind_or_pid):
     kinds: ohrc (0.25 m), ohrc16 (area-averaged 3.68 m), tc_morning, tc_evening, tc_ortho,
     mi<nm> (Kaguya MI band), or an LROC NAC product id."""
     k = kind_or_pid.lower()
+    if k == "lola":
+        f, rd, info, gsd = _lola()
+        return f, rd, {**info, "geometry": f.source}, gsd, k
     if k.startswith("iirs") and k[4:].isdigit():
         f, rd, info, gsd = _iirs(k)
         return f, rd, {**info, "geometry": f.source}, gsd, k
@@ -543,11 +585,20 @@ def _tier(src_label, ref_label):
             return "iirs_nir" if int(lbl[4:]) >= 1000 else "iirs_vis"
         if lbl.startswith("mi"):
             return "mi_nir" if int(lbl[2:]) >= 1000 else "mi_vis"
+        if lbl == "lola":
+            return "lola"
         return "nac"
     a, b = kind(src_label), kind(ref_label)
     if a == b:
         return ("A (same sensor, cross-illumination, real)",
                 f"same sensor ({a.upper()}) - a sun-angle test, NOT cross-sensor")
+    if "lola" in (a, b):
+        return ("D (optical-elevation real, multi-modal)",
+                "multi-modal: optical image vs LOLA elevation rendered as shaded relief under the "
+                "optical image's own sun; cross-sensor and cross-mission")
+    if {a, b} == {"ohrc", "tc"}:
+        return ("B (cross-sensor real, ohrc-tc)", "cross-sensor, cross-mission (Chandrayaan-2 OHRC vs "
+                "SELENE Terrain Camera); both panchromatic visible, so NOT multi-modal")
     if "mi_nir" in (a, b):
         return ("C (visible-infrared real, multi-modal)",
                 f"cross-sensor and multi-modal: visible panchromatic vs Kaguya MI near-infrared "
@@ -712,7 +763,7 @@ Files (sha256): {', '.join(f'`{k}` {v[:16]}' for k, v in m['files'].items())}
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--nac", "--ref", dest="nac",
-                    help="reference: LROC NAC product id, tc_morning|tc_evening|tc_ortho, or mi<nm>")
+                    help="reference: LROC NAC product id, tc_morning|tc_evening|tc_ortho, mi<nm>, iirs<nm> or lola")
     ap.add_argument("--src", default="ohrc", help="'ohrc' (default) or a NAC product id")
     ap.add_argument("--windows", type=int, default=6)
     ap.add_argument("--window-px", type=int, default=640)

@@ -57,6 +57,29 @@ def test_project_reproduces_a_shifted_copy():
     assert np.allclose(out, img[10:110, 10:110], atol=1e-4)
 
 
+@pytest.mark.parametrize("n", [4, 25, 30, 200])
+def test_project_cubic_leaves_no_interior_pixel_invalid(n):
+    """OpenCV 5.0's cubic remap returned NaN for whole blocks of INTERIOR samples when the border
+    value was NaN - the last row of every window under ~30 px (a 25-px LOLA window came out 4 %
+    empty), 8-16 px of larger ones. A window well inside the image must come back complete, and
+    equal to the image at whole-pixel shifts."""
+    rng = np.random.default_rng(2)
+    img = rng.random((300, 300)).astype(np.float32)
+    f = G.Frame.from_transform((0.0, 1.0, 0.0, 300.0, 0.0, -1.0), img.shape)
+    gt, shape = G.map_grid(40.0, 260.0, float(n), float(n), 1.0)
+    out, ok = G.project(f, lambda x, y, w, h: np.array(img[y:y + h, x:x + w]), gt, shape, order="cubic")
+    assert ok.all(), f"{(~ok).sum()} of {ok.size} invalid"
+    assert np.allclose(out, img[40:40 + n, 40:40 + n], atol=1e-4)
+
+
+def test_project_marks_samples_beyond_the_image_invalid():
+    img = np.ones((50, 50), np.float32)
+    f = G.Frame.from_transform((0.0, 1.0, 0.0, 50.0, 0.0, -1.0), img.shape)
+    gt, shape = G.map_grid(30.0, 45.0, 40.0, 20.0, 1.0)      # right half hangs off the image
+    out, ok = G.project(f, lambda x, y, w, h: np.array(img[y:y + h, x:x + w]), gt, shape, order="cubic")
+    assert ok[:, :15].all() and not ok[:, 25:].any()
+
+
 def test_fill_invalid_takes_the_nearest_valid_value():
     img = np.arange(16, dtype=np.float32).reshape(4, 4)
     ok = np.ones((4, 4), bool)
