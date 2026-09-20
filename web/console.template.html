@@ -105,6 +105,17 @@ svg text{font-family:var(--f-mono);fill:var(--dim)}
 .chart{width:100%;height:auto;display:block;overflow:visible}
 
 /* TRUST instrument */
+.roster{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1px;background:var(--rule);border:1px solid var(--rule)}
+.roster button{appearance:none;border:0;background:var(--panel);color:var(--ink2);text-align:left;
+  padding:9px 11px;cursor:pointer;display:flex;gap:9px;align-items:flex-start;min-width:0}
+.roster button:hover{background:var(--panel2);color:var(--ink)}
+.roster button[aria-pressed="true"]{background:var(--ink);color:var(--ground)}
+.roster button[aria-pressed="true"] em{color:var(--ground);opacity:.72}
+.roster i{width:8px;height:8px;border-radius:50%;flex:none;margin-top:5px}
+.roster span{min-width:0}
+.roster b{display:block;font:600 13.5px/1.25 var(--f-display);letter-spacing:.03em;text-transform:uppercase}
+.roster em{display:block;font:400 10.5px/1.3 var(--f-mono);font-style:normal;color:var(--dim);letter-spacing:.05em;margin-top:2px}
+@media (max-width:620px){.roster{grid-template-columns:minmax(0,1fr)}}
 .io{display:grid;grid-template-columns:1fr auto 1fr;align-items:stretch;gap:10px;border:1px solid var(--rule);background:var(--ground);padding:12px}
 .io figure{margin:0;display:flex;flex-direction:column;gap:7px;min-width:0}
 .io img{width:100%;aspect-ratio:1/1;object-fit:cover;display:block;background:#000;border:1px solid var(--rule2)}
@@ -246,13 +257,13 @@ footer{border-top:1px solid var(--rule);margin-top:clamp(30px,5vw,60px);padding-
   </section>
 
   <section class="bay" id="trust">
-    <header class="bay__head"><span class="bay__code">TRUST</span><h2>One it accepts, one it refuses</h2><span class="bay__src">evaluation/real_pairs_log.csv · cached run_all() output</span></header>
+    <header class="bay__head"><span class="bay__code">TRUST</span><h2>Every pairing, and its verdict</h2><span class="bay__src">evaluation/real_pairs_log.csv · cached run_all() output</span></header>
     <div class="bay__body cols">
       <div class="stack">
         <div class="row">
-          <div class="seg" role="group" aria-label="Pair" id="pairseg"></div>
+          <div class="roster" role="group" aria-label="Choose a pair" id="pairseg"></div>
         </div>
-        <p class="note" style="margin-bottom:-4px">Registration aligns one image onto another, so every verdict here is about <strong style="color:var(--ink)">the pair</strong> — never about how sharp either picture is. Both images below are perfectly legible. Only one of these two pairs can be aligned reliably.</p>
+        <p class="note" style="margin-bottom:-4px">One representative of <strong style="color:var(--ink)">every instrument pairing in the evidence</strong>, and of all three verdicts. Registration aligns one image onto another, so a verdict is always about <strong style="color:var(--ink)">the pair</strong> — never about how sharp either picture is. Every picture here is legible; not every pair can be aligned.</p>
         <div class="io" id="io"></div>
         <div class="row"><span class="lab">Showing</span><span class="layname" id="layname"></span></div>
         <div class="plateimg" id="plateimg" tabindex="0" aria-label="8 by 8 trust map. Use arrow keys to inspect cells.">
@@ -529,7 +540,7 @@ drawScatter(0); lastDz = 0; if (render3d) render3d(); requestAnimationFrame(tick
 /* ================= TRUST instrument ================= */
 const tr = {p:0, cell:27, layer:'ref', timer:null};
 const SC = {verified:C.verified, weak:C.weak, no_evidence:C.none};
-$('#pairseg').innerHTML = D.maps.map((m,i) => `<button type="button" data-p="${i}" aria-pressed="${i===0}">${i===0?'ACCEPTED PAIR':'REFUSED PAIR'}</button>`).join('');
+$('#pairseg').innerHTML = D.maps.map((m,i) => `<button type="button" data-p="${i}" aria-pressed="${i===0}" title="${m.sub}"><i style="background:${m.ok ? C.verified : m.verdict==='unconfirmed' ? C.weak : C.refused}"></i><span><b>${m.label}</b><em>${m.tag} \u00b7 ${m.verdict.toUpperCase()}</em></span></button>`).join('');
 function drawGrid(){
   const m = D.maps[tr.p]; let s = `<defs><pattern id="hx" width=".25" height=".25" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width=".09" height=".25" fill="${C.none}"/></pattern></defs>`;
   m.cells.forEach((c,i) => { const x=i%8, y=(i-x)/8, ne=c.s==='no_evidence';
@@ -568,9 +579,7 @@ function drawVerdict(){
   const m = D.maps[tr.p], ok = m.ok;
   $('#verdict').innerHTML = `<b style="color:${ok?C.verified:C.refused}">${ok?'ALIGNMENT ACCEPTED':'ALIGNMENT REFUSED'}</b>
     <span>${m.label} <span class="tagk">${m.tag}</span><br>${m.sub}<br>${m.counts.verified} of 64 cells verified, ${m.counts.weak} weak, ${m.counts.no_evidence} no evidence \u00b7 ${fmt(m.inliers)} inliers of ${fmt(m.n_matches)} matches \u00b7 ${m.seconds} s on CPU<br>method declared: ${m.method}<br>${m.why.replace('->','\u2192')}</span>`;
-  $('#gloss').innerHTML = ok
-    ? `<b>What this means.</b> The two images above are aligned, and two independent lines of evidence say so: the matches, and the pixels. The Suns are 174\u00b0 apart, so every shadow in A points the opposite way to B, and the alignment still holds.`
-    : `<b>Refused, and then delivered anyway.</b> The matcher found only ${fmt(m.n_matches)} matches across the whole frame and the transform it built from them is visibly wrong \u2014 switch to <em>${m.layers.find(x => x.k==='warp').n}</em> and look at it. The area check caught that and the system refused it, then fell back to global phase correlation and <b>declared which method it used</b>. That fallback lands ${m.twin && m.twin.fallback_px} px = ${m.twin && m.twin.fallback_m} m from the registration of the very same window in visible light. So this window IS registered, to well under a pixel of the 14.8 m grid \u2014 what the system refuses to do is <b>pretend the feature matcher is what did it</b>.`;
+  $('#gloss').innerHTML = m.plain;
 }
 function cap(s){ return (s.band ? s.band + '<br>' : '') + s.gsd + ' m per pixel'; }
 function drawIO(){
