@@ -60,11 +60,14 @@ def panel(r, a_side, b_side, *, pid, label, sub, tag, plain, twin=None):
         for x in range(8):
             ncc = g_("area_ncc")[y, x]
             res = g_("median_inlier_residual_px")[y, x]
+            lir = g_("local_inlier_ratio")[y, x]
+            # None, never NaN. NaN survives as a JS literal in the built page but is NOT valid
+            # JSON, so it parsed fine statically and broke the live API - found by uploading.
             cells.append({"s": str(g_("state")[y, x]), "n": int(g_("n_inliers")[y, x]),
                           "raw": int(g_("n_raw")[y, x]),
                           "ncc": None if not np.isfinite(ncc) else round(float(ncc), 3),
                           "res": None if not np.isfinite(res) else round(float(res), 3),
-                          "lir": round(float(g_("local_inlier_ratio")[y, x]), 3)})
+                          "lir": None if not np.isfinite(lir) else round(float(lir), 3)})
 
     ok = rel["global"]["verdict"] == "agrees"
     warped, final = r.get("warped"), r.get("warped_final")

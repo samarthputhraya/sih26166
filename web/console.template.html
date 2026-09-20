@@ -15,7 +15,7 @@
   --gut:clamp(16px,3.2vw,44px);
 }
 *{box-sizing:border-box}
-html{scroll-behavior:smooth;scroll-padding-top:calc(84px + env(safe-area-inset-top,0px))}
+html{scroll-behavior:smooth;scroll-padding-top:calc(var(--plate-h,84px) + 12px + env(safe-area-inset-top,0px))}
 body{margin:0;background:var(--ground);color:var(--ink);font:400 16px/1.55 var(--f-body);
   -webkit-font-smoothing:antialiased;overflow-x:hidden}
 a{color:inherit}
@@ -119,7 +119,7 @@ svg text{font-family:var(--f-mono);fill:var(--dim)}
 .go[disabled]{background:transparent;color:var(--dim);border-color:var(--rule2);cursor:not-allowed}
 .log{font:400 12.5px/1.6 var(--f-mono);color:var(--dim);white-space:pre-wrap;margin:0;min-height:1.6em}
 .log.bad{color:var(--refused)}
-.roster{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1px;background:var(--rule);border:1px solid var(--rule)}
+.roster{display:grid;width:100%;grid-template-columns:repeat(2,minmax(0,1fr));gap:1px;background:var(--rule);border:1px solid var(--rule)}
 .roster button{appearance:none;border:0;background:var(--panel);color:var(--ink2);text-align:left;
   padding:9px 11px;cursor:pointer;display:flex;gap:9px;align-items:flex-start;min-width:0}
 .roster button:hover{background:var(--panel2);color:var(--ink)}
@@ -237,7 +237,7 @@ footer{border-top:1px solid var(--rule);margin-top:clamp(30px,5vw,60px);padding-
   <section class="open">
     <h1>Lunar registration that knows when it is <em>wrong</em></h1>
     <p>Chandrayaan-2 images aligned to lunar references across Sun angle, scale and sensor, with a verdict for every region of every result. The verdict comes from an independent area check that never sees the matches.</p>
-    <p class="what"><b>What this console is.</b> A read-only instrument panel over results already produced and frozen. There is no upload button: the engine is Python — LoFTR, sub-pixel refinement and MAGSAC++ — and it runs on a CPU laptop with the network off, which a browser cannot do. Every figure, image and cell on this page was read back from the evidence logs at commit <span id="fz2"></span>, the same commit the submitted deck quotes. Nothing here is drawn by hand or filled with example data.</p>
+    <p class="what"><b>What this console is.</b> <span id="whatmode">An instrument panel over results already produced and frozen.</span> The engine is Python — LoFTR, sub-pixel refinement and MAGSAC++ — and it runs on a CPU laptop with the network off, which a browser cannot do. Every figure, image and cell on this page was read back from the evidence logs at commit <span id="fz2"></span>, the same commit the submitted deck quotes. Nothing here is drawn by hand or filled with example data.</p>
     <div class="tele" id="tele"></div>
   </section>
 
@@ -448,6 +448,16 @@ const C = {verified:css('--verified'), weak:css('--weak'), none:css('--none'), r
 const fmt = n => n.toLocaleString('en-IN');
 const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 $('#fz').textContent = D.freeze;
+
+/* The sticky plate is taller when its nav wraps, so a fixed scroll offset hides section
+   headings on a phone. Measure it, and keep measuring it. */
+{
+  const plate = document.querySelector('.plate');
+  const sync = () => document.documentElement.style.setProperty('--plate-h', plate.offsetHeight + 'px');
+  sync();
+  if (window.ResizeObserver) new ResizeObserver(sync).observe(plate);
+  addEventListener('resize', sync);
+}
 $('#fz2').textContent = D.freeze;
 
 /* ---------- telemetry strip: every figure is on the claim-checked deck ---------- */
@@ -531,7 +541,7 @@ function initGL(){
     const d = dir(az()); L.position.copy(d).multiplyScalar(2.2);
     const pa = dir(SUN_A).multiplyScalar(.78), pb = dir(SUN_A + sun.dz*Math.PI/180).multiplyScalar(.78);
     mA.position.copy(pa); mB.position.copy(pb); halo.position.copy(sun.lit==='A' ? pa : pb);
-    const p = 34*Math.PI/180, R = 2.5;
+    const p = 34*Math.PI/180, R = 2.05;
     cam.position.set(R*Math.sin(sun.yaw)*Math.cos(p), R*Math.sin(p), R*Math.cos(sun.yaw)*Math.cos(p)); cam.lookAt(0,-.03,0);
     r.render(scene, cam);
   };
@@ -622,7 +632,8 @@ drawScatter(0); lastDz = 0; if (render3d) render3d(); requestAnimationFrame(tick
       $('#pairseg').insertAdjacentHTML('beforeend',
         `<button type="button" data-p="${i}" aria-pressed="false" title="${m.sub}"><i style="background:${m.ok ? C.verified : m.verdict==='unconfirmed' ? C.weak : C.refused}"></i><span><b>${m.label}</b><em>${m.tag} \u00b7 ${m.verdict.toUpperCase()}</em></span></button>`);
       setPair(i);
-      $('#lverdict').innerHTML = `<b style="color:${m.ok?C.verified:C.refused}">${m.ok?'ALIGNMENT ACCEPTED':'ALIGNMENT REFUSED'}</b><span>${m.counts.verified} of 64 cells verified \u00b7 ${m.inliers.toLocaleString('en-IN')} inliers of ${m.n_matches.toLocaleString('en-IN')} matches \u00b7 ${m.seconds} s on CPU<br>method declared: ${m.method}<br>${m.why.replace('->','\u2192')}</span>`;
+      const lv = vstate(m);
+      $('#lverdict').innerHTML = `<b style="color:${lv.col}">${lv.word}</b><span>${m.counts.verified} of 64 cells verified \u00b7 ${m.inliers.toLocaleString('en-IN')} inliers of ${m.n_matches.toLocaleString('en-IN')} matches \u00b7 ${m.seconds} s on CPU<br>method declared: ${m.method}<br>${m.why.replace('->','\u2192')}</span>`;
       $('#lgloss').innerHTML = m.plain;
       $('#trust').scrollIntoView({behavior:'smooth', block:'start'});
     } catch (e) {
@@ -635,6 +646,8 @@ drawScatter(0); lastDz = 0; if (render3d) render3d(); requestAnimationFrame(tick
     if (!h || h.service !== 'lunaxx-console') return;      // published page: stays hidden
     $('#live').hidden = false;
     $('#navlive').hidden = false;
+    $('#whatmode').textContent = 'An instrument panel over frozen results — and, because it is being served '
+      + 'by web/server.py on this machine, it will also register a pair you hand it (see LIVE, above).';
     say('server ready \u00b7 code commit ' + h.commit);
   }).catch(() => {});
 })();
@@ -654,7 +667,7 @@ function drawInsp(){
   const m = D.maps[tr.p], c = m.cells[tr.cell], x = tr.cell%8, y = (tr.cell-x)/8, nm = c.s.replace('_',' ');
   $('#insp').innerHTML = `<h3>CELL R${y+1} · C${x+1}<i style="background:${SC[c.s]}">${nm.toUpperCase()}</i></h3><dl>
     <dt>inliers / raw matches in the cell</dt><dd>${fmt(c.n)} / ${fmt(c.raw)}</dd>
-    <dt>local inlier ratio</dt><dd>${c.raw ? c.lir.toFixed(2) : 'no matches'}</dd>
+    <dt>local inlier ratio</dt><dd>${c.lir === null || c.lir === undefined ? (c.raw ? 'not measurable' : 'no matches') : c.lir.toFixed(2)}</dd>
     <dt>area check, NCC at the peak</dt><dd>${c.ncc===null ? 'not measurable' : (c.ncc>0?'+':'')+c.ncc.toFixed(2)}</dd>
     <dt>median inlier residual</dt><dd>${c.res===null ? 'n/a' : c.res.toFixed(2)+' px = '+(c.res*m.gsd).toFixed(2)+' m'}</dd>
     <dt>pixel grid</dt><dd>${m.gsd} m / px (reference)</dd></dl>`;
@@ -677,9 +690,14 @@ function drawBand(){
     ${w.fallback_px!==null ? row('fallback vs the visible-band fit', '\u2014', w.fallback_px + ' px = ' + w.fallback_m + ' m', ['','win']) : ''}
     </tbody></table>`;
 }
+function vstate(m){
+  if (m.ok) return {word:'ALIGNMENT ACCEPTED', col:C.verified};
+  if (m.verdict === 'unconfirmed') return {word:'ALIGNMENT UNCONFIRMED', col:C.weak};
+  return {word:'ALIGNMENT REFUSED', col:C.refused};
+}
 function drawVerdict(){
-  const m = D.maps[tr.p], ok = m.ok;
-  $('#verdict').innerHTML = `<b style="color:${ok?C.verified:C.refused}">${ok?'ALIGNMENT ACCEPTED':'ALIGNMENT REFUSED'}</b>
+  const m = D.maps[tr.p], v = vstate(m);
+  $('#verdict').innerHTML = `<b style="color:${v.col}">${v.word}</b>
     <span>${m.label} <span class="tagk">${m.tag}</span><br>${m.sub}<br>${m.counts.verified} of 64 cells verified, ${m.counts.weak} weak, ${m.counts.no_evidence} no evidence \u00b7 ${fmt(m.inliers)} inliers of ${fmt(m.n_matches)} matches \u00b7 ${m.seconds} s on CPU<br>method declared: ${m.method}<br>${m.why.replace('->','\u2192')}</span>`;
   $('#gloss').innerHTML = m.plain;
 }
@@ -694,12 +712,17 @@ function setLayer(l){
   const m = D.maps[tr.p];
   if (!m.layers.some(x => x.k===l)) l = 'ref';
   tr.layer = l; clearInterval(tr.timer); tr.timer = null;
-  const A = $('#imgA'), B = $('#imgB'), get = k => m.layers.find(x => x.k===k).img;
+  // `get` must tolerate a missing layer: a pair whose matcher produced no warp at all (OHRC to
+  // LOLA is one) has no 'warp' entry, and assuming one threw here - which aborted setPair before
+  // drawVerdict ran, so that pair silently kept the PREVIOUS pair's verdict banner.
+  const A = $('#imgA'), B = $('#imgB'), get = k => (m.layers.find(x => x.k===k) || {}).img || null;
   document.querySelectorAll('[data-layer]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.layer===l)));
   const nm = m.layers.find(x => x.k===l).n;
   $('#layname').textContent = l==='blink' ? "the matcher's answer against B, alternating" : nm;
   A.src = l==='blink' ? get('ref') : get(l); A.alt = nm;
-  B.src = get('warp'); B.alt = "the matcher's answer"; B.hidden = true;
+  const warp = get('warp');
+  if (warp) { B.src = warp; B.alt = "the matcher's answer"; }
+  B.hidden = true;
   if (l==='blink') tr.timer = setInterval(() => { B.hidden = !B.hidden; }, reduce ? 1600 : 620);
 }
 function setPair(i){ tr.p = i; document.querySelectorAll('[data-p]').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.p===i)));

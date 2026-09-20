@@ -171,7 +171,15 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def _json(self, code, obj):
-        self._send(code, json.dumps(obj).encode("utf-8"))
+        # allow_nan=False: json.dumps emits bare NaN/Infinity by default, which is valid
+        # JavaScript but invalid JSON, so a browser's JSON.parse rejects the whole response.
+        # Fail here, loudly, instead of sending a body no client can read.
+        try:
+            body = json.dumps(obj, allow_nan=False).encode("utf-8")
+        except ValueError as e:
+            body = json.dumps({"error": f"result was not JSON-serialisable: {e}"}).encode("utf-8")
+            code = 500
+        self._send(code, body)
 
     def do_GET(self):
         path = self.path.split("?", 1)[0]
