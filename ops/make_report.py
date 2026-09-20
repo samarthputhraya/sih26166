@@ -121,6 +121,52 @@ def mm_table(kind):
     return L + [""]
 
 
+def _distinct_note(reg) -> str:
+    """" (N distinct ground windows; Known issue 2)" - some windows were cut twice under two ids.
+    Needs the pairs' geometry_prior.json on this machine; says nothing when they are absent."""
+    try:
+        from presentation.make_figures import _distinct_windows
+        n = len(_distinct_windows([r["pair_id"] for r in reg]))
+    except Exception:  # noqa: BLE001 - data/pairs is gitignored; the report must still be written
+        return ""
+    return f" ({n} distinct ground windows; Known issue 2: some were cut twice under two ids)"
+
+
+def section_full_overlap(full):
+    """The dense tiling of one OHRC/NAC overlap (`--tag full`): acceptance, residuals, throughput,
+    and whether any ACCEPTED window's archive offset breaks with its nearest accepted neighbour."""
+    from core.geometry import ps_south
+    g = float(full[0]["ref_gsd_m"])
+    acc = [r for r in full if r["verdict"] == "agrees" and "fallback" not in r["method_declared"]]
+    verd = Counter(r["verdict"] for r in full)
+    secs = [float(r["seconds"]) for r in full if r.get("seconds")]
+    med = [float(r["residual_median_px"]) for r in acc if r.get("residual_median_px")]
+    side_m = 640 * g
+    jumps = []
+    if len(acc) > 1:
+        xy = [ps_south(float(r["window_lat"]), float(r["window_lon"])) for r in acc]
+        for i, r in enumerate(acc):
+            j = min((k for k in range(len(acc)) if k != i),
+                    key=lambda k: (xy[k][0] - xy[i][0]) ** 2 + (xy[k][1] - xy[i][1]) ** 2)
+            jumps.append((abs(float(r["archive_offset_m"]) - float(acc[j]["archive_offset_m"])), r["pair_id"]))
+    note = (f"Dense tiling, not hand-spread windows: every non-overlapping 640-px window (centres at "
+            f"least 1.1 × the window apart) that `ops.cut_site_pairs --windows 60 --tag full` finds in "
+            f"shared, lit, textured ground of the 74 °S OHRC frame and NAC `{full[0]['reference_product']}` "
+            f"(Sun azimuths {full[0]['d_sun_azimuth_deg']}° apart). {len(full)} windows of {side_m:.0f} m = "
+            f"{len(full) * side_m ** 2 / 1e6:.1f} km². Verdicts: "
+            + ", ".join(f"{v} {n}" for v, n in verd.most_common())
+            + f"; **accepted {len(acc)}/{len(full)}**"
+            + (f"; held-out median of the accepted windows {min(med):.2f}-{max(med):.2f} px, median "
+               f"{st.median(med):.2f} px = {st.median(med) * g:.2f} m on the {g} m grid" if med else "")
+            + (f". Wall time of `run_all`: {sum(secs) / 60:.1f} min in total, median {st.median(secs):.1f} s "
+               f"per window, CPU only" if secs else "")
+            + (f". Archive offset of each accepted window against its nearest accepted neighbour: median "
+               f"difference {st.median(j for j, _ in jumps):.1f} m, max {max(jumps)[0]:.1f} m "
+               f"(`{max(jumps)[1]}`), {sum(j > 50 for j, _ in jumps)} over 50 m" if jumps else "")
+            + ". Reported separately from the hand-spread windows above and never merged with them.")
+    return section_pairs("The whole lit overlap of one OHRC frame with one NAC (dense tiling)", full, note)
+
+
 def section_pairs(title, rows, note):
     L = [f"## {title}", "", note, "",
          "| pair | window (lat, lon) | Δsun az | scale | matches | inliers | ratio | coverage | "
@@ -145,10 +191,15 @@ def main(argv=None):
     reg = [r for r in latest.values() if not r["pair_id"].startswith("loop_")
            and (r.get("verdict") or "") != "INVALIDATED"]
     loops = [r for r in latest.values() if r["pair_id"].startswith("loop_")]
+    # The commit that RENDERED this file and the commit(s) the evidence rows were MEASURED at are
+    # two things; a reporting-only change moves the first and must not hide the second.
+    ev = Counter((r.get("git_commit") or "?") for r in latest.values()
+                 if (r.get("verdict") or "") != "INVALIDATED")
     L = ["# SIH26166 - evaluation report", "",
          f"Generated {_dt.datetime.now().isoformat(timespec='minutes')} from commit `{_git()}` by "
          f"`python -m ops.make_report`. **Do not edit by hand** - every number below is read from "
-         f"the evidence files named in each section.", "",
+         f"the evidence files named in each section. The latest real-pair rows were measured at commit "
+         + ", ".join(f"`{c}` ({n} rows)" for c, n in ev.most_common()) + ".", "",
          "All pixel figures are on the REFERENCE image's grid, with its metres stated. Real pairs "
          "have no exact ground truth: accuracy on them is reported as held-out residuals (the 20 % "
          "of matches the fit never saw) and as loop closure. `residual_px` in results_log.csv is "
@@ -167,13 +218,20 @@ def main(argv=None):
               f"`ch2_ohr_ncp_20200229T0739312111_d_img_d18` was already on disk (archive.org mirror).", ""]
 
     # --- cross-sensor, same ground -----------------------------------------------------
+    # `_full` = the dense tiling of one whole overlap (20 Sep 2026); its own section, never merged
+    # with the hand-spread windows whose ranges the deck quotes.
     ohrc_nac = sorted([r for r in reg if _kind(r) == "ohrc-nac" and not r.get("outcome")
-                       and not r["pair_id"].startswith("sac_")], key=lambda r: r["pair_id"])
+                       and not r["pair_id"].startswith("sac_") and not r["pair_id"].endswith("_full")],
+                      key=lambda r: r["pair_id"])
     L += section_pairs("Chandrayaan-2 OHRC → LRO NAC (cross-sensor, cross-mission)", ohrc_nac,
                        "Windows cut at 0.25 m (OHRC) and the NAC's native ~0.9-1.25 m over the same "
                        "ground on a south-polar-stereographic grid (`ops/cut_site_pairs.py`). "
                        "Archive offset = how far the registration moved the source from where the two "
                        "archives' (corrected) geometry put it - a property of the archives.")
+    full = sorted([r for r in reg if _kind(r) == "ohrc-nac" and r["pair_id"].endswith("_full")],
+                  key=lambda r: r["pair_id"])
+    if full:
+        L += section_full_overlap(full)
     nac_nac = sorted([r for r in reg if _kind(r) == "nac-nac" and not r.get("outcome")], key=lambda r: r["pair_id"])
     if nac_nac:
         L += section_pairs("LRO NAC → LRO NAC (same sensor; loop legs)", nac_nac, "Same sensor - NOT cross-sensor.")
@@ -238,13 +296,16 @@ def main(argv=None):
                            f"4×4 (~{rows[0]['src_gsd_m']} m) before resampling; TMC-2 ~{rows[0]['ref_gsd_m']} m. "
                            f"Label sun: OHRC elevation {_f(ss.get('elevation_deg_label'), 1)}°, TMC-2 "
                            f"{_f(rs.get('elevation_deg_label'), 1)}°, azimuths {rows[0]['d_sun_azimuth_deg']}° "
-                           f"apart. Both panchromatic - NOT multi-modal; same mission - NOT cross-mission.")
+                           f"apart, incidence {abs(float(rows[0]['d_incidence_deg'] or 0)):.1f}° apart "
+                           f"(`d_incidence_deg` {rows[0]['d_incidence_deg']}). Both panchromatic - NOT "
+                           f"multi-modal; same mission - NOT cross-mission.")
     fa = sorted([r for r in reg if _kind(r) == "tmc2-tmc2"], key=lambda r: r["pair_id"])
     if fa:
         L += section_pairs("Real viewpoint: TMC-2 fore (+25°) → aft (−25°), one pass (same sensor)", fa,
                            "Same instrument, same sun, seconds apart: only the viewing direction differs "
                            "(~50°). Relief parallax between the two (~0.93 × height) is not a homography - "
-                           "compare with the synthetic parallax rows below. Same sensor - NOT cross-sensor.")
+                           "compare with the synthetic parallax rows below. Same sensor - NOT cross-sensor. "
+                           f"Reference (aft) grid {fa[0]['ref_gsd_m']} m, source (fore) {fa[0]['src_gsd_m']} m.")
     mm = [r for r in reg if _kind(r) == "tc-mi"]
     if mm:
         L += section_pairs("Kaguya TC → Kaguya MI (cross-sensor; 749 nm visible and 1548 nm infrared)",
@@ -370,17 +431,24 @@ def main(argv=None):
             ok = sum(1 for r in rs if r["matcher_err_px"] and float(r["matcher_err_px"]) < _M.SUCCESS_PX)
             ok2 = sum(1 for r in rs if r["rmse_gt_px"] and float(r["rmse_gt_px"]) < _M.SUCCESS_PX)
             L.append(f"| {v} | {len(rs)} | {sum(1 for r in rs if r['scene'] == 'S3')} | {ok} | {ok2} |")
-        L.append("")
+        far = [r for r in ours if float(r["d_sun_angle_deg"]) >= 90]
+        by_scene = Counter(r["scene"] for r in far)
+        L += ["", f"Scored pairs with Sun vectors 90° or more apart: {len(far)} ("
+                  + ", ".join(f"{s} {by_scene.get(s, 0)}" for s in ("S1", "S2", "S3")) + "); "
+                  f"registered within {_M.SUCCESS_PX:g} px by ours: "
+                  f"{sum(1 for r in far if str(r['success']) in ('1', 'True'))}.", ""]
 
     # --- trust calibration ------------------------------------------------------------------
     tr = _rows(TRUST)
     if tr:
         # Two populations, never pooled (20 Sep 2026): rows written before the column existed
         # are the 74 °S windows, all under 10° of Sun-azimuth difference.
+        # Rows written before the `kind` column existed are translations.
+        trans = [r for r in tr if (r.get("kind") or "translation") == "translation"]
         pops = [("Sun azimuths under 10° apart (the 74 °S OHRC/NAC windows)",
-                 [r for r in tr if float(r.get("d_sun_azimuth_deg") or 0) < 10]),
+                 [r for r in trans if float(r.get("d_sun_azimuth_deg") or 0) < 10]),
                 ("Sun azimuths 132-174° apart (SAC's own OHRC/NAC pairs)",
-                 [r for r in tr if float(r.get("d_sun_azimuth_deg") or 0) >= 10])]
+                 [r for r in trans if float(r.get("d_sun_azimuth_deg") or 0) >= 10])]
         L += ["## Trust layer on real imagery: planted confident-but-wrong registrations", "",
               f"`ops/trust_real_calibration.py`: {len({r['pair_id'] for r in tr})} real windows whose "
               f"registration is independently good (declared LoFTR, `agrees`, |NCC| of the true alignment "
@@ -410,6 +478,44 @@ def main(argv=None):
                 L.append(f"| {dm:g} | {st.median(float(r['displacement_px']) for r in t):.2f} | {len(t)} | "
                          f"{rate:.1%} | {st.mean(float(r['verified']) for r in t):.1f} |")
             L.append("")
+        nt = [r for r in tr if (r.get("kind") or "translation") != "translation"]
+        if nt:
+            L += ["### Errors that are not translations: planted rotation and scale", "",
+                  "A rotation or a scale change about the frame centre leaves the centre where it was and "
+                  "displaces the CORNERS most, so one number describes it: how far the corners move. The "
+                  "frame verdict is the wrong thing to watch here - it still says `agrees` while a corner "
+                  "is 3 px out - because the error is not uniform over the frame. What carries the "
+                  "information is the 8 × 8 map, so the last two columns count cells, not frames: of the "
+                  "cells the planted error really moved by more than 2 px, how many the map refused to "
+                  "verify, and of the cells it moved by less than 1 px, how many stayed verified.", "",
+                  "| kind | corner displacement (m) | ~px on the reference grid | trials | frame contradicted | "
+                  "mean verified cells /64 | cells moved >2 px that are NOT verified | cells moved <1 px that "
+                  "stay verified |", "|---|---|---|---|---|---|---|---|"]
+            for kind in ("rotation", "scale"):
+                by = defaultdict(list)
+                for r in nt:
+                    if r["kind"] == kind:
+                        by[float(r["displacement_m"])].append(r)
+                for dm in sorted(by):
+                    t = by[dm]
+                    rate = sum(r["contradicted"] == "True" for r in t) / len(t)
+                    nm = sum(int(r["cells_moved_2px"]) for r in t)
+                    mnv = sum(int(r["moved_not_verified"]) for r in t)
+                    ns = sum(int(r["cells_under_1px"]) for r in t)
+                    sv = sum(int(r["under_1px_verified"]) for r in t)
+                    L.append(f"| {kind} | {dm:g} | {st.median(float(r['displacement_px']) for r in t):.2f} | "
+                             f"{len(t)} | {rate:.1%} | {st.mean(float(r['verified']) for r in t):.1f} | "
+                             + (f"{mnv}/{nm} = {100 * mnv / nm:.0f} %" if nm else "no cell moved that far")
+                             + " | " + (f"{sv}/{ns} = {100 * sv / ns:.0f} %" if ns else "n/a") + " |")
+            tot_m = sum(int(r["cells_moved_2px"]) for r in nt)
+            tot_mnv = sum(int(r["moved_not_verified"]) for r in nt)
+            tot_s = sum(int(r["cells_under_1px"]) for r in nt)
+            tot_sv = sum(int(r["under_1px_verified"]) for r in nt)
+            L += ["", f"Over every rotation and scale trial: of the {tot_m} cells displaced by more than "
+                      f"2 px the map refused to verify {tot_mnv} (**{100 * tot_mnv / max(tot_m, 1):.1f} %**); "
+                      f"of the {tot_s} cells displaced by less than 1 px, {tot_sv} stayed verified "
+                      f"(**{100 * tot_sv / max(tot_s, 1):.1f} %**). The planted matches agree with the wrong "
+                      f"transform perfectly in every trial, so nothing the matcher reports could reveal it.", ""]
 
     # --- synthetic (exact truth) ------------------------------------------------------------------
     log = _rows(LOG)
@@ -483,8 +589,9 @@ def main(argv=None):
             rs = [r for r in ag if r["scene"] == sc]
             if rs:
                 gs = sorted(float(r["ref_gsd_m"]) for r in rs)
+                em = st.median(float(r["matcher_err_px"]) * float(r["ref_gsd_m"]) for r in rs)
                 parts.append(f"{sc} median {st.median(float(r['matcher_err_px']) for r in rs):.2f} px "
-                             f"(n={len(rs)}, grids {gs[0]:.2f}-{gs[-1]:.2f} m)")
+                             f"= {em:.2f} m (n={len(rs)}, grids {gs[0]:.2f}-{gs[-1]:.2f} m)")
         if parts:
             L.append("| MiLOI LRO NAC ↔ NAC (same sensor), the `agrees` pairs: the matcher's transform vs the "
                      "network truth | a translation network from ours+SIFT agreement on OTHER pairs; its own "
@@ -494,7 +601,7 @@ def main(argv=None):
     # runtime and coverage, from the latest rows
     secs = [float(r["seconds"]) for r in reg if r.get("seconds")]
     on = [float(r["seconds"]) for r in reg if r.get("seconds") and _kind(r) == "ohrc-nac"
-          and not r["pair_id"].startswith("sac_")]
+          and not r["pair_id"].startswith("sac_") and not r["pair_id"].endswith("_full")]
     cpu = ""
     try:
         import json as _j
@@ -526,7 +633,7 @@ def main(argv=None):
           "python -m ops.trust_real_calibration \"site_ohrc_m1153871873le_w*_t\" ... --log",
           "python -m ops.make_report", "```", "",
           f"Rows in real_pairs_log.csv: {len(real_rows)}: {len(latest)} distinct pair ids (latest row "
-          f"wins) = {len(reg)} registered pairs + {len(loops)} loops + "
+          f"wins) = {len(reg)} registered pairs{_distinct_note(reg)} + {len(loops)} loops + "
           f"{len(latest) - len(reg) - len(loops)} withdrawn (INVALIDATED). Rows in results_log.csv: "
           f"{len(log)}.", ""]
     OUT.write_text("\n".join(L), encoding="utf-8")

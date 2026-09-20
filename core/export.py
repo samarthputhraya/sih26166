@@ -363,6 +363,10 @@ def report(result: dict, pair_id: str, src_path, ref_path, rows=None,
         "pair_id": pair_id,
         "created_utc": _dt.datetime.now(_dt.timezone.utc).isoformat(timespec="seconds"),
         "git_commit": _commit(),
+        # Set when the result did not come from THIS process - a cached run_all() output reloaded
+        # by the demo. `run_all` never sets it, so a live run leaves it None and the header keeps
+        # its single-commit form.
+        "computed_at_commit": result.get("computed_at_commit"),
         "environment": _versions(),
         "inputs": inputs,
         "common_gsd_mpp": result.get("gsd_mpp"),
@@ -421,8 +425,15 @@ def render_markdown(rep: dict) -> str:
         return s + (f" = {v * g:.3f} m at {g:.4g} m/px" if g else " (reference has no map scale)")
 
     pr = rep.get("prior") or {}
+    # Two commits, not one, whenever they differ: the code that COMPUTED the numbers and the code
+    # that WROTE this file. The demo can export a report for a result loaded from a cache computed
+    # earlier, and printing only the second made the file appear to contradict the commit the app
+    # shows on screen for the same numbers (demo-medic, 20 Sep 2026).
+    ran = rep.get("computed_at_commit")
     L = [f"# Registration report - {rep['pair_id']}", "",
-         f"Created {rep['created_utc']} from commit `{rep['git_commit']}`.", ""]
+         (f"Created {rep['created_utc']}. Result computed by commit `{ran}`; this report written "
+          f"by commit `{rep['git_commit']}`." if ran and ran != rep["git_commit"] else
+          f"Created {rep['created_utc']} from commit `{rep['git_commit']}`."), ""]
     if pr.get("tier"):
         L += [f"Tier: **{pr['tier']}**. {pr.get('terminology') or ''}".rstrip(), ""]
     L += ["## Inputs", "",

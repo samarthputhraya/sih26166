@@ -206,6 +206,10 @@ h1 { font-size: 1.55rem; font-weight: 600; } h2 { font-size: 1.15rem; font-weigh
 .idplate__strip { margin-top: var(--s2); display: flex; flex-wrap: wrap; gap: var(--s2); }
 .tag { font-family: var(--mono); font-size: .86rem; letter-spacing: .09em; text-transform: uppercase; color: var(--ink-mute); border: 1px solid var(--rule); padding: 2px var(--s2); white-space: nowrap; }
 .tag__v { text-transform: none; letter-spacing: .04em; }
+/* a stale cache: the caution colour AND the words say it, never colour alone (the same rule the
+   trust map follows), and the border thickens so it reads from the back of a room */
+.tag__w { text-transform: none; letter-spacing: .04em; color: var(--caution); font-weight: 700; }
+.tag:has(.tag__w) { border-color: var(--caution); border-width: 2px; }
 
 /* ---- 3b. state rail (filled LAST, so STATE can never read READY above a result) */
 .rail { display: flex; flex-wrap: wrap; gap: var(--s6); border-bottom: 1px solid var(--rule); padding: var(--s1) 0 var(--s2) 0; margin: 0; }
@@ -337,8 +341,17 @@ h1 { font-size: 1.55rem; font-weight: 600; } h2 { font-size: 1.15rem; font-weigh
 # Helpers. None of these compute a metric - see design decision 1.
 # --------------------------------------------------------------------------
 
+@st.cache_data(show_spinner=False)
 def discover_pairs() -> list[pathlib.Path]:
-    """Every directory under data/pairs that resolve_pair() can actually open."""
+    """Every directory under data/pairs that resolve_pair() can actually open.
+
+    Cached for the same reason as `catalogue_row` and `pair_prior` below: Streamlit re-runs the
+    whole script on every widget change, and this walks every pair directory and stats its files.
+    That was ~0.1 s when data/pairs held 24 pairs; the dense-tiling run of 20 Sep took it to 197
+    directories, and the swipe slider is the one control a judge drags continuously. The cache is
+    keyed on nothing, so a pair added while the app is open needs a browser reload - which is the
+    right trade for a demo that must not stutter.
+    """
     if not PAIRS_DIR.is_dir():
         return []
     out = []
@@ -588,6 +601,25 @@ def cached_result_path(pair_label: str | None) -> pathlib.Path | None:
         return None
     p = CACHE_DIR / f"{pair_label}.pkl"
     return p if p.is_file() else None
+
+
+@st.cache_data(show_spinner=False)
+def running_code_commit() -> str:
+    """The commit of the code running right now, by the same rule the cache writer stamps with.
+
+    `ops/precompute_demo_cache.py` stamps each cached result with `_commit(("core","evaluation",
+    "app"))` - the paths that can change what `run_all` returns. Reading the same value here is
+    what lets the identification plate say that a cached result was computed by code that has
+    since moved. Without it the plate prints a commit nobody in the room recognises and a stale
+    cache looks exactly like a fresh one: plausible, internally consistent, and wrong, which is
+    the failure this whole project exists to make impossible. Measured at ~0.25 s including the
+    import, and cached, so it costs one git call per session.
+    """
+    try:
+        from core.export import _commit
+        return _commit(("core", "evaluation", "app"))
+    except Exception:  # noqa: BLE001 - never take the demo down over a provenance label
+        return ""
 
 
 def cached_sidecar(path: pathlib.Path | None) -> dict:
@@ -991,6 +1023,11 @@ if st.session_state.pop("run_requested", False) and src_path and ref_path:
     try:
         if use_cache and cache_path is not None:
             result, info = load_cached_result(cache_path)
+            # Carry the cache's own commit into the result, so a report exported from it names
+            # the code that COMPUTED these numbers as well as the code writing the file
+            # (core/export.py render_markdown). A live run leaves this unset.
+            if info.get("git_commit"):
+                result["computed_at_commit"] = info["git_commit"]
             st.session_state["result"] = result
             st.session_state["cache_info"] = info
             st.session_state["elapsed"] = float(info.get("seconds", result.get("seconds", 0.0)))
@@ -1052,8 +1089,16 @@ if r is None:
     result_tag = "RESULT --"
 elif _info.get("git_commit"):
     # The commit recorded when the cache was written - the provenance of the
-    # result on screen, not a claim about the code currently running.
-    result_tag = f'CACHED RESULT <span class="tag__v">commit {esc(_info["git_commit"])}</span>'
+    # result on screen, not a claim about the code currently running. When the
+    # code HAS moved since, say so here rather than leaving two commit strings
+    # for the operator to notice: a cache whose code moved is the one way this
+    # demo can show a wrong number without anything looking wrong.
+    _cached_at, _now = _info["git_commit"], running_code_commit()
+    if _now and _now != _cached_at:
+        result_tag = (f'CACHED RESULT <span class="tag__w">commit {esc(_cached_at)} '
+                      f'&mdash; CODE IS NOW {esc(_now)}</span>')
+    else:
+        result_tag = f'CACHED RESULT <span class="tag__v">commit {esc(_cached_at)}</span>'
 else:
     result_tag = "RESULT LIVE RUN"
 _plate.html(
