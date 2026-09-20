@@ -33,25 +33,50 @@ def jpg(a, size=448, q=78):
     _, buf = cv2.imencode(".jpg", a, [cv2.IMWRITE_JPEG_QUALITY, q])
     return "data:image/jpeg;base64," + base64.b64encode(buf.tobytes()).decode()
 
-def trust(pid, label, sub):
+def trust(pid, label, sub, tag):
+    """One pair, as a pair: BOTH inputs, what the matcher proposed, and what was delivered.
+
+    The first version of this page showed `warped_final` for every pair. On a refused pair that
+    is the FALLBACK - the rescued answer - so the page displayed a decent-looking image under a
+    REFUSED banner and taught the opposite of the truth. What makes a refusal legible is the
+    matcher's OWN warp (`warped`), which is the answer the area check threw out.
+    """
     r = pickle.load(open(ROOT / f"demo_cache/results/{pid}.pkl", "rb"))
-    rel = r["reliability"]; g = lambda k: np.asarray(rel[k])
+    g = json.loads((ROOT / "data/pairs" / pid / "geometry_prior.json").read_text(encoding="utf-8"))
+    rel = r["reliability"]; g_ = lambda k: np.asarray(rel[k])
     cells = []
     for y in range(8):
         for x in range(8):
-            ncc = g("area_ncc")[y, x]; res = g("median_inlier_residual_px")[y, x]
-            cells.append({"s": str(g("state")[y, x]), "n": int(g("n_inliers")[y, x]),
-                          "raw": int(g("n_raw")[y, x]),
+            ncc = g_("area_ncc")[y, x]; res = g_("median_inlier_residual_px")[y, x]
+            cells.append({"s": str(g_("state")[y, x]), "n": int(g_("n_inliers")[y, x]),
+                          "raw": int(g_("n_raw")[y, x]),
                           "ncc": None if not np.isfinite(ncc) else round(float(ncc), 3),
                           "res": None if not np.isfinite(res) else round(float(res), 3),
-                          "lir": round(float(g("local_inlier_ratio")[y, x]), 3)})
-    warped = r.get("warped_final") if r.get("warped_final") is not None else r.get("warped")
-    return {"id": pid, "label": label, "sub": sub, "cells": cells,
+                          "lir": round(float(g_("local_inlier_ratio")[y, x]), 3)})
+
+    def side(k):
+        s = g[k]
+        return {"inst": s.get("instrument"), "band": s.get("band"), "prod": s.get("product_id"),
+                "gsd": s.get("resampled_gsd_mpp")}
+
+    ok = rel["global"]["verdict"] == "agrees"
+    warped, final = r.get("warped"), r.get("warped_final")
+    rescued = (final is not None and warped is not None
+               and not np.array_equal(np.nan_to_num(np.asarray(warped)), np.nan_to_num(np.asarray(final))))
+    layers = [{"k": "src", "n": "INPUT A, BEFORE", "img": jpg(r["source"])},
+              {"k": "ref", "n": "INPUT B, REFERENCE", "img": jpg(r["reference"])},
+              {"k": "warp", "n": "MATCHER'S ANSWER" + ("" if ok else " · REJECTED"), "img": jpg(warped)},
+              {"k": "blink", "n": "BLINK vs B", "img": None}]
+    if rescued:
+        layers.append({"k": "fb", "n": "FALLBACK, DELIVERED", "img": jpg(final)})
+    return {"id": pid, "label": label, "sub": sub, "tag": tag, "cells": cells, "ok": ok,
             "counts": {k: int(v) for k, v in rel["counts"].items()},
             "verdict": rel["global"]["verdict"], "method": r["declared"]["method"],
             "why": r["declared"]["why"], "gsd": rel["gsd_mpp"], "n_matches": int(r["n_matches"]),
             "inliers": int(r["ransac"]["inlier_count"]), "seconds": round(float(r["seconds"]), 1),
-            "ref": jpg(r["reference"]), "warped": jpg(warped), "src": jpg(r["source"])}
+            "a": side("source"), "b": side("reference"), "layers": layers,
+            "scale_note": (r.get("scale_factors") or {}).get("note"), "rescued": rescued}
+
 
 real = rows("evaluation/real_pairs_log.csv")
 latest = {}
@@ -102,8 +127,12 @@ demd = {"n": N, "lo": round(lo, 1), "hi": round(hi, 1), "km": round(n * 0.06, 2)
         "b64": base64.b64encode(q.tobytes()).decode()}
 
 data = {"freeze": FREEZE, "dem": demd, "bins": bins,
-        "maps": [trust("sac_ohrc_nac_w06", "SAC benchmark: OHRC to LRO NAC", "cross-sensor, Sun azimuths 174 deg apart"),
-                 trust("site_tc_morning_mi1548_w01", "Kaguya TC to MI 1548 nm", "multi-modal, visible to near-infrared")],
+        "maps": [trust("sac_ohrc_nac_w06", "Chandrayaan-2 OHRC to LRO NAC",
+                        "Two panchromatic cameras, two missions, Sun azimuths 174 deg apart.",
+                        "CROSS-SENSOR"),
+                 trust("site_tc_morning_mi1548_w01", "Kaguya TC to Kaguya MI",
+                        "Visible light matched against 1548 nm near-infrared.",
+                        "MULTI-MODAL")],
         "tiles": tiles, "sweep": sweep, "near": near, "hard": hard, "rotscale": rs}
 blob = json.dumps(data, separators=(",", ":"), ensure_ascii=False).replace("</", "<\/")
 tpl = (HERE / "console.template.html").read_text(encoding="utf-8")
@@ -118,4 +147,4 @@ print("outcomes", dict(collections.Counter(s["o"] for s in sweep)))
 for b_ in bins: print("  bin", b_["a"], b_["b"], "n", b_["n"], "frames", b_["frames"], b_["o"], "inl", b_["inl"])
 print("dem", demd["n"], demd["lo"], demd["hi"], demd["km"], "km")
 print("tiles", len(tiles), "| max med", max(t_["med"] for t_ in tiles), "| rotscale", rs)
-for m in data["maps"]: print(m["id"], m["counts"], m["verdict"], m["method"], m["inliers"])
+for m in data["maps"]: print(m["id"], m["verdict"], "| rescued:", m["rescued"], "| layers:", [l["k"] for l in m["layers"]], "|", m["a"]["inst"], "->", m["b"]["inst"])
