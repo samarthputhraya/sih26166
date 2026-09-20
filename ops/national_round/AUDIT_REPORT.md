@@ -465,6 +465,78 @@ SuperGlue on SAC's pair, or a team with a live demo link and video where we have
 deck is at its honest ceiling for the evidence on disk; the one measurable step left is E4, and
 it is a 20-minute download away.
 
+## Second pass (20 Sep, from 09:00): what the first pass left undone
+
+The first pass closed at 05:10 with five items open or only reasoned about. Nothing below was run
+before this section was written.
+
+**Open audit items (no new numbers):** (a) the live-server demo run and its on-screen strings
+(B5 - only AppTest was run); (b) unhandled inputs - 16-bit data, NaN borders, tiny frames, empty
+matches (B4); (c) `demo-medic`, which Phase D asks for because `core/export.py` changed; (d) the
+claim-checker's L4-L8, reporting-only additions to `ops/make_report.py`; (e) before/after renders
+of the rewritten slides (B6); (f) the README's one-pair command, re-run (B8).
+
+### E5. Trust layer against NON-translation errors (pilot, then logged if it earns a place)
+
+- **Hypothesis.** A planted rotation or scale error about the frame centre displaces the corner
+  cells most. The per-cell area check refuses exactly the displaced cells: of the cells whose true
+  displacement exceeds 2 px, at least 90 % are NOT `verified`; of the cells displaced by less than
+  1 px, at least 80 % stay `verified`. The frame verdict turns `contradicted` only once fewer
+  than 25 % of cells agree, i.e. at corner displacements of roughly 8 px and beyond; below that
+  the frame is `agrees` or `unconfirmed` with a reduced verified count - the map, not the
+  verdict, carries the information.
+- **Metric.** Per trial: the frame verdict, and per cell the true displacement (RMS over a 5×5
+  lattice, `core.reliability._true_error_grid` with the unshifted H as truth) against the cell
+  state. Cell-level sensitivity = share of cells with true displacement > 2 px that are not
+  verified; specificity = share of cells with displacement < 1 px that are verified (among cells
+  verified at d = 0).
+- **Pilot.** 6 windows (2 OHRC→NAC at 3.3°, 1 at 5.8°, 1 NAC→NAC at 9.1°, 2 SAC equatorial at
+  174°), rotation and scale, corner displacement 0, 1, 2, 3, 5, 10, 20 m, both signs; unlogged
+  (`scratchpad/e5_pilot.py`). If the hypothesis holds, the same trial kinds go into
+  `ops/trust_real_calibration.py` as logged rows and into the next freeze; if it fails, the
+  failure is reported here and becomes the Q&A answer.
+- **Drop rule for the deck.** No slide changes unless cell-level sensitivity is at least 90 % on
+  the pilot; slides 2 and 4 are full, so at most one clause on slide 5 would change.
+
+### E6. A tighter final fit (offline, from the frozen bundles' matches)
+
+- **Hypothesis (the audit prompt's candidate).** A final fit on a tighter inlier set improves
+  held-out error as well as in-sample error.
+- **Method.** For the 6 SAC equatorial and the 20 74 °S OHRC → NAC windows, read `matches.csv`
+  from the frozen bundles, make `evaluate()`'s own 80/20 split (seed 0), and fit on the 80 % with
+  (A) MAGSAC++ at 3 px (today's pipeline), (B) MAGSAC++ at 1.5 px, (C) A then least squares on its
+  inliers within 1.5 px, (D) A then least squares on all its inliers. Score each on the SAME
+  held-out 20 %: median residual and RMSE within 3 px.
+- **Adopt only if** a variant lowers the held-out median by more than 2 % on at least 5 of 6 SAC
+  windows and at least 15 of 20 74 °S windows. In-sample RMSE falling by construction does not
+  count. Otherwise dropped, and the SuperGlue comparison stays the Q&A answer it is.
+
+### E7. The whole lit overlap of one OHRC frame with one NAC (dense tiling, with throughput)
+
+- **Why.** "Full-scene tiled processing" is on slide 4 as a *strategy*; the evidence so far is
+  hand-spread windows (8 + 6 per NAC). A reviewer asks what happens between them.
+- **Method.** `ops.cut_site_pairs --nac M1153871873LE --windows 60 --tag full` cuts up to 60
+  non-overlapping 640-px windows (spacing 1.1 × window) over all shared, lit, textured ground of
+  the 74 °S OHRC frame and that NAC (Sun azimuths 3.3° apart); `ops.run_real_pairs
+  "site_ohrc_m1153871873le_w*_full" --log` registers them. Reported as its own REPORT.md section,
+  never merged into the 20-window table.
+- **Hypothesis.** At least 80 % of the windows are accepted; every accepted window's held-out
+  median is under 1.5 px on the 0.931 m grid; the rest are `unconfirmed` or `contradicted`
+  (flagged), none silently wrong as judged by loop-free evidence (archive offset consistent with
+  its neighbours within 50 m).
+- **Rows.** One real_pairs_log row per window plus a throughput line (windows, total wall time).
+- **Drop rule.** None for REPORT.md - the result is reported whatever it is. The deck gains a
+  clause only if acceptance is at least 80 %.
+
+### E8. DEM relighting of the reference for the 60-120° band: assessed, not run
+
+The idea needs a DEM at about the reference's resolution under the source's Sun. On disk: LOLA
+`ldem_60s_60m` (60 m) at 74 °S and the TMC-2 DTM at SAC's site (tens of metres). Both are 50-240×
+coarser than the 0.25-1.6 m images; a relit 60 m surface shares no matchable texture with a 1 m
+NAC window (the LOLA rung at 240× already finds 0 matches). NAC DTMs (2-5 m) exist for a few
+sites, none of ours. Verdict: not feasible on the data we hold before 24 Sep; it stays on slide 4
+as a strategy ("LOLA orthorectification") and as a finale item. No number, no claim.
+
 ## Findings as first written (before Phase C/D; their resolutions are in the table above)
 
 (ID · severity · what · evidence · what a SAC reviewer concludes · fix and cost)
