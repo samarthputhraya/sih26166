@@ -58,6 +58,8 @@ SKELETON = """<!doctype html>
 <html lang="en"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<meta name="description" content="Chandrayaan-2 image registration across Sun angle, scale and sensor, with an independent area check that never sees the matches and a verdict for every region of every result. Team LunaXX, SIH 2026 problem statement SIH26166.">
 <style>
   :root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
   body{margin:0;font:14px system-ui,-apple-system,sans-serif;background:#faf9f7}
@@ -68,6 +70,14 @@ SKELETON = """<!doctype html>
 <!--PAGE-->
 </body></html>
 """
+
+
+FAVICON = (
+    b'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">'
+    b'<rect width="32" height="32" fill="#0b0d11"/>'
+    b'<circle cx="16" cy="16" r="9" fill="none" stroke="#e9e5dc" stroke-width="2"/>'
+    b'<path d="M16 7a9 9 0 0 0 0 18z" fill="#e9e5dc"/></svg>'
+)
 
 
 def _document(fragment: str) -> str:
@@ -137,7 +147,12 @@ def register(body: dict) -> dict:
                     "gsd": round(float(gsd), 3) if gsd else "unknown"}
 
         sa, sb = side(a, "A"), side(b, "B")
-        scaled = (r.get("scale_factors") or {}).get("note") or ""
+        # core's note is written for a log line, not a panel: it ends in its own full stop (so
+        # " Scale: {note}." printed "..") and it names a NAC EDR label even when neither upload
+        # is a NAC. Trim the sentence and drop the instrument-specific hint; the general advice
+        # is already in the next sentence. Cosmetic only - no value is touched.
+        scaled = ((r.get("scale_factors") or {}).get("note") or "").strip()
+        scaled = scaled.split(". A NAC EDR label")[0].rstrip(". ")
         plain = (
             "<b>This ran just now, on this machine.</b> Not a cached result: "
             f"<code>core.pipeline.run_all</code> took {wall:.1f} s on CPU, the same function that "
@@ -181,6 +196,26 @@ class Handler(BaseHTTPRequestHandler):
             code = 500
         self._send(code, body)
 
+    #: Read and throw away an over-size body so the client can finish sending and then read our
+    #: reply. Bounded in both bytes and time: a rejected upload must not become a way to make the
+    #: demo laptop sit in a read loop. Past the bound we give up and let the connection close,
+    #: which is the old behaviour and no worse.
+    DRAIN_LIMIT = 512 * 1024 * 1024
+    DRAIN_SECONDS = 20.0
+
+    def _drain(self, n: int) -> None:
+        if n <= 0 or n > self.DRAIN_LIMIT:
+            return
+        left, deadline = n, time.monotonic() + self.DRAIN_SECONDS
+        try:
+            while left > 0 and time.monotonic() < deadline:
+                chunk = self.rfile.read(min(left, 1 << 20))
+                if not chunk:
+                    break
+                left -= len(chunk)
+        except OSError:
+            pass
+
     def do_GET(self):
         path = self.path.split("?", 1)[0]
         if path in ("/", "/index.html"):
@@ -192,6 +227,10 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(200, {"ok": True, "service": "lunaxx-console",
                                     "commit": _commit(), "max_bytes": MAX_UPLOAD,
                                     "accepts": sorted(ALLOWED)})
+        if path == "/favicon.ico":
+            # Chrome asks for this unprompted and a 404 is the only error in the console.
+            # One inline SVG moon, so a judge's devtools open on a clean log.
+            return self._send(200, FAVICON, "image/svg+xml")
         self._json(404, {"error": "not found"})
 
     def do_POST(self):
@@ -202,7 +241,18 @@ class Handler(BaseHTTPRequestHandler):
         except ValueError:
             return self._json(400, {"error": "bad Content-Length"})
         if n <= 0 or n > MAX_UPLOAD:
-            return self._json(413, {"error": f"body must be 1..{MAX_UPLOAD} bytes, got {n}"})
+            # Replying without reading the body leaves the client still uploading into a socket
+            # nobody is draining: the connection resets and fetch() throws "Failed to fetch", so
+            # the operator never sees this message. Drain first (bounded), then answer. Found by
+            # uploading the 52.8 MB roster pair through the browser's own file inputs.
+            self._drain(n)
+            mb = lambda b: f"{b / 1048576:.1f} MB"                               # noqa: E731
+            return self._json(413, {"error": (
+                f"Request body is {mb(n)}; this server accepts {mb(MAX_UPLOAD)} "
+                f"(about {mb(MAX_UPLOAD * 3 / 4)} of image, because the payload is base64). "
+                f"Crop or downsample, or register a 640-px window instead of the whole frame - "
+                f"that is what every frozen pair on the page is. The cap is a memory guard on "
+                f"this laptop, not a limit of the pipeline.")})
         try:
             body = json.loads(self.rfile.read(n).decode("utf-8"))
             if not isinstance(body, dict) or "a" not in body or "b" not in body:

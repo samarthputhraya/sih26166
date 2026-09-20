@@ -231,7 +231,7 @@ svg text{font-family:var(--f-mono);fill:var(--dim)}
 
 footer{border-top:1px solid var(--rule);margin-top:clamp(30px,5vw,60px);padding-block:30px 46px;color:var(--dim);font-size:13.2px}
 .foot{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:24px 40px}
-.foot h4{font:500 11.5px/1 var(--f-mono);letter-spacing:.14em;text-transform:uppercase;color:var(--ink2);margin:0 0 10px}
+.foot h3{font:500 11.5px/1 var(--f-mono);letter-spacing:.14em;text-transform:uppercase;color:var(--ink2);margin:0 0 10px}
 .foot p{margin:0 0 7px;line-height:1.5} .foot code{font:400 12.5px/1.5 var(--f-mono);color:var(--ink2)}
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.pulse{animation:none;display:none}.plateimg .cell{transition:none}}
 </style>
@@ -241,7 +241,7 @@ footer{border-top:1px solid var(--rule);margin-top:clamp(30px,5vw,60px);padding-
   <span class="plate__ps">SIH26166 · CHANDRAYAAN-2 IMAGE CORRESPONDENCE</span>
   <span class="lamp"><i></i>EVIDENCE FROZEN · <span id="fz"></span></span>
   <nav aria-label="Instruments">
-    <a href="#live" id="navlive" hidden>LIVE</a><a href="#sun">SUN</a><a href="#trust">TRUST MAP</a><a href="#tile">TILING</a><a href="#cal">CALIBRATION</a><a href="#flow">PIPELINE</a><a href="#registers">RESULTS</a><a href="#refused">REFUSALS</a>
+    <a href="#sun">SUN</a><a href="#live" id="navlive" hidden>LIVE</a><a href="#trust">TRUST MAP</a><a href="#tile">TILING</a><a href="#cal">CALIBRATION</a><a href="#flow">PIPELINE</a><a href="#registers">RESULTS</a><a href="#refused">REFUSALS</a>
   </nav>
 </div></header>
 
@@ -333,7 +333,8 @@ footer{border-top:1px solid var(--rule);margin-top:clamp(30px,5vw,60px);padding-
           <span><i style="background:var(--weak)"></i>weak: measured, does not hold</span>
           <span><i style="background:var(--none)"></i>no evidence: unmeasured, never guessed</span>
         </div>
-        <p class="note">A cell is <strong style="color:var(--ink)">verified</strong> only with at least 3 inliers, a local inlier ratio of 0.5 or more, and an FFT cross-correlation of the warped image against the reference that peaks within 2 px at NCC 0.3 or more. A cell with no matches is <em>no evidence</em>. It is never painted green by interpolation. The frame is <em>contradicted</em> when fewer than 25% of measurable cells agree with the matcher's transform, and then nothing in it is verified.</p>
+        <p class="note">A cell is <strong style="color:var(--ink)">verified</strong> only with at least 3 inliers, a local inlier ratio of 0.5 or more, and an FFT cross-correlation of the warped image against the reference that peaks within 2 px at NCC 0.3 or more. A cell with no matches is <em>no evidence</em>. It is never painted green by interpolation. The frame is <em>contradicted</em> when fewer than 25&nbsp;% of the cells the area check could measure agree with the matcher's transform, and then nothing in it is verified.</p>
+        <p class="note"><strong style="color:var(--ink)">Two counts, one grid, and they are not the same count.</strong> The three cell states above count <em>match</em> evidence: <em>no evidence</em> means too few inliers in that cell to judge. The verdict line counts <em>cells the area check could measure</em>: cells where cross-correlating the warped image against the reference returned a peak at all. A cell can carry no match evidence and still be measurable by the area check — that is the whole point of a check that never looks at the matches — so the two numbers differ on purpose and neither is a total of the other.</p>
       </div>
     </div>
   </section>
@@ -407,9 +408,9 @@ footer{border-top:1px solid var(--rule);margin-top:clamp(30px,5vw,60px);padding-
           <tr><td>OHRC &rarr; LRO NAC, SAC's polar benchmark <span class="tagk">CROSS-SENSOR</span></td><td>Sun azimuths 132&deg; apart. Two windows flagged rather than shipped.</td><td>4 / 6 accepted</td></tr>
           <tr><td>OHRC &rarr; LRO NAC, the Sun sweep <span class="tagk">CROSS-SENSOR</span></td><td>One OHRC frame against 25 NAC frames, Sun azimuths 3&ndash;153&deg; apart, 69 windows. Nothing wrongly accepted in any band.</td><td>51 registered<br>0 undetected failures</td></tr>
           <tr><td>Kaguya TC &rarr; Kaguya MI 749 nm <span class="tagk">CROSS-SENSOR</span></td><td>Visible against visible, 2&times; scale gap, on MI's 14.8 m grid.</td><td>3 / 3 accepted<br>0.23&ndash;0.47 px</td></tr>
-          <tr><td>Kaguya TC &rarr; Kaguya MI 1548 nm <span class="tagk">MULTI-MODAL</span></td><td>Matcher refused; global correlation delivered instead and declared as such. Measured against the visible-band fit of the same window.</td><td>3 / 3 delivered<br>0.23&ndash;1.09 px</td></tr>
+          <tr><td>Kaguya TC &rarr; Kaguya MI 1548 nm <span class="tagk">MULTI-MODAL</span></td><td>Matcher refused; global correlation delivered instead and declared as such. Measured against the visible-band fit of the same window, on MI's 14.8 m grid.</td><td>3 / 3 delivered<br>0.23&ndash;1.09 px</td></tr>
           <tr><td>OHRC &rarr; Kaguya TC ortho map <span class="tagk">CROSS-SENSOR</span></td><td>A 29.6&times; scale gap, 0.25 m against 7.4 m.</td><td>3 / 4 accepted</td></tr>
-          <tr><td>OHRC &rarr; NAC A &rarr; NAC B, closed loops</td><td>Three registrations round a loop must return to the start. Cancels any error attached to a single image, so it measures correspondence, not geolocation.</td><td>6 loops close to<br>0.086 px = 0.107 m</td></tr>
+          <tr><td>OHRC &rarr; NAC A &rarr; NAC B, closed loops <span class="tagk">CROSS-SENSOR</span></td><td>Three registrations round a loop must return to the start. Cancels any error attached to a single image, so it measures correspondence, not geolocation. Closure on the 1.245 m NAC&nbsp;B grid.</td><td>6 loops close to<br>0.086 px = 0.107 m</td></tr>
           <tr><td>MiLOI, LRO NAC &harr; NAC <span class="tagk">SAME SENSOR</span></td><td>81 published pairs of one ground under many Suns, judged against a truth network built from other pairs.</td><td>33 / 33 accepted<br>are correct</td></tr>
         </tbody>
       </table></div>
@@ -426,7 +427,7 @@ footer{border-top:1px solid var(--rule);margin-top:clamp(30px,5vw,60px);padding-
         <tbody>
           <tr><td>Kaguya TC → MI 1548 nm <span class="tagk">MULTI-MODAL</span></td><td>Matcher refused on every window. The declared fallback lands 3.4 to 16.2 m from the visible-band registration of the same window (0.23 to 1.09 px on MI's 14.8 m grid).</td><td>3 / 3 refused</td></tr>
           <tr><td>Kaguya TC → Chandrayaan-2 IIRS <span class="tagk">MULTI-MODAL</span></td><td>12× scale gap, 89 m grid. None registers.</td><td>10 / 11 refused</td></tr>
-          <tr><td>OHRC → TMC-2 at SAC's site <span class="tagk">CROSS-SENSOR</span></td><td>Sun azimuths 120° and incidence 59° apart.</td><td>4 / 4 refused</td></tr>
+          <tr><td>OHRC → TMC-2 at SAC's site <span class="tagk">SAME MISSION</span></td><td>Two different cameras on one spacecraft. Sun azimuths 120° and incidence 59° apart.</td><td>4 / 4 refused</td></tr>
           <tr><td>OHRC → NAC, Sun azimuths 60° to 120° apart <span class="tagk">CROSS-SENSOR</span></td><td>The hard band of the real sweep. Nothing accepted, and nothing wrongly accepted.</td><td>0 / 12 accepted</td></tr>
           <tr><td>MiLOI NAC ↔ NAC, Sun vectors 90° or more apart <span class="tagk">SAME SENSOR</span></td><td>No method registered any of them: ours, SIFT, ORB or AKAZE. All in scene S3.</td><td>0 / 16 any method</td></tr>
           <tr><td>TMC-2 fore ↔ aft <span class="tagk">SAME SENSOR</span></td><td>Relief parallax is not a homography. Held-out median 2.6 px (15.5 m) on its 5.9 m grid.</td><td>1 / 4 accepted</td></tr>
@@ -438,14 +439,14 @@ footer{border-top:1px solid var(--rule);margin-top:clamp(30px,5vw,60px);padding-
 </main>
 
 <footer><div class="wrap foot">
-  <div><h4>Words we hold to</h4>
+  <div><h3>Words we hold to</h3>
     <p><strong style="color:var(--ink2)">Cross-sensor</strong> means different instruments. NAC ↔ NAC and TMC-2 fore ↔ aft are the same sensor and are labelled so.</p>
     <p><strong style="color:var(--ink2)">Multi-modal</strong> means visible ↔ infrared or elevation. Two panchromatic cameras are not.</p>
     <p><strong style="color:var(--ink2)">Sub-pixel</strong> always names its grid and gives metres.</p></div>
-  <div><h4>Reproduce every number</h4>
+  <div><h3>Reproduce every number</h3>
     <p><code>python -m ops.freeze</code><br><code>python -m ops.make_report</code></p>
     <p>Re-runs every piece of evidence on one clean commit and renders REPORT.md from the logs. This page reads the same logs.</p></div>
-  <div><h4>Data</h4>
+  <div><h3>Data</h3>
     <p>Chandrayaan-2 OHRC, TMC-2, IIRS: ISRO PRADAN. LROC NAC and LOLA: NASA PDS. Kaguya TC and MI: JAXA SELENE archive. MiLOI: Xie, Liu, Di et al., Remote Sensing 17(13):2302.</p>
     <p>Team LunaXX · Smart India Hackathon 2026 · problem statement SIH26166.</p></div>
 </div></footer>
@@ -458,6 +459,16 @@ const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).
 const C = {verified:css('--verified'), weak:css('--weak'), none:css('--none'), refused:css('--refused'),
            ink:css('--ink'), dim:css('--dim'), rule:css('--rule'), rule2:css('--rule2'), ground:css('--ground')};
 const fmt = n => n.toLocaleString('en-IN');
+/* Two different tests run over the same 64 cells and both used to be called "cells" on this
+   panel. The cell STATES (verified / weak / no evidence) count match evidence in the cell;
+   core/reliability.py's verdict note counts cells where the AREA CHECK got a correlation peak
+   (`np.isfinite(area_ncc)`). Printing "59 no evidence" a line above "51 measurable cells" read
+   as a contradiction. Same numbers, said so they cannot be confused. */
+const whySaid = w => String(w).replace('->', '→')
+                              .replace(/measurable cells/g, 'cells the area check could measure')
+                              .replace(/(\d+) cells\)/, '$1 of them)');
+const countsSaid = c => `${c.verified} of 64 cells verified, ${c.weak} weak, `
+                      + `${c.no_evidence} with no match evidence`;
 const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 $('#fz').textContent = D.freeze;
 
@@ -472,14 +483,19 @@ $('#fz').textContent = D.freeze;
 }
 $('#fz2').textContent = D.freeze;
 
-/* ---------- telemetry strip: every figure is on the claim-checked deck ---------- */
+/* ---------- telemetry strip: every figure is on the claim-checked deck ----------
+   Order is deliberate. The first three tiles are the thing no competitor has: a check
+   that is independent of the matcher, its false-alarm rate, and its detection floor.
+   Accuracy comes after, because accuracy is the part everyone claims. */
 $('#tele').innerHTML = [
+  ['8<small>×8</small>','cells vote on the transform — the area check never sees the matches'],
+  ['0<small>/44 · 0/16</small>','false alarms at 0 m, on the two Sun populations'],
+  ['100<small>%</small>','of planted 5 m errors flagged on the 22 near-Sun windows (84 % on SAC’s 8; 74.4 % at 3 m)'],
   ['160','distinct ground windows, 8 instrument pairings'],
   ['37<small>/37</small>','tiled windows accepted over 13.1 km²'],
   ['0.61<small>px</small>','= 0.57 m held-out median on the 0.93 m grid'],
   ['0.086<small>px</small>','= 5.1 m against exact truth (synthetic, 60 m grid)'],
-  ['0<small>/44 · 0/16</small>','false alarms, two Sun populations'],
-  ['8.2<small>s</small>','median per 640-px window, CPU only'],
+  ['8.2<small>s</small>','median per 640-px window over 89 OHRC→NAC windows, CPU only'],
 ].map(([b,s]) => `<div><b>${b}</b><span>${s}</span></div>`).join('');
 
 /* ================= SUN instrument ================= */
@@ -511,7 +527,7 @@ function drawScatter(dz){
     <dt><i class="k" style="background:${C.weak}"></i>correct, but refused</dt><dd>${g('false_alarm')}</dd>
     <dt><i class="k" style="background:${C.none}"></i>image cannot judge</dt><dd>${g('inconclusive')}</dd>
     <dt>median inliers per window</dt><dd>${fmt(b.inl)}</dd></dl>
-    <dl class="zero" style="border-top:1px solid var(--rule2)"><dt>failed, and NOT caught</dt><dd>0</dd></dl>` +
+    <dl class="zero" style="border-top:1px solid var(--rule2)"><dt>failed, and NOT caught</dt><dd>${g('missed_failure')}</dd></dl>` +
     (ex ? `<div class="exact">exact truth, synthetic LOLA render, 60 m grid, Suns ${ex[0]}° apart: <span style="color:var(--ink)">${ex[1]}</span></div>`
         : `<div class="exact">no exact-truth figure is quoted past 45°: the synthetic curve in REPORT.md stops there</div>`);
   $('#dzv').textContent = Math.round(dz) + '°';
@@ -598,7 +614,26 @@ drawScatter(0); lastDz = 0; if (render3d) render3d(); requestAnimationFrame(tick
 (function(){
   const files = {a:null, b:null};
   const log = $('#log'), go = $('#go');
+  let maxBytes = 0;                       // from api/health; 0 until the server answers
   const say = (m, bad) => { log.textContent = m; log.classList.toggle('bad', !!bad); };
+
+  /* The payload is JSON+base64, so raw bytes inflate by 4/3 against the server's cap.
+     Check it HERE: the server's own 413 is correct but it replies without draining the
+     upload, so the browser sees ERR_CONNECTION_RESET and prints "Failed to fetch", which
+     tells the operator nothing. Found by uploading the 52.8 MB roster pair. */
+  const payloadBytes = () => Math.ceil((files.a.size + files.b.size) / 3) * 4 + 512;
+  const mb = n => (n / 1048576).toFixed(1) + ' MB';
+
+  /* A result panel that outlives the run it describes is a lie in front of a judge: a
+     failed upload used to leave the PREVIOUS pair's green ACCEPTED panel on screen under
+     the words "This ran just now, on this machine." Clear it the moment a run starts. */
+  const clearResult = msg => {
+    $('#lverdict').innerHTML = `<b style="color:var(--dim)">${msg}</b><span>The result appears here, `
+      + `drawn by the same renderer the frozen pairs use, so a live panel and a frozen panel cannot `
+      + `disagree about what a verdict means.</span>`;
+    $('#lgloss').textContent = 'Nothing is being claimed about this pair until the pipeline returns.';
+    const io = $('#lio'); io.hidden = true; io.innerHTML = '';
+  };
   const b64 = f => new Promise((res, rej) => { const r = new FileReader();
     r.onload = () => res(r.result.slice(r.result.indexOf(',') + 1)); r.onerror = rej; r.readAsDataURL(f); });
 
@@ -606,8 +641,11 @@ drawScatter(0); lastDz = 0; if (render3d) render3d(); requestAnimationFrame(tick
     if (!file) return;
     files[which] = file;
     const box = $('#drop' + which.toUpperCase());
-    const nm = file.name.length > 26 ? file.name.slice(0, 24) + '\u2026' : file.name;
-    box.querySelector('span').textContent = nm + '  \u00b7  ' + (file.size/1048576).toFixed(1) + ' MB';
+    /* Truncate in the MIDDLE. Two windows of one frame share a 24-character prefix, so
+       head-truncation printed the same name in both boxes. */
+    const n = file.name;
+    const nm = n.length > 30 ? n.slice(0, 14) + '\u2026' + n.slice(-13) : n;
+    box.querySelector('span').textContent = nm + '  \u00b7  ' + mb(file.size);
     if (/\.(png|jpe?g)$/i.test(file.name)) {
       const u = URL.createObjectURL(file), old = box.querySelector('img');
       if (old) old.remove();
@@ -615,7 +653,18 @@ drawScatter(0); lastDz = 0; if (render3d) render3d(); requestAnimationFrame(tick
       box.appendChild(im);
     }
     go.disabled = !(files.a && files.b);
+    if (!go.disabled && maxBytes && payloadBytes() > maxBytes) {
+      go.disabled = true;
+      $('#hint').textContent = 'too large';
+      say(`Too large to send: ${mb(files.a.size + files.b.size)} of image travels as `
+        + `${mb(payloadBytes())} of base64, and this server accepts ${mb(maxBytes)} per request `
+        + `(so about ${mb(maxBytes * 3 / 4)} of image). Crop or downsample one of them, or register a `
+        + `640-px window instead of the whole frame — that is what every frozen pair on this page is. `
+        + `The cap is a memory guard, not a limit of the pipeline.`, true);
+      return;
+    }
     $('#hint').textContent = go.disabled ? 'choose two images' : 'ready';
+    if (!go.disabled) say('');
   }
   ['a','b'].forEach(w => {
     const box = $('#drop' + w.toUpperCase()), inp = $('#file' + w.toUpperCase());
@@ -627,6 +676,7 @@ drawScatter(0); lastDz = 0; if (render3d) render3d(); requestAnimationFrame(tick
 
   go.addEventListener('click', async () => {
     go.disabled = true; $('#hint').textContent = 'running';
+    clearResult('RUNNING…');
     const t0 = performance.now();
     const tick = setInterval(() => say('running core.pipeline.run_all on CPU \u2014 ' + ((performance.now()-t0)/1000).toFixed(0) + ' s elapsed'), 1000);
     say('reading the two files\u2026');
@@ -637,7 +687,7 @@ drawScatter(0); lastDz = 0; if (render3d) render3d(); requestAnimationFrame(tick
         body: JSON.stringify({a:{name:files.a.name, data:a}, b:{name:files.b.name, data:b}})});
       const m = await res.json();
       clearInterval(tick);
-      if (!res.ok) { say(m.error || ('HTTP ' + res.status), true); go.disabled = false; $('#hint').textContent='ready'; return; }
+      if (!res.ok) { say(m.error || ('HTTP ' + res.status), true); clearResult('NOT REGISTERED'); go.disabled = false; $('#hint').textContent='ready'; return; }
       say('done in ' + ((performance.now()-t0)/1000).toFixed(1) + ' s \u00b7 ' + m.seconds + ' s inside run_all');
       D.maps.push(m);
       const i = D.maps.length - 1;
@@ -645,11 +695,20 @@ drawScatter(0); lastDz = 0; if (render3d) render3d(); requestAnimationFrame(tick
         `<button type="button" data-p="${i}" aria-pressed="false" title="${m.sub}"><i style="background:${m.ok ? C.verified : m.verdict==='unconfirmed' ? C.weak : C.refused}"></i><span><b>${m.label}</b><em>${m.tag} \u00b7 ${m.verdict.toUpperCase()}</em></span></button>`);
       setPair(i);
       const lv = vstate(m);
-      $('#lverdict').innerHTML = `<b style="color:${lv.col}">${lv.word}</b><span>${m.counts.verified} of 64 cells verified \u00b7 ${m.inliers.toLocaleString('en-IN')} inliers of ${m.n_matches.toLocaleString('en-IN')} matches \u00b7 ${m.seconds} s on CPU<br>method declared: ${m.method}<br>${m.why.replace('->','\u2192')}</span>`;
+      $('#lverdict').innerHTML = `<b style="color:${lv.col}">${lv.word}</b><span>${countsSaid(m.counts)} \u00b7 ${fmt(m.inliers)} inliers of ${fmt(m.n_matches)} matches \u00b7 ${m.seconds} s on CPU<br>method declared: ${m.method}<br>${whySaid(m.why)}</span>`;
       $('#lgloss').innerHTML = m.plain;
       $('#trust').scrollIntoView({behavior:'smooth', block:'start'});
     } catch (e) {
-      clearInterval(tick); say(String(e && e.message || e), true);
+      clearInterval(tick);
+      const raw = String(e && e.message || e);
+      /* "Failed to fetch" is what fetch() throws for a dropped connection, and it is what an
+         over-cap upload produced before the pre-check above. Say something an operator can act on. */
+      say(/fetch/i.test(raw)
+        ? `The connection to web/server.py dropped before it answered (${raw}). Check the terminal `
+          + `running "python -m web.server" is still alive, then try again. If the pair is large, `
+          + `register a window rather than the whole frame.`
+        : raw, true);
+      clearResult('NOT REGISTERED');
     }
     go.disabled = false; $('#hint').textContent = 'ready';
   });
@@ -659,8 +718,10 @@ drawScatter(0); lastDz = 0; if (render3d) render3d(); requestAnimationFrame(tick
     $('#live').hidden = false;
     $('#navlive').hidden = false;
     $('#whatmode').textContent = 'An instrument panel over frozen results — and, because it is being served '
-      + 'by web/server.py on this machine, it will also register a pair you hand it (see LIVE, above).';
-    say('server ready \u00b7 code commit ' + h.commit);
+      + 'by web/server.py on this machine, it will also register a pair you hand it (the LIVE bay, below).';
+    maxBytes = Number(h.max_bytes) || 0;
+    /* maxBytes caps the JSON+base64 body, so the operator's usable image budget is 3/4 of it. */
+    say('server ready \u00b7 code commit ' + h.commit + ' \u00b7 up to ' + mb(maxBytes * 3 / 4) + ' of image per pair');
   }).catch(() => {});
 })();
 
@@ -710,7 +771,7 @@ function vstate(m){
 function drawVerdict(){
   const m = D.maps[tr.p], v = vstate(m);
   $('#verdict').innerHTML = `<b style="color:${v.col}">${v.word}</b>
-    <span>${m.label} <span class="tagk">${m.tag}</span><br>${m.sub}<br>${m.counts.verified} of 64 cells verified, ${m.counts.weak} weak, ${m.counts.no_evidence} no evidence \u00b7 ${fmt(m.inliers)} inliers of ${fmt(m.n_matches)} matches \u00b7 ${m.seconds} s on CPU<br>method declared: ${m.method}<br>${m.why.replace('->','\u2192')}</span>`;
+    <span>${m.label} <span class="tagk">${m.tag}</span><br>${m.sub}<br>${countsSaid(m.counts)} \u00b7 ${fmt(m.inliers)} inliers of ${fmt(m.n_matches)} matches \u00b7 ${m.seconds} s on CPU<br>method declared: ${m.method}<br>${whySaid(m.why)}</span>`;
   $('#gloss').innerHTML = m.plain;
 }
 function cap(s){ return (s.band ? s.band + '<br>' : '') + s.gsd + ' m per pixel'; }

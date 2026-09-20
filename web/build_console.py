@@ -56,6 +56,25 @@ def twin(pid, other, band, other_band):
             "fallback_m": round(f(fb["disagreement_median_m"]), 1) if fb else None}
 
 
+#: Wavebands the cutter labelled on the wrong side of a round number.
+#:
+#: `ops/cut_site_pairs.py` writes `"<nm> nm (near-infrared)"` when `nm >= 1000` and
+#: `"(visible/near-visible)"` below it. IIRS band 1000 centres at **998.8 nm**, so it misses by
+#: 1.2 nm and the panel printed "visible/near-visible" on the pair chipped MULTI-MODAL — beside
+#: a CROSS-SENSOR pair (Kaguya MI 749 nm) carrying the exact same descriptor. That is an
+#: Invariant 2 contradiction on screen: the chip says visible<->infrared, the label says visible.
+#:
+#: 998.8 nm is near-infrared by any convention; the visible ends around 700-750 nm. The chip was
+#: right and the label was wrong, so the label is corrected HERE, in the presentation layer.
+#: The cutter is NOT touched: `ops/` is inside the evidence-freeze stamp path and editing it
+#: would invalidate `7dd4e5b` for a display string. Fix it there after 27 Sep, with F18/F19.
+BAND_FIX = {"998.8 nm (visible/near-visible)": "998.8 nm (near-infrared)"}
+
+
+def _band(b):
+    return BAND_FIX.get(b, b)
+
+
 def trust(pid, label, sub, tag, plain):
     """A frozen pair, rendered by the SAME function the live server uses (web/panel.py)."""
     r = pickle.load(open(ROOT / f"demo_cache/results/{pid}.pkl", "rb"))
@@ -63,7 +82,7 @@ def trust(pid, label, sub, tag, plain):
 
     def side(k):
         s = g[k]
-        return {"inst": s.get("instrument"), "band": s.get("band"),
+        return {"inst": s.get("instrument"), "band": _band(s.get("band")),
                 "prod": s.get("product_id"), "gsd": s.get("resampled_gsd_mpp")}
 
     return panel(r, side("source"), side("reference"), pid=pid, label=label, sub=sub, tag=tag,
@@ -149,15 +168,61 @@ demd = {"n": N, "lo": round(lo, 1), "hi": round(hi, 1), "km": round(n * 0.06, 2)
 data = {"freeze": FREEZE, "dem": demd, "bins": bins,
         "maps": [trust(*r) for r in ROSTER],
         "tiles": tiles, "sweep": sweep, "near": near, "hard": hard, "rotscale": rs}
-blob = json.dumps(data, separators=(",", ":"), ensure_ascii=False).replace("</", "<\/")
+blob = json.dumps(data, separators=(",", ":"), ensure_ascii=False).replace("</", "<\\/")
 tpl = (HERE / "console.template.html").read_text(encoding="utf-8")
 MARK = "/*__DATA__*/null"
 if tpl.count(MARK) != 1:
     raise SystemExit(f"template must contain {MARK!r} exactly once, found {tpl.count(MARK)}")
 (HERE / "dist").mkdir(exist_ok=True)
+page = tpl.replace(MARK, blob)
+
+# Paint the freeze commit into the markup instead of waiting for JS. On a slow link the
+# provenance sentence used to render as "at commit  , the same commit the deck quotes" for
+# the 44 s before DOMContentLoaded - the one sentence that asserts provenance, with its
+# provenance missing. The JS assignment stays; it is now idempotent.
+for _id in ("fz", "fz2"):
+    src, dst = f'<span id="{_id}"></span>', f'<span id="{_id}">{FREEZE}</span>'
+    if src not in page:
+        raise SystemExit(f"template no longer contains {src!r}")
+    page = page.replace(src, dst)
+
 OUT = HERE / "dist" / "mission-console.html"
-OUT.write_text(tpl.replace(MARK, blob), encoding="utf-8")
+OUT.write_text(page, encoding="utf-8")
 print(f"wrote {OUT.relative_to(ROOT)}: {OUT.stat().st_size/1024:.0f} KB")
+
+# mission-console.html is a FRAGMENT: the Artifact runtime supplies the document around it.
+# Served raw by a static server or opened as file:// it lands in QUIRKS MODE, is decoded as
+# windows-1252 (60 mojibake sequences), has no viewport meta, and `[hidden]` loses to
+# `.io{display:grid}` so a hidden trust-map layer paints over the visible one. web/README.md
+# section 1 used to tell operators to do exactly that. So write the wrapped document too, and
+# let index.html be the thing anyone opens by hand.
+from web.server import SKELETON                                            # noqa: E402
+IDX = HERE / "dist" / "index.html"
+IDX.write_text(SKELETON.replace("<!--PAGE-->", page), encoding="utf-8")
+print(f"wrote {IDX.relative_to(ROOT)}: {IDX.stat().st_size/1024:.0f} KB  (standards mode, UTF-8, viewport)")
+
+# The page is one 2 MB document whose entire behaviour is one inline <script>. A syntax error
+# in it is silent in the build and total in the browser: nothing renders past the hero, and the
+# only sign is one line in a console nobody has open. It has happened once (a backtick inside a
+# template literal). Parse it here if node is available; skip quietly if it is not.
+import re                                                                  # noqa: E402
+import shutil                                                              # noqa: E402
+import subprocess                                                          # noqa: E402
+import tempfile                                                            # noqa: E402
+_node = shutil.which("node")
+if _node:
+    _scripts = [s for s in re.findall(r"<script[^>]*>(.*?)</script>", page, re.S) if s.strip()]
+    for _i, _src in enumerate(_scripts):
+        with tempfile.NamedTemporaryFile("w", suffix=".mjs", delete=False,
+                                         encoding="utf-8") as _f:
+            _f.write(_src)
+        _r = subprocess.run([_node, "--check", _f.name], capture_output=True, text=True)
+        pathlib.Path(_f.name).unlink(missing_ok=True)
+        if _r.returncode:
+            raise SystemExit(f"inline script {_i} does not parse:\n{_r.stderr}")
+    print(f"js: {len(_scripts)} inline script(s) parse clean (node --check)")
+else:
+    print("js: node not found, skipping the syntax check")
 print("outcomes", dict(collections.Counter(s["o"] for s in sweep)))
 for b_ in bins: print("  bin", b_["a"], b_["b"], "n", b_["n"], "frames", b_["frames"], b_["o"], "inl", b_["inl"])
 print("dem", demd["n"], demd["lo"], demd["hi"], demd["km"], "km")

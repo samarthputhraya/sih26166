@@ -284,6 +284,14 @@ S5 = [
 ]
 
 S6 = [
+    # First group on purpose. The portal takes only a PS, a title, a description and this PDF -
+    # there is no link field - so this line is the ONLY route a judge has from the deck to the
+    # code, the evidence or the report. Slide 6 is the one slide with room (Known issue 11).
+    ("Code, evidence and the full report", 0, True, BLUE),
+    ("github.com/samarthputhraya/sih26166 — the pipeline, the evidence logs, and REPORT.md "
+     "regenerated from those logs by one command", 1, False, ACCENT),
+    ("Every figure on these slides is in REPORT.md at the evidence-freeze commit 7dd4e5b",
+     1, False, INK),
     ("Lunar domain", 0, True, BLUE),
     ("Makharia, Singla, Amitabh, Dube, Sharma — Space Applications Centre (ISRO) and Manipal "
      "University Jaipur, 2025 · arxiv.org/abs/2509.04775", 1, False, INK),

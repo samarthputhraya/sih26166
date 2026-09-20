@@ -6,7 +6,12 @@ in any official source, so a short and a long version of each is given below. Pa
 one that fits. Every number here is in `REPORT.md` at the evidence-freeze commit `7dd4e5b` (20 Sep
 2026, after the audit's second pass); the deck carries the same ones. The character counts are the
 quoted block joined into one paragraph with single spaces - the form you would paste - and they
-are recounted whenever this file changes (the earlier "1,322" was stale by 228).
+are recounted whenever this file changes (they have been stale twice; recount, do not trust a
+number written here by hand).
+
+**Both descriptions now end with the repository URL**, because the portal has no link field and
+the PDF is otherwise a closed box: slide 6 carries the same URL. If the repo is private on the
+day, cut that clause rather than shipping a link a judge cannot open.
 
 | Field | Value |
 |---|---|
@@ -28,7 +33,7 @@ Short (71 characters):
 
 ## Idea description
 
-Long (1,804 characters):
+Long (1,881 characters):
 
 > We register Chandrayaan-2 images to lunar references across Sun angle, scale and sensor, and
 > report, region by region, whether each alignment can be trusted. The pipeline runs in this
@@ -50,20 +55,24 @@ Long (1,804 characters):
 > registration of the same window. Outputs: a GeoTIFF on the reference grid, match points (CSV, GDAL/QGIS, ISIS), metrics
 > and the trust map. Median 8.2 s per 640-px window on a CPU laptop, offline, open-source
 > libraries only. Every number is regenerated from logs by one command.
+> Code, evidence logs and the full report: github.com/samarthputhraya/sih26166
 
-Short (507 characters):
+Short (562 characters):
 
 > A lunar image-registration engine that aligns Chandrayaan-2 imagery to lunar references across
 > Sun angle, scale and sensor. It also says, region by region, whether the result can be trusted,
 > using an independent area check that never sees the matches. On SAC's own OHRC ↔ NAC pair, with
 > Sun azimuths 174° apart, 6 of 6 windows are accepted. Planted wrong answers in real windows are 100%
 > flagged from 10 m, with 0% false alarms. It outputs a GeoTIFF, match points and metrics, and runs
-> CPU-only and offline.
+> CPU-only and offline. Code and evidence: github.com/samarthputhraya/sih26166
 
 ## Before pressing submit
 
 1. Slide 1's Team ID must equal the portal's: SNPSU0192 (set 20 Sep; `AUDIT: clean`,
    `PDF CHECK: clean`). Re-run both commands only if anything in the deck changes.
 2. Open the PDF and page through all 6 slides once by eye.
-3. After submitting, take a screenshot of the confirmation. Write the time and the Team ID into
+3. **Open `github.com/samarthputhraya/sih26166` in a logged-out browser** (a private window is
+   enough). If it 404s, the repo is private again and slide 6 plus both descriptions are
+   pointing at nothing - that is worse than having no link at all.
+4. After submitting, take a screenshot of the confirmation. Write the time and the Team ID into
    `ops/STATUS.md`.

@@ -17,10 +17,26 @@ invalidating the freeze.
 python -m web.build_console
 ```
 
-Takes about 20 seconds. Writes `web/dist/mission-console.html` — one self-contained file, no
-network needed except Google Fonts and the three.js CDN. Open it in any browser.
+Takes about 20 seconds and writes **two** files:
 
-`web/dist/` is gitignored. The **source** is what is committed:
+| File | What it is | Open it how |
+|---|---|---|
+| `dist/index.html` | a complete HTML document | **this is the one you open by hand** — double-click it, or serve `dist/` with any static server |
+| `dist/mission-console.html` | a **fragment**: no doctype, no `<meta charset>`, no viewport | only for publishing as a Claude Artifact, which supplies the document around it |
+
+**Open the fragment directly and it is visibly wrong**, which is why `index.html` exists. Chrome
+falls into quirks mode, decodes the file as windows-1252 (60 mojibake sequences — `SIH26166 Â·
+CHANDRAYAAN-2`), has no viewport meta, and `[hidden]` loses to `.io{display:grid}`, so a hidden
+trust-map layer paints on top of the visible one and the verified/weak colours go muddy. The
+build prints which file is which; `python -m web.server` wraps the fragment itself and is always
+correct. All three paths were driven in a real browser on 20 Sep and only the raw fragment failed.
+
+The build also runs `node --check` over the page's inline script when node is present. The whole
+page is one 2 MB document whose entire behaviour is that one script: a syntax error in it renders
+the hero and nothing else, and the only sign is one line in a console nobody has open. It has
+happened once.
+
+Neither output is committed — `web/dist/` is gitignored. The **source** is what is committed:
 
 | File | What it is |
 |---|---|
@@ -158,8 +174,8 @@ One built file, two honest deployments.
 
 | | |
 |---|---|
-| Accepts | GeoTIFF, PDS `.img` / `.xml` / `.lbl`, PNG, JPEG — 64 MB per request |
-| Speed | ~20–60 s per pair on CPU. One at a time (LoFTR is memory-hungry) |
+| Accepts | GeoTIFF, PDS `.img` / `.xml` / `.lbl`, PNG, JPEG — 64 MB per **request**, which is about **48 MB of image** because the payload is JSON+base64 and inflates by 4/3 |
+| Speed | ~6–120 s per pair on CPU, and it is the image size that decides. Two 640-px windows: ~7 s. A 2,383-px frame against a 640-px reference: **119 s**. One at a time (LoFTR is memory-hungry) |
 | Writes | **nothing.** Uploads go to a temp folder deleted when the request ends. No evidence log, no cache, no repo file |
 | Binds | `127.0.0.1` only. No auth, and it runs an expensive pipeline on request — never expose it |
 | Needs | standard library only. Nothing to `pip install` on the demo laptop |
@@ -172,3 +188,21 @@ panel says so when it happens rather than hiding the assumption.
 `agrees`, **5,112 matches** and **56 / 64 verified cells**. The frozen log for that same pair says
 `agrees`, **5,112 matches**, **56 verified**. Inlier counts differ by about 1 % run to run
 (4,630 vs 4,680) because MAGSAC++ samples randomly — say that before a judge notices it.
+
+### Hand it something it cannot take
+
+Three things a judge will try, and what they now get. All three were driven through the browser's
+own file inputs on 20 Sep, not through curl.
+
+| They do this | What happens |
+|---|---|
+| Upload a pair over the cap (the 52.8 MB roster source) | **The page refuses before it uploads anything.** *Register the pair* greys out and the log names the two sizes, the base64 size, the cap and what to do. Nothing is sent, nothing waits |
+| Post an over-size body anyway (curl, or a bypassed page) | A readable **413** in 0.2 s. The server drains the body first — replying without draining used to reset the connection, so the browser showed `Failed to fetch` and the operator never saw the message |
+| Watch the panel during a run | It reads **RUNNING…**. The previous pair's verdict is cleared the instant you press the button. A failed run clears it to **NOT REGISTERED** |
+| Upload two PNGs | It runs, and the panel says the uploads carried no ground scale, so scale invariance was *not* exercised. It does not silently assume 1:1 |
+| Upload one image twice | 64 / 64 verified, identity. A fine thing to show on purpose |
+| Upload a non-image, or nothing | Named, specific refusal; the button stays disabled with fewer than two files |
+
+**Demo tip:** in the Streamlit app, click **All deliverables (.zip)** and nothing else. Chrome
+blocks the second and later automatic downloads in a session, so clicking the other three buttons
+can look like they do nothing. Everything they produce is already inside the zip.
