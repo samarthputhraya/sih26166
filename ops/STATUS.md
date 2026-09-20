@@ -106,7 +106,7 @@ only remaining item with a deadline and it needs a download only Samartha can do
 ## Open questions
 
 1. **Portal mechanics** - draft save? editable after submit? character caps? The long description
-   is 1,804 characters; the 499-character short version is ready if there is a cap.
+   is 1,804 characters; the 507-character short version is ready if there is a cap.
 2. **SPOC** - Student Innovation and the two-PS cap; who uploads; authorisation letter.
 3. **Gemini key** for the voice-over. Until it arrives `web/voice.py` is unexercised code.
 4. **Does the console link go on slide 6?** Needs a decision AND the artifact made shareable.
