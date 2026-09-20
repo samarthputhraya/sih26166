@@ -17,6 +17,24 @@ sensor. It also reports, region by region, whether the result can be trusted:
 logs by `python -m ops.make_report` and is never edited by hand. This README carries no numbers
 on purpose: Invariant 1 (below) allows a figure only where it can be traced to a log row.
 
+### Reviewing this rather than running it?
+
+Three files, in the order that answers the most in the least time:
+
+1. **[`REPORT.md`](REPORT.md)** — every measured result, including the ones that failed, each
+   naming the reference grid it is measured on. Generated from the logs; the commit it was
+   generated at is in its first line.
+2. **[`docs/00_CANONICAL_FACTS.md`](docs/00_CANONICAL_FACTS.md) §2** — the five-tier validation
+   ladder and what *cross-sensor*, *multi-modal* and *sub-pixel* are allowed to mean here.
+3. **[`core/reliability.py`](core/reliability.py)** — the trust layer. It is the contribution:
+   an area check that cross-correlates the warped image against the reference cell by cell and
+   **never reads the match positions**, so it can contradict the matcher that produced them.
+
+To see it rather than read it, build the Mission Console (`python -m web.build_console`, then
+open `web/dist/index.html`) — a single self-contained page over the frozen evidence, with every
+instrument pairing, its verdict, and the refusals reported beside the successes. `web/README.md`
+explains it, including how to make it register a pair you hand it.
+
 ## What runs, in order
 
 `core/pipeline.py` `run_all()`:
@@ -75,6 +93,8 @@ python -m core.fetch_weights                      # LoFTR weights into weights/,
 ```
 python -m core.pipeline data/pairs/sac_ohrc_nac_w01 --out out/sac_w01   # one pair, all deliverables
 streamlit run app/streamlit_app.py                                     # the demo app (offline)
+python -m web.build_console                                            # the Mission Console -> web/dist/index.html
+python -m web.server                                                   # ... and serve it, with a live upload bay
 python -m ops.run_real_pairs "site_ohrc_*" --log                        # register + log real pairs
 python -m ops.freeze --plan                                             # the evidence freeze: what would run
 python -m ops.freeze                                                    # re-run ALL evidence on this commit
@@ -112,6 +132,7 @@ logs above at the freeze commit. REPORT.md is where to copy it from.
 | `evaluation/` | `metrics`, synthetic and shaded-relief pairs, `real_eval`, `miloi`, the evidence logs |
 | `baselines/` | SIFT / ORB / AKAZE and their sweeps |
 | `app/` | `streamlit_app.py` (the demo), `change_detection.py` (gated by the trust map) |
+| `web/` | the Mission Console: one self-contained page over the frozen evidence, plus a loopback server that adds a live upload bay. It computes nothing and writes nothing — see `web/README.md` |
 | `ops/` | data cutting (`cut_site_pairs`, `cut_pradan_pairs`), runners, `freeze`, `make_report`, `STATUS.md` |
 | `presentation/` | `build_deck.py` (the deck text lives there), `make_figures.py`, the audit table |
 | `docs/` | `00_CANONICAL_FACTS.md`, the single source of truth for definitions |
