@@ -184,6 +184,32 @@
 - **"Your TC rung: 3 of 4 accepted?"** w01 is dense (134 inliers, held-out median 0.55 px =
   4.0 m); w02 (17 inliers, median 33.9 px) and w03 (39 inliers, 4.8 px) are thin. The defence:
   the archive offset is 381–431 m on all four windows, consistent. Do not claim more.
+- **"What happens between the windows you chose?"** We tiled one whole overlap to find out. Every
+  non-overlapping 640-px window in the shared lit ground of the 74 °S OHRC frame and NAC
+  M1153871873LE - 37 windows, 13 km², Sun azimuths 3.3° apart - was registered: all 37 accepted,
+  3.8 min of wall time in total, a median of 7.3 s per window. It is its own REPORT.md section and
+  is never pooled with the 20 hand-spread windows the deck quotes.
+- **"One of those windows reports a 316 px residual and you accepted it."** Correct, and it is the
+  metric that failed, not the registration. `residual_median_px` is the median error of the 20 %
+  of matches the fit never saw, and it is robust only while the inlier ratio stays well above 0.5.
+  That window (`site_ohrc_m1153871873le_w15_full`) has an inlier ratio of 0.542, so a random
+  held-out draw can be majority-outlier and the median then describes the outliers. Under the
+  transform the system declared, the median error over ALL its matches is 1.08 px; its exported
+  registered product correlates with the reference at NCC +0.93, as do all 37 (+0.87 to +0.95).
+  The 20 windows on the deck have inlier ratios 0.614-0.998. This is the honest floor of that
+  number and it is in REPORT.md, not hidden.
+- **"You only planted translations."** Not any more. The calibration also plants rotations and
+  scale changes about the frame centre, sized by how far they move the corners. Their point is
+  that they are NOT uniform over the frame: the verdict stays `agrees` at small sizes while the
+  map loses cells, so the frame verdict is the wrong thing to watch and the 8 × 8 map is what
+  carries the information. [numbers: REPORT.md "Errors that are not translations"]
+- **"Did you try to get the accuracy up?"** Yes, and we pre-registered the bar before looking. A
+  final least-squares fit on a tighter inlier set was tried on all 26 OHRC → NAC windows; it had
+  to improve the HELD-OUT median on 5 of 6 SAC windows and 15 of 20 at 74 °S, and it made 5 of 6
+  and 13 of 20. It is not in the pipeline. It would have cut the in-sample per-axis RMSE to
+  0.46-0.60 px, which is a smaller number than the paper's 0.62 px - but on a 1.622 m grid
+  against their 1.1179 m, and in metres it still loses (0.75-0.98 m against 0.69 m). That is the
+  comparison we refuse to make.
 - **"Is everything from one commit?"** Every registration, sweep, loop, trust trial and the
   MiLOI re-judge ran at b678272. The MiLOI MATCHES themselves (LoFTR/SIFT/ORB/AKAZE, ~4.5 h)
   were made at six earlier commits (3 of ours' 81 rows on `c9fb875-dirty`); `ops.freeze --plan`

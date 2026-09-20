@@ -118,3 +118,46 @@ def test_a_rotation_or_scale_gets_two_trials_because_it_has_two_shapes_not_eight
 def test_an_unknown_kind_is_refused_rather_than_silently_planted():
     with pytest.raises(ValueError):
         plant("shear", 4.0, 1.0, SHAPE)
+
+
+# --- the summary note. A format string cost this project a 45-minute re-run on 20 Sep: the
+# per-cell clause guarded both its halves with one `or`, so a row where no cell moved past 2 px
+# but many stayed under 1 px divided by zero. Every combination is pinned here.
+
+@pytest.mark.parametrize("n_moved,moved_refused,n_still,still_verified", [
+    (0, 0, 0, 0),            # nothing measurable
+    (0, 0, 64, 64),          # d = 0 and the small translations: nothing moved, everything stayed
+    (20, 18, 0, 0),          # a large error: everything moved
+    (20, 18, 30, 28),        # the middle of a rotation sweep: both populations present
+    (64, 0, 0, 0),           # moved but the map verified them anyway (a missed failure)
+])
+def test_the_per_cell_note_never_divides_by_zero(n_moved, moved_refused, n_still, still_verified):
+    from ops.trust_real_calibration import cell_note
+    s = cell_note(n_moved, moved_refused, n_still, still_verified)
+    assert isinstance(s, str)
+    if not (n_moved or n_still):
+        assert s == ""
+    if n_moved:
+        assert f"{100 * moved_refused / n_moved:.1f} %" in s
+    else:
+        assert "moved by more than 2 px" not in s
+    if n_still:
+        assert f"{100 * still_verified / n_still:.1f} %" in s
+    else:
+        assert "less than 1 px" not in s
+
+
+def test_the_summary_note_is_built_for_every_row_the_sweep_can_produce():
+    """Walk the whole (kind, displacement) grid the run will log and format each note."""
+    from ops.trust_real_calibration import DISPLACEMENTS_M, cell_note
+    for kind in KINDS:
+        for dm in (DISPLACEMENTS_M if kind == "translation" else NON_TRANSLATION_M):
+            te = _true_error_grid_for(kind, dm)
+            n_moved = int((te > 2.0).sum())
+            n_still = int((te < 1.0).sum())
+            cell_note(n_moved, n_moved, n_still, n_still)      # must not raise
+
+
+def _true_error_grid_for(kind, dm, gsd=0.931):
+    from core.reliability import _true_error_grid
+    return _true_error_grid(SHAPE, plant(kind, dm / gsd, +1.0, SHAPE), np.eye(3), 8)

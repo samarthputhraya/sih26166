@@ -731,6 +731,13 @@ def fig_trust_real():
     if not TRUST_REAL.exists():
         return None
     all_rows = _rows(TRUST_REAL)
+    # TRANSLATIONS ONLY. Since 20 Sep the calibration also plants rotations and scale changes,
+    # which are a different experiment: they are not uniform over the frame, so a single
+    # "flagged as wrong" rate per displacement would pool two quantities that do not mean the
+    # same thing, and the x axis ("planted error, metres") would mean the corner displacement for
+    # some bars and every pixel's displacement for others. Those rows have their own table in
+    # REPORT.md. Rows written before the column existed are translations.
+    all_rows = [r for r in all_rows if (r.get("kind") or "translation") == "translation"]
     # Two populations (20 Sep 2026): the 74 °S windows with Sun azimuths under 10° apart (the
     # bars, as before) and SAC's hard-Sun windows at 132-174° (markers), never pooled. Rows
     # written before the column existed are the ≤10° population.
@@ -780,7 +787,15 @@ def fig_trust_real():
     ax.set_title("Planted wrong answers: how many are flagged?",
                  loc="left", fontweight="bold", fontsize=15, pad=10)
     ids = {r["pair_id"] for r in rows}
-    n_win, n_ground = len(ids), len(_distinct_windows(ids))
+    # `_distinct_windows` opens each pair's geometry_prior.json, and data/pairs is gitignored, so
+    # on a machine that has the logs but not the imagery this would take the whole figure - and
+    # with it the freeze's report step - down over a caption. `ops.make_report._distinct_note`
+    # already guards the same call the same way.
+    try:
+        n_ground = len(_distinct_windows(ids))
+    except (OSError, ValueError, KeyError):
+        n_ground = len(ids)
+    n_win = len(ids)
     wins = f"{n_win} real windows" + (f" ({n_ground} distinct)" if n_ground != n_win else "")
     fig.text(0.014, 0.008, f"{wins}, OHRC→NAC and NAC→NAC · 0 m = false-alarm rate\n"
              f"all planted matches agree with the wrong answer", fontsize=9.5, color=MUTED,

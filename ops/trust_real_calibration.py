@@ -106,6 +106,27 @@ def plant(kind, dpx, angle, shape):
     raise ValueError(f"unknown planted-error kind {kind!r}")
 
 
+def cell_note(n_moved: int, moved_refused: int, n_still: int, still_verified: int) -> str:
+    """The per-cell clause of a summary row's note, or "" when there is nothing to say.
+
+    Each half is guarded by ITS OWN count. The first version guarded both with `if n_moved or
+    n_still`, which is true whenever either is non-zero - so a displacement that moved no cell
+    past 2 px but left many under 1 px (every d = 0 row, and the small translations) reached a
+    division by n_moved = 0. That killed the trust step of the 20 Sep freeze after 45 minutes of
+    completed work, and the freeze's retry then deleted the per-trial CSV that work had produced.
+    A format string is not worth a re-run: the two clauses are independent, so they are written
+    independently.
+    """
+    parts = []
+    if n_moved:
+        parts.append(f"of the {n_moved} cells this error moved by more than 2 px the map refused "
+                     f"to verify {moved_refused} ({100 * moved_refused / n_moved:.1f} %)")
+    if n_still:
+        parts.append(f"of the {n_still} cells it moved by less than 1 px, {still_verified} stayed "
+                     f"verified ({100 * still_verified / n_still:.1f} %)")
+    return f"Per cell: {'; '.join(parts)}. " if parts else ""
+
+
 def cell_effect(ref_shape, H_wrong, H_true, state):
     """Per-cell: how far the planted error moved the cell, against what the map said about it.
 
@@ -135,6 +156,16 @@ def main(argv=None):
     ap.add_argument("--log", action="store_true")
     ap.add_argument("--seed", type=int, default=7)
     a = ap.parse_args(argv)
+    # Every refusal decidable from the arguments alone is decided HERE, before a single trial -
+    # the same rule core.pipeline.main() follows. This run is an hour of work whose per-trial CSV
+    # the freeze deletes before a retry, so discovering at the END that the log cannot be written
+    # costs the whole hour. That is not hypothetical: it happened on 20 Sep 2026.
+    if a.log:
+        from core.pipeline import _log_preflight
+        err = _log_preflight()
+        if err:
+            print(f"\n{err}\n")
+            return 3
     rng = np.random.default_rng(a.seed)
     dirs = sorted({pathlib.Path(p) for pat in a.patterns for p in glob.glob(str(ROOT / "data" / "pairs" / pat))})
     trials, used = [], []
@@ -242,10 +273,7 @@ def main(argv=None):
                         f"{_n_trials(kind, dm)} "
                         f"{'directions' if kind == 'translation' else 'signs'}; seed {a.seed}"),
                 notes=(f"area check contradicted {rate:.1%} of {n} trials; mean verified cells "
-                       f"{ver:.1f}/64. d=0 is the false-alarm baseline. "
-                       + (f"Per cell: of the {nm} cells this error moved by more than 2 px the map refused "
-                          f"to verify {mnv} ({100 * mnv / nm:.1f} %); of the {ns} cells it moved by less "
-                          f"than 1 px, {sv} stayed verified ({100 * sv / max(ns, 1):.1f} %). " if nm or ns else "")
+                       f"{ver:.1f}/64. d=0 is the false-alarm baseline. " + cell_note(nm, mnv, ns, sv)
                        + f"windows: {', '.join(used)} "
                        f"(Sun azimuth differences {', '.join(az)} deg; window selection by |NCC| >= 0.5). "
                        f"per-trial table: evaluation/trust_real_calibration.csv"))
