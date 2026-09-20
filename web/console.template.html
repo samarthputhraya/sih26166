@@ -249,7 +249,7 @@ footer{border-top:1px solid var(--rule);margin-top:clamp(30px,5vw,60px);padding-
   <section class="open">
     <h1>Lunar registration that knows when it is <em>wrong</em></h1>
     <p>Chandrayaan-2 images aligned to lunar references across Sun angle, scale and sensor, with a verdict for every region of every result. The verdict comes from an independent area check that never sees the matches.</p>
-    <p class="what"><b>What this console is.</b> <span id="whatmode">An instrument panel over results already produced and frozen.</span> The engine is Python — LoFTR, sub-pixel refinement and MAGSAC++ — and it runs on a CPU laptop with the network off, which a browser cannot do. Every figure, image and cell on this page was read back from the evidence logs at commit <span id="fz2"></span>, the same commit the submitted deck quotes. Nothing here is drawn by hand or filled with example data.</p>
+    <p class="what"><b>What this console is.</b> <span id="whatmode">An instrument panel over results already produced and frozen.</span> The engine is Python — LoFTR, sub-pixel refinement and MAGSAC++ — and it runs on a CPU laptop with the network off, which a browser cannot do. Every figure, image and cell on this page was read back from the evidence logs, whose rows were measured at the freeze commit <span id="fz2"></span> — the same commit the submitted deck quotes. Nothing here is drawn by hand or filled with example data.</p>
     <div class="tele" id="tele"></div>
   </section>
 
@@ -404,13 +404,13 @@ footer{border-top:1px solid var(--rule);margin-top:clamp(30px,5vw,60px);padding-
         <thead><tr><th>Pairing</th><th>What was measured</th><th>Result</th></tr></thead>
         <tbody>
           <tr><td>OHRC &rarr; LRO NAC, 74&nbsp;&deg;S, whole lit overlap tiled <span class="tagk">CROSS-SENSOR</span></td><td>Every non-overlapping 640-px window in shared, lit, textured ground &mdash; 13.1 km&sup2;, no window hand-picked. Held-out median on the 0.93 m grid.</td><td>37 / 37 accepted<br>0.61 px = 0.57 m</td></tr>
-          <tr><td>OHRC &rarr; LRO NAC, SAC's equatorial benchmark <span class="tagk">CROSS-SENSOR</span></td><td>SAC's own published pair (arXiv:2509.04775). Sun azimuths 174&deg; apart &mdash; every shadow reversed. Held-out median on the 1.62 m grid.</td><td>6 / 6 accepted<br>0.69&ndash;1.68 px</td></tr>
+          <tr><td>OHRC &rarr; LRO NAC, SAC's equatorial benchmark <span class="tagk">CROSS-SENSOR</span></td><td>SAC's own published pair (arXiv:2509.04775). Sun azimuths 174&deg; apart &mdash; every shadow reversed. Held-out median on the 1.62 m grid.</td><td>6 / 6 accepted<br>0.69&ndash;1.68 px = 1.1&ndash;2.7 m</td></tr>
           <tr><td>OHRC &rarr; LRO NAC, SAC's polar benchmark <span class="tagk">CROSS-SENSOR</span></td><td>Sun azimuths 132&deg; apart. Two windows flagged rather than shipped.</td><td>4 / 6 accepted</td></tr>
           <tr><td>OHRC &rarr; LRO NAC, the Sun sweep <span class="tagk">CROSS-SENSOR</span></td><td>One OHRC frame against 25 NAC frames, Sun azimuths 3&ndash;153&deg; apart, 69 windows. Nothing wrongly accepted in any band.</td><td>51 registered<br>0 undetected failures</td></tr>
-          <tr><td>Kaguya TC &rarr; Kaguya MI 749 nm <span class="tagk">CROSS-SENSOR</span></td><td>Visible against visible, 2&times; scale gap, on MI's 14.8 m grid.</td><td>3 / 3 accepted<br>0.23&ndash;0.47 px</td></tr>
+          <tr><td>Kaguya TC &rarr; Kaguya MI 749 nm <span class="tagk">CROSS-SENSOR</span></td><td>Visible against visible, 2&times; scale gap, on MI's 14.8 m grid.</td><td>3 / 3 accepted<br>0.23&ndash;0.47 px = 3.5&ndash;6.9 m</td></tr>
           <tr><td>Kaguya TC &rarr; Kaguya MI 1548 nm <span class="tagk">MULTI-MODAL</span></td><td>Matcher refused; global correlation delivered instead and declared as such. Measured against the visible-band fit of the same window, on MI's 14.8 m grid.</td><td>3 / 3 delivered<br>0.23&ndash;1.09 px</td></tr>
           <tr><td>OHRC &rarr; Kaguya TC ortho map <span class="tagk">CROSS-SENSOR</span></td><td>A 29.6&times; scale gap, 0.25 m against 7.4 m.</td><td>3 / 4 accepted</td></tr>
-          <tr><td>OHRC &rarr; NAC A &rarr; NAC B, closed loops <span class="tagk">CROSS-SENSOR</span></td><td>Three registrations round a loop must return to the start. Cancels any error attached to a single image, so it measures correspondence, not geolocation. Closure on the 1.245 m NAC&nbsp;B grid.</td><td>6 loops close to<br>0.086 px = 0.107 m</td></tr>
+          <tr><td>OHRC &rarr; NAC A &rarr; NAC B, closed loops <span class="tagk">CROSS-SENSOR</span></td><td>Three registrations round a loop must return to the start. Cancels any error attached to a single image, so it measures correspondence, not geolocation. The A&nbsp;&rarr;&nbsp;B leg is NAC&nbsp;&harr;&nbsp;NAC, same sensor. Closure on the 1.245 m NAC&nbsp;B grid.</td><td>6 loops close to<br>0.086 px = 0.107 m</td></tr>
           <tr><td>MiLOI, LRO NAC &harr; NAC <span class="tagk">SAME SENSOR</span></td><td>81 published pairs of one ground under many Suns, judged against a truth network built from other pairs.</td><td>33 / 33 accepted<br>are correct</td></tr>
         </tbody>
       </table></div>
@@ -488,9 +488,14 @@ $('#fz2').textContent = D.freeze;
    that is independent of the matcher, its false-alarm rate, and its detection floor.
    Accuracy comes after, because accuracy is the part everyone claims. */
 $('#tele').innerHTML = [
-  ['8<small>×8</small>','cells vote on the transform — the area check never sees the matches'],
+  ['8<small>×8</small>','cells judge the transform — the area check never sees the matches'],
   ['0<small>/44 · 0/16</small>','false alarms at 0 m, on the two Sun populations'],
-  ['100<small>%</small>','of planted 5 m errors flagged on the 22 near-Sun windows (84 % on SAC’s 8; 74.4 % at 3 m)'],
+  /* The population must travel with every rate. An earlier draft read "(84 % on SAC's 8;
+     74.4 % at 3 m)", which lets a reader attach the 3 m figure to SAC's 8, where the real
+     value is 12.5 % - six times out. And the 3 m rate is a fresh RNG draw per freeze
+     (143/130/131 of 176 over three runs, ops/trust_real_calibration.py), so a decimal
+     advertises precision the experiment does not have and disagrees with the deck's "74 %". */
+  ['100<small>%</small>','of planted 5 m errors flagged on the 22 near-Sun windows — 74 % of 3 m errors on those same windows; on SAC’s 8 hard-Sun windows, 84 % at 5 m'],
   ['160','distinct ground windows, 8 instrument pairings'],
   ['37<small>/37</small>','tiled windows accepted over 13.1 km²'],
   ['0.61<small>px</small>','= 0.57 m held-out median on the 0.93 m grid'],

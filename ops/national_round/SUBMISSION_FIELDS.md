@@ -3,8 +3,13 @@
 The portal asks for four things (2026 Guidelines p.11): the chosen PS, an **idea title**, an
 **idea description**, and the **idea presentation as a PDF**. The character limits were not found
 in any official source, so a short and a long version of each is given below. Paste the longest
-one that fits. Every number here is in `REPORT.md` at the evidence-freeze commit `7dd4e5b` (20 Sep
-2026, after the audit's second pass); the deck carries the same ones. The character counts are the
+one that fits. Every number here is in `REPORT.md`, regenerated from evidence logs whose rows were
+**measured at** the freeze commit `7dd4e5b` (20 Sep 2026, after the audit's second pass); the deck
+carries the same ones. Note the distinction - it is not pedantry. `REPORT.md` is regenerated
+*after* a freeze and committed separately (currently `be94774`); at `7dd4e5b` the tree still holds
+the *previous* report, and `evaluation/trust_real_calibration.csv` is not in that commit at all.
+"In REPORT.md at 7dd4e5b" is therefore false and checkable in fifteen seconds now that slide 6
+hands a judge the repository. Say **measured at**. The character counts are the
 quoted block joined into one paragraph with single spaces - the form you would paste - and they
 are recounted whenever this file changes (they have been stale twice; recount, do not trust a
 number written here by hand).

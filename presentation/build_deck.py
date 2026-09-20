@@ -57,6 +57,7 @@ from __future__ import annotations
 
 import pathlib
 import re
+import subprocess
 import sys
 
 from PIL import Image
@@ -270,7 +271,7 @@ S5 = [
      "scale are caught cell by cell, not by the frame verdict: of the 8×8 cells they displace "
      "past 2 px, 94% lose verified state.", 1, False, INK),
     # distinct OHRC products in real_pairs_log (source_product ch2_ohr_*) and their sites.
-    ("OHRC frames co-register with LRO NAC (3 frames at 3 sites) and Kaguya TC (1 site) so far: "
+    ("OHRC frames co-register with LRO NAC (3 OHRC frames at 3 sites) and Kaguya TC (1 site) so far: "
      "mosaics, time series and change detection gated by trust.", 1, False, INK),
     ("Benefits of the solution", 0, True, ACCENT),
     ("Scientific: a verdict per region instead of one number for a whole image, calibrated "
@@ -290,8 +291,13 @@ S6 = [
     ("Code, evidence and the full report", 0, True, BLUE),
     ("github.com/samarthputhraya/sih26166 — the pipeline, the evidence logs, and REPORT.md "
      "regenerated from those logs by one command", 1, False, ACCENT),
-    ("Every figure on these slides is in REPORT.md at the evidence-freeze commit 7dd4e5b",
-     1, False, INK),
+    # NOT "in REPORT.md at 7dd4e5b". The freeze MEASURED the rows at 7dd4e5b; REPORT.md was
+    # regenerated from them afterwards and committed at be94774. At 7dd4e5b the report is the
+    # previous one (generated from b678272) and trust_real_calibration.csv does not exist there
+    # at all - so the trust figures on slides 2 and 5 are provably absent from it. A judge with
+    # the repo URL from the bullet above can check that in fifteen seconds. Say "measured at".
+    ("Every figure on these slides is in REPORT.md, regenerated from evidence logs measured at "
+     "the freeze commit 7dd4e5b", 1, False, INK),
     ("Lunar domain", 0, True, BLUE),
     ("Makharia, Singla, Amitabh, Dube, Sharma — Space Applications Centre (ISRO) and Manipal "
      "University Jaipur, 2025 · arxiv.org/abs/2509.04775", 1, False, INK),
@@ -578,6 +584,22 @@ def _audit_deck(deck) -> list[str]:
                     r"cross-sensor|multi-modal", sent, re.I):
                 bad.append(f"slide {i}: same-sensor pair called cross-sensor/multi-modal: "
                            f"{sent[:60]!r}")
+        # Provenance. "in REPORT.md AT commit X" says X's tree contains a report holding these
+        # figures; the freeze commit's tree does not - it carries the PREVIOUS report, and the
+        # trust CSV is not in it at all. The rows were MEASURED at the freeze and the report was
+        # regenerated afterwards. This shipped once, on slide 6, next to the repository URL that
+        # lets a judge check it. Verify the claim if it is made, rather than banning the words.
+        for m in re.finditer(r"REPORT\.md[^.]{0,40}?at\s+(?:the\s+\w+[- ]\w+\s+)?commit\s+"
+                             r"`?([0-9a-f]{7,40})`?", text, re.I):
+            sha = m.group(1)
+            got = subprocess.run(["git", "show", f"{sha}:REPORT.md"],
+                                 cwd=str(HERE.parent), capture_output=True, text=True)
+            missing = [f for f in ("13.1 km", "0.57 m", "8.2 s", "160 distinct")
+                       if f not in got.stdout]
+            if got.returncode or missing:
+                bad.append(f"slide {i}: claims its figures are in REPORT.md at commit {sha}, "
+                           f"but that commit's REPORT.md is missing {missing or 'itself'}. "
+                           f"Say 'measured at' - the report is regenerated after the freeze")
         n_tbd = text.count("TBD")
         if n_tbd:
             bad.append(f"slide {i}: {n_tbd} [TBD] placeholder(s) - fill from the freeze commit")

@@ -11,6 +11,19 @@ not check something, the report says so instead of guessing.
 
 **Grade in one line: Above average, one token-fix and one link away from High.**
 
+> **Status, added 22:50 the same night — most of this is already fixed.** Every item in §7's
+> "before Fri 25 Sep" list was applied except the demo-cache re-run, which was declined on the
+> record because its own command would have drifted two Mission Console pairs away from
+> `REPORT.md`. The repository is now **public** and slide 6 carries its URL; the OHRC→TMC-2 and
+> IIRS terminology defects are gone; the live bay clears its panel and refuses an over-cap upload
+> before sending; `web/dist/index.html` fixes the README's broken path; Lighthouse is
+> **100 / 100 / 100**. `ops/STATUS.md` → "Judge-report fixes" has the table, the verification for
+> each row, and what was deliberately left alone. **Read this report for the reasoning, not as a
+> live defect list.** One correction it did not catch, found afterwards by `claim-checker`: the
+> slide-6 bullet this report asked for was first written as "in REPORT.md **at** the freeze
+> commit", which is false — the freeze *measures* the rows and `REPORT.md` is regenerated
+> afterwards. Fixed in four files, and the deck's own audit now verifies the claim.
+
 ---
 
 ## 1. The reachability chain

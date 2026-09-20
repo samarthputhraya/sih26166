@@ -41,8 +41,8 @@ The national round has cut-offs, not gates, and they are listed above.
    evidence CSVs, and two source files that cannot change a number:
    `ops/trust_real_calibration.py` (**0 behavioural lines**, comments only) and
    `ops/make_report.py` (30 lines, all rendering - it writes no evidence file).
-2. **Deck is v5.** `AUDIT: clean`, `PDF CHECK: clean`, 6 pages, **1,113,226 bytes**, sha256
-   `7eeef7c8…`. v5 differs from v4 in **one place**: slide 6 gained two bullets at the top, under
+2. **Deck is v5.** `AUDIT: clean`, `PDF CHECK: clean`, 6 pages, **1,113,285 bytes**, sha256
+   `c0196e6d…`. v5 differs from v4 in **one place**: slide 6 gained two bullets at the top, under
    a new heading "Code, evidence and the full report" - the repository URL, and the line "Every
    figure on these slides is in REPORT.md at the evidence-freeze commit 7dd4e5b". Nothing else on
    any slide moved; slides 1-5 carry exactly the v4 content, and v4's claim-checker pass (0
@@ -119,6 +119,54 @@ Known issue 25 for what to say instead.
 **Also declined** (both offered, both judged not worth the risk this week): moving the LIVE bay
 above SUN, and re-cutting `web/narration.md`.
 
+### claim-checker, run after the deck changed (CLAUDE.md routing)
+
+**0 fabricated numbers.** It re-derived the trust tables from `trust_real_calibration.csv` itself
+and got 0/44, 0/16, 74.4 %, 84.4 %, 94.1 %, 87.4 % - exact. It re-counted all four portal
+character counts - correct. No Invariant 2 violation anywhere in the deck, the console, the
+README or the portal text.
+
+It found **one false claim, and it was in the bullet added tonight**. Slide 6 said "Every figure
+on these slides is in REPORT.md **at** the evidence-freeze commit 7dd4e5b". That is not true, and
+it is checkable in fifteen seconds by the judge the bullet above it just handed the repository to:
+
+```
+$ git show 7dd4e5b:evaluation/trust_real_calibration.csv
+fatal: path ... exists on disk, but not in '7dd4e5b'
+$ git show 7dd4e5b:REPORT.md | head -3
+Generated 2026-09-20T04:27 from commit `b678272` ...
+```
+
+The freeze **measures** the rows at `7dd4e5b`; `REPORT.md` is regenerated from them afterwards and
+committed separately, at `be94774`. At `7dd4e5b` the tree still holds the previous report, and
+none of "13.1 km", "0.57 m", "8.2 s", "160 distinct", "94.1" or "0.107" is in it. **Say
+"measured at".** Fixed in all four places it had been written: `presentation/build_deck.py`
+(slide 6), `ops/national_round/SUBMISSION_FIELDS.md`, `web/console.template.html` (the hero
+provenance sentence) and `web/build_console.py`'s docstring.
+
+`presentation/build_deck.py`'s own audit now **verifies** the claim instead of trusting it: any
+slide saying "REPORT.md ... at commit `<sha>`" makes the build run `git show <sha>:REPORT.md` and
+fail if the deck's sample figures are not in it. Tested against both the wrong and the right
+wording before shipping.
+
+Three more of its findings applied the same night:
+- the hero tile read "(84 % on SAC's 8; **74.4 % at 3 m**)", which lets a reader attach the 3 m
+  rate to SAC's 8, where the true value is **12.5 %**. Every rate now carries its population.
+- the decimal is gone: the 3 m rate is a fresh RNG draw per freeze (143 / 130 / 131 of 176 over
+  three freezes, Known issue 7), so "74.4 %" advertises precision the experiment does not have
+  and disagreed with the deck's "74 %".
+- two RESULTS rows gave px with a grid but no metres (now "= 1.1-2.7 m" and "= 3.5-6.9 m"); the
+  loop row now says its A->B leg is NAC<->NAC, same sensor; "cells **vote on** the transform"
+  became "cells **judge** the transform", because the cells judge a transform built without them;
+  slide 5's "(3 frames at 3 sites)" is now "(3 OHRC frames at 3 sites)", since there are 25 NAC
+  frames and the bare word invited the wrong one.
+
+Its note on OHRC -> TMC-2, worth having in your mouth: `REPORT.md:143` and `README.md` both call
+that pair "cross-sensor, same mission". Both are true. **If asked: "yes, cross-sensor - two
+different cameras - but same mission, so we chip it SAME MISSION rather than bank it as
+cross-sensor evidence."** No edit needed; the console's row text already says "Two different
+cameras on one spacecraft".
+
 ## Verified by command tonight (20 Sep, 22:00-22:35)
 
 | Check | Exit | Result |
@@ -126,7 +174,7 @@ above SUN, and re-cutting `web/narration.md`.
 | `python -m pytest -q` (whole repo) | **0** | **340 passed** in 12.4 s, after every change |
 | `python -m web.build_console` | **0** | same tallies as this afternoon: 69 sweep windows, 25 frames, 37 tiles, 10 roster pairs, rotscale 20896/19653/22464/19635 |
 | `python -m presentation.build_deck` | **0** | `AUDIT: clean` |
-| `python -m presentation.export_pdf` | **0** | `PDF CHECK: clean`, 6 pages, 1,113,226 bytes |
+| `python -m presentation.export_pdf` | **0** | `PDF CHECK: clean`, 6 pages, 1,113,285 bytes (Known issue 17 hit once: killed POWERPNT, waited, retried) |
 | `run_all` inside `no_network()` | **0** | **6.4 s, zero sockets opened**, `agrees`, 5185/5183 - same as the Streamlit live run |
 | live upload through the browser | - | `agrees`, **5,112 matches**, **56/64 verified** = `REPORT.md` line 22; inliers 4,630 vs 4,680 (1.1 %, MAGSAC++) |
 | 80 MB body to `api/register` | - | **HTTP 413 in 0.2 s** with a readable message (was: connection reset) |
@@ -152,7 +200,8 @@ above SUN, and re-cutting `web/narration.md`.
 ## In flight - resume here
 
 **Nothing is running.** No server, no background job, no PowerPoint process. Working tree clean,
-pushed to `origin/main` at `f2216fa`.
+pushed to `origin/main` at `90bb15c`. The two local servers and the Streamlit process used for
+tonight's inspection were stopped; if a port is busy, look for a stray `python -m web.server`.
 
 The first thing to pick up is **not** code. It is the TMC-2 decision (below), because it is the
 only remaining item with a deadline and it needs a download only Samartha can do.
@@ -167,11 +216,23 @@ only remaining item with a deadline and it needs a download only Samartha can do
    is about two hours. Needs a PRADAN login and a 0.6-0.9 GB download; commands are in
    `ops/specs/day_24.md`. It is the only pass over SAC's frame with the Sun ~9° in azimuth from
    the OHRC's, and **a second refusal is also a publishable result** - say so on the slide.
-3. **Read the v4 PDF cold**, then portal: PS, title, description from `SUBMISSION_FIELDS.md`,
-   upload the PDF, screenshot the confirmation.
-4. **Decide on the slide-6 console link before Fri 25 Sep 22:00.** The artifact is private; a
-   judge cannot open it until it is shared from the page's Share menu.
-5. Optional: Gemini key → narrated video; repo public; Gate 4 by hand.
+3. **Read the v5 PDF cold**, then portal: PS, title, description from `SUBMISSION_FIELDS.md`,
+   upload the PDF, screenshot the confirmation. Slide 6 now carries the repository URL, so
+   **open `github.com/samarthputhraya/sih26166` in a private window first** and confirm it
+   loads. A dead link on slide 6 is worse than no link.
+4. ~~Decide on the slide-6 console link.~~ **Done**: the repo is public and slide 6 points at it,
+   which needs no login and can be verified from any browser. The Claude Artifact stays private -
+   its render and its share state could never be checked from a session (Known issue 23), and an
+   unverifiable link was not worth printing on the deck. If you want it shared too, use the
+   page's Share menu and check it from a logged-out browser before adding it anywhere.
+5. Optional, in rough order of value: **rehearse the Mission Console** (nobody has, and Gate 5
+   wants each module explained cold); cut the narration to fit the film (Known issue 27) and then
+   voice it; Gate 4 by hand.
+6. **If a judge will browse the repo**, spend ten minutes on `ops/specs/` and `ops/audit/`. They
+   are honest working notes addressed to teammates, not to a reviewer, and Known issue 15 already
+   says the docs below the national-round sections are the college round's. Nothing there is
+   wrong; some of it is just stale in a way that invites a question you would rather not spend
+   time on.
 
 ## Open questions
 

@@ -4,8 +4,14 @@
 
 The console is a DISPLAY of the evidence, never a source of it. This script only READS: the
 evidence logs, the demo caches, geometry_prior.json and the LOLA DEM. Every number the page shows
-is one REPORT.md also prints at the freeze commit (Invariant 1 applies to this page exactly as it
-does to the deck), and the figures typed into the template's prose are the claim-checked deck's.
+is one REPORT.md also prints (Invariant 1 applies to this page exactly as it does to the deck),
+and the figures typed into the template's prose are the claim-checked deck's.
+
+Say "MEASURED at the freeze commit", not "in REPORT.md AT the freeze commit". The freeze measures
+the rows; REPORT.md is regenerated from them afterwards and committed separately (currently
+be94774). At 7dd4e5b the tree still holds the PREVIOUS report, and evaluation/
+trust_real_calibration.csv - which every trust figure on this page comes from - is not in that
+commit at all. The wrong form shipped once on the deck and once in the hero paragraph here.
 It lives in web/, outside core/ evaluation/ ops/ app/, so building it can never restamp an
 evidence row or a demo cache. Re-run it after any new freeze and update FREEZE below.
 """
