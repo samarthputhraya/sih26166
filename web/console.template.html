@@ -35,6 +35,18 @@ a{color:inherit}
 .plate nav{display:flex;flex-wrap:wrap;gap:4px 16px;width:100%}
 .plate nav a{font:500 11.5px/1.2 var(--f-mono);letter-spacing:.1em;text-decoration:none;color:var(--dim);padding:3px 0}
 .plate nav a:hover{color:var(--ink)}
+/* On a phone the plate was wrapping to five rows and holding a third of the viewport for the
+   whole scroll. Keep the nav to one swipeable row and drop the long PS title, which the opening
+   heading repeats anyway. */
+@media (max-width:620px){
+  .plate__in{gap:4px 12px;padding-block:8px}
+  .plate__ps{display:none}
+  .plate nav{flex-wrap:nowrap;overflow-x:auto;gap:14px;-webkit-overflow-scrolling:touch;
+    scrollbar-width:none;padding-bottom:1px}
+  .plate nav::-webkit-scrollbar{display:none}
+  .plate nav a{white-space:nowrap}
+  .lamp{margin-left:0}
+}
 
 /* opening */
 .open{padding-block:clamp(36px,6vw,76px) clamp(26px,4vw,48px)}
