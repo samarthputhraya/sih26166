@@ -105,6 +105,16 @@ def test_the_non_translation_sweep_starts_at_zero_so_a_false_alarm_rate_exists()
     assert NON_TRANSLATION_M[0] == 0.0 and len(NON_TRANSLATION_M) > 3
 
 
+def test_a_rotation_or_scale_gets_two_trials_because_it_has_two_shapes_not_eight():
+    """Eight iterations would re-plant four identical transforms at four times the cost; a
+    translation genuinely has eight bearings to sample."""
+    from ops.trust_real_calibration import N_DIRECTIONS, _n_trials
+    assert _n_trials("translation", 5.0) == N_DIRECTIONS
+    assert _n_trials("rotation", 5.0) == 2 and _n_trials("scale", 5.0) == 2
+    for kind in KINDS:                       # d = 0 is one transform however it is drawn
+        assert _n_trials(kind, 0.0) == 2
+
+
 def test_an_unknown_kind_is_refused_rather_than_silently_planted():
     with pytest.raises(ValueError):
         plant("shear", 4.0, 1.0, SHAPE)

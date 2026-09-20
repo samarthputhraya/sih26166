@@ -64,6 +64,14 @@ def _apply(H, pts):
     return p[:, :2] / p[:, 2:3]
 
 
+def _n_trials(kind: str, dm: float) -> int:
+    """How many trials one (kind, displacement) earns. d = 0 is the false-alarm baseline and is
+    the same transform however it is drawn, so it gets 2 either way."""
+    if dm == 0:
+        return 2
+    return N_DIRECTIONS if kind == "translation" else 2
+
+
 def _about_centre(M2, cx, cy):
     """A 2x2 linear map applied about (cx, cy) instead of the origin."""
     T = np.array([[1.0, 0, cx], [0, 1.0, cy], [0, 0, 1.0]])
@@ -153,11 +161,13 @@ def main(argv=None):
         # two kinds, so that population's trials do not shift when a kind is added after it.
         for kind in KINDS:
             for dm in (DISPLACEMENTS_M if kind == "translation" else NON_TRANSLATION_M):
-                for k in range(N_DIRECTIONS if dm > 0 else 2):
+                # A translation can point anywhere, so it is sampled over N_DIRECTIONS random
+                # bearings. A rotation or a scale change about the centre has only TWO shapes -
+                # one per sign - so eight iterations would re-plant four identical transforms and
+                # differ only in the match noise, at four times the cost.
+                for k in range(_n_trials(kind, dm)):
                     th = rng.uniform(0, 2 * np.pi)
                     dpx = dm / gsd_ref
-                    # a rotation or a scale change has two signs, not eight directions: half the
-                    # draws each, so every kind contributes the same number of trials per metre
                     ang = th if kind == "translation" else (1.0 if k % 2 == 0 else -1.0)
                     Hw = plant(kind, dpx, ang, B.shape[:2]) @ H
                     ref_w = _apply(Hw, src_in) + rng.normal(0, 0.3, src_in.shape)
@@ -229,7 +239,7 @@ def main(argv=None):
                  "grid_coverage_fraction": None, "distribution_cv": None, "n_matches": n, "status": "ok"},
                 config=(f"planted confident-wrong registrations, kind {kind}: {what}, all matches "
                         f"consistent with the wrong H (0.3 px noise); {len(used)} real windows x "
-                        f"{(N_DIRECTIONS if dm > 0 else 2) if kind == 'translation' else 2} "
+                        f"{_n_trials(kind, dm)} "
                         f"{'directions' if kind == 'translation' else 'signs'}; seed {a.seed}"),
                 notes=(f"area check contradicted {rate:.1%} of {n} trials; mean verified cells "
                        f"{ver:.1f}/64. d=0 is the false-alarm baseline. "

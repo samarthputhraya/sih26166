@@ -74,9 +74,18 @@ def match_table(result: dict) -> list[dict]:
     n = min(len(src), len(ref))
     src, ref = src[:n], ref[:n]
 
+    # Membership comes from MAGSAC++'s own mask over these exact rows when it is available
+    # (`core.ransac.filter_matches` puts it in `info`). Comparing coordinates instead is only
+    # correct while the float64 match survives the float32 round trip that cv2 forces, which on
+    # 20 Sep 2026 was false for 41 of 183 bundles and emptied their GCP and ISIS files. The
+    # coordinate fallback stays for result dicts pickled before the mask existed.
+    keep = (result.get("ransac") or {}).get("inlier_mask")
+    keep = None if keep is None else np.asarray(keep, bool).ravel()
+    if keep is not None and len(keep) != n:
+        keep = None
     inl = set()
     si, ri = result.get("src_inliers"), result.get("ref_inliers")
-    if si is not None and ri is not None and len(si):
+    if keep is None and si is not None and ri is not None and len(si):
         for a, b in zip(np.asarray(si, np.float64).reshape(-1, 2),
                         np.asarray(ri, np.float64).reshape(-1, 2)):
             inl.add((float(a[0]), float(a[1]), float(b[0]), float(b[1])))
@@ -103,7 +112,7 @@ def match_table(result: dict) -> list[dict]:
         rows.append({
             "src_x": src[i, 0], "src_y": src[i, 1],
             "ref_x": ref[i, 0], "ref_y": ref[i, 1],
-            "is_inlier": int(key in inl),
+            "is_inlier": int(bool(keep[i])) if keep is not None else int(key in inl),
             "residual_px": None if not np.isfinite(resid[i]) else float(resid[i]),
             "cell_state": state_at(rel, ref[i, 0], ref[i, 1], ref_shape) if state_at else "",
             "score": None if scores is None else float(scores[i]),

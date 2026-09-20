@@ -94,7 +94,17 @@ def filter_matches(src: np.ndarray, ref: np.ndarray,
     if k < MIN_POINTS:
         return (*empty, _info(n, k, f"only {k} inliers survived at "
                                     f"{threshold_px} px"))
-    return src[keep], ref[keep], H, _info(n, k, f"MAGSAC++ at {threshold_px} px")
+    info = _info(n, k, f"MAGSAC++ at {threshold_px} px")
+    # WHICH of the caller's rows survived, as a mask over its input order. The returned arrays
+    # cannot answer that: this function casts to float32 (cv2 needs it) while the caller's points
+    # are float64 out of core.scale.to_original, so `inlier coordinates == match coordinates` is
+    # only true when the float64 value happens to be exactly representable in float32. Deciding
+    # membership by comparing those floats silently flagged ZERO inliers on 41 of 183 exported
+    # bundles (20 Sep 2026) - emptying gcps.txt, gcps.points and matches_isis.csv, which are
+    # named deliverables - while every metric stayed right, because nothing else asks this
+    # question. The mask is the fact; the coordinates are a lossy copy of it.
+    info["inlier_mask"] = keep
+    return src[keep], ref[keep], H, info
 
 
 def _info(n_input: int, n_inliers: int, note: str) -> dict:
