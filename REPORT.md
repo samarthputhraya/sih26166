@@ -1,6 +1,6 @@
 # SIH26166 - evaluation report
 
-Generated 2026-09-20T11:42 from commit `7dd4e5b` by `python -m ops.make_report`. **Do not edit by hand** - every number below is read from the evidence files named in each section. The latest real-pair rows were measured at commit `7dd4e5b` (183 rows).
+Generated 2026-09-20T12:18 from commit `f928995` by `python -m ops.make_report`. **Do not edit by hand** - every number below is read from the evidence files named in each section. The latest real-pair rows were measured at commit `7dd4e5b` (183 rows).
 
 All pixel figures are on the REFERENCE image's grid, with its metres stated. Real pairs have no exact ground truth: accuracy on them is reported as held-out residuals (the 20 % of matches the fit never saw) and as loop closure. `residual_px` in results_log.csv is the RMSE over ALL held-out matches including outliers and is not quoted for real pairs.
 
@@ -37,7 +37,7 @@ Windows cut at 0.25 m (OHRC) and the NAC's native ~0.9-1.25 m over the same grou
 
 ## The whole lit overlap of one OHRC frame with one NAC (dense tiling)
 
-Dense tiling, not hand-spread windows: every non-overlapping 640-px window (centres at least 1.1 × the window apart) that `ops.cut_site_pairs --windows 60 --tag full` finds in shared, lit, textured ground of the 74 °S OHRC frame and NAC `M1153871873LE` (Sun azimuths 3.3° apart). 37 windows of 596 m = 13.1 km². Verdicts: agrees 37; **accepted 37/37**; held-out median of the accepted windows 0.44-316.06 px, median 0.61 px = 0.57 m on the 0.931 m grid. Wall time of `run_all`: 5.0 min in total, median 7.9 s per window, CPU only. Archive offset of each accepted window against its nearest accepted neighbour: median difference 19.3 m, max 57.2 m (`site_ohrc_m1153871873le_w15_full`), 3 over 50 m. Reported separately from the hand-spread windows above and never merged with them.
+Dense tiling, not hand-spread windows: every non-overlapping 640-px window (centres at least 1.1 × the window apart) that `ops.cut_site_pairs --windows 60 --tag full` finds in shared, lit, textured ground of the 74 °S OHRC frame and NAC `M1153871873LE` (Sun azimuths 3.3° apart). 37 windows of 596 m = 13.1 km². Verdicts: agrees 37; **accepted 37/37**; held-out median of the accepted windows: median 0.61 px = 0.57 m on the 0.931 m grid, 36 of 37 under 3 px (range 0.44-316.06). 1 accepted window(s) report a held-out median above 3 px (`site_ohrc_m1153871873le_w15_full` 316 px at an inlier ratio of 0.542). That number is the median of the 20 % of matches the fit never saw, and it is robust only while the inlier ratio stays well above 0.5 - at 0.54 a random held-out draw can be majority-outlier, and the median then describes the outliers. Independent image evidence says these windows are registered: the exported `registered_product.tif` correlates with its reference at NCC +0.87 to +0.95 across all 37 accepted windows (`ops/sun_sweep.py`'s |NCC| >= 0.30 rule, applied to the declared warp), and under the declared transform the median error over ALL matches on the worst of them is 1.08 px. This is a limit of the metric, not of the registration, and it is why the area check never looks at the matches. Wall time of `run_all`: 5.0 min in total, median 7.9 s per window, CPU only. Archive offset of each accepted window against its nearest accepted neighbour: median difference 19.3 m, max 57.2 m (`site_ohrc_m1153871873le_w15_full`), 3 over 50 m. Reported separately from the hand-spread windows above and never merged with them.
 
 | pair | window (lat, lon) | Δsun az | scale | matches | inliers | ratio | coverage | held-out median px (m) | held-out RMSE ≤3 px | verified / no-evid | verdict | declared | archive offset m |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -307,8 +307,8 @@ Sun azimuth differences 3.3, 5.8, 9.1°; |NCC| of the true alignment 0.81-0.96 (
 |---|---|---|---|---|
 | 0 | 0.00 | 44 | 0.0% | 62.2 |
 | 1 | 0.80 | 176 | 0.0% | 60.7 |
-| 2 | 1.61 | 176 | 0.6% | 44.4 |
-| 3 | 2.41 | 176 | 73.9% | 10.9 |
+| 2 | 1.61 | 176 | 0.0% | 44.1 |
+| 3 | 2.41 | 176 | 74.4% | 10.0 |
 | 5 | 4.02 | 176 | 100.0% | 0.0 |
 | 10 | 8.03 | 176 | 100.0% | 0.0 |
 | 20 | 16.06 | 176 | 100.0% | 0.0 |
@@ -323,15 +323,38 @@ Sun azimuth differences 132.2, 132.3, 173.5, 173.6, 173.7°; |NCC| of the true a
 | planted error (m) | ~px on the reference grid | trials | flagged as wrong | mean verified cells /64 |
 |---|---|---|---|---|
 | 0 | 0.00 | 16 | 0.0% | 40.5 |
-| 1 | 0.62 | 64 | 0.0% | 39.6 |
-| 2 | 1.23 | 64 | 6.2% | 33.2 |
-| 3 | 1.85 | 64 | 12.5% | 25.1 |
-| 5 | 3.08 | 64 | 93.8% | 1.0 |
+| 1 | 0.62 | 64 | 0.0% | 38.5 |
+| 2 | 1.23 | 64 | 4.7% | 34.7 |
+| 3 | 1.85 | 64 | 12.5% | 24.3 |
+| 5 | 3.08 | 64 | 84.4% | 2.9 |
 | 10 | 6.17 | 64 | 100.0% | 0.0 |
 | 20 | 12.33 | 64 | 100.0% | 0.0 |
 | 50 | 30.83 | 64 | 100.0% | 0.0 |
 | 100 | 61.65 | 64 | 100.0% | 0.0 |
 | 200 | 123.31 | 64 | 100.0% | 0.0 |
+
+### Errors that are not translations: planted rotation and scale
+
+A rotation or a scale change about the frame centre leaves the centre where it was and displaces the CORNERS most, so one number describes it: how far the corners move. The frame verdict is the wrong thing to watch here - it still says `agrees` while a corner is 3 px out - because the error is not uniform over the frame. What carries the information is the 8 × 8 map, so the last two columns count cells, not frames: of the cells the planted error really moved by more than 2 px, how many the map refused to verify, and of the cells it moved by less than 1 px, how many stayed verified.
+
+| kind | corner displacement (m) | ~px on the reference grid | trials | frame contradicted | mean verified cells /64 | cells moved >2 px that are NOT verified | cells moved <1 px that stay verified |
+|---|---|---|---|---|---|---|---|
+| rotation | 0 | 0.00 | 60 | 0.0% | 56.4 | no cell moved that far | 3384/3840 = 88 % |
+| rotation | 1 | 0.80 | 60 | 0.0% | 56.1 | no cell moved that far | 3367/3840 = 88 % |
+| rotation | 2 | 1.61 | 60 | 0.0% | 53.8 | no cell moved that far | 1823/2096 = 87 % |
+| rotation | 3 | 2.41 | 60 | 0.0% | 45.5 | 476/752 = 63 % | 964/1072 = 90 % |
+| rotation | 5 | 4.02 | 60 | 10.0% | 23.9 | 2065/2400 = 86 % | 280/336 = 83 % |
+| rotation | 10 | 8.03 | 60 | 91.7% | 1.1 | 3478/3504 = 99 % | 14/48 = 29 % |
+| rotation | 20 | 16.06 | 60 | 100.0% | 0.0 | 3792/3792 = 100 % | n/a |
+| scale | 0 | 0.00 | 60 | 0.0% | 56.4 | no cell moved that far | 3384/3840 = 88 % |
+| scale | 1 | 0.80 | 60 | 0.0% | 56.0 | no cell moved that far | 3360/3840 = 88 % |
+| scale | 2 | 1.61 | 60 | 0.0% | 53.2 | no cell moved that far | 1817/2096 = 87 % |
+| scale | 3 | 2.41 | 60 | 0.0% | 45.4 | 469/752 = 62 % | 963/1072 = 90 % |
+| scale | 5 | 4.02 | 60 | 15.0% | 22.9 | 2092/2400 = 87 % | 267/336 = 79 % |
+| scale | 10 | 8.03 | 60 | 95.0% | 0.8 | 3489/3504 = 100 % | 12/48 = 25 % |
+| scale | 20 | 16.06 | 60 | 100.0% | 0.0 | 3792/3792 = 100 % | n/a |
+
+Over every rotation and scale trial: of the 20896 cells displaced by more than 2 px the map refused to verify 19653 (**94.1 %**); of the 22464 cells displaced by less than 1 px, 19635 stayed verified (**87.4 %**). The planted matches agree with the wrong transform perfectly in every trial, so nothing the matcher reports could reveal it.
 
 ## Viewpoint (synthetic, exact truth)
 
@@ -380,4 +403,4 @@ python -m ops.trust_real_calibration "site_ohrc_m1153871873le_w*_t" ... --log
 python -m ops.make_report
 ```
 
-Rows in real_pairs_log.csv: 929: 187 distinct pair ids (latest row wins) = 177 registered pairs (160 distinct ground windows; Known issue 2: some were cut twice under two ids) + 6 loops + 4 withdrawn (INVALIDATED). Rows in results_log.csv: 3275.
+Rows in real_pairs_log.csv: 929: 187 distinct pair ids (latest row wins) = 177 registered pairs (160 distinct ground windows; Known issue 2: some were cut twice under two ids) + 6 loops + 4 withdrawn (INVALIDATED). Rows in results_log.csv: 3299.

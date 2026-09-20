@@ -1,4 +1,36 @@
-# SIH26166 national deck, v3: the numbers audit (20 Sep 2026)
+# SIH26166 national deck, v4: the numbers audit (20 Sep 2026)
+
+> **RE-FILLED AGAIN from the freeze at `7dd4e5b`** (`--check`: FROZEN, 10/10 steps; 183/183 real
+> rows, 324/324 MiLOI, 8/8 multi-modal). The re-freeze was forced by the F12 fix (`core/ransac.py`
+> now returns MAGSAC++'s own inlier mask; `is_inlier` in the exported match table had been decided
+> by float64-vs-float32 equality, so 41 of 183 bundles shipped empty `gcps.txt`, `gcps.points` and
+> `matches_isis.csv`). `ops/loop_closure.py` reads that flag, so the loop numbers moved ~2 %.
+> Six values changed and are marked **v4** below; every other row re-derived identical.
+> Two clauses were earned and added: the dense tiling on slide 4 and the rotation/scale trust
+> result on slide 5, both against bars written down before the runs (`AUDIT_REPORT.md`).
+> The hand-picked 20-window residual range on slide 4 was **replaced** by the 37-window tiled
+> result over the same site - denser, unselected, and the answer to "did you pick your windows?".
+>
+> **`claim-checker` on v4: 0 fabricated numbers; all six changed values correct.** It returned
+> 2 HIGH, 8 MEDIUM, 4 LOW on nouns, scope and labels; every one was verified against REPORT.md by
+> hand before acting. Applied: **H1** slide 4 says "160 distinct ground windows", not "160 real
+> window pairs" - REPORT's footer prints 177 pairs AND 160 windows and they are different counts;
+> **H2** slide 5 no longer says rotation and scale "behave the same way" as translation, because
+> at 5 m the FRAME verdict catches a rotation only 10-15 % of the time against 100 % for a shift -
+> it now says "caught cell by cell, not by the frame verdict"; **M1** the tiling clause names its
+> scope (one OHRC frame with one NAC) and the texture screen; **M2** MiLOI S1 gains its metres
+> (0.52 px = 0.73 m); **M3/L3** the loops are labelled "a median … - consistency, not ground
+> truth" so they cannot read as truth error after the preceding "vs exact truth"; **M4** MiLOI's
+> 90° is named a **Sun-vector** angle, not an azimuth; **M5** slide 2's second `0/N` is named as
+> the floor; **M6/M7/L4** the portal text gains the 36-of-37 caveat, names Sun **azimuth** on both
+> populations, and gives the loops' grid; **M8** this file and `build_deck.py`'s docstring name
+> v4 / `7dd4e5b`; **L1** fore/aft is 15.5 m, not 16 m (2.617 px × 5.929 m).
+>
+> **Declined, with the reason: L2**, which asked for "11/11 refused" instead of "10/11 refused,
+> none registers" on the IIRS bullet. *Refused* has a defined meaning here - the pipeline declared
+> a fallback - and that is true of exactly 10 of the 11; the 11th is `unconfirmed`, which is kept
+> and not certified, a different state. "None registers" already covers all 11. Changing 10 to 11
+> would make the sentence easier to read and less true.
 
 > The slide text lives in `presentation/build_deck.py` (S2-S6) and nowhere else. This file is
 > the audit table for it: every number on a slide, the value it holds, and the REPORT.md section
@@ -65,7 +97,7 @@
 
 ## Slide 2 (idea title)
 
-| Text on the slide | Value at b678272 | Source (REPORT.md section → column) |
+| Text on the slide | Value at 7dd4e5b | Source (REPORT.md section → column) |
 |---|---|---|
 | Sun azimuths … apart, … accepted (SAC equatorial) | 174° (173.5–173.7); 6/6 | "SAC's own benchmark pair (equatorial …)" → Δsun az; `agrees` / rows |
 | polar …°, …, the other two flagged | 132° (132.2–132.3); 4/6; w05 unconfirmed, w06 contradicted + fallback | "SAC's own benchmark pair (polar …)" → Δsun az; verdicts |
@@ -74,37 +106,38 @@
 | TC (visible) to MI 1548 nm: refused on …/… windows; the declared fallback lands …–… m from the visible-band registration of the same window (…–… px on MI's … m grid) | 3/3 fallback; 3.4–16.2 m (3.4, 4.2, 16.2 as REPORT prints them); 0.23–1.09 px (0.227, 0.283, 1.093); 14.8 m grid | "Kaguya TC → Kaguya MI" 1548 nm rows → declared; its "Fallback vs the visible band" table → disagreement median px (m). **New at `b678272`** (`ops/multimodal_check.py`, E1 of the audit) |
 | TC to Chandrayaan-2 IIRS (…×, … m): …/… refused, none registers | 12× (12.019); 89 m (88.94); 10/11 fallback; the 11th (`site_tc_ortho_iirs1555_w10`) is LoFTR but `unconfirmed`, so no window `agrees` | "… IIRS" rows → scale, declared, verdict; the "Band against band" table shows the fallbacks disagree by up to 3.4 km |
 | MiLOI, … pairs (… in scene S3); agrees within 3 px; contradicted wrong; unconfirmed wrong | 81 (56 in S3); 33/33; 43/43; 5/5 | "MiLOI" → the verdict table, column **matcher H within 3 px** (what the trust layer judges). `rmse_gt_px` for agrees is 28/33: have both ready for Q&A |
-| … real windows (Sun azimuths under …° apart): …/44 false alarms; flagged …% at 3 m, …% from 5 m, …/352 at 1–2 m | 22 (3.3, 5.8, 9.1°); 0/44; **74%** (130/176 = 73.9 %); 100% (176/176 at each of 5–200 m); **1/352** (1 m 0/176; 2 m 1/176) | "Trust layer on real imagery: planted …" → the "Sun azimuths under 10° apart" population, rows 0, 1, 2, 3 and ≥ 5 m. **Moved at `b678272`**: the 3 m rate was 81.2 % (143/176) at `49bdad9`. Same 22 windows, same code path for them; the planted directions and match noise are drawn from one RNG stream that the eight SAC windows now consume first, so this is a second random draw of the same experiment. 3 m is the transition point (2.41 px against a 2 px cell threshold), and two draws put it at 74-81 %: quote 74 % (frozen) and say "about three quarters" in speech |
-| on … of SAC's windows (Suns 132–174° apart): …/16 false alarms, …% at 5 m, …% from 10 m | 8 windows (`sac_ohrc_nac_w01-w06`, `sac_polar_ohrc_nac_w01`, `w03`; true-alignment NCC −0.53 to −0.90); 0/16 at 0 m; 0/64 at 1 m; 6.2 % at 2 m; 12.5 % at 3 m; **93.8 % at 5 m (60/64)**; 100 % (64/64) at each of 10–200 m. On the 1.622 / 1.215 m grids 5 m is only 3.1 px, hence 94 %, not 100 % | same section, the "Sun azimuths 132-174° apart" population (E2 of the audit) |
+| … real windows (Sun azimuths under …° apart): …/44 false alarms; flagged …% at 3 m, …% from 5 m, and 0 of 352 at 1–2 m — the floor | 22 (3.3, 5.8, 9.1°); 0/44; **74%** (131/176 = 74.4 %); 100% (176/176 at each of 5–200 m); **0/352 (v4)** (1 m 0/176; 2 m 0/176) | "Trust layer on real imagery: planted …" → the "Sun azimuths under 10° apart" population, rows 0, 1, 2, 3 and ≥ 5 m. **Moved at `b678272`**: the 3 m rate was 81.2 % (143/176) at `49bdad9`, 73.9 % (130/176) at `b678272`, 74.4 % (131/176) at `7dd4e5b` - three draws, all quotable as 74 %; the 1–2 m rate has been 1/352 and 0/352, so say "almost none", never "zero", in speech. Same 22 windows, same code path for them; the planted directions and match noise are drawn from one RNG stream that the eight SAC windows now consume first, so this is a second random draw of the same experiment. 3 m is the transition point (2.41 px against a 2 px cell threshold), and two draws put it at 74-81 %: quote 74 % (frozen) and say "about three quarters" in speech |
+| on … of SAC's windows (Suns 132–174° apart): …/16 false alarms, …% at 5 m, …% from 10 m | 8 windows (`sac_ohrc_nac_w01-w06`, `sac_polar_ohrc_nac_w01`, `w03`; true-alignment NCC −0.53 to −0.90); 0/16 at 0 m; 0/64 at 1 m; 4.7 % at 2 m; 12.5 % at 3 m; **84.4 % at 5 m (54/64) (v4)**; 100 % (64/64) at each of 10–200 m. On the 1.622 / 1.215 m grids 5 m is only 3.1 px, hence 84 %, not 100 %. It was 93.8 % (60/64) at `b678272`: same windows and code path, a fresh draw of the planted directions and match noise (the trial list changed when E5 added rotation and scale, so the RNG stream is consumed differently). 5 m is the transition point for this population; quote 84 % (frozen) and say "most, not all, at 5 m" in speech | same section, the "Sun azimuths 132-174° apart" population (E2 of the audit) |
 
 ## Slide 3 (technical approach)
 
-| Text on the slide | Value at b678272 | Source |
+| Text on the slide | Value at 7dd4e5b | Source |
 |---|---|---|
-| median … s per 640-px window (… OHRC → NAC windows) | 10.7 s; 89 windows (the 74 °S loop legs and the sun sweep; `seconds` of the latest rows, re-run at `b678272`; wall time, so it differs run to run - 10.0 s at `49bdad9`) | "Runtime and match distribution" |
+| median … s per 640-px window (… OHRC → NAC windows) | **8.2 s (v4)**; 89 windows (the 74 °S loop legs and the sun sweep; `seconds` of the latest rows, re-run at `7dd4e5b`; wall time, so it differs run to run - 10.0 s at `49bdad9`, 10.7 s at `b678272`, 8.2 s here. Quote the frozen number; in speech say "about ten seconds a window on a laptop" and note it is wall time on a machine that was doing nothing else) | "Runtime and match distribution" |
 
 ## Slide 4 (feasibility)
 
-| Text on the slide | Value at b678272 | Source |
+| Text on the slide | Value at 7dd4e5b | Source |
 |---|---|---|
-| … real window pairs | 136 | REPORT.md footer: 140 registered pairs, minus 4 duplicate windows of Known issue 2 (`presentation.make_figures._distinct_windows`: `w01`=`w01_sw`, `w02`=`w02_sw`, `w03`=`w03_sw`, `w01_t`=`w04` of M1153871873LE) |
+| … distinct ground windows | **160 (v4)** | REPORT.md footer, verbatim: "177 registered pairs (160 distinct ground windows; Known issue 2: some were cut twice under two ids)". A ground window is (source product, reference product, centre, size) from `geometry_prior.json` (`presentation.make_figures._distinct_windows`), so the deck counts ground, not ids. It was 136 of 140 at `b678272`; the E7 dense tiling added 37 and the E2/E5 work the rest |
 | … instrument pairings | 8 | REPORT.md pair sections: OHRC-NAC, NAC-NAC, OHRC-TMC2, TMC2-TMC2, TC-MI, TC-IIRS, OHRC-TC, OHRC-LOLA. (Some pre-18-Sep rows' `kind` said `nac-nac` for TC→MI; the latest rows say `tc-mi`, and REPORT.md derives the kind from the product ids anyway.) |
 | Sub-pixel, grid named: … px = … m vs exact truth at 0° and 15° Sun azimuth difference (synthetic, 60 m grid) | 0.086 px (median at 0° and at 15°, the fig1 rows); 5.1 m | "Sub-pixel accuracy, with the pixel grid named" → the synthetic row (from `presentation.make_figures.load_curves`) |
-| six loops close to … px (… m) on the 1.245 m NAC grid | 0.08 px (0.083, median loop RMS px on the B grid); 0.10 m (0.104; max 0.128) | same table, the loop row; "Loop closure" |
-| MiLOI network truth, 9 S1 pairs: median … px on 1.1–1.5 m grids (truth error … px) | 0.52 px (n=9, grids 1.12–1.53 m); truth error 0.22 px = S1's leave-one-out median (max 0.29, n=3) | same table, the MiLOI row; "MiLOI" scene table → S1 truth error |
-| OHRC → NAC residual: 74 °S, Sun azimuths …° apart, median … px, … m | 3–6° (3.3, 5.8); 0.41–1.01 px (0.410–1.005, as REPORT's sub-pixel table prints it); 0.51–0.94 m; 20/20 agree | "Chandrayaan-2 OHRC → LRO NAC" → Δsun az range, held-out median range, the (m) values. Two NAC grids (0.931 and 1.245 m) |
+| six loops close to a median … px = … m on the 1.245 m NAC grid - consistency, not ground truth | **0.086 px, 0.107 m (v4)** (median loop RMS on the B grid; max 0.131 m) | same table, the loop row; "Loop closure". Moved ~2 % at `7dd4e5b` because `ops/loop_closure.py::_inlier_src_points` reads `is_inlier` from `matches.csv`, which the F12 fix corrected (0.104 m at `b678272`). The deck now prints three significant figures so a judge comparing it with REPORT.md sees the same number, not a truncation |
+| MiLOI network truth, 9 S1 pairs: median … px = … m on 1.1–1.5 m grids (truth error … px) | 0.52 px = **0.73 m (v4)** (n=9, grids 1.12–1.53 m); truth error 0.22 px = S1's leave-one-out median (max 0.29, n=3) | same table, the MiLOI row; "MiLOI" scene table → S1 truth error |
+| the whole lit 74 °S overlap tiled, not hand-picked — … windows, … km² — accepts …/…, median … px = … m on the … m grid, … of … under 3 px | **NEW in v4**: 37 windows of 596 m = 13.1 km²; 37/37 `agrees`; median 0.61 px = 0.57 m; 0.931 m grid; 36 of 37 under 3 px | "The whole lit overlap, tiled" (E7 of the audit). **This row replaced** the hand-picked 20-window range (3–6° apart; 0.41–1.01 px = 0.51–0.94 m; 20/20 agree), which is still in REPORT.md under "Chandrayaan-2 OHRC → LRO NAC" and is the answer to "what about your original windows?". The tiled set is denser and unselected, so it is the honest headline; it is also slightly worse (0.61 vs 0.41–1.01 median range), which is the point. The one window over 3 px is `site_ohrc_m1153871873le_w15_full` at 316 px, an inlier-ratio limit of the held-out median (0.542), not a registration failure - NCC of the aligned window is +0.87 to +0.95 on all 37. **Say that if asked; do not let "37/37 accepted" imply 37/37 sub-pixel** |
 | … on SAC's equatorial pair, 174° apart, 1.62 m grid | 0.69–1.68 px (0.690–1.676); 1.1–2.7 m (1.120–2.718) | "SAC's own benchmark pair (equatorial …)" → held-out median column and its (m) |
-| MiLOI past 90°: any of the … pairs (all scene S3) | 16 (9 + 7 pairs, every method 0; all S3 in miloi_log) | "MiLOI" table → rows 90-120 and 120-181 |
+| MiLOI past 90°: any of the … pairs with **Sun vectors** 90° or more apart (all scene S3) - a Sun-VECTOR angle, not an azimuth like every other Sun figure on the deck | 16 (9 + 7 pairs, every method 0; all S3 in miloi_log) | "MiLOI" table → rows 90-120 and 120-181 |
 | sweep: … of … at 60-120°, … of … at 120-153° | 0 of 12 (7 + 5); 10 of 15 | "Real sun-angle sweep" → bins 60-90 + 90-120, and 120-180 (registered & accepted / windows) |
 | OHRC → TMC-2 at SAC's site (azimuths …°, incidence …° apart): all 4 refused | 120° (120.2); 59° (d_incidence −59.44); 4/4 contradicted + fallback | "SAC's benchmark site: OHRC → TMC-2 nadir" → Δsun az; verdict; declared |
 | NAC's published corners and the OHRC grid disagree by … km | 1.9 km (+488, +1790 m → 1.86 km); applied before cutting by `cut_pradan_pairs.wide_offset` | "SAC's own benchmark pair (equatorial …)" note → wide-search offset (`site_geometry/M1350459544RE.json`) |
-| fore/aft accepts … window of 4, held-out median … px (… m) | 1 (w04 agrees; w02, w03 unconfirmed; w01 contradicted + fallback); 2.6 px (2.617) × 5.929 m = 16 m (15.5) | "Real viewpoint: TMC-2 fore → aft" → **held-out median** column, not "RMSE ≤ 3 px" (capped at 3 px by definition) |
+| fore/aft accepts … window of 4, held-out median … px (… m) - **15.5 m (v4)**, not the 16 m v3 printed: 2.617 px × 5.929 m = 15.51 | 1 (w04 agrees; w02, w03 unconfirmed; w01 contradicted + fallback); 2.6 px (2.617) × 5.929 m = 16 m (15.5) | "Real viewpoint: TMC-2 fore → aft" → **held-out median** column, not "RMSE ≤ 3 px" (capped at 3 px by definition) |
 
 ## Slide 5 (impact)
 
-| Text on the slide | Value at b678272 | Source |
+| Text on the slide | Value at 7dd4e5b | Source |
 |---|---|---|
-| planted errors of 5 m or more were all flagged, …% at 3 m, and at 2 m or less almost none (… SAC windows with Suns 132–174° apart: …/16 false alarms, 100% from … m) | 176/176 at 5–200 m; 74% at 3 m; 1/352 at 1–2 m; 8 SAC windows, 0/16, 100 % from 10 m (94 % at 5 m, said on slide 2) | "Trust layer …", both populations |
+| planted errors of 5 m or more were all flagged, …% at 3 m, and at 2 m or less almost none (… SAC windows with Suns 132–174° apart: …/16 false alarms, 100% from … m) | 176/176 at 5–200 m; 74% at 3 m; **0/352 (v4)** at 1–2 m; 8 SAC windows, 0/16, 100 % from 10 m (**84 % (v4)** at 5 m, said on both slides) | "Trust layer …", both populations |
+| Planted rotation and scale are caught cell by cell, not by the frame verdict: of the 8×8 cells they displace past 2 px, …% lose verified state | **NEW in v4**: 94 % (19653 of 20896 cells, over 420 rotation and scale trials at 0–20 m corner displacement). The companion number, not on the deck but the one a sceptic should ask for: of the 22464 cells the same errors moved by LESS than 1 px, 87.4 % stayed verified - the map is not simply refusing everything | "Errors that are not translations: planted rotation and scale" → the summary line under the table (E5 of the audit). **Cells, not frames**: the frame verdict still says `agrees` while a corner is 3 px out, because a rotation is not uniform over the frame - that is why this clause counts cells and says so. Pre-registered bar was 90 % refused / 80 % kept, written down before the run; measured 94.1 % / 87.4 % |
 | LRO NAC (… frames at … sites) and Kaguya TC (… site) | 3 at 3; TC 1 site (74 °S) | distinct `ch2_ohr_*` source products in the latest real_pairs_log rows: `…20200229T0739312111` (74 °S; NAC + TC + LOLA), `…20200824T0806596861` (62 °S, SAC polar; NAC), `…20210401T2357376656` (14 °S, SAC equatorial; NAC + TMC-2) |
 
 ## Figures
@@ -147,13 +180,21 @@
   error under ~4 px cannot move a pair across the 3 px line. S1/S2 truths are good to 0.22-0.26 px
   (leave-one-out); S3's is unmeasured. Only the 5 unconfirmed pairs (3.2-9.1 px) sit near the line.
 - **"Sub-pixel on which grid?"** Every figure names it: 0.086 px on the 60 m synthetic grid (exact
-  truth; 5 m); 0.41-1.01 px held out on the 0.93 / 1.25 m NAC grids (0.5-0.9 m; not truth);
-  0.08 px loop closure on 1.245 m (consistency); 0.52 px on MiLOI S1 (1.1-1.5 m grids, truth good
+  truth; 5 m); 0.61 px held out over the whole tiled 74 °S overlap on the 0.93 m NAC grid (0.57 m;
+  not truth) and 0.41-1.01 px on the 20 hand-picked windows of that site; 0.086 px loop closure on
+  1.245 m (0.107 m, consistency); 0.52 px on MiLOI S1 (1.1-1.5 m grids, truth good
   to 0.22 px). The 0.086 px is a rendered pair without cast shadows; the real-data figures are the
   ones to lead with.
-- **"Runtime for a full OHRC strip?"** Median 10.7 s per 640-px NAC-grid window on this laptop
+- **"Did you choose the windows that worked?"** No: the 74 °S headline is now every non-overlapping
+  640-px window the cutter finds in shared, lit, textured ground of that overlap - 37 of them,
+  13.1 km², selected by texture and illumination before any matching, 37/37 accepted. One reports a
+  held-out median of 316 px at an inlier ratio of 0.542; that is the metric degrading, not the
+  alignment (NCC +0.87 to +0.95 on all 37), and REPORT.md says so in the same section.
+- **"Runtime for a full OHRC strip?"** Median 8.2 s per 640-px NAC-grid window on this laptop
   (89 windows); a 12,000 × 90,000 px OHRC strip at 0.25 m covers about 1,300 such windows on a
-  1.2 m NAC grid, i.e. roughly 4 hours single-threaded - an estimate, not a measurement.
+  1.2 m NAC grid, i.e. roughly 3 hours single-threaded - an estimate, not a measurement. Wall time
+  varies run to run (10.0, 10.7, 8.2 s over three freezes), so say "under four hours", not a
+  precise figure, and say it is single-threaded CPU with no GPU.
 
 - **"SuperGlue got 0.62/0.57 px on our pair."** Their figure is an in-sample control-point RMSE
   per axis, on their resampled NAC grid (1.1179 m). Our headline is held out (matches the fit
