@@ -177,3 +177,16 @@ zero work.
 23. **NEW: the MCP-driven Chrome is not signed into claude.ai**, so the published artifact's
     *rendering* cannot be checked from this session - only its bytes, which were verified verbatim.
 24. **NEW: `web/voice.py` has never made a live call.** No Gemini key yet.
+25. **NEW, and it matters for Gate 4: the demo cache staleness plate raises a false alarm after
+    ANY commit.** `core.export._commit(("core","evaluation","app"))` returns **HEAD's** sha
+    whether or not those paths changed, so a docs-only commit makes every cached result render
+    `CACHED RESULT commit <a> — CODE IS NOW <b>` in caution colour. Verified tonight: all 14
+    caches are flagged, and `git diff f928995 HEAD -- core evaluation app` is **empty**. The code
+    genuinely has not moved.
+    **Before Gate 4 or any live demo**, re-run on the final commit - it takes about 30 s for the
+    six demo pairs:
+    `python -m ops.precompute_demo_cache pair_00_dryrun pair_01 pair_03_tierD pair_04_tierD_native sac_ohrc_nac_w06 site_tc_morning_mi1548_w01`
+    The real fix is for `_commit` to return the last commit that TOUCHED the watched paths, not
+    HEAD. **Not done tonight on purpose**: `core/export.py` is inside the freeze stamp path, so
+    changing it would invalidate `7dd4e5b` and force a 90-110 minute re-freeze four days before
+    submission. It goes in the queue with F18 and F19, after 27 Sep.

@@ -77,6 +77,11 @@
 8. **Gate 4 by hand**: wifi off, `streamlit run app/streamlit_app.py`, the four cached pairs
    (`pair_01`, `pair_04_tierD_native`, `sac_ohrc_nac_w06` with the four downloads,
    `site_tc_morning_mi1548_w01`).
+   **Re-run the caches on the final commit first** (~30 s), or every pair shows a caution-coloured
+   "CODE IS NOW" plate that is a false alarm - Known issue 25:
+   ```
+   python -m ops.precompute_demo_cache pair_00_dryrun pair_01 pair_03_tierD pair_04_tierD_native sac_ohrc_nac_w06 site_tc_morning_mi1548_w01
+   ```
 9. **Close the old Claude sessions** (17-19 Sep); they hold ~9 GB of commit charge (Known issue 8).
 
 ## After submission, before the finale - the two things the audit left open
