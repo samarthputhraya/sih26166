@@ -170,6 +170,16 @@ svg text{font-family:var(--f-mono);fill:var(--dim)}
 @media (max-width:1000px){.flow{grid-template-columns:repeat(2,minmax(0,1fr))}.flow li::after{display:none}.pulse{display:none}
   .outs{grid-template-columns:minmax(0,1fr)}}
 
+.band{border:1px solid var(--rule2);background:var(--ground)}
+.band h4{margin:0;padding:10px 13px;border-bottom:1px solid var(--rule2);font:500 11.5px/1.5 var(--f-mono);
+  letter-spacing:.06em;color:var(--ink);text-transform:none}
+.band table{width:100%;border-collapse:collapse;font:500 13px/1.4 var(--f-mono)}
+.band th,.band td{padding:7px 13px;border-bottom:1px solid var(--rule);text-align:right}
+.band th:first-child,.band td:first-child{text-align:left;font-weight:400;color:var(--ink2);font-family:var(--f-body);font-size:13.5px}
+.band thead th{font:500 11.5px/1.3 var(--f-mono);color:var(--dim);letter-spacing:.04em;border-bottom:1px solid var(--rule2)}
+.band tr:last-child td{border-bottom:0}
+.band .win{color:var(--verified)} .band .lose{color:var(--refused)}
+
 /* REFUSED ledger */
 .ledger{width:100%;border-collapse:collapse;font-size:14px;min-width:560px}
 .ledger th{font:500 11.5px/1 var(--f-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--dim);text-align:left;
@@ -194,7 +204,7 @@ footer{border-top:1px solid var(--rule);margin-top:clamp(30px,5vw,60px);padding-
   <span class="plate__ps">SIH26166 · CHANDRAYAAN-2 IMAGE CORRESPONDENCE</span>
   <span class="lamp"><i></i>EVIDENCE FROZEN · <span id="fz"></span></span>
   <nav aria-label="Instruments">
-    <a href="#sun">SUN</a><a href="#trust">TRUST MAP</a><a href="#tile">TILING</a><a href="#cal">CALIBRATION</a><a href="#flow">PIPELINE</a><a href="#refused">REFUSALS</a>
+    <a href="#sun">SUN</a><a href="#trust">TRUST MAP</a><a href="#tile">TILING</a><a href="#cal">CALIBRATION</a><a href="#flow">PIPELINE</a><a href="#registers">RESULTS</a><a href="#refused">REFUSALS</a>
   </nav>
 </div></header>
 
@@ -258,6 +268,7 @@ footer{border-top:1px solid var(--rule);margin-top:clamp(30px,5vw,60px);padding-
       <div class="stack">
         <div class="verdict" id="verdict"></div>
         <div class="gloss" id="gloss"></div>
+        <div class="band" id="band" hidden></div>
         <div class="insp" id="insp" aria-live="polite"></div>
         <div class="key">
           <span><i style="background:var(--verified)"></i>verified: matches and pixels agree</span>
@@ -326,10 +337,32 @@ footer{border-top:1px solid var(--rule);margin-top:clamp(30px,5vw,60px);padding-
     </div>
   </section>
 
+  <section class="bay" id="registers">
+    <header class="bay__head"><span class="bay__code">RESULTS</span><h2>What it registers</h2><span class="bay__src">REPORT.md &middot; each row is a section of it</span></header>
+    <div class="bay__body">
+      <p class="lede">The refusals below are the part that is unusual, so they get their own table. They are not the bulk of the work. This is what the system aligns, and to what accuracy — every figure measured at the freeze commit and reproducible by one command.</p>
+      <div class="scroll"><table class="ledger">
+        <thead><tr><th>Pairing</th><th>What was measured</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>OHRC &rarr; LRO NAC, 74&nbsp;&deg;S, whole lit overlap tiled <span class="tagk">CROSS-SENSOR</span></td><td>Every non-overlapping 640-px window in shared, lit, textured ground &mdash; 13.1 km&sup2;, no window hand-picked. Held-out median on the 0.93 m grid.</td><td>37 / 37 accepted<br>0.61 px = 0.57 m</td></tr>
+          <tr><td>OHRC &rarr; LRO NAC, SAC's equatorial benchmark <span class="tagk">CROSS-SENSOR</span></td><td>SAC's own published pair (arXiv:2509.04775). Sun azimuths 174&deg; apart &mdash; every shadow reversed. Held-out median on the 1.62 m grid.</td><td>6 / 6 accepted<br>0.69&ndash;1.68 px</td></tr>
+          <tr><td>OHRC &rarr; LRO NAC, SAC's polar benchmark <span class="tagk">CROSS-SENSOR</span></td><td>Sun azimuths 132&deg; apart. Two windows flagged rather than shipped.</td><td>4 / 6 accepted</td></tr>
+          <tr><td>OHRC &rarr; LRO NAC, the Sun sweep <span class="tagk">CROSS-SENSOR</span></td><td>One OHRC frame against 25 NAC frames, Sun azimuths 3&ndash;153&deg; apart, 69 windows. Nothing wrongly accepted in any band.</td><td>51 registered<br>0 undetected failures</td></tr>
+          <tr><td>Kaguya TC &rarr; Kaguya MI 749 nm <span class="tagk">CROSS-SENSOR</span></td><td>Visible against visible, 2&times; scale gap, on MI's 14.8 m grid.</td><td>3 / 3 accepted<br>0.23&ndash;0.47 px</td></tr>
+          <tr><td>Kaguya TC &rarr; Kaguya MI 1548 nm <span class="tagk">MULTI-MODAL</span></td><td>Matcher refused; global correlation delivered instead and declared as such. Measured against the visible-band fit of the same window.</td><td>3 / 3 delivered<br>0.23&ndash;1.09 px</td></tr>
+          <tr><td>OHRC &rarr; Kaguya TC ortho map <span class="tagk">CROSS-SENSOR</span></td><td>A 29.6&times; scale gap, 0.25 m against 7.4 m.</td><td>3 / 4 accepted</td></tr>
+          <tr><td>OHRC &rarr; NAC A &rarr; NAC B, closed loops</td><td>Three registrations round a loop must return to the start. Cancels any error attached to a single image, so it measures correspondence, not geolocation.</td><td>6 loops close to<br>0.086 px = 0.107 m</td></tr>
+          <tr><td>MiLOI, LRO NAC &harr; NAC <span class="tagk">SAME SENSOR</span></td><td>81 published pairs of one ground under many Suns, judged against a truth network built from other pairs.</td><td>33 / 33 accepted<br>are correct</td></tr>
+        </tbody>
+      </table></div>
+      <p class="note">Two independent kinds of evidence run through this table. Against <strong style="color:var(--ink)">exact truth</strong> &mdash; a synthetic pair rendered from the LOLA elevation model with a known transform &mdash; the error is 0.086 px = 5.1 m on the 60 m grid at 0&deg; and 15&deg; of Sun azimuth difference. On <strong style="color:var(--ink)">real imagery</strong> there is no ground truth, so what is quoted is a held-out residual: the median error over the 20&nbsp;% of matches the fit never saw. The two are different claims and are never added together.</p>
+    </div>
+  </section>
+
   <section class="bay" id="refused">
     <header class="bay__head"><span class="bay__code">REFUSED</span><h2>What it declines to register</h2><span class="bay__src">REPORT.md · each row is a section of it</span></header>
     <div class="bay__body">
-      <p class="lede">A registration engine earns trust by the results it refuses. These are all of ours, with the counts. None of them is reported anywhere as a success.</p>
+      <p class="lede">A registration engine earns trust by the results it refuses. These are all of ours, with the counts. None is reported anywhere as a success &mdash; and none was discovered by a reviewer, because the system flagged each one itself.</p>
       <div class="scroll"><table class="ledger">
         <thead><tr><th>Pairing</th><th>What happened</th><th>Count</th></tr></thead>
         <tbody>
@@ -513,13 +546,31 @@ function drawInsp(){
     <dt>median inlier residual</dt><dd>${c.res===null ? 'n/a' : c.res.toFixed(2)+' px = '+(c.res*m.gsd).toFixed(2)+' m'}</dd>
     <dt>pixel grid</dt><dd>${m.gsd} m / px (reference)</dd></dl>`;
 }
+function drawBand(){
+  const m = D.maps[tr.p], w = m.twin, el = $('#band');
+  if (!w) { el.hidden = true; el.innerHTML = ''; return; }
+  el.hidden = false;
+  const row = (lab, a, b, cls) => `<tr><td>${lab}</td><td class="${cls&&cls[0]||''}">${a}</td><td class="${cls&&cls[1]||''}">${b}</td></tr>`;
+  const sh = (w.a.sharp / w.b.sharp).toFixed(1);
+  el.innerHTML = `<h4>Is it only that the infrared frame is blurrier? The same source image, against two bands of the same map product.</h4>
+    <table><thead><tr><th>${w.src.slice(0,14)}\u2026 \u2192 ${w.ref.slice(0,12)}\u2026</th><th>${w.other_band}</th><th>${w.band}</th></tr></thead><tbody>
+    ${row('reference grid', w.a.gsd + ' m/px', w.b.gsd + ' m/px')}
+    ${row('high-frequency detail', w.a.sharp, w.b.sharp + ' (' + sh + '\u00d7 less)')}
+    ${row('matches found', fmt(w.a.matches), fmt(w.b.matches))}
+    ${row('inliers', fmt(w.a.inliers), fmt(w.b.inliers))}
+    ${row('inlier ratio', w.a.ratio, w.b.ratio)}
+    ${row('frame coverage', Math.round(w.a.cov*100) + '%', Math.round(w.b.cov*100) + '%')}
+    ${row('verdict', w.a.verdict + ' \u00b7 ' + w.a.med + ' px', w.b.verdict, ['win','lose'])}
+    ${w.fallback_px!==null ? row('fallback vs the visible-band fit', '\u2014', w.fallback_px + ' px = ' + w.fallback_m + ' m', ['','win']) : ''}
+    </tbody></table>`;
+}
 function drawVerdict(){
   const m = D.maps[tr.p], ok = m.ok;
   $('#verdict').innerHTML = `<b style="color:${ok?C.verified:C.refused}">${ok?'ALIGNMENT ACCEPTED':'ALIGNMENT REFUSED'}</b>
     <span>${m.label} <span class="tagk">${m.tag}</span><br>${m.sub}<br>${m.counts.verified} of 64 cells verified, ${m.counts.weak} weak, ${m.counts.no_evidence} no evidence \u00b7 ${fmt(m.inliers)} inliers of ${fmt(m.n_matches)} matches \u00b7 ${m.seconds} s on CPU<br>method declared: ${m.method}<br>${m.why.replace('->','\u2192')}</span>`;
   $('#gloss').innerHTML = ok
     ? `<b>What this means.</b> The two images above are aligned, and two independent lines of evidence say so: the matches, and the pixels. The Suns are 174\u00b0 apart, so every shadow in A points the opposite way to B, and the alignment still holds.`
-    : `<b>What this means \u2014 and what it does not.</b> Both pictures are sharp. That was never the question. Across the visible-to-infrared gap the matcher found only ${fmt(m.n_matches)} matches in the whole frame, where the accepted pair found ${fmt(D.maps[0].n_matches)}, and the transform it built from them is visibly wrong \u2014 switch to <em>${m.layers.find(x => x.k==='warp').n}</em> and look at it. The area check, which never sees the matches, caught that and the system <b>refused to ship it</b>, declaring a ${m.method} instead. A wrong answer that announces itself is worth far more than a wrong answer that does not.`;
+    : `<b>Refused, and then delivered anyway.</b> The matcher found only ${fmt(m.n_matches)} matches across the whole frame and the transform it built from them is visibly wrong \u2014 switch to <em>${m.layers.find(x => x.k==='warp').n}</em> and look at it. The area check caught that and the system refused it, then fell back to global phase correlation and <b>declared which method it used</b>. That fallback lands ${m.twin && m.twin.fallback_px} px = ${m.twin && m.twin.fallback_m} m from the registration of the very same window in visible light. So this window IS registered, to well under a pixel of the 14.8 m grid \u2014 what the system refuses to do is <b>pretend the feature matcher is what did it</b>.`;
 }
 function cap(s){ return (s.band ? s.band + '<br>' : '') + s.gsd + ' m per pixel'; }
 function drawIO(){
@@ -544,7 +595,7 @@ function setPair(i){ tr.p = i; document.querySelectorAll('[data-p]').forEach(b =
   tr.cell = i===0 ? 27 : D.maps[i].cells.findIndex(c => c.s==='weak'); if (tr.cell<0) tr.cell = 27;
   $('#layseg').innerHTML = D.maps[i].layers.map(l => `<button type="button" data-layer="${l.k}" aria-pressed="false">${l.n}</button>`).join('');
   document.querySelectorAll('[data-layer]').forEach(b => { b.onclick = () => setLayer(b.dataset.layer); });
-  drawIO(); setLayer(i===0 ? 'blink' : 'warp'); drawGrid(); drawInsp(); drawVerdict(); }
+  drawIO(); setLayer(i===0 ? 'blink' : 'warp'); drawGrid(); drawInsp(); drawVerdict(); drawBand(); }
 function pick(i){ if (i===tr.cell || i<0 || i>63) return; tr.cell = i; document.querySelectorAll('#grid .cell').forEach((r,k) => r.classList.toggle('on', k===i)); drawInsp(); }
 $('#pairseg').addEventListener('click', e => { const b = e.target.closest('[data-p]'); if (b) setPair(+b.dataset.p); });
 $('#gridbtn').onclick = e => { const on = e.currentTarget.getAttribute('aria-pressed')!=='true'; e.currentTarget.setAttribute('aria-pressed', String(on)); $('#plateimg').classList.toggle('nogrid', !on); };

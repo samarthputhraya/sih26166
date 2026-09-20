@@ -33,6 +33,39 @@ def jpg(a, size=448, q=78):
     _, buf = cv2.imencode(".jpg", a, [cv2.IMWRITE_JPEG_QUALITY, q])
     return "data:image/jpeg;base64," + base64.b64encode(buf.tobytes()).decode()
 
+def sharpness(path):
+    """High-frequency content of a reference frame, as the variance of its Laplacian.
+
+    Reported so the "it is only blurrier" reading can be tested rather than argued with. It is a
+    relative measure between two frames on the same grid, not an absolute resolution figure.
+    """
+    a = tifffile.imread(str(path)).astype(np.float64)
+    if a.ndim == 3:
+        a = a[..., 0]
+    a = (a - np.nanmin(a)) / max(np.nanmax(a) - np.nanmin(a), 1e-9)
+    return float(cv2.Laplacian(np.nan_to_num(a), cv2.CV_64F).var())
+
+
+def twin(pid, other, band, other_band):
+    """The same source image against a different BAND of the same reference product."""
+    def one(p):
+        r = pickle.load(open(ROOT / f"demo_cache/results/{p}.pkl", "rb")) if (ROOT / f"demo_cache/results/{p}.pkl").exists() else None
+        row = latest.get(p)
+        return {"matches": int(f(row["n_matches"])), "inliers": int(f(row["inliers"])),
+                "ratio": round(f(row["inlier_ratio"]), 3),
+                "cov": round(f(row["grid_coverage_fraction"]), 2),
+                "verdict": row["verdict"], "declared": row["method_declared"],
+                "med": round(f(row["residual_median_px"]), 3), "gsd": round(f(row["ref_gsd_m"]), 1),
+                "sharp": round(sharpness(next((ROOT / "data/pairs" / p).glob("*_ref.tif"))), 5)}
+    g = json.loads((ROOT / "data/pairs" / pid / "geometry_prior.json").read_text(encoding="utf-8"))
+    mm = {r["pair_id"]: r for r in rows("evaluation/multimodal_check.csv")}
+    fb = mm.get(pid)
+    return {"band": band, "other_band": other_band, "a": one(other), "b": one(pid),
+            "src": g["source"]["product_id"], "ref": g["reference"]["product_id"].split(" band")[0],
+            "fallback_px": round(f(fb["disagreement_median_px"]), 3) if fb else None,
+            "fallback_m": round(f(fb["disagreement_median_m"]), 1) if fb else None}
+
+
 def trust(pid, label, sub, tag):
     """One pair, as a pair: BOTH inputs, what the matcher proposed, and what was delivered.
 
@@ -75,11 +108,12 @@ def trust(pid, label, sub, tag):
             "why": r["declared"]["why"], "gsd": rel["gsd_mpp"], "n_matches": int(r["n_matches"]),
             "inliers": int(r["ransac"]["inlier_count"]), "seconds": round(float(r["seconds"]), 1),
             "a": side("source"), "b": side("reference"), "layers": layers,
+            "twin": twin(pid, "site_tc_morning_mi749_w01", "1548 nm (near-infrared)", "749 nm (visible)") if "mi1548" in pid else None,
             "scale_note": (r.get("scale_factors") or {}).get("note"), "rescued": rescued}
 
 
 real = rows("evaluation/real_pairs_log.csv")
-latest = {}
+latest = {}  # read by twin(), which runs later, when data = {...} calls trust()
 for r in real: latest[r["pair_id"]] = r
 reg = {k: r for k, r in latest.items() if r["verdict"] != "INVALIDATED" and not k.startswith("loop_")}
 
