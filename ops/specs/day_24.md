@@ -9,21 +9,29 @@
 ## Done for you on 20 Sep - do not redo these
 
 - **Backups made.** `C:\sih26166_backup\` holds `weights/` (`loftr_outdoor.pt` verified as sha256
-  `6d2e110d…`), `data/pairs/` and `demo_cache/` (165 files, 94.8 MB, copied 12:36 after the
-  caches were rebuilt). All three are gitignored and live inside OneDrive, which has reverted
+  `6d2e110d…`), `data/pairs/` and `demo_cache/` (181 files, 103 MB, re-synced 18:00 after the
+  console's eight extra caches were added). All three are gitignored and live inside OneDrive, which has reverted
   files in this repo before, so **put `C:\sih26166_backup\` on a USB stick** - that is the one
   step left and it is not recoverable if skipped.
 - **The six demo caches were rebuilt at `f928995`.** The four older ones were computed before the
   F12 fix and carried its bug (an empty inlier flag in the exported match table). All six now
   show a clean identification plate - no "CODE IS NOW" caution - and three consecutive AppTest
   runs of the four demo pairs passed with sockets blocked (0.6-3.2 s per cached align).
+  `demo_cache/` now holds **14** pairs, not 6: eight more were added for the Mission Console's
+  roster. The extra eight are display-only and are not on the Gate 4 path.
+- **The Mission Console was built** (`web/`, published private at
+  https://claude.ai/artifact/LbbZKdvnVYCCBbPjEBZCA9). It replaces nothing:
+  `app/streamlit_app.py` is untouched and is still what Gate 4 tests. Operator guide in
+  `web/README.md`; rebuild with `python -m web.build_console`.
+- **A silent 108 s explainer video** is at `web/dist/mission-console.mp4`, with its script in
+  `web/narration.md`.
 
 ## To submit (about 15 minutes; the portal closes Tue 30 Sep)
 
 1. **Read the PDF cold**, all six pages: `presentation/SIH26166_LunaXX_deck.pdf` (v4). Every page
    was rendered and read on 20 Sep, but you are the one presenting it.
 2. **Portal fields**: paste from `ops/national_round/SUBMISSION_FIELDS.md`. The long description
-   is 1,648 characters - if the portal rejects it, the short one (499) is there and is true.
+   is 1,804 characters - if the portal rejects it, the short one (507) is there and is true.
    Upload the PDF.
 3. **Record it**: screenshot the confirmation; write the time and Team ID into `ops/STATUS.md`;
    commit, push.
@@ -51,16 +59,25 @@
    **Cut-off: Thu 24 Sep 18:00** for any evidence; after that it is the Q&A answer already written
    in DECK_V2_DRAFT.md.
 
+## Two decisions with dates on them
+
+5. **Console link on slide 6 - decide before Fri 25 Sep 22:00**, the text freeze. Slide 6 is the
+   only slide with room. If yes: open the artifact, use its Share menu to make it viewable, put
+   the URL in `S6` of `build_deck.py`, rebuild, re-export, re-run `claim-checker`. **It is private
+   right now** - a judge clicking a private link sees a sign-in page, which is worse than no link.
+6. **Gemini key for the voice-over.** With it:
+   `python -m web.voice --key <KEY>` then `python -m web.cut` gives the narrated ~4.7 min version.
+   `web/voice.py` has never made a live call, so expect to debug the first one. Watch the silent
+   cut first - fixing pacing before the voice is generated is much cheaper than after.
+
 ## Optional, in this order
 
-5. **Demo video**: 2 minutes, unlisted, narrated by you; link on slide 6 (`S6` in
-   `build_deck.py`); rebuild, re-export. Slide 6 has room; slides 2, 4 and 5 do not.
-6. **Repo public + link on slide 6**: the deck says every number traces to the logs; a reviewer
-   can only check that if the repo is public. Your decision.
-7. **Gate 4 by hand**: wifi off, `streamlit run app/streamlit_app.py`, the four cached pairs
+7. **Repo public**: the deck says every number traces to the logs; a reviewer can only check
+   that if the repo is public. Your decision, and it is separate from the console link above.
+8. **Gate 4 by hand**: wifi off, `streamlit run app/streamlit_app.py`, the four cached pairs
    (`pair_01`, `pair_04_tierD_native`, `sac_ohrc_nac_w06` with the four downloads,
    `site_tc_morning_mi1548_w01`).
-8. **Close the old Claude sessions** (17-19 Sep); they hold ~9 GB of commit charge (Known issue 8).
+9. **Close the old Claude sessions** (17-19 Sep); they hold ~9 GB of commit charge (Known issue 8).
 
 ## After submission, before the finale - the two things the audit left open
 

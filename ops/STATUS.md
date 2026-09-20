@@ -1,4 +1,4 @@
-# STATUS - 20 September 2026 (Day 23), ~12:45 IST, audit second pass wrapped. National round, solo push.
+# STATUS - 20 September 2026 (Day 23), ~18:15 IST. National round, solo push.
 
 > Rewritten in full at the end of every session. Previous STATUS is in git history.
 > The venv is `C:\Users\samar\venvs\sih26166`; call its `python.exe` directly (bare `python` has no numpy).
@@ -7,174 +7,173 @@
 
 ---
 
-## Read this first
-
-1. **The audit ran in two passes** (20 Sep, 02:30-05:00 and 09:00-12:45):
-   `ops/national_round/AUDIT_REPORT.md`. The second pass found and fixed a blocker, added two
-   measured results, and forced a second re-freeze.
-   - **F12, the blocker (fixed).** `is_inlier` in the exported match table was decided by
-     comparing float64 match coordinates against their float32 copies, so **41 of 183 bundles
-     flagged ZERO inliers** and shipped empty `gcps.txt`, `gcps.points` and `matches_isis.csv` -
-     deliverables the problem statement names. `core/ransac.py` now returns MAGSAC++'s own mask
-     and `core/export.py` uses it. Every metric had stayed right, because nothing else asked that
-     question; loop closure moved ~2 % because it is the one number read back from that file.
-   - **E5, trust against non-translation errors.** Planted rotation and scale, 840 trials (420 each):
-     **94.1 %** of the cells they moved past 2 px lost verified state (pre-registered bar 90 %),
-     and 87.4 % of the cells they moved less than 1 px stayed verified (bar 80 %). On slide 5.
-   - **E7, the whole lit overlap tiled.** Every non-overlapping 640-px window the cutter finds in
-     shared, lit, textured ground of the 74 °S OHRC ↔ NAC overlap: **37 windows, 13.1 km²,
-     37/37 accepted**, held-out median 0.61 px = 0.57 m. On slide 4, and it replaced the
-     hand-picked 20-window range - it answers "did you pick the windows that worked?".
-   - **E6 dropped and E8 ruled out**, both honestly: E6 could have produced a pixel figure below
-     SuperGlue's but not by a method we could defend; E8 fails on physics (every available DEM is
-     50-240× coarser than the imagery). Reasons in AUDIT_REPORT.md.
-2. **The evidence freeze is DONE: FROZEN at `7dd4e5b`** (10/10 steps). 183/183 real rows,
-   324/324 MiLOI rows, 8/8 multi-modal rows name it. Every per-pair number reproduced the
-   `b678272` values exactly except loop closure, which is the one the F12 fix predicts.
-   `--check` at a later HEAD says NOT FROZEN because the rows name `7dd4e5b`, not HEAD; the test
-   that matters is `git diff 7dd4e5b HEAD -- core evaluation ops baselines app` showing only docs.
-   **It took three attempts** - two crashes in code that only runs at the end of the job. Both
-   causes are fixed and tested; see Known issues 7 and 18.
-3. **The deck is v4; the PDF is final.** `build_deck`: `AUDIT: clean`; `export_pdf`:
-   `PDF CHECK: clean`, 6 pages, 1,112,713 bytes, sha256 `510a5c50…` (12:46 IST). All six pages
-   rendered at 150 dpi and read. Six numbers moved from v3 and two clauses were added; every value
-   and its source is in `presentation/DECK_V2_DRAFT.md`.
-   **`claim-checker` ran on v4: 0 fabricated numbers, all six changed values confirmed.** Its
-   2 HIGH / 8 MEDIUM / 4 LOW findings were all on nouns, scope and labels; each was verified
-   against REPORT.md by hand and then applied, except one that was declined on the record
-   (AUDIT_REPORT.md). The two that mattered: slide 4 said "160 real window pairs" when REPORT
-   says 177 pairs / **160 distinct ground windows**; and slide 5 said rotation and scale "behave
-   the same way" as translation, which the frame column disproves (10-15 % contradicted at 5 m
-   against 100 % for a shift) - it now says "caught cell by cell, not by the frame verdict".
-   It also caught that **REPORT.md was still uncommitted**, so the deck's numbers pointed at no
-   commit a judge could open. Committed now. `ops.freeze --check` does not test for this.
-   **Safety net:** tag `submission-v1` = `0297936` (the pre-audit deck) and
-   `presentation/SIH26166_LunaXX_deck_v1_SAFE.pdf` (gitignored).
-4. **Slides 2, 4 and 5 are full.** Body text is 11.5 / 12 pt. Slide 4 overflowed twice during the
-   refill and one bullet had to be removed to fit the tiling clause. Only slide 6 has room left
-   (for a demo-video link). `export_pdf`'s footer check is the only thing that sees this -
-   `build_deck`'s audit measures text boxes, not rendered text (Known issue 11).
-5. **Demo: the six caches were rebuilt at `f928995`** - four of them predated the F12 fix and
-   carried its bug. All six identification plates are clean (no "CODE IS NOW" caution), and three
-   consecutive AppTest runs of the four demo pairs passed with sockets blocked. Gate 4 by hand is
-   still a human job.
-6. **Backups are current**: `C:\sih26166_backup\` has `weights/`, `data/pairs/` and `demo_cache/`
-   (165 files, 94.8 MB, 12:36). **Not yet on a USB stick** - that is step 0 of `day_24.md`.
-7. **Portal text** (`ops/national_round/SUBMISSION_FIELDS.md`) is refilled at `7dd4e5b`; its
-   character counts were recounted (the stated "1,322" had been stale by 228).
-
 ## Position
 
 ```
-Sun 20 Sep, 12:45  |  submit Sun 27 Sep (7 days)  |  portal closes Tue 30 Sep
-Built: everything, PDF v4 final. Left: read the PDF -> portal -> upload (Samartha, ~15 min)
-Optional, measurable: the closer-Sun TMC-2 pass (needs a PRADAN download) - ops/specs/day_24.md
-Evidence cut-off Thu 24 Sep 18:00 | deck and portal text final Fri 25 Sep 22:00
+Sun 20 Sep 18:15  |  submit Sun 27 Sep (7 days)  |  portal closes Tue 30 Sep
+Evidence cut-off  Thu 24 Sep 18:00     <- the only hard deadline with work behind it
+Deck/portal final Fri 25 Sep 22:00
+Read PDF cold     Sat 26 Sep
+Submit            Sun 27 Sep
 ```
 
-## Verified by command (20 Sep, 12:00-12:45, at `7dd4e5b` + docs)
+**The submission is DONE and sitting on disk.** Deck v4 PDF, portal text, evidence frozen, all
+committed and pushed. Everything from here is optional upside or Samartha's 15 minutes at the
+portal. Nothing is half-finished.
 
-| Check | Result |
+The old college-round gates (Days 5, 8, 10, 11, 12) are all past. **There is no gate tomorrow.**
+The national round has cut-offs, not gates, and they are listed above.
+
+## Read this first
+
+1. **Evidence is FROZEN at `7dd4e5b`** (10/10 steps; 183/183 real rows, 324/324 MiLOI, 8/8
+   multi-modal). `--check` at a later HEAD prints NOT FROZEN because the rows name `7dd4e5b`, not
+   HEAD - that is expected. The test that matters, re-run tonight:
+   `git diff 7dd4e5b HEAD -- core evaluation ops baselines app` shows only docs, the freeze's own
+   evidence CSVs, and two source files that cannot change a number:
+   `ops/trust_real_calibration.py` (**0 behavioural lines**, comments only) and
+   `ops/make_report.py` (30 lines, all rendering - it writes no evidence file).
+2. **Deck is v4 and final.** `AUDIT: clean`, `PDF CHECK: clean`, 6 pages, 1,112,713 bytes,
+   sha256 `510a5c50…`. All six pages rendered and read. `claim-checker` found 0 fabricated
+   numbers; its 2 HIGH / 8 MEDIUM / 4 LOW were verified by hand, 13 applied, 1 declined on the
+   record. Safety net: tag `submission-v1` = `0297936` and `SIH26166_LunaXX_deck_v1_SAFE.pdf`.
+3. **NEW TODAY - the Mission Console**, `web/`. A dark instrument-panel front end over the frozen
+   evidence, replacing nothing: `app/streamlit_app.py` is untouched and is still what Gate 4
+   tests. Published (private) at **https://claude.ai/artifact/LbbZKdvnVYCCBbPjEBZCA9**, version 7.
+   - Covers **all 8 instrument pairings and all 3 verdicts** (10 pairs in the roster).
+   - `python -m web.server` adds a LIVE bay that registers a pair you upload, calling
+     `core.pipeline.run_all` directly. Verified end to end through the browser's own file inputs.
+   - It **writes nothing** and lives outside `core/ evaluation/ ops/ app/`, so rebuilding it can
+     never restamp an evidence row or a demo cache.
+   - Operator guide: `web/README.md`. Build: `python -m web.build_console`.
+4. **NEW TODAY - the explainer video pipeline.** `web/dist/mission-console.mp4` is built and
+   **silent**: 1600×1000, 12 fps, 108 s, 7.6 MB, from 1,649 real screencast frames of the console
+   driving itself through 16 beats. `web/narration.md` is the script (683 words, ~4.7 min spoken,
+   every number traceable to REPORT.md at the freeze).
+   **`web/voice.py` is UNTESTED** - it needs a Gemini key Samartha has not provided yet. It parses
+   all 16 beats under `--dry`; the TTS call itself has never run.
+
+## Verified by command tonight (20 Sep, 18:10-18:20)
+
+| Check | Exit | Result |
+|---|---|---|
+| `python -m pytest evaluation/ -q` | **0** | 81 passed in 2.2 s |
+| `python -m pytest -q` (whole repo) | **0** | **340 passed** in 13.5 s |
+| `import core.pipeline` | **0** | OK |
+| `git status --short` | - | clean, nothing uncommitted |
+| `git diff 7dd4e5b HEAD -- core evaluation ops baselines app` | - | docs + evidence only; 0 behavioural lines in trust_real_calibration.py |
+| deck PDF on disk | - | 1,112,713 bytes, 12:46 |
+| video on disk | - | 7,997,862 bytes, 18:13 |
+
+## What landed today (`f928995`..`f2216fa`, 9 commits)
+
+| Commit | What |
 |---|---|
-| `python -m ops.freeze --check` at `7dd4e5b` | FROZEN, 10/10 steps |
-| `python -m pytest -q` (whole repo) | **340 passed** in 13.7 s |
-| `python -m presentation.make_figures` | 7 figures; fig6 counts translations only, pinned by a test |
-| `python -m presentation.build_deck` | 6 slides, pointers unchanged, AUDIT: clean |
-| `python -m presentation.export_pdf` | 6 pages at 792×446 pt; PDF CHECK: clean (3 footer overflows caught and fixed first; two "NO PDF" retries - Known issue 17) |
-| All six pages rendered at 150 dpi and read | clean; title page carries LunaXX / SNPSU0192 / SIH26166 |
-| `claim-checker` on deck v4, portal text and README | 0 fabricated numbers; 2 HIGH / 8 MEDIUM / 4 LOW on nouns, scope and labels, all verified by hand, 13 applied and 1 declined on the record |
-| `ops.precompute_demo_cache` (six pairs, named) | all at `f928995`; flagged inliers == `ransac.inlier_count` on every one (F12 verified in the caches) |
-| AppTest, 4 pairs × 3 runs, sockets blocked | 3 consecutive clean runs, all cached |
-| `robocopy demo_cache C:\sih26166_backup\demo_cache /E` | 165 files, 94.8 MB, 0 failed |
-
-## Evidence at the freeze (REPORT.md, `7dd4e5b`)
-
-- **SAC equatorial:** 6/6 accepted, Sun azimuths 174° apart, held-out median 0.69-1.68 px on the
-  1.622 m grid. In-sample per axis X 0.66-1.15 / Y 0.73-1.07 px: not better than SuperGlue's
-  0.62 / 0.57 px (Q&A only).
-- **SAC polar:** 4/6 accepted, 1 unconfirmed, 1 contradicted + fallback.
-- **74 °S OHRC → NAC, whole overlap tiled:** 37 windows, 13.1 km², **37/37 accepted**, held-out
-  median 0.61 px = 0.57 m on the 0.931 m grid, 36 of 37 under 3 px. The 20 hand-picked windows of
-  the same site: 20/20, 0.41-1.0 px (0.51-0.94 m). Loops: 6, median **0.107 m = 0.086 px** on 1.245 m.
-- **Sun sweep:** 69 windows, 25 NAC frames, 3.3-152.7°.
-- **TC rung:** 3/4. **Infrared:** MI 1548 nm 3/3 refused, fallback 0.23-1.09 px (3.4-16.2 m) from
-  the visible band; IIRS 10/11 refused, none registers. **OHRC → TMC-2:** 0/4.
-- **Trust, 22 windows ≤ 10°:** 0/44 false alarms; 74 % at 3 m; 100 % from 5 m; **0/352** at 1-2 m.
-  **8 SAC windows 132-174°:** 0/16; **84 %** at 5 m; 100 % from 10 m. Never pool the two.
-- **Trust, rotation and scale (new):** 94.1 % of cells moved >2 px lose verified state;
-  87.4 % of cells moved <1 px keep it. Cells, not frames - a rotation is not uniform over a frame.
-- **MiLOI:** 81 scored pairs, 56 in S3; agrees 33/33 right, contradicted 43/43 wrong, unconfirmed 5/5.
-- **Sub-pixel by grid:** 0.086 px / 60 m (exact truth); 0.61 px / 0.93 m (held out, tiled);
-  0.086 px / 1.245 m (loops, consistency); MiLOI S1 0.52 px / 1.1-1.5 m (truth 0.22 px).
-- **Runtime:** median **8.2 s** per 640-px window (89 OHRC → NAC windows), CPU only. Wall time:
-  10.0, 10.7 and 8.2 s over three freezes on this machine - quote the frozen one, say "about ten
-  seconds" in speech.
-- **Coverage:** 177 registered pairs = **160 distinct ground windows**, 8 instrument pairings.
+| `be94774` | **Deck v4** refilled from `7dd4e5b`; REPORT.md committed so the numbers point at a commit a judge can open; claim-checker applied |
+| `f6a6c50` | Mission Console v1 - template + build script, outside Streamlit |
+| `f9ee137` | Refused pairs showed the FALLBACK under a REFUSED banner; now the matcher's own rejected warp, and both inputs always visible |
+| `467b361` | The band test (749 nm vs 1548 nm) + a "What it registers" ledger to balance the refusals table |
+| `64ed1d7` | All 8 pairings in the roster, not 2; `web/README.md` |
+| `957cd6a` | `web/server.py` - live upload, calling `run_all` directly, standard library only |
+| `5c6b1c3` | README section 6 contradicted section 7 |
+| `23e3395` | **Six defects found by auditing the built page**, incl. a pair that displayed the previous pair's verdict |
+| `f2216fa` | The three verifications + `film.py` / `narration.md` / `voice.py` / `cut.py` |
 
 ## In flight - resume here
 
-Nothing is running. No PowerPoint process is left open.
+**Nothing is running.** No server, no background job, no PowerPoint process. Working tree clean,
+pushed to `origin/main` at `f2216fa`.
 
-## Samartha - to submit (ops/specs/day_24.md has the full list)
+The first thing to pick up is **not** code. It is the TMC-2 decision (below), because it is the
+only remaining item with a deadline and it needs a download only Samartha can do.
 
-1. Put `C:\sih26166_backup\` on a USB stick. Nothing else here is unrecoverable.
-2. Read the v4 PDF cold, all six pages.
-3. Portal: PS, title and description from `SUBMISSION_FIELDS.md`; upload the PDF; screenshot.
-4. Optional and measurable: download the TMC-2 pass `ch2_tmc_ncn_20251107T2205342105_d_img_d18`
-   (PRADAN login) - the only pass over SAC's frame with the Sun near the OHRC's; the cut command
-   is ready (`--tmc-product`). Cut-off Thu 24 Sep 18:00.
-5. Optional: demo video; repo public + link on slide 6; Gate 4 by hand.
+## Samartha - what is actually left
+
+1. **Put `C:\sih26166_backup\` on a USB stick.** `weights/`, `data/pairs/`, `demo_cache/` -
+   181 files, 103 MB, re-synced today. Gitignored, inside OneDrive, and the only unrecoverable
+   thing in this project.
+2. **TMC-2 closer-Sun pass - DECIDE BY WED 23 SEP.** The evidence cut-off is Thu 24 Sep 18:00 and
+   the chain (cut → run → freeze → re-read every deck row → rebuild → re-export → claim-checker)
+   is about two hours. Needs a PRADAN login and a 0.6-0.9 GB download; commands are in
+   `ops/specs/day_24.md`. It is the only pass over SAC's frame with the Sun ~9° in azimuth from
+   the OHRC's, and **a second refusal is also a publishable result** - say so on the slide.
+3. **Read the v4 PDF cold**, then portal: PS, title, description from `SUBMISSION_FIELDS.md`,
+   upload the PDF, screenshot the confirmation.
+4. **Decide on the slide-6 console link before Fri 25 Sep 22:00.** The artifact is private; a
+   judge cannot open it until it is shared from the page's Share menu.
+5. Optional: Gemini key → narrated video; repo public; Gate 4 by hand.
 
 ## Open questions
 
-1. Portal: draft save? editable after submit? title/description limits? (the long description is
-   1,648 characters - if there is a 1,500 cap, the short one is ready)
-2. SPOC: Student Innovation and the two-PS cap; who uploads; authorisation letter.
+1. **Portal mechanics** - draft save? editable after submit? character caps? The long description
+   is 1,804 characters; the 499-character short version is ready if there is a cap.
+2. **SPOC** - Student Innovation and the two-PS cap; who uploads; authorisation letter.
+3. **Gemini key** for the voice-over. Until it arrives `web/voice.py` is unexercised code.
+4. **Does the console link go on slide 6?** Needs a decision AND the artifact made shareable.
+
+## The other five
+
+Invariant 4 (one folder per person) is **suspended** for the solo push and teammates have no
+assigned work until after submission - so there are no specs tonight, and `spec-writer` was
+deliberately not run. Writing five specs for five people with no tasks would be fiction.
+Last delivered state, for when they restart:
+
+| Person | Folder | Last delivered | Now |
+|---|---|---|---|
+| Samrudh | `evaluation/` | synthetic data, shaded relief, metrics, results_log | idle until after 27 Sep |
+| Risheeth | `baselines/` | SIFT / ORB / AKAZE + failure gallery | idle |
+| Rishabh | `app/change_detection.py` | change detection | idle |
+| Saniya | `presentation/` | deck template work (Samartha owns v4) | idle; **needed for PDF export if PowerPoint is required** (Known issue 17) |
+| Rohan | `data/*.csv|*.md` | pairs catalogue | idle |
+
+**Gate 5 still requires all six to explain their own module cold.** Nobody has rehearsed the
+Mission Console or the v4 deck numbers. That is finale work, not submission work, but it is not
+zero work.
 
 ## Known issues - do not re-report these
 
-1. **`residual_px` is meaningless on real pairs** (RMSE over all held-out matches). Quote
-   `residual_median_px` or `holdout_inlier_rmse_px` (capped at 3 px). And the held-out median
-   itself is only robust while the inlier ratio is well above 0.5 - one tiled window reports
-   316 px at a ratio of 0.542 with the alignment visibly correct (NCC +0.87 to +0.95).
-2. **Duplicate windows under two ids:** `…_w0N_sw` = `…_w0N`, `…_w01_t` = `…_w04`. Count distinct
-   windows with `presentation.make_figures._distinct_windows` (160 of 177).
-3. **MiLOI truth:** 81 of 321 pairs reachable; S3 (56 of 81) has no redundancy. The contradicted
-   pairs' errors start at 7.4 px, so the cross-tab survives any truth error under ~4 px.
+1. **`residual_px` is meaningless on real pairs.** Quote `residual_median_px` or
+   `holdout_inlier_rmse_px`. The held-out median is itself only robust while the inlier ratio is
+   well above 0.5 - one tiled window reads 316 px at 0.542 with the alignment visibly correct
+   (NCC +0.87 to +0.95).
+2. **Duplicate windows under two ids** (`…_sw`, `…_w01_t`). Count with
+   `presentation.make_figures._distinct_windows`: 160 of 177.
+3. **MiLOI truth:** 81 of 321 pairs reachable; S3 (56 of 81) has no redundancy.
 4. **LoFTR is weak under near-overhead Sun** (MiLOI S2). The trust layer catches it.
 5. **Withdrawn rows:** `sac_tmc_fore_aft_w01..w04` are INVALIDATED. Never quote 0.019 px.
-6. **NACs without a usable correction:** M1258744166RE, M1295016540LE, M1338673330RE (Sun
-   azimuths 37°, 117°, 153° from the OHRC's). **No lit shared window:** M159642518LE, M1258737127RE.
-7. **`trust_real_calibration.csv` is appended by every run** and refuses a header mismatch;
-   `ops.freeze` deletes it first. Its trials draw from ONE RNG stream in window order, so changing
-   the trial list redraws every planted direction: the 3 m rate has been 81 %, 74 % and 74 %, the
-   1-2 m rate 2/352, 1/352 and 0/352, and the hard-Sun 5 m rate 94 % and 84 %. These are draws of
-   one experiment, not a regression. Quote the frozen values; hedge in speech.
-8. **Memory:** commit charge runs at 40-50 of 53 GB; run heavy jobs one at a time.
-9. **The MiLOI matches were made at six earlier commits**; only the re-judge and scoring ran at
-   `7dd4e5b`. `--plan` verifies the matching code is unchanged.
+6. **NACs without a usable correction:** M1258744166RE, M1295016540LE, M1338673330RE.
+   **No lit shared window:** M159642518LE, M1258737127RE.
+7. **`trust_real_calibration.csv` is a fresh RNG draw whenever the trial list changes.** The 3 m
+   rate has been 81 %, 74 %, 74 %; 1-2 m 2/352, 1/352, 0/352; hard-Sun 5 m 94 % then 84 %. These
+   are draws of one experiment, not a regression. Quote the frozen value; hedge in speech.
+8. **Memory:** commit charge runs 40-50 of 53 GB; run heavy jobs one at a time.
+9. **MiLOI matches were made at six earlier commits**; only re-judge and scoring ran at `7dd4e5b`.
 10. **Pairs cut before `3917a1b`** have up to 16 nearest-filled edge pixels. Negligible.
-11. **The build audit checks text boxes, not rendered text**; `export_pdf`'s footer check is the
-    real test. Always export before trusting a deck edit. Slides 2, 4 and 5 are at capacity.
+11. **`build_deck`'s audit measures text boxes, not rendered text.** `export_pdf`'s footer check
+    is the real test. Slides 2, 4 and 5 are at capacity; only slide 6 has room.
 12. **Live align on a busy laptop takes 48-61 s**; demo from the cached pairs.
-13. **The commit stamp of the multi-modal rows and REPORT.md's header include `ops/`**: any
-    modified file under `ops/` (docs included) at run time stamps them `-dirty`. Park doc edits
-    outside `ops/` while a freeze runs. The demo cache's stamp is `core`/`evaluation`/`app`.
-14. **13 pair folders have no images** (`site_m…re_w01..05,07,08`,
-    `site_ohrc_m1363141432re_w01,02,03,05,07,08`). The picker hides them.
-15. **Docs below the national-round sections** (CLAUDE.md, canonical facts §1 and §10-11) are
-    the college round's, kept as history.
-16. **`ops.precompute_demo_cache` with no arguments caches every pair** (~150 × LoFTR, GBs of
-    pickles). Always name the pairs.
-17. **`export_pdf` intermittently prints nothing** ("printing failed: NO PDF", then a
-    PermissionError on the temp dir): roughly every other attempt. Kill POWERPNT, wait 10-20 s,
-    run it again; it never produced a wrong PDF, only no PDF. Check the PDF's mtime is later than
-    the .pptx's before uploading.
-18. **F18: `ops.freeze`'s `trust` step takes its window list from the CSV it then deletes.** Lose
-    that file and the step fails in seconds with a zero-byte log and no cause recorded. This cost
-    a freeze on 20 Sep. **F19: the freeze's summary line adds `None` to an int** when a step
-    returns the precondition-failed sentinel, so a completed run ends in a traceback. Both are
-    `ops/` changes that would force another freeze; both are first in line after submission.
-19. **Two orphan bundles** (`site_tc_ortho_mi1548_w01`, `site_tc_ortho_mi749_w01`, commit
-    `057664a-dirty`) still show the F12 signature. They are in no log and referenced by nothing;
-    all 177 current bundles are clean. Do not quote them.
+13. **REPORT.md's header and the multi-modal rows stamp `ops/`**: any modified file under `ops/`
+    at run time marks them `-dirty`. Park doc edits elsewhere while a freeze runs.
+14. **13 pair folders have no images.** The picker hides them.
+15. **Docs below the national-round sections** (CLAUDE.md, canonical facts §1, §10-11) are the
+    college round's, kept as history.
+16. **`ops.precompute_demo_cache` with no arguments caches every pair.** Always name them.
+    `demo_cache/` now holds **14** pairs (6 Streamlit demo + 8 console roster), not 6.
+17. **`export_pdf` intermittently prints "NO PDF"** - roughly every other attempt. Kill POWERPNT,
+    wait 10-20 s, retry. Check the PDF's mtime is later than the .pptx's before uploading.
+18. **F18** - `ops.freeze`'s `trust` step reads the window list from the CSV it then deletes; lose
+    that file and the step fails in seconds with a zero-byte log. **F19** - the freeze summary
+    adds `None` to an int on a precondition-failed step, ending a completed run in a traceback.
+    Both are `ops/` changes that would force another freeze. First in line after submission.
+19. **Two orphan bundles** (`site_tc_ortho_mi1548_w01`, `site_tc_ortho_mi749_w01`, `057664a-dirty`)
+    still show the F12 signature. In no log, referenced by nothing. Do not quote them.
+20. **NEW: a backgrounded browser tab throttles `requestAnimationFrame` to ~1 fps.** Measuring
+    WebGL performance on a tab that is not frontmost reports a false failure - it did today.
+    Focused, the console holds 59.9 fps with 0 context losses on the Intel Arc iGPU.
+21. **NEW: `NaN` is valid JavaScript but invalid JSON.** The built page embeds its data as a JS
+    literal so NaN parsed fine statically, while the live API response could not be parsed at all.
+    `web/panel.py` emits `None`; `web/server.py` uses `allow_nan=False` so it fails loudly.
+22. **NEW: ffmpeg 9 removed `-vsync`.** Use `-fps_mode`.
+23. **NEW: the MCP-driven Chrome is not signed into claude.ai**, so the published artifact's
+    *rendering* cannot be checked from this session - only its bytes, which were verified verbatim.
+24. **NEW: `web/voice.py` has never made a live call.** No Gemini key yet.
