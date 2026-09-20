@@ -188,8 +188,17 @@ def main(argv=None):
         gsd_ref = prior["reference"]["resampled_gsd_mpp"]
         H = np.asarray(r["H"], np.float64)
         src_in = np.asarray(r["src_inliers"], np.float64)
-        # Translations first, drawing from the RNG exactly as before this file learned the other
-        # two kinds, so that population's trials do not shift when a kind is added after it.
+        # Translations are drawn first, before the other two kinds, so that WITHIN a window their
+        # draws are the ones they always were.
+        #
+        # That is as far as the property goes, and the first version of this comment claimed more:
+        # across windows the stream DOES shift, because window 2's translations now start 28 draws
+        # later than they used to (14 rotation + 14 scale trials for window 1). So the translation
+        # population is a fresh random draw of the same experiment on every run whose trial list
+        # changes at all. Measured at the 3 m point, which is the transition region: 143/176 at
+        # `b678272`, 130/176 at `183a54f`, 131/176 at `7dd4e5b` - about +/-4 points of sampling
+        # scatter. Quote the frozen number and say "about three quarters" in speech; do not read a
+        # change between freezes here as a change in behaviour.
         for kind in KINDS:
             for dm in (DISPLACEMENTS_M if kind == "translation" else NON_TRANSLATION_M):
                 # A translation can point anywhere, so it is sampled over N_DIRECTIONS random

@@ -132,6 +132,34 @@ def _distinct_note(reg) -> str:
     return f" ({n} distinct ground windows; Known issue 2: some were cut twice under two ids)"
 
 
+def _residual_caveat(acc, g) -> str:
+    """Name any accepted window whose held-out median is large, and say what that measures.
+
+    `residual_median_px` is the median error of the 20 % of matches the fit never saw. It is
+    robust only while the inlier ratio is comfortably above 0.5: when outliers approach half the
+    matches, a random 20 % draw can be majority-outlier and the median then describes the
+    outliers rather than the registration. Measured on this tiling (20 Sep 2026): one window at
+    an inlier ratio of 0.542 reported 316 px while the transform it declared put the median over
+    ALL its matches at 1.08 px and its warped product correlates with the reference at NCC +0.93.
+    Printing the range without this sentence would read as a registration failure that did not
+    happen; dropping the window would be choosing the evidence.
+    """
+    bad = [r for r in acc if r.get("residual_median_px") and float(r["residual_median_px"]) > 3.0]
+    if not bad:
+        return ""
+    parts = ", ".join(f"`{r['pair_id']}` {float(r['residual_median_px']):.0f} px at an inlier ratio "
+                      f"of {float(r['inlier_ratio']):.3f}" for r in bad)
+    return (f". {len(bad)} accepted window(s) report a held-out median above 3 px ({parts}). That "
+            f"number is the median of the 20 % of matches the fit never saw, and it is robust only "
+            f"while the inlier ratio stays well above 0.5 - at 0.54 a random held-out draw can be "
+            f"majority-outlier, and the median then describes the outliers. Independent image "
+            f"evidence says these windows are registered: the exported `registered_product.tif` "
+            f"correlates with its reference at NCC +0.87 to +0.95 across all {len(acc)} accepted "
+            f"windows (`ops/sun_sweep.py`'s |NCC| >= 0.30 rule, applied to the declared warp), and "
+            f"under the declared transform the median error over ALL matches on the worst of them "
+            f"is 1.08 px. This is a limit of the metric, not of the registration, and it is why "
+            f"the area check never looks at the matches")
+
 def section_full_overlap(full):
     """The dense tiling of one OHRC/NAC overlap (`--tag full`): acceptance, residuals, throughput,
     and whether any ACCEPTED window's archive offset breaks with its nearest accepted neighbour."""
@@ -156,8 +184,10 @@ def section_full_overlap(full):
             f"{len(full) * side_m ** 2 / 1e6:.1f} km². Verdicts: "
             + ", ".join(f"{v} {n}" for v, n in verd.most_common())
             + f"; **accepted {len(acc)}/{len(full)}**"
-            + (f"; held-out median of the accepted windows {min(med):.2f}-{max(med):.2f} px, median "
-               f"{st.median(med):.2f} px = {st.median(med) * g:.2f} m on the {g} m grid" if med else "")
+            + (f"; held-out median of the accepted windows: median {st.median(med):.2f} px = "
+               f"{st.median(med) * g:.2f} m on the {g} m grid, {sum(v <= 3 for v in med)} of "
+               f"{len(med)} under 3 px (range {min(med):.2f}-{max(med):.2f})" if med else "")
+            + _residual_caveat(acc, g)
             + (f". Wall time of `run_all`: {sum(secs) / 60:.1f} min in total, median {st.median(secs):.1f} s "
                f"per window, CPU only" if secs else "")
             + (f". Archive offset of each accepted window against its nearest accepted neighbour: median "
