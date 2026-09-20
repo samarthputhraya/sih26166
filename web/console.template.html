@@ -1,0 +1,567 @@
+<title>LunaXX Mission Console</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;600;700&family=Hind:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Single visual world, on purpose: a mission console is dark, and the lunar imagery and the 3D
+   terrain are composed for that ground. Every colour is painted explicitly from these tokens.
+   There is NO decorative accent: the only chroma on the page is a trust verdict. */
+:root{
+  color-scheme:dark;
+  --ground:#0b0d11; --panel:#11141a; --panel2:#171b22; --rule:#262b35; --rule2:#3a414e;
+  --ink:#e8e4dc; --ink2:#bdbab3; --dim:#8b909a;
+  --verified:#45b591; --weak:#d89b3b; --none:#626875; --refused:#e3583f;
+  --f-display:"Saira Condensed","Arial Narrow","Roboto Condensed",sans-serif;
+  --f-body:"Hind","Segoe UI",system-ui,-apple-system,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"Cascadia Mono",Consolas,monospace;
+  --gut:clamp(16px,3.2vw,44px);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:calc(84px + env(safe-area-inset-top,0px))}
+body{margin:0;background:var(--ground);color:var(--ink);font:400 16px/1.55 var(--f-body);
+  -webkit-font-smoothing:antialiased;overflow-x:hidden}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--ink);outline-offset:2px;border-radius:2px}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.wrap{max-width:1320px;margin-inline:auto;padding-inline:var(--gut)}
+
+/* identification plate */
+.plate{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:rgba(11,13,17,.93);
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-bottom:1px solid var(--rule)}
+.plate__in{display:flex;flex-wrap:wrap;align-items:center;gap:6px 22px;padding-block:11px}
+.plate__id{font:700 19px/1 var(--f-display);letter-spacing:.14em}
+.plate__ps{font:400 12px/1 var(--f-mono);color:var(--dim);letter-spacing:.04em}
+.lamp{display:inline-flex;align-items:center;gap:8px;font:500 11.5px/1 var(--f-mono);letter-spacing:.06em;
+  color:var(--ink2);margin-left:auto}
+.lamp i{width:8px;height:8px;border-radius:50%;background:var(--verified);box-shadow:0 0 0 3px rgba(69,181,145,.18)}
+.plate nav{display:flex;flex-wrap:wrap;gap:4px 16px;width:100%}
+.plate nav a{font:500 11.5px/1.2 var(--f-mono);letter-spacing:.1em;text-decoration:none;color:var(--dim);padding:3px 0}
+.plate nav a:hover{color:var(--ink)}
+
+/* opening */
+.open{padding-block:clamp(36px,6vw,76px) clamp(26px,4vw,48px)}
+.open h1{font:700 clamp(40px,7vw,92px)/.94 var(--f-display);letter-spacing:-.005em;margin:0 0 20px;
+  text-wrap:balance;text-transform:uppercase;max-width:15ch}
+.open h1 em{font-style:normal;color:var(--refused)}
+.open p{max-width:64ch;color:var(--ink2);font-size:clamp(16px,1.35vw,18.5px);margin:0}
+.tele{display:grid;grid-template-columns:repeat(auto-fit,minmax(178px,1fr));gap:1px;background:var(--rule);
+  border:1px solid var(--rule);margin-top:clamp(28px,4vw,46px)}
+.tele div{background:var(--panel);padding:16px 16px 14px;display:flex;flex-direction:column;gap:6px}
+.tele b{font:600 clamp(26px,2.5vw,34px)/1 var(--f-display);letter-spacing:.01em}
+.tele b small{font:500 .5em/1 var(--f-mono);color:var(--dim);margin-left:4px;letter-spacing:0}
+.tele span{font-size:12.8px;line-height:1.35;color:var(--dim)}
+
+/* bays */
+.bay{position:relative;border:1px solid var(--rule);background:var(--panel);margin-block:clamp(20px,3vw,36px)}
+.bay::before,.bay::after{content:"";position:absolute;width:15px;height:15px;pointer-events:none;
+  background:linear-gradient(var(--ink),var(--ink)) center/100% 1px no-repeat,
+             linear-gradient(var(--ink),var(--ink)) center/1px 100% no-repeat;opacity:.75}
+.bay::before{left:-8px;top:-8px}.bay::after{right:-8px;bottom:-8px}
+.bay__head{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 16px;padding:13px clamp(14px,2vw,22px);
+  border-bottom:1px solid var(--rule)}
+.bay__code{font:500 11.5px/1 var(--f-mono);letter-spacing:.16em;color:var(--dim)}
+.bay__head h2{font:600 clamp(21px,2.1vw,27px)/1.1 var(--f-display);letter-spacing:.035em;text-transform:uppercase;margin:0}
+.bay__src{font:400 11.5px/1.3 var(--f-mono);color:var(--dim);margin-left:auto}
+.bay__body{display:grid;gap:clamp(16px,2.2vw,28px);padding:clamp(14px,2vw,22px)}
+.cols{grid-template-columns:minmax(0,1.12fr) minmax(0,1fr)}
+@media (max-width:900px){.cols{grid-template-columns:minmax(0,1fr)}}
+.lede{color:var(--ink2);max-width:66ch;margin:0;font-size:15.5px}
+.lede strong{color:var(--ink);font-weight:600}
+.note{font-size:13px;line-height:1.5;color:var(--dim);margin:0;max-width:74ch}
+.stack{display:flex;flex-direction:column;gap:14px;min-width:0}
+
+/* controls */
+.seg{display:inline-flex;flex-wrap:wrap;border:1px solid var(--rule2)}
+.seg button{appearance:none;border:0;border-right:1px solid var(--rule2);background:transparent;color:var(--ink2);
+  font:500 12px/1 var(--f-mono);letter-spacing:.06em;padding:9px 13px;cursor:pointer}
+.seg button:last-child{border-right:0}
+.seg button:hover{color:var(--ink);background:var(--panel2)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--ground)}
+.row{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px}
+.lab{font:500 11.5px/1 var(--f-mono);letter-spacing:.12em;color:var(--dim);text-transform:uppercase}
+
+/* SUN instrument */
+.stage{position:relative;aspect-ratio:5/4;max-width:100%;background:
+  radial-gradient(120% 90% at 50% 0%,#151a22 0%,var(--ground) 70%);border:1px solid var(--rule);overflow:hidden}
+.stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:pan-y;cursor:grab}
+.stage canvas:active{cursor:grabbing}
+.stage__tag{position:absolute;left:0;right:0;bottom:0;padding:7px 12px;background:rgba(11,13,17,.78);border-top:1px solid var(--rule);font:400 11px/1.4 var(--f-mono);color:var(--dim);pointer-events:none}
+.stage__dz{position:absolute;right:12px;top:10px;text-align:right;pointer-events:none}
+.stage__dz b{display:block;font:700 clamp(30px,4vw,48px)/1 var(--f-display)}
+.stage__dz span{font:400 11px/1 var(--f-mono);color:var(--dim);letter-spacing:.08em}
+.dial{width:100%;accent-color:var(--ink);height:28px;margin:0;cursor:pointer}
+.bin{border:1px solid var(--rule);background:var(--ground)}
+.bin__h{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:4px 10px;padding:10px 13px;border-bottom:1px solid var(--rule)}
+.bin__h b{font:600 22px/1 var(--f-display);letter-spacing:.03em}
+.bin dl{display:grid;grid-template-columns:1fr auto;gap:0;margin:0}
+.bin dt,.bin dd{margin:0;padding:7px 13px;font-size:13.5px;border-bottom:1px solid var(--rule)}
+.bin dt{color:var(--ink2)} .bin dd{font:500 13.5px/1.45 var(--f-mono);text-align:right}
+.bin .k{display:inline-block;width:9px;height:9px;margin-right:8px;vertical-align:baseline}
+.bin dl > :nth-last-child(-n+2){border-bottom:0}
+.bin .zero dt,.bin .zero dd{color:var(--ink);font-weight:600}
+.exact{font:400 12.5px/1.5 var(--f-mono);color:var(--ink2);padding:10px 13px;border-top:1px solid var(--rule)}
+svg text{font-family:var(--f-mono);fill:var(--dim)}
+.chart{width:100%;height:auto;display:block;overflow:visible}
+
+/* TRUST instrument */
+.plateimg{position:relative;aspect-ratio:1/1;max-width:100%;width:100%;background:#000;border:1px solid var(--rule);overflow:hidden}
+.plateimg img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+.plateimg svg{position:absolute;inset:0;width:100%;height:100%}
+.plateimg .cell{cursor:crosshair;stroke:rgba(232,228,220,.26);stroke-width:1;vector-effect:non-scaling-stroke;transition:fill-opacity .18s}
+.plateimg .cell.on{stroke:var(--ink);stroke-width:2.2}
+.plateimg.nogrid .cell{fill-opacity:0!important;stroke-opacity:0}
+.plateimg.nogrid .cell.on{stroke-opacity:1}
+.plateimg.nogrid .rx{display:none}
+.verdict{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 14px;padding:12px 14px;border:1px solid var(--rule);background:var(--ground)}
+.verdict b{font:700 26px/1 var(--f-display);letter-spacing:.06em}
+.verdict span{font:400 12.5px/1.5 var(--f-mono);color:var(--ink2);overflow-wrap:anywhere}
+.insp{border:1px solid var(--rule);background:var(--ground)}
+.insp h3{margin:0;padding:10px 13px;border-bottom:1px solid var(--rule);font:600 18px/1 var(--f-display);letter-spacing:.05em;
+  display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px 10px;align-items:baseline}
+.insp h3 i{font:500 12px/1 var(--f-mono);font-style:normal;letter-spacing:.08em;padding:4px 8px;color:var(--ground)}
+.insp dl{display:grid;grid-template-columns:1fr auto;margin:0}
+.insp dt,.insp dd{margin:0;padding:7px 13px;font-size:13.5px;border-bottom:1px solid var(--rule)}
+.insp dt{color:var(--ink2)} .insp dd{font:500 13.5px/1.45 var(--f-mono);text-align:right}
+.insp dl > :nth-last-child(-n+2){border-bottom:0}
+.key{display:flex;flex-wrap:wrap;gap:6px 18px;font:400 12px/1.4 var(--f-mono);color:var(--ink2)}
+.key i{display:inline-block;width:10px;height:10px;margin-right:7px}
+
+/* TILE map */
+.tilemap{width:100%;height:auto;display:block;background:var(--ground);border:1px solid var(--rule)}
+.tilemap .t{cursor:crosshair;vector-effect:non-scaling-stroke;stroke:var(--verified);stroke-width:1}
+.tilemap .t.on{stroke:var(--ink);stroke-width:2.2}
+.tilemap .t.out{stroke:var(--weak);stroke-dasharray:4 3;stroke-width:1.6}
+.tilemap .t.out.on{stroke:var(--ink)}
+
+/* CAL */
+.meter{display:flex;flex-direction:column;gap:7px;padding:14px;border:1px solid var(--rule);background:var(--ground)}
+.meter b{font:700 34px/1 var(--f-display)} .meter b small{font:500 13px/1 var(--f-mono);color:var(--dim);margin-left:8px}
+.meter .bar{height:8px;background:var(--rule);position:relative} .meter .bar i{position:absolute;inset:0 auto 0 0;display:block}
+.meter p{margin:0;font-size:13.5px;color:var(--ink2);line-height:1.45}
+
+/* FLOW */
+.flow{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:10px;position:relative;padding:0;margin:0}
+.flow li{list-style:none;border:1px solid var(--rule2);background:var(--ground);padding:11px 10px;min-height:82px;
+  display:flex;flex-direction:column;gap:5px;position:relative}
+.flow li b{font:600 16.5px/1.1 var(--f-display);letter-spacing:.04em;text-transform:uppercase}
+.flow li span{font-size:12.3px;line-height:1.35;color:var(--dim)}
+.flow li:not(:last-child)::after{content:"";position:absolute;right:-11px;top:50%;width:10px;height:1px;background:var(--rule2)}
+.flowwrap{position:relative}
+.pulse{position:absolute;top:-4px;left:0;width:7px;height:7px;border-radius:50%;background:var(--ink);
+  animation:run 5.2s linear infinite;opacity:.9;z-index:1}
+@keyframes run{from{left:0}to{left:calc(100% - 7px)}}
+.bus{border:1px solid var(--ink);padding:14px 16px;text-align:center;margin-top:12px;background:var(--ground)}
+.bus b{font:600 18px/1.2 var(--f-display);letter-spacing:.07em;text-transform:uppercase;display:block}
+.bus span{font-size:13.5px;color:var(--ink2)}
+.outs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:12px}
+.outs div{padding:12px 13px;border:1px solid;background:var(--ground);font-size:13.2px;line-height:1.45;color:var(--ink2)}
+.outs b{display:block;font:600 17px/1 var(--f-display);letter-spacing:.07em;text-transform:uppercase;margin-bottom:6px}
+@media (max-width:1000px){.flow{grid-template-columns:repeat(2,minmax(0,1fr))}.flow li::after{display:none}.pulse{display:none}
+  .outs{grid-template-columns:minmax(0,1fr)}}
+
+/* REFUSED ledger */
+.ledger{width:100%;border-collapse:collapse;font-size:14px;min-width:560px}
+.ledger th{font:500 11.5px/1 var(--f-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--dim);text-align:left;
+  padding:0 12px 10px 0;border-bottom:1px solid var(--rule2)}
+.ledger td{padding:11px 12px 11px 0;border-bottom:1px solid var(--rule);vertical-align:top;color:var(--ink2)}
+.ledger td:first-child{color:var(--ink);font-weight:500}
+.ledger td:last-child,.ledger th:last-child{font-family:var(--f-mono);white-space:nowrap;text-align:right;padding-right:0}
+.ledger td:last-child{font-weight:500;font-size:13.5px;color:var(--ink)}
+.ledger tr:last-child td{border-bottom:0}
+.scroll{overflow-x:auto}
+.tagk{display:inline-block;font:500 10.5px/1 var(--f-mono);letter-spacing:.08em;padding:3px 6px;margin-left:6px;border:1px solid var(--rule2);color:var(--dim);vertical-align:1px;white-space:nowrap}
+
+footer{border-top:1px solid var(--rule);margin-top:clamp(30px,5vw,60px);padding-block:30px 46px;color:var(--dim);font-size:13.2px}
+.foot{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:24px 40px}
+.foot h4{font:500 11.5px/1 var(--f-mono);letter-spacing:.14em;text-transform:uppercase;color:var(--ink2);margin:0 0 10px}
+.foot p{margin:0 0 7px;line-height:1.5} .foot code{font:400 12.5px/1.5 var(--f-mono);color:var(--ink2)}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.pulse{animation:none;display:none}.plateimg .cell{transition:none}}
+</style>
+
+<header class="plate"><div class="wrap plate__in">
+  <span class="plate__id">LUNAXX</span>
+  <span class="plate__ps">SIH26166 · CHANDRAYAAN-2 IMAGE CORRESPONDENCE</span>
+  <span class="lamp"><i></i>EVIDENCE FROZEN · <span id="fz"></span></span>
+  <nav aria-label="Instruments">
+    <a href="#sun">SUN</a><a href="#trust">TRUST MAP</a><a href="#tile">TILING</a><a href="#cal">CALIBRATION</a><a href="#flow">PIPELINE</a><a href="#refused">REFUSALS</a>
+  </nav>
+</div></header>
+
+<main class="wrap">
+  <section class="open">
+    <h1>Lunar registration that knows when it is <em>wrong</em></h1>
+    <p>Chandrayaan-2 images aligned to lunar references across Sun angle, scale and sensor, with a verdict for every region of every result. The verdict comes from an independent area check that never sees the matches. Everything below is measured data from the evidence logs, not a mock-up.</p>
+    <div class="tele" id="tele"></div>
+  </section>
+
+  <section class="bay" id="sun">
+    <header class="bay__head"><span class="bay__code">SUN</span><h2>Same ground, two Suns</h2><span class="bay__src">REPORT.md · Real sun-angle sweep</span></header>
+    <div class="bay__body cols">
+      <div class="stack">
+        <div class="stage" id="stage">
+          <canvas id="gl" aria-label="3D relief of the 74 degrees South site from the LOLA elevation model, lit by a movable Sun"></canvas>
+          <div class="stage__dz"><b class="mono" id="dzv">0°</b><span>Δ SUN AZIMUTH</span></div>
+          <div class="stage__tag" id="stagetag"></div>
+        </div>
+        <div class="row">
+          <label class="lab" for="dz">Drag the second Sun</label>
+          <div class="seg" role="group" aria-label="Which Sun lights the terrain">
+            <button type="button" id="litA" aria-pressed="false">SUN A</button>
+            <button type="button" id="litB" aria-pressed="true">SUN B</button>
+            <button type="button" id="litX" aria-pressed="false">BLINK A/B</button>
+          </div>
+        </div>
+        <input class="dial" id="dz" type="range" min="0" max="160" step="1" value="0" aria-label="Sun azimuth difference in degrees">
+        <p class="note">Real LOLA 60 m elevation of the site, drawn at true vertical scale and lit at the 7° Sun elevation of the OHRC frame (incidence 83.07°). The lighting is an illustration of why the problem is hard: move the Sun and every shadow edge a matcher relies on moves or inverts. The numbers beside it are not illustrative. They are the real OHRC-to-NAC windows that fall in the azimuth band you have dialled.</p>
+      </div>
+      <div class="stack">
+        <p class="lede">One OHRC frame against <strong>25 LRO NAC frames</strong> whose Sun azimuths differ from it by 3° to 153°. Each point is a real 640-px window. In every band the count that matters is the last one: <strong>a failure the system did not catch. It is zero throughout.</strong></p>
+        <svg class="chart" id="scatter" viewBox="0 0 560 300" role="img" aria-label="Inlier matches per window against Sun azimuth difference, 69 real windows"></svg>
+        <div class="key" id="skey"></div>
+        <div class="bin" id="bin" aria-live="polite"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="bay" id="trust">
+    <header class="bay__head"><span class="bay__code">TRUST</span><h2>One it accepts, one it refuses</h2><span class="bay__src">evaluation/real_pairs_log.csv · cached run_all() output</span></header>
+    <div class="bay__body cols">
+      <div class="stack">
+        <div class="row">
+          <div class="seg" role="group" aria-label="Pair" id="pairseg"></div>
+        </div>
+        <div class="plateimg" id="plateimg" tabindex="0" aria-label="8 by 8 trust map. Use arrow keys to inspect cells.">
+          <img id="imgA" alt=""><img id="imgB" alt="" hidden>
+          <svg viewBox="0 0 8 8" preserveAspectRatio="none" id="grid"></svg>
+        </div>
+        <div class="row">
+          <span class="lab">Blink comparator</span>
+          <div class="seg" role="group" aria-label="Image layer">
+            <button type="button" data-layer="ref" aria-pressed="true">REFERENCE</button>
+            <button type="button" data-layer="warped" aria-pressed="false">REGISTERED</button>
+            <button type="button" data-layer="blink" aria-pressed="false">BLINK</button>
+            <button type="button" data-layer="src" aria-pressed="false">SOURCE, BEFORE</button>
+          </div>
+          <div class="seg" role="group" aria-label="Grid"><button type="button" id="gridbtn" aria-pressed="true">GRID</button></div>
+        </div>
+        <p class="note">Blink between the reference and the registered image, as astronomers do to find what moved. On the accepted pair nothing jumps, although the two Suns are 174° apart and every shadow flips. On the refused pair the system has already told you not to trust it.</p>
+      </div>
+      <div class="stack">
+        <div class="verdict" id="verdict"></div>
+        <div class="insp" id="insp" aria-live="polite"></div>
+        <div class="key">
+          <span><i style="background:var(--verified)"></i>verified: matches and pixels agree</span>
+          <span><i style="background:var(--weak)"></i>weak: measured, does not hold</span>
+          <span><i style="background:var(--none)"></i>no evidence: unmeasured, never guessed</span>
+        </div>
+        <p class="note">A cell is <strong style="color:var(--ink)">verified</strong> only with at least 3 inliers, a local inlier ratio of 0.5 or more, and an FFT cross-correlation of the warped image against the reference that peaks within 2 px at NCC 0.3 or more. A cell with no matches is <em>no evidence</em>. It is never painted green by interpolation. The frame is <em>contradicted</em> when fewer than 25% of measurable cells agree with the matcher's transform, and then nothing in it is verified.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="bay" id="tile">
+    <header class="bay__head"><span class="bay__code">TILE</span><h2>The whole overlap, not chosen windows</h2><span class="bay__src">REPORT.md · The whole lit overlap of one OHRC frame with one NAC</span></header>
+    <div class="bay__body cols">
+      <div class="stack">
+        <svg class="tilemap" id="tilemap" role="img" aria-label="Map of 37 tiled windows in south polar stereographic coordinates"></svg>
+        <p class="note">Window footprints in their true map positions (Moon 2015 south polar stereographic, metres). No two footprints overlap (they touch only at corners), so the 13.1 km² is distinct ground. Deeper fill is a lower held-out median. The dashed window is the one the text beside it explains.</p>
+      </div>
+      <div class="stack">
+        <p class="lede">Every non-overlapping 640-px window the cutter finds in shared, lit, textured ground of one OHRC frame and NAC <span class="mono">M1153871873LE</span>, selected before any matching ran: <strong>37 windows, 13.1 km², 37 of 37 accepted</strong>. Held-out median <strong>0.61 px = 0.57 m</strong> on the 0.93 m NAC grid. A held-out residual is not ground truth.</p>
+        <div class="insp" id="tinsp" aria-live="polite"></div>
+        <p class="note"><strong style="color:var(--weak)">36 of 37 are under 3 px. One reports 316 px</strong>, at an inlier ratio of 0.542. The held-out median is the median of the 20% of matches the fit never saw, and it is only robust while the inlier ratio stays well above 0.5. Independent image evidence says that window is registered: the exported product correlates with its reference at NCC +0.87 to +0.95 across all 37, and under the declared transform the median error over all matches on the worst window is 1.08 px. It is a limit of the metric, stated here rather than averaged away.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="bay" id="cal">
+    <header class="bay__head"><span class="bay__code">CAL</span><h2>Planted wrong answers</h2><span class="bay__src">evaluation/trust_real_calibration.csv</span></header>
+    <div class="bay__body cols">
+      <div class="stack">
+        <svg class="chart" id="calchart" viewBox="0 0 560 310" role="img" aria-label="Share of planted registration errors flagged, by size of error in metres, for two Sun populations"></svg>
+        <div class="key">
+          <span><i style="background:var(--refused)"></i>22 windows, Sun azimuths under 10° apart</span>
+          <span><i style="background:var(--ground);outline:1.5px solid var(--ink);transform:rotate(45deg) scale(.8)"></i>8 SAC windows, 132° to 174° apart</span>
+        </div>
+      </div>
+      <div class="stack">
+        <p class="lede">We shift the true transform by a known distance and plant matches that agree with the <em>wrong</em> answer perfectly, so nothing the matcher reports can reveal it. Then we ask the area check. At 0 m it must stay silent: <strong>0 of 44 and 0 of 16 false alarms</strong>. From 5 m it flags every one on the near-Sun windows. Below 3 m it sees almost nothing, and that floor is the honest limit of the method.</p>
+        <div class="meter" id="m1"></div>
+        <div class="meter" id="m2"></div>
+        <p class="note">Rotation and scale are caught cell by cell, not by the frame verdict. A rotation about the centre leaves the centre still and moves the corners, so the frame can still say <em>agrees</em> while a corner is 3 px out. The 8×8 map is what carries it. The second meter is the control: the map is not simply refusing everything.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="bay" id="flow">
+    <header class="bay__head"><span class="bay__code">FLOW</span><h2>The pipeline, in the order it runs</h2><span class="bay__src">core/pipeline.py · run_all()</span></header>
+    <div class="bay__body">
+      <div class="flowwrap"><span class="pulse" aria-hidden="true"></span>
+      <ol class="flow">
+        <li><b>Input pair</b><span>Chandrayaan-2 optical + a lunar reference</span></li>
+        <li><b>Common scale</b><span>both resampled to one ground sample distance</span></li>
+        <li><b>Illumination</b><span>reduced to gradient orientation, so lighting drops out</span></li>
+        <li><b>LoFTR</b><span>dense, detector-free matching, tiled, on CPU</span></li>
+        <li><b>Sub-pixel</b><span>NCC refinement of every match</span></li>
+        <li><b>MAGSAC++</b><span>outlier rejection and the transform</span></li>
+        <li><b>Distribution</b><span>8×8 coverage and spread of the inliers</span></li>
+      </ol></div>
+      <div class="bus"><b>Independent area check</b><span>cross-correlates the warped image against the reference, cell by cell. It never uses match positions. The cells vote on the matcher's transform.</span></div>
+      <div class="outs">
+        <div style="border-color:var(--verified)"><b style="color:var(--verified)">Agrees</b>Aligned GeoTIFF on the reference grid, GDAL and QGIS control points, an ISIS-style match list, metrics and the trust map.</div>
+        <div style="border-color:var(--weak)"><b style="color:var(--weak)">Unconfirmed</b>Kept and labelled. Not certified.</div>
+        <div style="border-color:var(--refused)"><b style="color:var(--refused)">Contradicted</b>Matcher output refused. Phase-correlation fallback, declared as a fallback, with its uncertainty in metres.</div>
+      </div>
+      <p class="note">CPU only, no discrete GPU, fully offline. Median <span class="mono">8.2 s</span> per 640-px window over 89 OHRC-to-NAC windows.</p>
+    </div>
+  </section>
+
+  <section class="bay" id="refused">
+    <header class="bay__head"><span class="bay__code">REFUSED</span><h2>What it declines to register</h2><span class="bay__src">REPORT.md · each row is a section of it</span></header>
+    <div class="bay__body">
+      <p class="lede">A registration engine earns trust by the results it refuses. These are all of ours, with the counts. None of them is reported anywhere as a success.</p>
+      <div class="scroll"><table class="ledger">
+        <thead><tr><th>Pairing</th><th>What happened</th><th>Count</th></tr></thead>
+        <tbody>
+          <tr><td>Kaguya TC → MI 1548 nm <span class="tagk">MULTI-MODAL</span></td><td>Matcher refused on every window. The declared fallback lands 3.4 to 16.2 m from the visible-band registration of the same window (0.23 to 1.09 px on MI's 14.8 m grid).</td><td>3 / 3 refused</td></tr>
+          <tr><td>Kaguya TC → Chandrayaan-2 IIRS <span class="tagk">MULTI-MODAL</span></td><td>12× scale gap, 89 m grid. None registers.</td><td>10 / 11 refused</td></tr>
+          <tr><td>OHRC → TMC-2 at SAC's site <span class="tagk">CROSS-SENSOR</span></td><td>Sun azimuths 120° and incidence 59° apart.</td><td>4 / 4 refused</td></tr>
+          <tr><td>OHRC → NAC, Sun azimuths 60° to 120° apart <span class="tagk">CROSS-SENSOR</span></td><td>The hard band of the real sweep. Nothing accepted, and nothing wrongly accepted.</td><td>0 / 12 accepted</td></tr>
+          <tr><td>MiLOI NAC ↔ NAC, Sun vectors 90° or more apart <span class="tagk">SAME SENSOR</span></td><td>No method registered any of them: ours, SIFT, ORB or AKAZE. All in scene S3.</td><td>0 / 16 any method</td></tr>
+          <tr><td>TMC-2 fore ↔ aft <span class="tagk">SAME SENSOR</span></td><td>Relief parallax is not a homography. Held-out median 2.6 px (15.5 m) on its 5.9 m grid.</td><td>1 / 4 accepted</td></tr>
+          <tr><td>OHRC → LOLA 60 m shaded relief <span class="tagk">MULTI-MODAL</span></td><td>Optical to elevation. Declared as a failure rung from the start.</td><td>declared failure</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+  </section>
+</main>
+
+<footer><div class="wrap foot">
+  <div><h4>Words we hold to</h4>
+    <p><strong style="color:var(--ink2)">Cross-sensor</strong> means different instruments. NAC ↔ NAC and TMC-2 fore ↔ aft are the same sensor and are labelled so.</p>
+    <p><strong style="color:var(--ink2)">Multi-modal</strong> means visible ↔ infrared or elevation. Two panchromatic cameras are not.</p>
+    <p><strong style="color:var(--ink2)">Sub-pixel</strong> always names its grid and gives metres.</p></div>
+  <div><h4>Reproduce every number</h4>
+    <p><code>python -m ops.freeze</code><br><code>python -m ops.make_report</code></p>
+    <p>Re-runs every piece of evidence on one clean commit and renders REPORT.md from the logs. This page reads the same logs.</p></div>
+  <div><h4>Data</h4>
+    <p>Chandrayaan-2 OHRC, TMC-2, IIRS: ISRO PRADAN. LROC NAC and LOLA: NASA PDS. Kaguya TC and MI: JAXA SELENE archive. MiLOI: Xie, Liu, Di et al., Remote Sensing 17(13):2302.</p>
+    <p>Team LunaXX · Smart India Hackathon 2026 · problem statement SIH26166.</p></div>
+</div></footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const D = /*__DATA__*/null;
+const $ = s => document.querySelector(s);
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const C = {verified:css('--verified'), weak:css('--weak'), none:css('--none'), refused:css('--refused'),
+           ink:css('--ink'), dim:css('--dim'), rule:css('--rule'), rule2:css('--rule2'), ground:css('--ground')};
+const fmt = n => n.toLocaleString('en-IN');
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+$('#fz').textContent = D.freeze;
+
+/* ---------- telemetry strip: every figure is on the claim-checked deck ---------- */
+$('#tele').innerHTML = [
+  ['160','distinct ground windows, 8 instrument pairings'],
+  ['37<small>/37</small>','tiled windows accepted over 13.1 km²'],
+  ['0.61<small>px</small>','= 0.57 m held-out median on the 0.93 m grid'],
+  ['0.086<small>px</small>','= 5.1 m against exact truth (synthetic, 60 m grid)'],
+  ['0<small>/44 · 0/16</small>','false alarms, two Sun populations'],
+  ['8.2<small>s</small>','median per 640-px window, CPU only'],
+].map(([b,s]) => `<div><b>${b}</b><span>${s}</span></div>`).join('');
+
+/* ================= SUN instrument ================= */
+const OUT = {correct_accepted:['registered, accepted',C.verified], caught_failure:['failed, and the system said so',C.refused],
+             false_alarm:['correct, but refused',C.weak], inconclusive:['image cannot judge',C.none]};
+const EXACT = [[0,'0.086 px = 5.1 m'],[15,'0.086 px = 5.1 m'],[30,'0.314 px = 18.8 m'],[45,'1.096 px = 65.8 m']];
+const sx = v => 46 + v/160*(560-46-12), sy = n => 14 + (1 - Math.log10(Math.max(n,1))/4)*(300-14-38);
+function drawScatter(dz){
+  const b = D.bins.find(b => dz >= b.a && dz < b.b) || D.bins[D.bins.length-1];
+  let s = `<rect x="${sx(b.a)}" y="14" width="${sx(Math.min(b.b,160))-sx(b.a)}" height="248" fill="${C.ink}" fill-opacity=".05"/>`;
+  [1,10,100,1000,10000].forEach((n,i) => { s += `<line x1="46" x2="548" y1="${sy(n)}" y2="${sy(n)}" stroke="${C.rule}"/>
+    <text x="38" y="${sy(n)+4}" font-size="10.5" text-anchor="end">${['1','10','100','1k','10k'][i]}</text>`; });
+  for (let v=0; v<=160; v+=20) s += `<text x="${sx(v)}" y="280" font-size="10.5" text-anchor="middle">${v}</text>`;
+  s += `<text x="297" y="298" font-size="10.5" text-anchor="middle">Sun azimuth difference, OHRC vs NAC (degrees)</text>
+        <text transform="translate(11,138) rotate(-90)" font-size="10.5" text-anchor="middle">inlier matches per window</text>`;
+  D.sweep.forEach(p => { const x=sx(p.az), y=sy(p.inl), c=OUT[p.o][1];
+    if (p.o==='inconclusive') s += `<path d="M${x-4},${y}H${x+4}M${x},${y-4}V${y+4}" stroke="${c}" stroke-width="1.6" fill="none"/>`;
+    else if (p.o==='caught_failure') s += `<rect x="${x-4}" y="${y-4}" width="8" height="8" fill="${c}"/>`;
+    else if (p.o==='false_alarm') s += `<path d="M${x},${y-5}L${x+5},${y}L${x},${y+5}L${x-5},${y}Z" fill="${c}"/>`;
+    else s += `<circle cx="${x}" cy="${y}" r="3.6" fill="${c}" fill-opacity=".9"/>`; });
+  s += `<line x1="${sx(dz)}" x2="${sx(dz)}" y1="10" y2="262" stroke="${C.ink}" stroke-width="1.4"/>
+        <path d="M${sx(dz)-5},6H${sx(dz)+5}L${sx(dz)},13Z" fill="${C.ink}"/>`;
+  $('#scatter').innerHTML = s;
+  const o = b.o, g = k => o[k]||0;
+  const ex = dz <= 52 ? EXACT.reduce((a,e) => Math.abs(e[0]-dz) < Math.abs(a[0]-dz) ? e : a) : null;
+  $('#bin').innerHTML = `<div class="bin__h"><b>Δ AZIMUTH ${b.a}° TO ${b.b}°</b><span class="mono" style="color:var(--dim);font-size:12px">${b.n} windows · ${b.frames} NAC frames</span></div>
+    <dl><dt><i class="k" style="background:${C.verified}"></i>registered and accepted</dt><dd>${g('correct_accepted')}</dd>
+    <dt><i class="k" style="background:${C.refused}"></i>failed, and the system said so</dt><dd>${g('caught_failure')}</dd>
+    <dt><i class="k" style="background:${C.weak}"></i>correct, but refused</dt><dd>${g('false_alarm')}</dd>
+    <dt><i class="k" style="background:${C.none}"></i>image cannot judge</dt><dd>${g('inconclusive')}</dd>
+    <dt>median inliers per window</dt><dd>${fmt(b.inl)}</dd></dl>
+    <dl class="zero" style="border-top:1px solid var(--rule2)"><dt>failed, and NOT caught</dt><dd>0</dd></dl>` +
+    (ex ? `<div class="exact">exact truth, synthetic LOLA render, 60 m grid, Suns ${ex[0]}° apart: <span style="color:var(--ink)">${ex[1]}</span></div>`
+        : `<div class="exact">no exact-truth figure is quoted past 45°: the synthetic curve in REPORT.md stops there</div>`);
+  $('#dzv').textContent = Math.round(dz) + '°';
+}
+$('#skey').innerHTML = Object.values(OUT).map(([l,c]) => `<span><i style="background:${c}"></i>${l}</span>`).join('');
+
+const SUN_A = 70.5 * Math.PI/180, ELEV = 6.93 * Math.PI/180;
+const sun = {dz:0, lit:'B', blink:false, dirty:true, yaw:0.5, auto:!reduce};
+function u16(b64){ const s=atob(b64), a=new Uint8Array(s.length); for(let i=0;i<s.length;i++) a[i]=s.charCodeAt(i); return new Uint16Array(a.buffer); }
+const Hm = u16(D.dem.b64), N = D.dem.n, RELIEF = (D.dem.hi - D.dem.lo) / (D.dem.km*1000);
+const az = () => SUN_A + (sun.lit==='A' ? 0 : sun.dz*Math.PI/180);
+let render3d = null;
+function initGL(){
+  const cv = $('#gl'), T = window.THREE; if (!T) throw new Error('no three');
+  const r = new T.WebGLRenderer({canvas:cv, antialias:true, alpha:true});
+  r.setPixelRatio(Math.min(devicePixelRatio||1, 2)); r.outputEncoding = T.sRGBEncoding;
+  r.shadowMap.enabled = true; r.shadowMap.type = T.PCFSoftShadowMap;
+  const scene = new T.Scene(), cam = new T.PerspectiveCamera(34, 5/4, .05, 20);
+  const geo = new T.PlaneGeometry(1, 1, N-1, N-1), pos = geo.attributes.position;
+  let mean = 0; for (let i=0;i<Hm.length;i++) mean += Hm[i]; mean /= Hm.length;
+  for (let i=0;i<pos.count;i++) pos.setZ(i, (Hm[i]-mean)/65535*RELIEF);
+  geo.computeVertexNormals();
+  const mesh = new T.Mesh(geo, new T.MeshStandardMaterial({color:0xa7a39a, roughness:1, metalness:0}));
+  mesh.rotation.x = -Math.PI/2; mesh.castShadow = mesh.receiveShadow = true; scene.add(mesh);
+  scene.add(new T.AmbientLight(0x8a96b0, .085));
+  const L = new T.DirectionalLight(0xfff4e0, 2.7); L.castShadow = true;
+  const sm = innerWidth < 700 ? 1024 : 2048; L.shadow.mapSize.set(sm, sm);
+  Object.assign(L.shadow.camera, {left:-.78, right:.78, top:.78, bottom:-.78, near:.1, far:6});
+  L.shadow.bias = -.0007; L.shadow.normalBias = .006; scene.add(L); scene.add(L.target);
+  const ring = new T.Mesh(new T.RingGeometry(.762,.766,160), new T.MeshBasicMaterial({color:0x3a414e, side:T.DoubleSide}));
+  ring.rotation.x = -Math.PI/2; ring.position.y = -.04; scene.add(ring);
+  const mk = (rad,col) => { const m = new T.Mesh(new T.SphereGeometry(rad,20,14), new T.MeshBasicMaterial({color:col})); scene.add(m); return m; };
+  const mA = mk(.013, 0x8b909a), mB = mk(.024, 0xfff1d6);
+  const halo = new T.Mesh(new T.SphereGeometry(.055,20,14), new T.MeshBasicMaterial({color:0xfff1d6, transparent:true, opacity:.16, depthWrite:false})); scene.add(halo);
+  const dir = a => new T.Vector3(Math.sin(a)*Math.cos(ELEV), Math.sin(ELEV), -Math.cos(a)*Math.cos(ELEV));
+  const size = () => { const w = cv.clientWidth, h = cv.clientHeight; if (!w||!h) return; r.setSize(w,h,false); cam.aspect = w/h; cam.updateProjectionMatrix(); sun.dirty = true; };
+  new ResizeObserver(size).observe($('#stage')); size();
+  render3d = () => {
+    const d = dir(az()); L.position.copy(d).multiplyScalar(2.2);
+    const pa = dir(SUN_A).multiplyScalar(.78), pb = dir(SUN_A + sun.dz*Math.PI/180).multiplyScalar(.78);
+    mA.position.copy(pa); mB.position.copy(pb); halo.position.copy(sun.lit==='A' ? pa : pb);
+    const p = 34*Math.PI/180, R = 2.5;
+    cam.position.set(R*Math.sin(sun.yaw)*Math.cos(p), R*Math.sin(p), R*Math.cos(sun.yaw)*Math.cos(p)); cam.lookAt(0,-.03,0);
+    r.render(scene, cam);
+  };
+  $('#stagetag').textContent = `LOLA 60 m · ${D.dem.km} km square · relief ${fmt(Math.round(D.dem.hi-D.dem.lo))} m · true vertical scale · drag to turn`;
+}
+function init2D(){           /* no WebGL: the same DEM, the same Sun, as a plain hillshade */
+  const old = $('#gl'), cv = old.cloneNode(false); old.replaceWith(cv);
+  const g = cv.getContext('2d'); cv.width = cv.height = N; cv.style.objectFit = 'contain'; cv.style.cursor = 'default';
+  const im = g.createImageData(N,N), k = RELIEF/65535*(N-1);
+  render3d = () => { const a = az(), lx = Math.sin(a)*Math.cos(ELEV), ly = -Math.cos(a)*Math.cos(ELEV), lz = Math.sin(ELEV);
+    for (let y=0;y<N;y++) for (let x=0;x<N;x++){ const i=y*N+x, xm=y*N+Math.max(x-1,0), xp=y*N+Math.min(x+1,N-1), ym=Math.max(y-1,0)*N+x, yp=Math.min(y+1,N-1)*N+x;
+      const dx=(Hm[xp]-Hm[xm])*k/2, dy=(Hm[yp]-Hm[ym])*k/2, n=Math.hypot(dx,dy,1);
+      const v = Math.max(0,(-dx*lx - dy*ly + lz)/n)*3.1*.62 + .06, c = Math.min(255, 255*Math.pow(v,1/2.2));
+      im.data[i*4]=c; im.data[i*4+1]=c*.98; im.data[i*4+2]=c*.94; im.data[i*4+3]=255; }
+    g.putImageData(im,0,0); };
+  $('#stagetag').textContent = `LOLA 60 m · ${D.dem.km} km square · relief ${fmt(Math.round(D.dem.hi-D.dem.lo))} m · hillshade (no WebGL in this viewer)`;
+}
+try { initGL(); } catch(e) { try { init2D(); } catch(_){ render3d = null; } }
+function setLit(v){ sun.blink = v==='X'; if (v!=='X') sun.lit = v; sun.dirty = true;
+  [['A','#litA'],['B','#litB'],['X','#litX']].forEach(([k,id]) => $(id).setAttribute('aria-pressed', String(k===v))); }
+$('#litA').onclick = () => setLit('A'); $('#litB').onclick = () => setLit('B'); $('#litX').onclick = () => setLit('X');
+const dial = $('#dz');
+const stopAuto = () => { sun.auto = false; };
+dial.addEventListener('input', () => { stopAuto(); sun.dz = +dial.value; sun.dirty = true; });
+['pointerdown','keydown'].forEach(e => dial.addEventListener(e, stopAuto));
+{ const cv = $('#gl'); let drag = null;
+  cv.addEventListener('pointerdown', e => { drag = {x:e.clientX, yaw:sun.yaw}; try{ cv.setPointerCapture(e.pointerId); }catch(_){} });
+  cv.addEventListener('pointermove', e => { if (!drag) return; sun.yaw = drag.yaw - (e.clientX-drag.x)*.007; sun.dirty = true; });
+  ['pointerup','pointercancel'].forEach(t => cv.addEventListener(t, () => { drag = null; })); }
+let seen = true; new IntersectionObserver(es => { seen = es[0].isIntersecting; }).observe($('#stage'));
+let t0 = null, lastDz = -1;
+function tick(t){
+  if (t0===null) t0 = t;
+  if (sun.auto && seen){ const ph = ((t-t0)/26000)%1; sun.dz = Math.round((1-Math.cos(ph*2*Math.PI))/2*153); dial.value = sun.dz; sun.dirty = true; }
+  if (sun.blink && seen){ const w = Math.floor(t/750)%2 ? 'A' : 'B'; if (w!==sun.lit){ sun.lit = w; sun.dirty = true; } }
+  if (sun.dirty){ sun.dirty = false; if (render3d) render3d(); if (sun.dz!==lastDz){ lastDz = sun.dz; drawScatter(sun.dz); } }
+  requestAnimationFrame(tick);
+}
+drawScatter(0); lastDz = 0; if (render3d) render3d(); requestAnimationFrame(tick);
+
+/* ================= TRUST instrument ================= */
+const tr = {p:0, cell:27, layer:'ref', timer:null};
+const SC = {verified:C.verified, weak:C.weak, no_evidence:C.none};
+$('#pairseg').innerHTML = D.maps.map((m,i) => `<button type="button" data-p="${i}" aria-pressed="${i===0}">${i===0?'ACCEPTED PAIR':'REFUSED PAIR'}</button>`).join('');
+function drawGrid(){
+  const m = D.maps[tr.p]; let s = `<defs><pattern id="hx" width=".25" height=".25" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width=".09" height=".25" fill="${C.none}"/></pattern></defs>`;
+  m.cells.forEach((c,i) => { const x=i%8, y=(i-x)/8, ne=c.s==='no_evidence';
+    s += `<rect class="cell${i===tr.cell?' on':''}" data-i="${i}" x="${x}" y="${y}" width="1" height="1" fill="${ne?'url(#hx)':SC[c.s]}" fill-opacity="${ne?.5:c.s==='weak'?.42:.2}"/>`; });
+  for (let y=1;y<8;y++) for (let x=1;x<8;x++) s += `<path class="rx" d="M${x-.09},${y}H${x+.09}M${x},${y-.09}V${y+.09}" stroke="${C.ink}" stroke-opacity=".7" stroke-width="1" vector-effect="non-scaling-stroke" fill="none" pointer-events="none"/>`;
+  $('#grid').innerHTML = s;
+}
+function drawInsp(){
+  const m = D.maps[tr.p], c = m.cells[tr.cell], x = tr.cell%8, y = (tr.cell-x)/8, nm = c.s.replace('_',' ');
+  $('#insp').innerHTML = `<h3>CELL R${y+1} · C${x+1}<i style="background:${SC[c.s]}">${nm.toUpperCase()}</i></h3><dl>
+    <dt>inliers / raw matches in the cell</dt><dd>${fmt(c.n)} / ${fmt(c.raw)}</dd>
+    <dt>local inlier ratio</dt><dd>${c.raw ? c.lir.toFixed(2) : 'no matches'}</dd>
+    <dt>area check, NCC at the peak</dt><dd>${c.ncc===null ? 'not measurable' : (c.ncc>0?'+':'')+c.ncc.toFixed(2)}</dd>
+    <dt>median inlier residual</dt><dd>${c.res===null ? 'n/a' : c.res.toFixed(2)+' px = '+(c.res*m.gsd).toFixed(2)+' m'}</dd>
+    <dt>pixel grid</dt><dd>${m.gsd} m / px (reference)</dd></dl>`;
+}
+function drawVerdict(){
+  const m = D.maps[tr.p], ok = m.verdict==='agrees';
+  $('#verdict').innerHTML = `<b style="color:${ok?C.verified:C.refused}">${ok?'ACCEPTED':'REFUSED'}</b>
+    <span>${m.label} · ${m.sub}<br>${m.counts.verified} of 64 cells verified, ${m.counts.weak} weak, ${m.counts.no_evidence} no evidence · ${fmt(m.inliers)} inliers of ${fmt(m.n_matches)} matches · ${m.seconds} s on CPU<br>method declared: ${m.method}<br>${m.why.replace('->','→')}</span>`;
+}
+function setLayer(l){ tr.layer = l; clearInterval(tr.timer); tr.timer = null;
+  const m = D.maps[tr.p], A = $('#imgA'), B = $('#imgB');
+  document.querySelectorAll('[data-layer]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.layer===l)));
+  A.src = l==='src' ? m.src : l==='warped' ? m.warped : m.ref; A.alt = l==='src' ? 'source image before registration' : l==='warped' ? 'registered image' : 'reference image';
+  B.src = m.warped; B.alt = 'registered image'; B.hidden = true;
+  if (l==='blink') tr.timer = setInterval(() => { B.hidden = !B.hidden; }, reduce ? 1600 : 620);
+}
+function setPair(i){ tr.p = i; document.querySelectorAll('[data-p]').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.p===i)));
+  tr.cell = i===0 ? 27 : D.maps[i].cells.findIndex(c => c.s==='weak'); if (tr.cell<0) tr.cell = 27;
+  setLayer(tr.layer); drawGrid(); drawInsp(); drawVerdict(); }
+function pick(i){ if (i===tr.cell || i<0 || i>63) return; tr.cell = i; document.querySelectorAll('#grid .cell').forEach((r,k) => r.classList.toggle('on', k===i)); drawInsp(); }
+$('#pairseg').addEventListener('click', e => { const b = e.target.closest('[data-p]'); if (b) setPair(+b.dataset.p); });
+document.querySelectorAll('[data-layer]').forEach(b => { b.onclick = () => setLayer(b.dataset.layer); });
+$('#gridbtn').onclick = e => { const on = e.currentTarget.getAttribute('aria-pressed')!=='true'; e.currentTarget.setAttribute('aria-pressed', String(on)); $('#plateimg').classList.toggle('nogrid', !on); };
+['pointerover','click'].forEach(t => $('#grid').addEventListener(t, e => { const r = e.target.closest('.cell'); if (r) pick(+r.dataset.i); }));
+$('#plateimg').addEventListener('keydown', e => { const d = {ArrowLeft:-1, ArrowRight:1, ArrowUp:-8, ArrowDown:8}[e.key]; if (!d) return; e.preventDefault();
+  const x = tr.cell%8; if ((d===-1&&x===0)||(d===1&&x===7)) return; pick(tr.cell+d); });
+setPair(0);
+
+/* ================= TILE map ================= */
+{ const T = D.tiles, w = T[0].w, pad = w*1.4;
+  const x0 = Math.min(...T.map(t=>t.x))-pad, x1 = Math.max(...T.map(t=>t.x))+pad, y0 = Math.min(...T.map(t=>t.y))-pad-w, y1 = Math.max(...T.map(t=>t.y))+pad;
+  const k = 1000/(x1-x0), W = 1000, Hh = (y1-y0)*k, X = v => (v-x0)*k, Y = v => (y1-v)*k, svg = $('#tilemap');
+  svg.setAttribute('viewBox', `0 0 ${W} ${Hh.toFixed(0)}`);
+  let s = ''; const step = 2000;
+  for (let gx = Math.ceil(x0/step)*step; gx < x1; gx += step) s += `<line x1="${X(gx)}" x2="${X(gx)}" y1="0" y2="${Hh}" stroke="${C.rule}" vector-effect="non-scaling-stroke"/>`;
+  for (let gy = Math.ceil(y0/step)*step; gy < y1; gy += step) s += `<line y1="${Y(gy)}" y2="${Y(gy)}" x1="0" x2="${W}" stroke="${C.rule}" vector-effect="non-scaling-stroke"/>`;
+  T.forEach((t,i) => { const out = t.med > 3, op = Math.max(.22, Math.min(.92, 1.28 - t.med*.95));
+    s += `<rect class="t${out?' out':''}" data-i="${i}" x="${X(t.x-w/2)+w*k*.03}" y="${Y(t.y+w/2)+w*k*.03}" width="${w*k*.94}" height="${w*k*.94}" fill="${out?C.weak:C.verified}" fill-opacity="${out?.12:op.toFixed(2)}"/>`; });
+  const bx = 28, by = Hh-26; s += `<path d="M${bx},${by-7}V${by}H${bx+2000*k}V${by-7}" stroke="${C.ink}" fill="none" stroke-width="1.4" vector-effect="non-scaling-stroke"/>
+    <text x="${bx+2000*k/2}" y="${by-13}" font-size="19" text-anchor="middle" style="fill:${C.ink}">2 km</text>
+    <text x="${W-24}" y="${by}" font-size="17" text-anchor="end">grid every 2 km · near 74.2°S 43.6°E</text>`;
+  svg.innerHTML = s;
+  let cur = -1; const show = i => { if (i===cur || i<0) return; cur = i; const t = T[i], out = t.med > 3;
+    svg.querySelectorAll('.t').forEach((r,kk) => r.classList.toggle('on', kk===i));
+    $('#tinsp').innerHTML = `<h3>WINDOW ${t.id.toUpperCase()}<i style="background:${out?C.weak:C.verified}">${out?'ACCEPTED · METRIC LIMIT':'ACCEPTED'}</i></h3><dl>
+      <dt>held-out median</dt><dd>${t.med.toFixed(2)} px = ${(t.med*.931).toFixed(2)} m</dd>
+      <dt>inliers, and inlier ratio</dt><dd>${fmt(t.inl)} · ${t.ratio.toFixed(3)}</dd>
+      <dt>trust cells verified</dt><dd>${t.ver} of 64</dd>
+      <dt>frame verdict</dt><dd>${t.verdict}</dd>
+      <dt>wall time, CPU</dt><dd>${t.sec} s</dd></dl>`; };
+  ['pointerover','click'].forEach(ev => svg.addEventListener(ev, e => { const r = e.target.closest('.t'); if (r) show(+r.dataset.i); }));
+  show(T.findIndex(t => t.med > 3)); }
+
+/* ================= CAL chart ================= */
+{ const near = D.near, hard = D.hard, L = 44, R = 548, Tt = 26, B = 262, n = near.length, bw = (R-L)/n;
+  const y = p => B - p/100*(B-Tt); let s = '';
+  [0,25,50,75,100].forEach(p => { s += `<line x1="${L}" x2="${R}" y1="${y(p)}" y2="${y(p)}" stroke="${C.rule}"/><text x="${L-8}" y="${y(p)+4}" font-size="10.5" text-anchor="end">${p}</text>`; });
+  near.forEach((d,i) => { const p = 100*d.hit/d.n, cx = L + bw*(i+.5), h = hard.find(q => q.m===d.m), hp = h ? 100*h.hit/h.n : null;
+    s += `<rect x="${cx-bw*.31}" y="${y(p)}" width="${bw*.62}" height="${Math.max(B-y(p),1.5)}" fill="${C.refused}"><title>${d.hit} of ${d.n} flagged at ${d.m} m</title></rect>
+      <text x="${cx}" y="${Math.min(y(p), hp!==null ? y(hp)-7 : 1e9)-7}" font-size="11" text-anchor="middle" style="fill:${C.ink}">${p===0||p===100 ? p.toFixed(0) : p.toFixed(1)}%</text>
+      <text x="${cx}" y="${B+17}" font-size="11" text-anchor="middle">${d.m}</text>`;
+    if (hp!==null) s += `<path d="M${cx},${y(hp)-6}L${cx+6},${y(hp)}L${cx},${y(hp)+6}L${cx-6},${y(hp)}Z" fill="${C.ground}" stroke="${C.ink}" stroke-width="1.6"><title>${h.hit} of ${h.n} flagged at ${h.m} m, Sun azimuths 132 to 174 degrees apart</title></path>`; });
+  s += `<text x="${(L+R)/2}" y="${B+38}" font-size="10.5" text-anchor="middle">planted error (metres; 0 m is the false-alarm test)</text>
+        <text transform="translate(11,${(Tt+B)/2}) rotate(-90)" font-size="10.5" text-anchor="middle">flagged as wrong (%)</text>`;
+  $('#calchart').innerHTML = s;
+  const r = D.rotscale, a = 100*r.refused/r.moved, b = 100*r.kept/r.still;
+  $('#m1').innerHTML = `<b>${a.toFixed(1)}%<small>${fmt(r.refused)} of ${fmt(r.moved)} cells</small></b><div class="bar"><i style="width:${a}%;background:${C.refused}"></i></div><p>of the cells a planted <strong style="color:var(--ink)">rotation or scale</strong> error moved by more than 2 px lose their verified state (${fmt(r.trials)} trials)</p>`;
+  $('#m2').innerHTML = `<b>${b.toFixed(1)}%<small>${fmt(r.kept)} of ${fmt(r.still)} cells</small></b><div class="bar"><i style="width:${b}%;background:${C.verified}"></i></div><p>of the cells the same errors moved by less than 1 px <strong style="color:var(--ink)">stay verified</strong></p>`; }
+</script>

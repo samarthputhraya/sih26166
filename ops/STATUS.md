@@ -18,7 +18,7 @@
      deliverables the problem statement names. `core/ransac.py` now returns MAGSAC++'s own mask
      and `core/export.py` uses it. Every metric had stayed right, because nothing else asked that
      question; loop closure moved ~2 % because it is the one number read back from that file.
-   - **E5, trust against non-translation errors.** Planted rotation and scale, 420 trials:
+   - **E5, trust against non-translation errors.** Planted rotation and scale, 840 trials (420 each):
      **94.1 %** of the cells they moved past 2 px lost verified state (pre-registered bar 90 %),
      and 87.4 % of the cells they moved less than 1 px stayed verified (bar 80 %). On slide 5.
    - **E7, the whole lit overlap tiled.** Every non-overlapping 640-px window the cutter finds in
