@@ -133,3 +133,38 @@ Until then the live demo is `app/streamlit_app.py`, which does run the real pipe
 ```
 streamlit run app/streamlit_app.py
 ```
+
+---
+
+## 7. The live server — register a pair someone hands you
+
+```
+python -m web.build_console        # once, if the page is not built
+python -m web.server              # http://127.0.0.1:8000
+```
+
+The page served this way grows a **LIVE** bay at the top: drop in two images, press
+*Register the pair*, and `core.pipeline.run_all` runs on this CPU. The result is appended to the
+pair roster and rendered by `web/panel.py` — **the same renderer the frozen pairs use**, so a
+live panel and a frozen panel cannot disagree about what a verdict means.
+
+The bay is hidden unless `GET api/health` answers with this service's marker. Opened as the
+published link that fetch fails, the bay stays hidden, and the shared page stays read-only.
+One built file, two honest deployments.
+
+| | |
+|---|---|
+| Accepts | GeoTIFF, PDS `.img` / `.xml` / `.lbl`, PNG, JPEG — 64 MB per request |
+| Speed | ~20–60 s per pair on CPU. One at a time (LoFTR is memory-hungry) |
+| Writes | **nothing.** Uploads go to a temp folder deleted when the request ends. No evidence log, no cache, no repo file |
+| Binds | `127.0.0.1` only. No auth, and it runs an expensive pipeline on request — never expose it |
+| Needs | standard library only. Nothing to `pip install` on the demo laptop |
+
+**A GeoTIFF exercises scale invariance; a PNG cannot.** PNG and JPEG carry no ground scale, so
+`to_common_gsd` has nothing to bridge and both images are taken to be at the same scale. The
+panel says so when it happens rather than hiding the assumption.
+
+**Verified end to end (20 Sep):** uploading `site_ohrc_m1153871873le_w02` through the API returned
+`agrees`, **5,112 matches** and **56 / 64 verified cells**. The frozen log for that same pair says
+`agrees`, **5,112 matches**, **56 verified**. Inlier counts differ by about 1 % run to run
+(4,630 vs 4,680) because MAGSAC++ samples randomly — say that before a judge notices it.

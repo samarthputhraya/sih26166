@@ -12,6 +12,8 @@ evidence row or a demo cache. Re-run it after any new freeze and update FREEZE b
 import base64, collections, csv, json, pathlib, pickle, statistics as st, sys
 import numpy as np, cv2, tifffile
 
+from web.panel import jpg, panel
+
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 DATA = pathlib.Path((ROOT / "data_path.txt").read_text(encoding="utf-8-sig").strip())
 HERE = pathlib.Path(__file__).resolve().parent
@@ -20,20 +22,6 @@ sys.path.insert(0, str(ROOT))
 
 def rows(p): return list(csv.DictReader(open(ROOT / p, encoding="utf-8-sig")))
 def f(x): return float(x) if x not in ("", None) else None
-
-def jpg(a, size=448, q=78):
-    if a is None:
-        return None          # some pairs have no matcher warp at all; the layer is dropped below
-    if isinstance(a, (str, pathlib.Path)):
-        a = tifffile.imread(str(a))
-    a = np.asarray(a, dtype=np.float64)
-    if a.ndim == 3: a = a[..., 0]
-    ok = np.isfinite(a)
-    lo, hi = np.percentile(a[ok], [1, 99]) if ok.any() else (0, 1)
-    a = np.clip((np.nan_to_num(a, nan=lo) - lo) / max(hi - lo, 1e-9), 0, 1)
-    a = cv2.resize((a * 255).astype(np.uint8), (size, size), interpolation=cv2.INTER_AREA)
-    _, buf = cv2.imencode(".jpg", a, [cv2.IMWRITE_JPEG_QUALITY, q])
-    return "data:image/jpeg;base64," + base64.b64encode(buf.tobytes()).decode()
 
 def sharpness(path):
     """High-frequency content of a reference frame, as the variance of its Laplacian.
@@ -69,51 +57,19 @@ def twin(pid, other, band, other_band):
 
 
 def trust(pid, label, sub, tag, plain):
-    """One pair, as a pair: BOTH inputs, what the matcher proposed, and what was delivered.
-
-    The first version of this page showed `warped_final` for every pair. On a refused pair that
-    is the FALLBACK - the rescued answer - so the page displayed a decent-looking image under a
-    REFUSED banner and taught the opposite of the truth. What makes a refusal legible is the
-    matcher's OWN warp (`warped`), which is the answer the area check threw out.
-    """
+    """A frozen pair, rendered by the SAME function the live server uses (web/panel.py)."""
     r = pickle.load(open(ROOT / f"demo_cache/results/{pid}.pkl", "rb"))
     g = json.loads((ROOT / "data/pairs" / pid / "geometry_prior.json").read_text(encoding="utf-8"))
-    rel = r["reliability"]; g_ = lambda k: np.asarray(rel[k])
-    cells = []
-    for y in range(8):
-        for x in range(8):
-            ncc = g_("area_ncc")[y, x]; res = g_("median_inlier_residual_px")[y, x]
-            cells.append({"s": str(g_("state")[y, x]), "n": int(g_("n_inliers")[y, x]),
-                          "raw": int(g_("n_raw")[y, x]),
-                          "ncc": None if not np.isfinite(ncc) else round(float(ncc), 3),
-                          "res": None if not np.isfinite(res) else round(float(res), 3),
-                          "lir": round(float(g_("local_inlier_ratio")[y, x]), 3)})
 
     def side(k):
         s = g[k]
-        return {"inst": s.get("instrument"), "band": s.get("band"), "prod": s.get("product_id"),
-                "gsd": s.get("resampled_gsd_mpp")}
+        return {"inst": s.get("instrument"), "band": s.get("band"),
+                "prod": s.get("product_id"), "gsd": s.get("resampled_gsd_mpp")}
 
-    ok = rel["global"]["verdict"] == "agrees"
-    warped, final = r.get("warped"), r.get("warped_final")
-    rescued = (final is not None and warped is not None
-               and not np.array_equal(np.nan_to_num(np.asarray(warped)), np.nan_to_num(np.asarray(final))))
-    w_img = jpg(warped)
-    layers = [{"k": "src", "n": "INPUT A, BEFORE", "img": jpg(r["source"])},
-              {"k": "ref", "n": "INPUT B, REFERENCE", "img": jpg(r["reference"])}]
-    if w_img is not None:
-        layers.append({"k": "warp", "n": "MATCHER'S ANSWER" + ("" if ok else " · REJECTED"), "img": w_img})
-        layers.append({"k": "blink", "n": "BLINK vs B", "img": None})
-    if rescued and jpg(final) is not None:
-        layers.append({"k": "fb", "n": "FALLBACK, DELIVERED", "img": jpg(final)})
-    return {"id": pid, "label": label, "sub": sub, "tag": tag, "cells": cells, "ok": ok,
-            "counts": {k: int(v) for k, v in rel["counts"].items()},
-            "verdict": rel["global"]["verdict"], "method": r["declared"]["method"],
-            "why": r["declared"]["why"], "gsd": rel["gsd_mpp"], "n_matches": int(r["n_matches"]),
-            "inliers": int(r["ransac"]["inlier_count"]), "seconds": round(float(r["seconds"]), 1),
-            "a": side("source"), "b": side("reference"), "layers": layers, "plain": plain,
-            "twin": twin(pid, "site_tc_morning_mi749_w01", "1548 nm (near-infrared)", "749 nm (visible)") if "mi1548" in pid else None,
-            "scale_note": (r.get("scale_factors") or {}).get("note"), "rescued": rescued}
+    return panel(r, side("source"), side("reference"), pid=pid, label=label, sub=sub, tag=tag,
+                 plain=plain,
+                 twin=twin(pid, "site_tc_morning_mi749_w01", "1548 nm (near-infrared)",
+                           "749 nm (visible)") if "mi1548" in pid else None)
 
 
 # (pair_id, label, sub, tag, plain). One representative of every instrument pairing in the

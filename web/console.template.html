@@ -105,6 +105,20 @@ svg text{font-family:var(--f-mono);fill:var(--dim)}
 .chart{width:100%;height:auto;display:block;overflow:visible}
 
 /* TRUST instrument */
+.live__drop{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:560px){.live__drop{grid-template-columns:1fr}}
+.drop{border:1px dashed var(--rule2);background:var(--ground);padding:16px 14px;text-align:center;cursor:pointer;
+  display:flex;flex-direction:column;gap:6px;align-items:center;justify-content:center;min-height:132px;transition:border-color .15s,background .15s}
+.drop:hover,.drop.over{border-color:var(--ink);background:var(--panel2)}
+.drop b{font:600 15px/1.2 var(--f-display);letter-spacing:.06em;text-transform:uppercase}
+.drop span{font:400 11.5px/1.45 var(--f-mono);color:var(--dim);overflow-wrap:anywhere}
+.drop img{width:82px;height:82px;object-fit:cover;border:1px solid var(--rule2);background:#000}
+.drop input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.go{appearance:none;border:1px solid var(--ink);background:var(--ink);color:var(--ground);
+  font:600 14px/1 var(--f-display);letter-spacing:.09em;text-transform:uppercase;padding:13px 20px;cursor:pointer}
+.go[disabled]{background:transparent;color:var(--dim);border-color:var(--rule2);cursor:not-allowed}
+.log{font:400 12.5px/1.6 var(--f-mono);color:var(--dim);white-space:pre-wrap;margin:0;min-height:1.6em}
+.log.bad{color:var(--refused)}
 .roster{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1px;background:var(--rule);border:1px solid var(--rule)}
 .roster button{appearance:none;border:0;background:var(--panel);color:var(--ink2);text-align:left;
   padding:9px 11px;cursor:pointer;display:flex;gap:9px;align-items:flex-start;min-width:0}
@@ -215,7 +229,7 @@ footer{border-top:1px solid var(--rule);margin-top:clamp(30px,5vw,60px);padding-
   <span class="plate__ps">SIH26166 · CHANDRAYAAN-2 IMAGE CORRESPONDENCE</span>
   <span class="lamp"><i></i>EVIDENCE FROZEN · <span id="fz"></span></span>
   <nav aria-label="Instruments">
-    <a href="#sun">SUN</a><a href="#trust">TRUST MAP</a><a href="#tile">TILING</a><a href="#cal">CALIBRATION</a><a href="#flow">PIPELINE</a><a href="#registers">RESULTS</a><a href="#refused">REFUSALS</a>
+    <a href="#live" id="navlive" hidden>LIVE</a><a href="#sun">SUN</a><a href="#trust">TRUST MAP</a><a href="#tile">TILING</a><a href="#cal">CALIBRATION</a><a href="#flow">PIPELINE</a><a href="#registers">RESULTS</a><a href="#refused">REFUSALS</a>
   </nav>
 </div></header>
 
@@ -252,6 +266,27 @@ footer{border-top:1px solid var(--rule);margin-top:clamp(30px,5vw,60px);padding-
         <svg class="chart" id="scatter" viewBox="0 0 560 300" role="img" aria-label="Inlier matches per window against Sun azimuth difference, 69 real windows"></svg>
         <div class="key" id="skey"></div>
         <div class="bin" id="bin" aria-live="polite"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="bay" id="live" hidden>
+    <header class="bay__head"><span class="bay__code">LIVE</span><h2>Register your own pair</h2><span class="bay__src">core/pipeline.py &middot; run_all() on this machine</span></header>
+    <div class="bay__body cols">
+      <div class="stack">
+        <div class="live__drop">
+          <label class="drop" id="dropA"><b>Image A</b><span>to be aligned</span><input type="file" id="fileA" accept=".tif,.tiff,.img,.xml,.lbl,.png,.jpg,.jpeg"></label>
+          <label class="drop" id="dropB"><b>Image B</b><span>reference grid</span><input type="file" id="fileB" accept=".tif,.tiff,.img,.xml,.lbl,.png,.jpg,.jpeg"></label>
+        </div>
+        <div class="row"><button class="go" id="go" type="button" disabled>Register the pair</button>
+          <span class="lab" id="hint">choose two images</span></div>
+        <p class="log" id="log" aria-live="polite"></p>
+        <p class="note">Drag two images in, or click to browse. GeoTIFF, PDS (.img / .xml / .lbl), PNG and JPEG are accepted. <strong style="color:var(--ink)">This runs the real pipeline</strong> &mdash; the same <code>run_all()</code> that produced every frozen number &mdash; on this CPU, so expect roughly a minute on a busy laptop. Nothing is written to the repository and no evidence log is touched: the uploads live in a temporary folder that is deleted when the request ends.</p>
+      </div>
+      <div class="stack">
+        <div class="verdict" id="lverdict"><b style="color:var(--dim)">AWAITING A PAIR</b><span>The result appears here, drawn by the same renderer the frozen pairs use, so a live panel and a frozen panel cannot disagree about what a verdict means.</span></div>
+        <div class="gloss" id="lgloss">A judge's fair question is whether these results are real or replayed. This is the answer: hand it two images and watch the verdict be computed in front of you. If the matcher fails on your pair, the area check should say so &mdash; that outcome is a pass, not a bug.</div>
+        <div class="io" id="lio" hidden></div>
       </div>
     </div>
   </section>
@@ -536,6 +571,73 @@ function tick(t){
   requestAnimationFrame(tick);
 }
 drawScatter(0); lastDz = 0; if (render3d) render3d(); requestAnimationFrame(tick);
+
+/* ================= LIVE bay: only when web/server.py is serving us ================= */
+(function(){
+  const files = {a:null, b:null};
+  const log = $('#log'), go = $('#go');
+  const say = (m, bad) => { log.textContent = m; log.classList.toggle('bad', !!bad); };
+  const b64 = f => new Promise((res, rej) => { const r = new FileReader();
+    r.onload = () => res(r.result.slice(r.result.indexOf(',') + 1)); r.onerror = rej; r.readAsDataURL(f); });
+
+  function pick(which, file){
+    if (!file) return;
+    files[which] = file;
+    const box = $('#drop' + which.toUpperCase());
+    const nm = file.name.length > 26 ? file.name.slice(0, 24) + '\u2026' : file.name;
+    box.querySelector('span').textContent = nm + '  \u00b7  ' + (file.size/1048576).toFixed(1) + ' MB';
+    if (/\.(png|jpe?g)$/i.test(file.name)) {
+      const u = URL.createObjectURL(file), old = box.querySelector('img');
+      if (old) old.remove();
+      const im = new Image(); im.src = u; im.alt = ''; im.onload = () => URL.revokeObjectURL(u);
+      box.appendChild(im);
+    }
+    go.disabled = !(files.a && files.b);
+    $('#hint').textContent = go.disabled ? 'choose two images' : 'ready';
+  }
+  ['a','b'].forEach(w => {
+    const box = $('#drop' + w.toUpperCase()), inp = $('#file' + w.toUpperCase());
+    inp.addEventListener('change', e => pick(w, e.target.files[0]));
+    ['dragenter','dragover'].forEach(t => box.addEventListener(t, e => { e.preventDefault(); box.classList.add('over'); }));
+    ['dragleave','drop'].forEach(t => box.addEventListener(t, e => { e.preventDefault(); box.classList.remove('over'); }));
+    box.addEventListener('drop', e => pick(w, e.dataTransfer.files[0]));
+  });
+
+  go.addEventListener('click', async () => {
+    go.disabled = true; $('#hint').textContent = 'running';
+    const t0 = performance.now();
+    const tick = setInterval(() => say('running core.pipeline.run_all on CPU \u2014 ' + ((performance.now()-t0)/1000).toFixed(0) + ' s elapsed'), 1000);
+    say('reading the two files\u2026');
+    try {
+      const [a, b] = await Promise.all([b64(files.a), b64(files.b)]);
+      say('matching \u2014 this is the slow part');
+      const res = await fetch('api/register', {method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({a:{name:files.a.name, data:a}, b:{name:files.b.name, data:b}})});
+      const m = await res.json();
+      clearInterval(tick);
+      if (!res.ok) { say(m.error || ('HTTP ' + res.status), true); go.disabled = false; $('#hint').textContent='ready'; return; }
+      say('done in ' + ((performance.now()-t0)/1000).toFixed(1) + ' s \u00b7 ' + m.seconds + ' s inside run_all');
+      D.maps.push(m);
+      const i = D.maps.length - 1;
+      $('#pairseg').insertAdjacentHTML('beforeend',
+        `<button type="button" data-p="${i}" aria-pressed="false" title="${m.sub}"><i style="background:${m.ok ? C.verified : m.verdict==='unconfirmed' ? C.weak : C.refused}"></i><span><b>${m.label}</b><em>${m.tag} \u00b7 ${m.verdict.toUpperCase()}</em></span></button>`);
+      setPair(i);
+      $('#lverdict').innerHTML = `<b style="color:${m.ok?C.verified:C.refused}">${m.ok?'ALIGNMENT ACCEPTED':'ALIGNMENT REFUSED'}</b><span>${m.counts.verified} of 64 cells verified \u00b7 ${m.inliers.toLocaleString('en-IN')} inliers of ${m.n_matches.toLocaleString('en-IN')} matches \u00b7 ${m.seconds} s on CPU<br>method declared: ${m.method}<br>${m.why.replace('->','\u2192')}</span>`;
+      $('#lgloss').innerHTML = m.plain;
+      $('#trust').scrollIntoView({behavior:'smooth', block:'start'});
+    } catch (e) {
+      clearInterval(tick); say(String(e && e.message || e), true);
+    }
+    go.disabled = false; $('#hint').textContent = 'ready';
+  });
+
+  fetch('api/health').then(r => r.ok ? r.json() : null).then(h => {
+    if (!h || h.service !== 'lunaxx-console') return;      // published page: stays hidden
+    $('#live').hidden = false;
+    $('#navlive').hidden = false;
+    say('server ready \u00b7 code commit ' + h.commit);
+  }).catch(() => {});
+})();
 
 /* ================= TRUST instrument ================= */
 const tr = {p:0, cell:27, layer:'ref', timer:null};
