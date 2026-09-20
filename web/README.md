@@ -119,16 +119,20 @@ without you changing the evidence, something is wrong.
 | **RESULTS** | What does it register, and how well? | `REPORT.md`, one section per row |
 | **REFUSALS** | What does it decline, and did it say so itself? | `REPORT.md`, one section per row |
 
-## 6. The one thing it cannot do
+## 6. What runs where
 
-There is no upload button, and there should not be one here. The engine is Python — LoFTR,
-sub-pixel refinement, MAGSAC++ — on CPU, offline. A browser cannot run it.
+The browser draws; it never registers. LoFTR, sub-pixel refinement and MAGSAC++ are Python, and no
+page can run them. So there are two deployments of the one built file:
 
-To let a judge drop in their own pair, the console needs a small **FastAPI** backend calling
-`core.pipeline.run_all` directly, served locally with the network off. The front end does not
-change; only its data source does. That is finale work, not submission work.
+| | Published link | `python -m web.server` |
+|---|---|---|
+| Shows the frozen evidence | yes | yes |
+| LIVE upload bay | hidden | **shown** |
+| Needs Python running | no | yes |
+| Shareable | yes | no — loopback only |
 
-Until then the live demo is `app/streamlit_app.py`, which does run the real pipeline:
+Section 7 covers the live one. The other live demo is `app/streamlit_app.py`, which runs the same
+pipeline with the cached pairs and is what Gate 4 tests:
 
 ```
 streamlit run app/streamlit_app.py
