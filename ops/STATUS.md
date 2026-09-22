@@ -1,4 +1,26 @@
-# STATUS - 22 September 2026 (Day 25), late. National round, solo push.
+# STATUS - 22 September 2026 (Day 25), ~23:55. National round, solo push.
+
+> **v8 - the claim-check on v7 closed.** Its one real defect was mine: "160 distinct ground
+> windows / 8 instrument pairings" had been cut from slide 2 in the pitch pass and then dropped
+> from slide 4 on the belief slide 2 still carried it - it was on **no slide**. Restored as slide
+> 2's first "How it addresses" bullet. Its one upgrade was taken: the TMC-2 bullet now carries
+> the *measured* form of its argument - the six-point fit is **0.13–0.96 px per axis in-sample**
+> and **0 % of held-out matches land within 3 px of it**, on all four windows. Those two columns
+> were logged at the freeze but never printed; `ops/make_report.py` now prints them for the TMC
+> section (rendering only - the REPORT.md diff is the header stamp and one table, no logged
+> number changed; regenerated at `3fa526b`, and slide 6 says so). IIRS now names Kaguya TC as
+> its counterpart in both clauses. **1,090,972 bytes, sha256 `ae571678…`, `AUDIT: clean`,
+> `PDF CHECK: clean`.** Slide 2 is at 11.5 pt and slide 4 at 11 pt; both figures gave up a
+> quarter-inch of width. That is the floor - the next addition to either slide must be paid for
+> with a cut.
+>
+> **For the Q&A, the 64-cell breakdown on OHRC→TMC-2** (`real_pairs_log.csv`): per window
+> 0 verified / 4–5 weak / 59–60 no evidence / 0 actively contradicted. If asked "how many cells
+> contradicted?": *none actively - 59 or 60 of 64 returned no usable evidence at all, four or
+> five came back weak, and not one verified. The frame refuses on zero verified.* The slide's
+> wording is exact ("verify not one cell" is cell-level, "contradicted" is frame-level); do not
+> let it be simplified to "contradicted all 64 cells".
+
 
 > **v7: the TMC-2 / IIRS gap, stated as the standard rather than the miss.** The PS title names
 > OHRC, TMC and IIRS; we register OHRC well and refuse TMC-2 (0/4) and IIRS (0/11), and the

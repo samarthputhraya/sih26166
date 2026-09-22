@@ -153,8 +153,8 @@ RIGHT_FIG = (7.28, 5.50)                            # (left, width) of a side fi
 # Slide 2 answers FOUR pointers where slides 4 and 5 answer three and two, so its figure
 # is the STACKED trust map (5.0 x 7.2 in canvas): narrow and tall, which leaves the text
 # 8.33 in instead of 6.55 and still lands every label above the 6 pt on-slide floor.
-S2_COL = (0.55, TOP, 8.33, BOTTOM - TOP)
-S2_FIG = (9.18, 3.60)
+S2_COL = (0.55, TOP, 8.48, BOTTOM - TOP)
+S2_FIG = (9.33, 3.45)
 FULL = (0.55, TOP, 12.23, BOTTOM - TOP)
 BULLET_INDENT = 0.26                                # hanging indent for wrapped bullets
 
@@ -182,12 +182,14 @@ S2 = [
      1, True, ACCENT),
     ("Detailed explanation", 0, True, BLUE),
     # The eight boxes are DRAWN on slide 3. Here, only the one that is ours.
-    ("A standard strong pipeline does the registering (slide 3). What makes it ours runs next: "
-     "an independent area check cross-correlates the warped image against the reference in "
-     "8×8 cells, and never reads a match position — so it can contradict the matcher "
-     "that produced them.", 1, False, INK),
+    ("A standard pipeline registers (slide 3). Ours adds what runs next: an independent area "
+     "check that cross-correlates the warped image against the reference in 8×8 cells and never "
+     "reads a match position — so it can contradict the matcher that produced them.",
+     1, False, INK),
     
-    ("How it addresses the problem", 0, True, BLUE),
+        ("How it addresses the problem", 0, True, BLUE),
+    ("Measured, not designed: 160 distinct ground windows, 8 instrument pairings, real "
+     "Chandrayaan-2, LRO, Kaguya and LOLA data.", 1, False, INK),
     # REPORT.md "SAC's own benchmark pair (equatorial ...)": count of `agrees` / rows.
     # "Real sun-angle sweep": the "All bins" line, and the "failed, not caught" column, 0 in
     # all six bins.
@@ -199,9 +201,9 @@ S2 = [
         ("Sun angle, on SAC's own benchmark pairs (arXiv:2509.04775): equatorial, Suns 174° apart "
      "and every shadow reversed — 6/6 windows accepted. On the polar pair, where their study "
      "found only SuperGlue registered it at all, our check vouches for 4 of our 6 windows and "
-     "flags the other 2 — their measure is whether a method registers the pair, ours is which "
-     "windows our own check will vouch for.", 1, False, INK),
-    ("Our own Sun sweep, separately: one OHRC frame against 25 NAC frames, 69 windows, Suns "
+     "flags 2 — a different measure from theirs (pair registered vs. windows vouched for), and "
+     "we say so.", 1, False, INK),
+    ("Our own Sun sweep: one OHRC frame against 25 NAC frames, 69 windows, Suns "
      "3.3–152.7° apart — zero undetected failures.", 1, False, INK),
     # "Scale rung: ... TC ortho map": scale column, `agrees` / rows. REPORT.md footer: 160.
     # "Kaguya TC -> Kaguya MI": 1548 nm declared fallback / rows; its "Fallback vs the visible
@@ -243,7 +245,9 @@ S3_RIGHT = [
     ("Methodology and process", 0, True, BLUE),
     ("The flow above is the implemented pipeline, in the order it runs — every box is a "
      "function in the codebase, not a plan.", 1, False, INK),
-    # The point of the diagram, said once: seven boxes are the field's, the eighth is ours.
+        # The point of the diagram, said once. fig_pipeline draws six standard steps after the input
+    # box, then the 8x8 coverage check (which DOES read match positions), then the area check
+    # (which never does). "Six standard / eighth is ours" counts that way on purpose.
         ("Six of those steps are standard practice. The eighth box is ours: the only one that never "
      "reads a match position, and the only one allowed to overrule the rest. The 8×8 coverage "
      "check before it does read them — a different check doing a different job.",
@@ -278,8 +282,8 @@ S4 = [
     # 90-120. MiLOI's 90 deg is a SUN-VECTOR angle; every other Sun figure on the deck is an
     # azimuth difference, so it is named (claim-checker M4, v4).
     ("The hard band is the field's, not ours: none of the 16 MiLOI pairs with Sun vectors 90° "
-     "or more apart registered under any method — ours, SIFT, ORB or AKAZE. Our sweep accepts "
-     "0 of 12 at 60–120° azimuth, and says so.", 1, False, INK),
+     "or more apart registered under any method — ours, SIFT, ORB or AKAZE — and our sweep "
+     "accepts 0 of 12 at 60–120° azimuth, and says so.", 1, False, INK),
     # "Real viewpoint: TMC-2 fore -> aft": held-out median. "... TC -> IIRS": verdict counts.
     # REPORT.md lines 143-152. The four OHRC -> TMC-2 windows are the strongest thing on this
     # slide once read the right way round: the matcher DID produce a fit on each (6-7 inliers at
@@ -291,24 +295,24 @@ S4 = [
     # NOT quoted as "how wrong": at inlier ratios of 0.05-0.07 that statistic describes the
     # outliers, not the alignment (Known issue 1 - the 316 px tiled window is the same effect
     # on a correct alignment). The area check's own verdict is the defensible number.
-    ("OHRC against TMC-2 nadir, Suns 120° apart: the matcher kept 6–7 inliers per window at "
-     "5–9% coverage — a fit to that handful reports a small in-sample residual by construction. "
-     "The area check could verify not one cell of 64, contradicted all four, and the system "
-     "declared its fallback. Six points and their own residual are not a registration we will "
-     "ship; this check is what stops us.",
+        ("OHRC against TMC-2 nadir, Suns 120° apart: the matcher kept 6–7 inliers per window at "
+     "5–9% coverage and fitted them to 0.13–0.96 px per axis — sub-pixel, by construction, on "
+     "six points. Not one held-out match agreed with that fit. The area check could verify not "
+     "one cell of 64, contradicted all four, and the system declared its fallback. Six points "
+     "and their own residual are not a registration we ship; this check is what stops us.",
      1, True, ACCENT),
     ("Two more, named before a reviewer does: relief parallax is not a homography, so TMC-2 "
-     "fore against aft accepts 1 window of 4; and IIRS at 12×, 89 m per pixel, does not "
-     "register matched direct.", 1, False, INK),
+     "fore against aft accepts 1 window of 4; and IIRS against Kaguya TC at 12×, 89 m per "
+     "pixel, does not register matched direct.", 1, False, INK),
     ("Strategies for overcoming these challenges", 0, True, BLUE),
     # ops/specs/day_24.md: the one TMC-2 pass over SAC's frame with the Sun near the OHRC's is
     # identified in PRADAN and is the next run. Its azimuth offset is NOT quoted here because it
     # is not in REPORT.md (Invariant 1); it goes on the slide the day it is measured.
-    ("Next, in order: the one TMC-2 pass over this frame with the Sun near the OHRC's, already "
-     "identified in the archive; IIRS chained through TMC-2 at intermediate scale instead of "
-     "matched direct at 12×; tile-level local transforms with LOLA orthorectification for "
-     "relief. Each answers a measured failure, and the check that refused these will grade the "
-     "fixes.", 1, False, INK),
+    ("Next: the one TMC-2 pass over this frame with the Sun near the OHRC's, already identified "
+     "in the archive; IIRS chained through TMC-2 at intermediate scale, not matched direct "
+     "against TC at 12×; tile-level local transforms with LOLA orthorectification for relief. "
+     "Each answers a measured failure, and the check that refused these grades the fixes.",
+     1, False, INK),
 ]
 
 S5 = [
@@ -356,7 +360,7 @@ S6 = [
     # at all - so the trust figures on slides 2 and 5 are provably absent from it. A judge with
     # the repo URL from the bullet above can check that in fifteen seconds. Say "measured at".
         ("Every figure here is in REPORT.md. Real-pair rows measured at the freeze commit 7dd4e5b; "
-     "MiLOI rows matched at e10deb0, scored at 7dd4e5b; REPORT.md regenerated at f928995, no "
+     "MiLOI rows matched at e10deb0, scored at 7dd4e5b; REPORT.md regenerated at 3fa526b, no "
      "logged number changed",
      1, False, INK),
     ("Lunar domain", 0, True, BLUE),
@@ -399,8 +403,8 @@ SLIDES = {
         "fig": ("fig4_pipeline.png", 1.365, 10.6), "fig_top": TOP},
     # Slide 4 is the densest. Narrowing its figure from 5.50 to 5.00 in gives the text column
     # 7.05 in instead of 6.55 - about 8 % more characters per line.
-        4: {"text": [((0.55, TOP, 7.05, BOTTOM - TOP), S4, 14, 11)],
-        "fig": ("fig5_real_sun_sweep.png", 7.75, 5.00)},
+            4: {"text": [((0.55, TOP, 7.30, BOTTOM - TOP), S4, 14, 11)],
+        "fig": ("fig5_real_sun_sweep.png", 8.00, 4.75)},
     5: {"text": [(LEFT_COL, S5, 15, 12.5)],
         "fig": ("fig6_trust_real_calibration.png",) + RIGHT_FIG},
     6: {"text": [(FULL, S6, 14, 12)]},

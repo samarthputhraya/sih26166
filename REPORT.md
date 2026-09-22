@@ -1,6 +1,6 @@
 # SIH26166 - evaluation report
 
-Generated 2026-09-20T12:18 from commit `f928995` by `python -m ops.make_report`. **Do not edit by hand** - every number below is read from the evidence files named in each section. The latest real-pair rows were measured at commit `7dd4e5b` (183 rows).
+Generated 2026-09-22T23:47 from commit `3fa526b` by `python -m ops.make_report`. **Do not edit by hand** - every number below is read from the evidence files named in each section. The latest real-pair rows were measured at commit `7dd4e5b` (183 rows).
 
 All pixel figures are on the REFERENCE image's grid, with its metres stated. Real pairs have no exact ground truth: accuracy on them is reported as held-out residuals (the 20 % of matches the fit never saw) and as loop closure. `residual_px` in results_log.csv is the RMSE over ALL held-out matches including outliers and is not quoted for real pairs.
 
@@ -150,6 +150,15 @@ OHRC frame `ch2_ohr_ncp_20210401T2357376656_d_img_d18` (arXiv:2509.04775, Table 
 | `sac_ohrc_tmc_w02` | -13.3669, 25.1880 | 120.2 | 5.005 | 105 | 6 | 0.057 | 0.09 | 112.891 (629.481) | n/a | 0 / 59 | contradicted | fft_phase_correlation (fallback) | 70.3 |
 | `sac_ohrc_tmc_w03` | -13.5773, 25.1869 | 120.2 | 5.005 | 96 | 7 | 0.073 | 0.06 | 268.087 (1494.851) | n/a | 0 / 60 | contradicted | fft_phase_correlation (fallback) | 1360.3 |
 | `sac_ohrc_tmc_w04` | -13.7877, 25.1857 | 120.2 | 5.005 | 148 | 7 | 0.047 | 0.05 | 124.811 (695.948) | n/a | 0 / 60 | contradicted | fft_phase_correlation (fallback) | 933.8 |
+
+In-sample, per axis, on the inliers the matcher's H was fitted to - and the share of HELD-OUT matches (the 20 % the fit never saw) that land within 3 px of that H. MAGSAC++ keeps only matches within 3 px, so the in-sample column can only flatter: a sub-pixel fit on six points is what a refused registration looks like from the inside, and the held-out column is why it was refused.
+
+| pair | inliers graded | RMSE X px (m) | RMSE Y px (m) | held-out within 3 px | verdict |
+|---|---|---|---|---|---|
+| `sac_ohrc_tmc_w01` | 7 | 0.715 (3.988) | 0.926 (5.162) | 0% | contradicted |
+| `sac_ohrc_tmc_w02` | 6 | 0.336 (1.871) | 0.860 (4.794) | 0% | contradicted |
+| `sac_ohrc_tmc_w03` | 7 | 0.880 (4.906) | 0.128 (0.717) | 0% | contradicted |
+| `sac_ohrc_tmc_w04` | 7 | 0.962 (5.366) | 0.700 (3.903) | 0% | contradicted |
 
 ## Real viewpoint: TMC-2 fore (+25°) → aft (−25°), one pass (same sensor)
 

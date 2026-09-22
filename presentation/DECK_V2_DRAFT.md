@@ -22,11 +22,16 @@
 > - **v7 (22 Sep, late):** slide 4's OHRC→TMC-2 line now carries its own evidence - 6–7
 >   inliers per window, 5–9 % coverage, 0 of 64 cells verified by the area check, all four
 >   contradicted with the fallback declared (`REPORT.md` 148–151; the held-out medians there
->   are not quoted as alignment error - Known issue 1) - and the strategies bullet is an ordered roadmap. The
->   "Measured, not designed: 160 / 8" opener was dropped from slide 4 (slide 2 carries both
->   figures). fig6: axis grids now 0.93–1.62 (both populations); caption counts 30 windows.
+>   are not quoted as alignment error - Known issue 1) - and the strategies bullet is an ordered roadmap.
+> - **v8 (22 Sep, late):** the claim-check on v7 found "160 windows / 8 pairings" on **no slide**
+>   (dropped from slide 4 on the false premise that slide 2 carried it) - it is now slide 2's
+>   first "How it addresses" bullet. The TMC-2 bullet gained its measured form: in-sample
+>   0.13–0.96 px per axis on 6–7 inliers and **0 % of held-out matches within 3 px** on all
+>   four windows, both printed in `REPORT.md`'s TMC section as of `3fa526b` (rendering-only
+>   change to `ops/make_report.py`; header stamp and one new table are the whole diff). IIRS
+>   names its counterpart (Kaguya TC) in both places. fig6: axis grids now 0.93–1.62 (both populations); caption counts 30 windows.
 >
-> PDF as shipped: 1091396 bytes, sha256 `3ddae7ce...`, `AUDIT: clean`, `PDF CHECK: clean`.
+> PDF as shipped (v8): 1090972 bytes, sha256 `ae571678...`, `AUDIT: clean`, `PDF CHECK: clean`.
 
 ---
 
