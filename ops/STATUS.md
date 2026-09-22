@@ -5,12 +5,14 @@
 > strongest visible competitor claims both. Slide 4 now says why in their own terms: on
 > OHRC→TMC-2 the matcher kept **6–7 inliers per window at 5–9 % coverage**, a fit to that
 > handful reports a small in-sample residual *by construction*, and the area check measured the
-> alignment **629–1,495 m wrong** and refused all four (`REPORT.md` lines 148–151). The
+> the area check could verify **not one cell of 64** and contradicted all four (`REPORT.md`
+> lines 148–151; the held-out medians of 112–268 px on those rows are deliberately NOT quoted as
+> "how wrong" - at inlier ratio 0.05 that statistic describes the outliers, Known issue 1). The
 > competitor's TMC-2 result is an in-sample RMSE on 5–7 inliers at 5–7 % coverage - the exact
 > regime our check refuses. Nobody is named on the slide; the standard is. The strategies bullet
 > is now an ordered roadmap whose first item is the closer-Sun TMC-2 pass (`ops/specs/day_24.md`).
 > fig6's axis and caption were also fixed (grids 0.93–1.62 across both populations; 30 windows,
-> not 22) - only that figure changed, hash-verified. **1094181 bytes, sha256 `40e2d718…`,
+> not 22) - only that figure changed, hash-verified. **1,094,206 bytes, sha256 `0bf4927c…`,
 > `AUDIT: clean`, `PDF CHECK: clean`.** Slide 4 body is 11 pt; that is the floor.
 >
 > **The one evidence move that turns the weak line into a strong one is still yours to make:**

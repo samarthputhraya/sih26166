@@ -285,12 +285,17 @@ S4 = [
     # slide once read the right way round: the matcher DID produce a fit on each (6-7 inliers at
     # 5-9 % coverage), and a fit like that reports a small in-sample residual by construction -
     # MAGSAC++ keeps only matches within threshold. The area check measured the alignment
-    # 629-1,495 m wrong. Refusing that is the product working, and it is the standard a judge
-    # should hold every entry to. Said without naming anyone.
+    # not one cell of 64 verifiable, and contradicted all four. Refusing that is the product
+    # working, and it is the standard a judge should hold every entry to. Said without naming
+    # anyone. The held-out medians on these rows (112-268 px = 629-1,495 m) are deliberately
+    # NOT quoted as "how wrong": at inlier ratios of 0.05-0.07 that statistic describes the
+    # outliers, not the alignment (Known issue 1 - the 316 px tiled window is the same effect
+    # on a correct alignment). The area check's own verdict is the defensible number.
     ("OHRC against TMC-2 nadir, Suns 120° apart: the matcher kept 6–7 inliers per window at "
      "5–9% coverage — a fit to that handful reports a small in-sample residual by construction. "
-     "The area check measured the alignment 629–1,495 m wrong and refused all four. Six points "
-     "and their own residual are not a registration we will ship; this check is what stops us.",
+     "The area check could verify not one cell of 64, contradicted all four, and the system "
+     "declared its fallback. Six points and their own residual are not a registration we will "
+     "ship; this check is what stops us.",
      1, True, ACCENT),
     ("Two more, named before a reviewer does: relief parallax is not a homography, so TMC-2 "
      "fore against aft accepts 1 window of 4; and IIRS at 12×, 89 m per pixel, does not "

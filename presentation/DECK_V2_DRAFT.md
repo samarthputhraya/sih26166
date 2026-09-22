@@ -20,8 +20,9 @@
 >   on a 1.622 m grid (1.06 m). The comparison loses and is not made.
 >
 > - **v7 (22 Sep, late):** slide 4's OHRC→TMC-2 line now carries its own evidence - 6–7
->   inliers per window, 5–9 % coverage, alignment 629–1,495 m wrong by the area check, all four
->   refused (`REPORT.md` 148–151) - and the strategies bullet is an ordered roadmap. The
+>   inliers per window, 5–9 % coverage, 0 of 64 cells verified by the area check, all four
+>   contradicted with the fallback declared (`REPORT.md` 148–151; the held-out medians there
+>   are not quoted as alignment error - Known issue 1) - and the strategies bullet is an ordered roadmap. The
 >   "Measured, not designed: 160 / 8" opener was dropped from slide 4 (slide 2 carries both
 >   figures). fig6: axis grids now 0.93–1.62 (both populations); caption counts 30 windows.
 >
