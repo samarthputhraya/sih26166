@@ -329,6 +329,29 @@ def main(argv=None):
                            f"apart, incidence {abs(float(rows[0]['d_incidence_deg'] or 0)):.1f}° apart "
                            f"(`d_incidence_deg` {rows[0]['d_incidence_deg']}). Both panchromatic - NOT "
                            f"multi-modal; same mission - NOT cross-mission.")
+        # Rendering only (22 Sep): the same in-sample table the SAC OHRC->NAC sections print,
+        # plus the held-out inlier fraction, because on THESE rows the two together are the
+        # argument. A homography fitted to 6-7 inliers is sub-pixel in-sample by construction
+        # (MAGSAC++ keeps only matches within 3 px) - and not one held-out match agrees with it.
+        # That is what the area check refused. Both columns were logged at the freeze; they were
+        # simply never printed for this section.
+        ins = [r for r in rows if r.get("insample_n")]
+        if ins:
+            g = float(rows[0]["ref_gsd_m"])
+            L += ["In-sample, per axis, on the inliers the matcher's H was fitted to - and the share "
+                  "of HELD-OUT matches (the 20 % the fit never saw) that land within 3 px of that H. "
+                  "MAGSAC++ keeps only matches within 3 px, so the in-sample column can only flatter: "
+                  "a sub-pixel fit on six points is what a refused registration looks like from the "
+                  "inside, and the held-out column is why it was refused.", "",
+                  "| pair | inliers graded | RMSE X px (m) | RMSE Y px (m) | held-out within 3 px | verdict |",
+                  "|---|---|---|---|---|---|"]
+            for r in ins:
+                x, y = r["insample_rmse_x_px"], r["insample_rmse_y_px"]
+                hf = r.get("holdout_inlier_frac")
+                L.append(f"| `{r['pair_id']}` | {r['insample_n']} | {_f(x)} ({float(x) * g:.3f}) | "
+                         f"{_f(y)} ({float(y) * g:.3f}) | "
+                         f"{'n/a' if hf in (None, '') else f'{float(hf):.0%}'} | {r['verdict']} |")
+            L.append("")
     fa = sorted([r for r in reg if _kind(r) == "tmc2-tmc2"], key=lambda r: r["pair_id"])
     if fa:
         L += section_pairs("Real viewpoint: TMC-2 fore (+25°) → aft (−25°), one pass (same sensor)", fa,
