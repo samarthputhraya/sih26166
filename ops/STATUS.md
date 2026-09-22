@@ -1,4 +1,23 @@
-# STATUS - 22 September 2026 (Day 25). National round, solo push.
+# STATUS - 22 September 2026 (Day 25), late. National round, solo push.
+
+> **v7: the TMC-2 / IIRS gap, stated as the standard rather than the miss.** The PS title names
+> OHRC, TMC and IIRS; we register OHRC well and refuse TMC-2 (0/4) and IIRS (0/11), and the
+> strongest visible competitor claims both. Slide 4 now says why in their own terms: on
+> OHRC→TMC-2 the matcher kept **6–7 inliers per window at 5–9 % coverage**, a fit to that
+> handful reports a small in-sample residual *by construction*, and the area check measured the
+> alignment **629–1,495 m wrong** and refused all four (`REPORT.md` lines 148–151). The
+> competitor's TMC-2 result is an in-sample RMSE on 5–7 inliers at 5–7 % coverage - the exact
+> regime our check refuses. Nobody is named on the slide; the standard is. The strategies bullet
+> is now an ordered roadmap whose first item is the closer-Sun TMC-2 pass (`ops/specs/day_24.md`).
+> fig6's axis and caption were also fixed (grids 0.93–1.62 across both populations; 30 windows,
+> not 22) - only that figure changed, hash-verified. **1094181 bytes, sha256 `40e2d718…`,
+> `AUDIT: clean`, `PDF CHECK: clean`.** Slide 4 body is 11 pt; that is the floor.
+>
+> **The one evidence move that turns the weak line into a strong one is still yours to make:**
+> the closer-Sun TMC-2 pass needs a PRADAN download (0.6–0.9 GB) only you can do, then ~2 h.
+> Evidence cut-off is Thu 24 Sep 18:00. Either result improves the deck - a second refusal at
+> ~9° of Sun is also publishable. Commands are in `ops/specs/day_24.md` §"The one measurable".
+
 
 > **Deck v6: the pitch pass.** Product work stopped on Samartha's call - the remaining days go to
 > the deck, and gaps get closed after selection. v5 was correct and read like a lab report (278

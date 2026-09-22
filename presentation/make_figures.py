@@ -746,9 +746,11 @@ def fig_trust_real():
     ds = sorted({float(r["displacement_m"]) for r in rows})
     rate = [np.mean([r["contradicted"] == "True" for r in rows if float(r["displacement_m"]) == d]) for d in ds]
     n = [sum(1 for r in rows if float(r["displacement_m"]) == d) for d in ds]
-    # Every reference grid, not the median: 11 windows are on the 0.931 m NAC grid and 12 on
-    # the 1.245 m one, and the 18 Sep label named only 1.245 (claim-checker, 19 Sep).
-    grids = sorted({float(r["gsd_ref_m"]) for r in rows})
+    # Every reference grid of BOTH populations, as a range. The 19 Sep fix named the two grids
+    # of the near-Sun bars (0.931 / 1.245); the SAC diamonds sit on 1.215 and 1.622 m, so a
+    # judge converting the diamond series with the printed grids got the wrong answer
+    # (claim-checker, 22 Sep).
+    grids = sorted({float(r["gsd_ref_m"]) for r in all_rows})
     fig, ax = plt.subplots(figsize=(7.6, 4.4))
     ax.grid(True, which="major", color=GRID, linewidth=0.8, zorder=0)
     ax.set_axisbelow(True)
@@ -781,8 +783,8 @@ def fig_trust_real():
     ax.set_xticks(xs)
     ax.set_xticklabels([f"{d:g}" for d in ds], fontsize=13)
     ax.set_ylim(0, 112)
-    ax.set_xlabel("planted error  (metres; reference grids " + " and ".join(f"{g:.2f}" for g in grids)
-                  + " m/px)", fontsize=14)
+    ax.set_xlabel(f"planted error  (metres; reference grids {grids[0]:.2f}–{grids[-1]:.2f} m/px)",
+                  fontsize=14)
     ax.set_ylabel("flagged as wrong  (%)", fontsize=14)
     ax.set_title("Planted wrong answers: how many are flagged?",
                  loc="left", fontweight="bold", fontsize=15, pad=10)
@@ -796,8 +798,14 @@ def fig_trust_real():
     except (OSError, ValueError, KeyError):
         n_ground = len(ids)
     n_win = len(ids)
-    wins = f"{n_win} real windows" + (f" ({n_ground} distinct)" if n_ground != n_win else "")
-    fig.text(0.014, 0.008, f"{wins}, OHRC→NAC and NAC→NAC · 0 m = false-alarm rate\n"
+    n_hard = len({r["pair_id"] for r in hard})
+    # The chart plots BOTH populations, so the caption counts both. It said "22 real windows"
+    # under a chart of 30 while slide 2 said 30 (claim-checker, 22 Sep).
+    wins = (f"{n_win + n_hard} real windows — {n_win} OHRC→NAC and NAC→NAC (bars), "
+            f"{n_hard} SAC OHRC→NAC (diamonds)" if hard else
+            f"{n_win} real windows" + (f" ({n_ground} distinct)" if n_ground != n_win else "")
+            + ", OHRC→NAC and NAC→NAC")
+    fig.text(0.014, 0.008, f"{wins} · 0 m = false-alarm rate\n"
              f"all planted matches agree with the wrong answer", fontsize=9.5, color=MUTED,
              linespacing=1.35, va="bottom")
     fig.set_figheight(4.7)

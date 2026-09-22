@@ -19,6 +19,12 @@
 >   figure is 0.62 px on a 1.118 m grid (0.69 m); our best in-sample on that pair is 0.656 px
 >   on a 1.622 m grid (1.06 m). The comparison loses and is not made.
 >
+> - **v7 (22 Sep, late):** slide 4's OHRC→TMC-2 line now carries its own evidence - 6–7
+>   inliers per window, 5–9 % coverage, alignment 629–1,495 m wrong by the area check, all four
+>   refused (`REPORT.md` 148–151) - and the strategies bullet is an ordered roadmap. The
+>   "Measured, not designed: 160 / 8" opener was dropped from slide 4 (slide 2 carries both
+>   figures). fig6: axis grids now 0.93–1.62 (both populations); caption counts 30 windows.
+>
 > PDF as shipped: 1091396 bytes, sha256 `3ddae7ce...`, `AUDIT: clean`, `PDF CHECK: clean`.
 
 ---
