@@ -1,4 +1,29 @@
-# SIH26166 national deck, v4: the numbers audit (20 Sep 2026)
+# SIH26166 national deck: the numbers audit
+
+> **v6, 22 Sep 2026 - the pitch pass.** The table below is v4's and every row in it still holds:
+> the pitch pass changed the *shape* of the argument, not the evidence, and the freeze is
+> untouched at `7dd4e5b`. What changed on the slides, so this file is not read as current:
+>
+> - **Dropped from slides** (still true, still in REPORT.md, just not on a slide any more):
+>   the MiLOI S1 sub-pixel figure, the 1.9 km archive-geometry offset, the IIRS 10/11 count,
+>   and the per-verdict description of agrees / unconfirmed / contradicted (slide 3 draws it).
+> - **Added, both checked before use:** the polar pair where SAC's own study found only
+>   SuperGlue registered it (`REPORT.md` lines 97 and 121), and their 2026 mosaic paper's
+>   statement that its framework "does not address geometric misalignment or parallax effects"
+>   (arXiv:2604.25208 section VI, read 22 Sep 2026).
+> - **Conditions restored by the 22 Sep claim-check:** the synthetic 0.086 px now carries its
+>   0-15 deg Sun condition and the 45 deg degradation; the multi-modal px range carries its
+>   metres; the rotation "3 px out" became "3 m of corner displacement, 0 of 120 trials
+>   contradicted"; slide 6's provenance is now clause-by-clause per log.
+> - **Deliberately absent:** any accuracy comparison with arXiv:2509.04775. Their SuperGlue
+>   figure is 0.62 px on a 1.118 m grid (0.69 m); our best in-sample on that pair is 0.656 px
+>   on a 1.622 m grid (1.06 m). The comparison loses and is not made.
+>
+> PDF as shipped: 1091396 bytes, sha256 `3ddae7ce...`, `AUDIT: clean`, `PDF CHECK: clean`.
+
+---
+
+## v4's audit table, unchanged and still valid
 
 > **RE-FILLED AGAIN from the freeze at `7dd4e5b`** (`--check`: FROZEN, 10/10 steps; 183/183 real
 > rows, 324/324 MiLOI, 8/8 multi-modal). The re-freeze was forced by the F12 fix (`core/ransac.py`

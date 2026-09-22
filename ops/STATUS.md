@@ -1,3 +1,27 @@
+# STATUS - 22 September 2026 (Day 25). National round, solo push.
+
+> **Deck v6: the pitch pass.** Product work stopped on Samartha's call - the remaining days go to
+> the deck, and gaps get closed after selection. v5 was correct and read like a lab report (278
+> and 272 words of ours on slides 2 and 4, the thesis last on slide 2). v6 keeps every figure and
+> every condition and changes the argument's shape: the thesis leads slide 1 and slide 2, slide 2
+> stops reciting the pipeline that slide 3 draws, slide 4 states its limits as the field's rather
+> than ours, and slide 5 opens on who it is for. **6 pages, 1,091,396 bytes, sha256 `3ddae7ce...`,
+> `AUDIT: clean`, `PDF CHECK: clean`.** Evidence untouched: still frozen at `7dd4e5b`, REPORT.md
+> unchanged, nothing under `core/ evaluation/ ops/ app/` edited.
+>
+> **Two SAC hooks were added, both verified before use.** The polar benchmark pair, where SAC's
+> own study found only SuperGlue registered it (`REPORT.md` lines 97 and 121); and their 2026
+> mosaic paper stating its framework "does not address geometric misalignment or parallax
+> effects", with joint geometric/radiometric frameworks as future research (arXiv:2604.25208
+> sections VI and VII, read 22 Sep). **No accuracy comparison with arXiv:2509.04775 is made
+> anywhere, deliberately** - their SuperGlue figure is 0.62 px on a 1.118 m grid (0.69 m) and our
+> best in-sample on that pair is 0.656 px on a 1.622 m grid (1.06 m). That comparison loses, so
+> it is not on a slide. Know it cold; do not volunteer it.
+>
+> **The claim-check found five defects in the rewrite and all five are fixed** - see
+> "Deck v6 claim-check" below. Two were in lines written that same hour, which is the argument
+> for running it every time `presentation/` changes.
+
 # STATUS - 20 September 2026 (Day 23), ~22:35 IST. National round, solo push.
 
 > **Second session tonight (19:45-22:35): the judge's walk-through, and the fixes from it.**
@@ -18,14 +42,14 @@
 ## Position
 
 ```
-Sun 20 Sep 22:35  |  submit Sun 27 Sep (7 days)  |  portal closes Tue 30 Sep
+Tue 22 Sep        |  submit Sun 27 Sep (5 days)  |  portal closes Tue 30 Sep
 Evidence cut-off  Thu 24 Sep 18:00     <- the only hard deadline with work behind it
 Deck/portal final Fri 25 Sep 22:00
 Read PDF cold     Sat 26 Sep
 Submit            Sun 27 Sep
 ```
 
-**The submission is DONE and sitting on disk.** Deck v5 PDF, portal text, evidence frozen, all
+**The submission is DONE and sitting on disk.** Deck v6 PDF, portal text, evidence frozen, all
 committed and pushed. The repository is now **public**, and slide 6 carries its URL. Everything from here is optional upside or Samartha's 15 minutes at the
 portal. Nothing is half-finished.
 
@@ -41,8 +65,9 @@ The national round has cut-offs, not gates, and they are listed above.
    evidence CSVs, and two source files that cannot change a number:
    `ops/trust_real_calibration.py` (**0 behavioural lines**, comments only) and
    `ops/make_report.py` (30 lines, all rendering - it writes no evidence file).
-2. **Deck is v5.** `AUDIT: clean`, `PDF CHECK: clean`, 6 pages, **1,113,285 bytes**, sha256
-   `c0196e6d…`. v5 differs from v4 in **one place**: slide 6 gained two bullets at the top, under
+2. **Deck is v6** (22 Sep pitch pass; see the header). `AUDIT: clean`, `PDF CHECK: clean`,
+   6 pages, **1,091,396 bytes**, sha256 `3ddae7ce…`. The v5 note below is kept because the
+   slide-6 link it describes is still there. v5 differed from v4 in **one place**: slide 6 gained two bullets at the top, under
    a new heading "Code, evidence and the full report" - the repository URL, and the line "Every
    figure on these slides is in REPORT.md at the evidence-freeze commit 7dd4e5b". Nothing else on
    any slide moved; slides 1-5 carry exactly the v4 content, and v4's claim-checker pass (0
@@ -86,6 +111,32 @@ The national round has cut-offs, not gates, and they are listed above.
    words (30 s). Cut the script to ~260 words, or re-time `web/film.py`'s beats, **before**
    spending a TTS call on it. Left as-is tonight by decision: the video is finale work, not
    submission work, and a rushed re-cut is how a number gets lost.
+
+## Deck v6 claim-check (22 Sep) - five defects, all fixed
+
+`claim-checker` re-derived every figure from the raw CSVs and found **no invented number** on any
+slide, Invariant 2 holding everywhere, and hardware/cost claims clean. It found five real defects,
+two of them in lines written the same hour:
+
+| What was wrong | Why it mattered | Now |
+|---|---|---|
+| Slide 6: "evidence logs **measured at** the freeze commit 7dd4e5b" | True only of `real_pairs_log.csv`. `miloi_log.csv` stamps **"run e10deb0, scored 7dd4e5b"**; `results_log.csv` and `trust_real_calibration.csv` have **no commit column at all**; and `trust_real_calibration.csv` is absent from the `7dd4e5b` tree. **Second round running this sentence has been wrong**, and slide 6 hands the judge the repo to check it with | Clause by clause per log: real-pair rows measured at 7dd4e5b; MiLOI matched at e10deb0, scored at 7dd4e5b; REPORT.md regenerated at f928995 |
+| Slide 4: "Against exact truth: 0.086 px = 5.1 m" | The **0 deg/15 deg** value of four. The row is 0.086 / 0.086 / 0.314 / 1.096 px = 5.1 / 5.1 / 18.8 / 65.8 m. Best-of-four quoted bare, on the Sun-angle slide | Carries its condition and the 45 deg degradation |
+| Slide 2: "within 0.23-1.09 px ... on MI's 14.8 m grid" | Invariant 2 wants metres too, and **1.09 px is 16.2 m** - a judge who multiplies feels misled | "0.23-1.09 px = 3.4-16.2 m" |
+| Slide 5: "a corner is **3 px** out" | No trial lands at 3 px: they are planted in **metres** across **four** reference grids (0.931/1.215/1.245/1.622), so no single px value exists. Inherited from `REPORT.md:338`, which still says it | "at 3 m of corner displacement 0 of 120 trials contradict, and at 5 m, 105 of 120 still say good" |
+| Slide 1: "a verdict for every region of **every result**" | The 112-px IIRS windows are too small to cell, so a whole-frame verdict decides them (`REPORT.md:188`) | "every region of **the** result" |
+
+Also applied from the same pass: the 316 px tiled window and the OHRC->TMC-2 0-of-4 rung are now
+printed on slide 4 rather than left for a judge to find in REPORT.md; slide 3 names the difference
+between its two 8x8 checks (the coverage check *does* read matches, the area check never does);
+and the Sun sweep is detached from SAC's pairs so the 69/25 population is not read as theirs.
+
+**Still open from that report, not done:** `REPORT.md:338`'s own "3 px out" (a `REPORT.md` edit
+means `ops/make_report.py` and a regeneration - queued, not worth touching before submission), and
+`docs/00_CANONICAL_FACTS.md` lines 27-29, 50 and 76, which are **stale by success**: they still say
+no Tier B/B+/C pair was ever cut and no real Sun-difference pair exists. CLAUDE.md routes all prep
+through that file, so **rehearsing from it will produce answers weaker than the evidence.** Fix it
+before any rehearsal.
 
 ## Judge-report fixes (20 Sep, 19:45-22:35)
 
