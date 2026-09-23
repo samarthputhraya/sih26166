@@ -1,0 +1,29 @@
+SIH26166 - lunar image registration that knows when it is wrong
+Copyright 2026 the LunaXX team (Smart India Hackathon 2026, problem statement SIH26166)
+
+Licensed under the Apache License, Version 2.0 - see LICENSE.
+
+This repository contains only the team's own code, documents and evidence logs. It depends on,
+but does not include, the following third-party software (versions pinned in requirements.txt):
+
+  LoFTR model and pretrained outdoor weights   Apache-2.0   Sun et al., CVPR 2021, via kornia.
+                                                            Weights are fetched at setup by
+                                                            core/fetch_weights.py, not redistributed.
+  kornia                                       Apache-2.0
+  OpenCV (opencv-contrib-python), incl. MAGSAC++ Apache-2.0
+  PyTorch                                      BSD-style / Apache-2.0 (see its own notice)
+  torchvision, NumPy, SciPy, scikit-image,
+  pandas, tifffile, pds4_tools, pvl, psutil    BSD
+  matplotlib                                   Matplotlib licence (PSF-based)
+  Pillow                                       MIT-CMU
+  Streamlit                                    Apache-2.0
+  certifi                                      MPL-2.0
+  pytest                                       MIT
+
+Imagery is not in this repository. The products used, each listed with its sha256 in REPORT.md:
+
+  Chandrayaan-2 OHRC, TMC-2, IIRS    ISRO, from PRADAN (pradan.issdc.gov.in), under its terms of use
+  LRO LROC NAC, LOLA                 NASA Planetary Data System, public domain
+  SELENE (Kaguya) TC and MI          JAXA, SELENE data archive
+  MiLOI                              Xie, Liu, Di et al., Remote Sensing 17(13):2302, 2025 -
+                                     used for evaluation only

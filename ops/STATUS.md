@@ -14,8 +14,8 @@ Wed 23 Sep        |  SUBMITTING TODAY (Samartha's call, 23 Sep)  |  portal close
 TMC-2 closer-Sun pass: CLOSED - the pass does not cover SAC's frame (below)
 ```
 
-**Deck v9 is final and on disk**: `presentation/SIH26166_LunaXX_deck.pdf`, 1,143,265 bytes,
-sha256 `e1786a39…`, `AUDIT: clean`, `PDF CHECK: clean`, claim-checked (4 HIGH / 9 MEDIUM / 8 LOW,
+**Deck v9 is final and on disk**: `presentation/SIH26166_LunaXX_deck.pdf`, 1,143,313 bytes,
+sha256 `76733ef2…`, `AUDIT: clean`, `PDF CHECK: clean`, claim-checked (4 HIGH / 9 MEDIUM / 8 LOW,
 all applied, 0 fabricated numbers). What remains is Samartha at the portal - it needs Samartha's login.
 
 The old college-round gates (Days 5, 8, 10, 11, 12) are all past and do not apply.
@@ -98,9 +98,10 @@ archive; we checked the next candidate and it misses by 4 km.*
    title is its NEW long form (105 characters). Open the repo logged-out first (HTTP 200 at
    11:40 today), upload `presentation/SIH26166_LunaXX_deck.pdf` (check its mtime is later than
    the .pptx's), screenshot the confirmation, write the time into this file.
-   **Decide first: a LICENSE file.** The repository has none (`gh repo view`: licenseInfo null),
-   so v9 does not call our code open-source. Adding one (Apache-2.0 matches LoFTR) is Samartha's call;
-   if added, slide 5's cards may say "open-source" again.
+   **Licence: done, 23 Sep.** `LICENSE` is the canonical Apache-2.0 text (from GitHub's licence
+   API), `NOTICE` names the copyright holder and every third-party dependency and data source.
+   Every dependency in `requirements.txt` is permissive or MPL-2.0 (certifi), so Apache-2.0 fits.
+   The README was rewritten for a reader outside the team the same day; the portal text is v9's.
 
 2. **Put `C:\sih26166_backup\` on a USB stick**, if not already done. `weights/`, `data/pairs/`,
    `demo_cache/` — gitignored, inside OneDrive, and the only unrecoverable thing in this
