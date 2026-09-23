@@ -1,5 +1,34 @@
 # SIH26166 national deck: the numbers audit
 
+> **v9, 23 Sep 2026 - the template-and-visuals pass** (`f26535a`). Same evidence, new form. The
+> template decisions rest on 32 idea decks rendered and read, of which only three are verifiable
+> national winners (Cannon Crew 2024 SIH1686, ExpertChain 2024 SIH1788, Ourobonics 2025
+> SIH25117 - PS ids checked against the official 2024/2025 results pages): the idea title
+> replaces "TITLE PAGE" and "IDEA TITLE"; the pointer prompts are heading tabs in the template's
+> words (`_check_pointers` proves each is present); the blue footer bar stays. The SIH 2026 SPOC
+> guidelines p.13 name the criteria; v9 added what v8 lacked for two of them - a prototype
+> screenshot (user experience) and the strategies as a roadmap (future work progression).
+>
+> - **Every number is v8's**, re-read against REPORT.md by the v9 claim-check: 0 fabricated.
+> - **Dropped from slides** (still true, still in REPORT.md): the 25 NAC frames of the sweep,
+>   the SuperGlue-on-the-polar-pair comparison, the 5–9 % coverage and "0 of 64 cells" on
+>   OHRC→TMC-2, SAC's 2026 paper quoted verbatim (now paraphrased, cited [2]).
+> - **Corrected - wrong since v8, missed by two passes (H1):** "at 5 m, 105 of 120 trials still
+>   say good". 105 is the count *not contradicted*; of those, 79 are `unconfirmed`, only 26
+>   `agree` (`trust_real_calibration.csv`, rotation+scale, 5 m). Now: "at 3 m it refuses 0 of 120
+>   trials, at 5 m only 15 of 120" (REPORT.md 354–355, 361–362).
+> - **Other claim-check fixes:** "GeoTIFF / GDAL" chip → tifffile (the repo is GDAL-free by
+>   design); no "open-source" claim for our own code (the repository has no LICENSE file); kornia
+>   and the libraries are pinned in `requirements.txt`, not "credited above"; the console
+>   screenshot is its left column only (the right column showed cache values - 91 %, one cell's
+>   0.60 px, one run's 8.2 s - that are not REPORT.md rows); OHRC→TMC-2's 0.13–0.96 px is per
+>   axis on the 5.58 m TMC-2 grid; the 37/37 tiling carries its scope (one OHRC × one NAC,
+>   74 °S, Suns 3.3° apart); the subtitle and portal title no longer say "Sun-, scale- and
+>   sensor-robust" - slide 4 shows where they are not.
+> - **For Q&A, not on a slide (M9):** the rotation/scale 94 % holds per Sun population
+>   (93.5 % near-Sun, 96.1 % SAC); the companion 87.4 % does not (97.3 % vs 66.0 %).
+>   `make_report` pools the two in that table; split it after 27 Sep.
+>
 > **v6, 22 Sep 2026 - the pitch pass.** The table below is v4's and every row in it still holds:
 > the pitch pass changed the *shape* of the argument, not the evidence, and the freeze is
 > untouched at `7dd4e5b`. What changed on the slides, so this file is not read as current:
