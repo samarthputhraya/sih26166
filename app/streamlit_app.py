@@ -25,7 +25,7 @@ Six design decisions worth defending.
    BUTTON. Streamlit re-runs this entire script top to bottom on every single
    interaction, so `st.button()` inside `if st.button():` can NEVER fire - the
    outer button is False on the re-run that would have drawn the inner one. That
-   bug is recorded in `.claude/agents/demo-medic.md` and it is the classic way a
+   bug is in the team's demo checklist and it is the classic way a
    Streamlit demo dies live. So: buttons only ever WRITE to session state, and
    rendering only ever READS from it. Every input that changes the pair - the
    selector, the source radio, the uploaders - resets the result, so a stale

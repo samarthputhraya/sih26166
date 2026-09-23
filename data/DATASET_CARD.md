@@ -5,12 +5,6 @@ Provenance for every file we use. One row per file, filled at download time.
 Blank means "not known". Never guess — a wrong GSD or sun angle silently
 corrupts Samrudh's analysis and cannot be caught downstream.
 
-> ⚠️ **Rohan — this file is yours. Samartha filled it in on Day 3 (1 Sep) while your PC was down,
-> because Samrudh's Day-5 metrics and Samartha's Day-7 scale run were both blocked on it.**
-> Every number below was measured from the products themselves, not copied from a doc — the
-> commands are in "How each number was obtained" at the bottom so you can re-run them yourself.
-> **Please read that section and re-run at least one row before Gate 5**, where you have to explain
-> this file cold.
 
 ---
 

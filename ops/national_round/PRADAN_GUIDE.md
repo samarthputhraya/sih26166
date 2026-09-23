@@ -1,8 +1,7 @@
 # PRADAN guide — getting TMC-2, IIRS and SAC's own OHRC products
 
 Checked against the live site on 18 Sep 2026: the registration form, the FAQ, the contacts page,
-and the TMC-2 and OHRC data-product user guides. **Deadline: if the data is not on disk by
-Tue 22 Sep evening, drop this. Nothing else depends on it.**
+and the TMC-2 and OHRC data-product user guides.
 
 ## 1. Register (about 10 minutes)
 
@@ -26,7 +25,7 @@ Tue 22 Sep evening, drop this. Nothing else depends on it.**
    The form does not ask for an ID card or a bonafide certificate.
 4. Submit, then open the verification email and click the link. If the download pages still say
    you have no access after logging in, write to the site administrator: **issdc[at]istrac.gov.in**.
-   Use only that address; don't email the payload scientists about the hackathon.
+   Use only that address.
 
 ## 2. Finding data (two ways in)
 

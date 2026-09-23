@@ -7,8 +7,8 @@ executes the script the way the server does.
 
 Nothing here runs the real pipeline. Clicking Align would cost ~15 s and needs the
 LoFTR weights and the image data, neither of which is in git. The full flow is
-verified by hand before each gate - see the manual procedure in
-`.claude/agents/demo-medic.md`. What is pinned here is everything that can break
+verified by hand before each gate, from the team's manual demo checklist.
+What is pinned here is everything that can break
 WITHOUT anyone noticing: first render, the honesty rules, and the no-network rule.
 """
 import pathlib
@@ -115,7 +115,7 @@ def test_no_nested_buttons():
     the whole script on every interaction, so the outer button is False on the
     re-run that would draw the inner one. State must live in st.session_state.
 
-    Recorded in .claude/agents/demo-medic.md as a known killer.
+    Recorded in the team's demo checklist as a known killer.
     """
     depth_of_button_if = None
     for line in SOURCE.splitlines():

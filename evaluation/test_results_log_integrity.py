@@ -5,7 +5,7 @@ until it exists in this file. The rule that makes the file worth trusting is tha
 rows are only ever ADDED - including the rows that make the project look worse.
 A row that can be quietly edited or removed is not evidence, it is a claim.
 
-`CLAUDE.md` tells an auditor to verify this with:
+An auditor can verify this with:
 
     git log -p evaluation/results_log.csv
 
@@ -38,8 +38,8 @@ LOG = ROOT / "evaluation" / "results_log.csv"
 # the real log and the next commit to touch the file cleaned it up.
 #
 # No MEASURED result has ever been removed from this file. That is the sentence
-# to say out loud; "nothing has ever been deleted" is not, and a judge running
-# the command in CLAUDE.md would find this in seconds.
+# to say out loud; "nothing has ever been deleted" is not, and anyone running
+# `git log -p` on this file would find this in seconds.
 #
 # It is NOT re-added: re-adding it would itself be an edit, and would put a row
 # that looks like a failed run back into a file people read as measurements.

@@ -4,7 +4,7 @@ Resample two images to a common ground sample distance.
     from core.scale import to_common_gsd
     a, b, gsd, factors = to_common_gsd(img_a, meta_a, img_b, meta_b)
 
-This is a REQUIRED step, not an optimisation (00_CANONICAL_FACTS.md Sec.6.5).
+This is a REQUIRED step, not an optimisation.
 Our real GSD ratios are 18x (OHRC to TMC-2), 36x (OHRC to Kaguya TC) and 285x
 (OHRC to IIRS). LoFTR is not reliably invariant past roughly 4-8x on its own, so
 without this step the large-ratio pairs simply do not match, and that failure

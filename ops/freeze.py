@@ -29,7 +29,7 @@ exact command that produced it:
             matches under the current trust layer, rebuilds the truth, re-scores every method.
             Matching itself (LoFTR, SIFT/ORB/AKAZE, ~50 s a pair, ~4.5 h) is not redone: --plan
             checks that the matching code has not changed since those matches were made.
-  viewpoint the synthetic tilt sweep, without and with relief parallax (ops/specs/day_21.md).
+  viewpoint the synthetic tilt sweep, without and with relief parallax.
   calib     the synthetic trust calibration, 40 pairs x 8 sun deltas (fig2).
   gate2     the synthetic sun sweep, ours and the classical baselines (fig1). Neither fig1 nor
             fig2 is in the v2 deck; skip with `--skip gate2 calib` when short of time.

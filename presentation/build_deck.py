@@ -131,7 +131,7 @@ TITLE_FONT = "Times New Roman"             # the template's own slide-title face
 TEAM_ID = "SNPSU0192"
 TEAM_NAME = "LunaXX"
 
-# The idea title, as typed into the portal's "idea title" field (SUBMISSION_FIELDS.md, long
+# The idea title, as typed into the portal's "idea title" field (the long
 # form, first clause). Slide 1 and slide 2 both carry it, so the PDF and the portal agree.
 IDEA_TITLE = "Lunar Image Registration That Knows When It Is Wrong"
 IDEA_TITLE_LINES = ("Lunar Image Registration", "That Knows When It Is Wrong")

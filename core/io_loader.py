@@ -31,7 +31,7 @@ call that did not exist (`pip install magsac`, `cv2.AKAZE_create`).
    turned off without reinstalling Windows - a one-way door, so we do not.
    The .tif branch therefore uses tifffile for tags and, when tifffile has no
    codec, Pillow for pixels. What this genuinely costs us is /vsicurl: the plan
-   in 00_CANONICAL_FACTS.md Sec.3 to read Kaguya COGs over HTTP with
+   to read Kaguya COGs over HTTP with
    rasterio.open() is dead, and Kaguya has to be downloaded like everything else.
 
 3. imagecodecs IS NOT INSTALLED, which is a sharper blocker than rasterio.
@@ -46,7 +46,7 @@ call that did not exist (`pip install magsac`, `cv2.AKAZE_create`).
    a mission or geometry dictionary that keeps its own. So we never hardcode an
    XPath. We search every element by LOWERCASED LOCAL TAG NAME against a list of
    candidates and return None when absent. A missing angle must read as None,
-   never as a fabricated number - see Invariant 1 in CLAUDE.md.
+   never as a fabricated number: no figure without a source.
    `dump_label(path)` prints every leaf of a real label so that on Day 2 the true
    names are read off in one command instead of guessed.
 

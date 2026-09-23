@@ -4,7 +4,7 @@ Outlier rejection with MAGSAC++.
     from core.ransac import filter_matches
     src_in, ref_in, H, mask = filter_matches(src_pts, ref_pts)
 
-Locked decision (00_CANONICAL_FACTS.md Sec.6.3): `cv2.USAC_MAGSAC`, built into
+Locked decision: `cv2.USAC_MAGSAC`, built into
 OpenCV, nothing to install. **`pip install magsac` does not exist** - that claim
 was in an earlier draft of our own docs and cost real time. If you ever need a
 standalone binding it is `pymagsac`, but OpenCV's is fine and is what we use.

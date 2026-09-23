@@ -212,9 +212,8 @@ whether each logged row was measured at it. The real-pair rows were measured at 
 | `baselines/` | SIFT, ORB and AKAZE, and their sweeps |
 | `app/` | `streamlit_app.py` (the demo) and `change_detection.py`, gated by the trust map |
 | `web/` | the Mission Console: one self-contained page over the logged evidence, plus a local server with a live upload bay |
-| `ops/` | pair cutting, runners, the freeze, the report generator, and the team's working notes and audits |
-| `presentation/` | the pitch deck's builder (`build_deck.py`), its figures, and the numbers audit |
-| `docs/` | definitions (`00_CANONICAL_FACTS.md`) and the team's module guides |
+| `ops/` | pair cutting, runners, the evidence freeze, the report generator, and the PRADAN data guide (`ops/national_round/PRADAN_GUIDE.md`) |
+| `presentation/` | the pitch deck's builder (`build_deck.py`) and its figures (`make_figures.py`) |
 
 ## References
 

@@ -3,7 +3,7 @@
 WHY THIS EXISTS
 ---------------
 Our demo site is at latitude -74. `SLDEM2015` — which Canonical Facts SS2 names as the Tier D
-source and which `ROHAN_DATA_GUIDE.md` Day 4 schedules — **only covers +/-60 degrees**. It does not
+source and which the college-round Day 4 plan scheduled — **only covers +/-60 degrees**. It does not
 reach our site. Verified 1 Sep 2026: the southernmost tile in
 `.../sldem2015/tiles/float_img/` is `sldem2015_256_60s_0s_*`.
 

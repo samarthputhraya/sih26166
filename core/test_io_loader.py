@@ -4,7 +4,7 @@
 no tests at all. Day 4 schedules a refactor of it. These exist to be written BEFORE that
 refactor, not after, so the refactor has something to be safe against.
 
-Each test locks a trap that is already recorded in ops/STATUS.md "Known issues", and names it.
+Each test locks a trap that is already recorded in the team's known-issues list, and names it.
 A test here failing does not mean "tidy the assertion" - it means a documented silent-corruption
 bug has come back.
 """

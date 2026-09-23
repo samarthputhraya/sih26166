@@ -3,7 +3,7 @@ The registration pipeline, end to end. This module IS Gate 1.
 
     python -m core.pipeline data/pairs/pair_01
 
-Gate 1 (Day 5, 00_CANONICAL_FACTS.md Sec.11), verbatim: *"runs end to end on a
+Gate 1 (Day 5 of the college round), verbatim: *"runs end to end on a
 real lunar pair, no manual steps, prints all five metrics"*.
 
     load -> to_common_gsd -> illumination -> match -> RANSAC -> warp -> metrics

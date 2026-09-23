@@ -22,7 +22,7 @@ Takes about 20 seconds and writes **two** files:
 | File | What it is | Open it how |
 |---|---|---|
 | `dist/index.html` | a complete HTML document | **this is the one you open by hand** — double-click it, or serve `dist/` with any static server |
-| `dist/mission-console.html` | a **fragment**: no doctype, no `<meta charset>`, no viewport | only for publishing as a Claude Artifact, which supplies the document around it |
+| `dist/mission-console.html` | a **fragment**: no doctype, no `<meta charset>`, no viewport | only for embedding in a host page that supplies the document around it |
 
 **Open the fragment directly and it is visibly wrong**, which is why `index.html` exists. Chrome
 falls into quirks mode, decodes the file as windows-1252 (60 mojibake sequences — `SIH26166 Â·
@@ -46,12 +46,7 @@ Neither output is committed — `web/dist/` is gitignored. The **source** is wha
 If the build says `template must contain '/*__DATA__*/null' exactly once`, you deleted the marker.
 Put it back.
 
-## 2. Publish it
-
-The live link is a Claude Artifact. Republishing the same file keeps the same URL. It is
-**private by default** — a judge cannot open it until you share it from the page's Share menu.
-
-## 3. Change which pairs it shows
+## 2. Change which pairs it shows
 
 This is the main thing you will want to do. The roster is one list at the bottom of
 `web/build_console.py`:
@@ -87,7 +82,7 @@ python -m web.build_console
 The cache stores the exact dict `run_all()` returned, so the page shows the real pipeline output,
 not a re-render.
 
-## 4. Check it is working as intended
+## 3. Check it is working as intended
 
 The console can only be wrong in two ways: it can show the wrong number, or it can show the wrong
 image. Both are checkable.
@@ -123,7 +118,7 @@ python -m web.build_console           # prints the row counts it found
 The build prints its own tallies (windows, tiles, cell counts, verdicts). If a count changes
 without you changing the evidence, something is wrong.
 
-## 5. What each bay proves
+## 4. What each bay proves
 
 | Bay | The question it answers | Where the numbers live |
 |---|---|---|
@@ -135,7 +130,7 @@ without you changing the evidence, something is wrong.
 | **RESULTS** | What does it register, and how well? | `REPORT.md`, one section per row |
 | **REFUSALS** | What does it decline, and did it say so itself? | `REPORT.md`, one section per row |
 
-## 6. What runs where
+## 5. What runs where
 
 The browser draws; it never registers. LoFTR, sub-pixel refinement and MAGSAC++ are Python, and no
 page can run them. So there are two deployments of the one built file:
@@ -156,7 +151,7 @@ streamlit run app/streamlit_app.py
 
 ---
 
-## 7. The live server — register a pair someone hands you
+## 6. The live server — register a pair someone hands you
 
 ```
 python -m web.build_console        # once, if the page is not built
@@ -187,11 +182,11 @@ panel says so when it happens rather than hiding the assumption.
 **Verified end to end (20 Sep):** uploading `site_ohrc_m1153871873le_w02` through the API returned
 `agrees`, **5,112 matches** and **56 / 64 verified cells**. The frozen log for that same pair says
 `agrees`, **5,112 matches**, **56 verified**. Inlier counts differ by about 1 % run to run
-(4,630 vs 4,680) because MAGSAC++ samples randomly — say that before a judge notices it.
+(4,630 vs 4,680) because MAGSAC++ samples randomly — say that before anyone else notices it.
 
 ### Hand it something it cannot take
 
-Three things a judge will try, and what they now get. All three were driven through the browser's
+Three things a reviewer will try, and what they now get. All three were driven through the browser's
 own file inputs on 20 Sep, not through curl.
 
 | They do this | What happens |

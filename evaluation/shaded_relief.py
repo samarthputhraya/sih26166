@@ -33,8 +33,8 @@ between the render and the photograph (-0.57), and diagnosed on Day 5 as "the
 terrain is lit from az+180". That diagnosis was itself only half right - a
 reflection, not a rotation - and the remaining ~15 deg that the Day-5 azimuth
 sweep could not explain turned out to be the map projection's meridian
-convergence, not a rendering error. Both are written up in
-`ops/specs/TIER_D_FINDINGS_DAY5.md` and `ops/PHASE0_RESEARCH_DAY5.md`.
+convergence, not a rendering error. Both were written up in the team's Day-5
+notes.
 
 `evaluation/test_shaded_relief.py` pins the convention with a hill and a crater:
 a sun from the top must light a hill's top flank and a crater's BOTTOM wall.
