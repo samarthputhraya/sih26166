@@ -92,14 +92,12 @@ IIRS matched through TMC-2 at an intermediate scale rather than straight onto TC
 ## How it works
 
 ```mermaid
-flowchart LR
-    A["Input pair<br/>Chandrayaan-2 image<br/>+ lunar reference"] --> B["Common ground scale"]
-    B --> C["Illumination<br/>gradient orientation"]
-    C --> D["LoFTR matching<br/>CPU, tiled"]
-    D --> E["Sub-pixel NCC<br/>refinement"]
-    E --> F["MAGSAC++<br/>homography"]
-    F --> G["8×8 coverage<br/>check"]
-    G --> H{"Independent area check<br/>8×8 cells · never reads<br/>a match position"}
+flowchart TD
+    subgraph R["Registration: standard steps"]
+        direction LR
+        A["Input pair"] --> B["One ground<br/>scale"] --> C["Lighting to<br/>gradient orientation"] --> D["LoFTR<br/>on CPU"] --> E["Sub-pixel<br/>NCC"] --> F["MAGSAC++<br/>homography"] --> G["8×8 coverage<br/>check"]
+    end
+    R --> H{"Independent area check (ours)<br/>8×8 cells · never reads a match position"}
     H -- agrees --> I["Registered GeoTIFF<br/>+ trust map"]
     H -- unconfirmed --> J["Kept and labelled,<br/>not certified"]
     H -- contradicted --> K["Matcher refused:<br/>phase-correlation fallback,<br/>uncertainty in metres"]
