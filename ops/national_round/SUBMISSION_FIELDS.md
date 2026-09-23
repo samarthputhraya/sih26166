@@ -28,13 +28,17 @@ day, cut that clause rather than shipping a link a judge cannot open.
 
 ## Idea title
 
-Long (107 characters):
+Not "Sun-, scale- and sensor-robust" (v9 claim-check M8, 23 Sep): OHRC → TMC-2 at 120° and
+TC → IIRS are refused and 0 of 12 sweep windows at 60–120° are accepted; slide 4 says so. The
+first clause is the deck's title on slides 1 and 2.
 
-> Lunar image registration that knows when it is wrong: Sun-, scale- and sensor-robust Chandrayaan-2 matching
+Long (105 characters):
 
-Short (71 characters):
+> Lunar image registration that knows when it is wrong: Chandrayaan-2 matching across Sun, scale and sensor
 
-> Trust-aware Sun-, scale- and sensor-robust Chandrayaan-2 image matching
+Short (69 characters):
+
+> Trust-aware Chandrayaan-2 image matching across Sun, scale and sensor
 
 ## Idea description
 

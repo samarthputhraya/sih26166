@@ -31,8 +31,10 @@ DECK = HERE / "SIH26166_LunaXX_deck.pptx"
 PDF = DECK.with_suffix(".pdf")
 POWERPNT = r"C:\Program Files\Microsoft Office\root\Office16\POWERPNT.EXE"
 FOOTER_TOP_IN = 6.95                      # the template's footer bar starts here (build_deck)
-TITLES = ("TITLE PAGE", "IDEA TITLE", "TECHNICAL APPROACH", "FEASIBILITY AND VIABILITY",
-          "IMPACT AND BENEFITS", "RESEARCH")
+# Page 1 and 2 carry the idea title since v9 (23 Sep): "TITLE PAGE" and "IDEA TITLE" were the
+# template's placeholders for it, and build_deck's audit now bans both strings.
+TITLES = ("Knows When It Is Wrong", "Knows When It Is Wrong", "TECHNICAL APPROACH",
+          "FEASIBILITY AND VIABILITY", "IMPACT AND BENEFITS", "RESEARCH")
 
 PS = r"""
 $ErrorActionPreference = 'Stop'
