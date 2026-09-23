@@ -1,4 +1,4 @@
-# STATUS — 23 September 2026. National round, solo push.
+# STATUS — 23 September 2026, midday. National round, solo push - submitting today.
 
 > Rewritten in full at the end of every session. Previous STATUS is in git history.
 > The venv is `C:\Users\samar\venvs\sih26166`; call its `python.exe` directly (bare `python` has no numpy).
@@ -10,20 +10,15 @@
 ## Position
 
 ```
-Wed 23 Sep        |  submit Sun 27 Sep (4 days)  |  portal closes Tue 30 Sep
-Evidence cut-off  Thu 24 Sep 18:00     <- the only hard deadline with work behind it, TOMORROW
-Deck/portal final Fri 25 Sep 22:00
-Read PDF cold     Sat 26 Sep
-Submit            Sun 27 Sep
+Wed 23 Sep        |  SUBMITTING TODAY (Samartha's call, 23 Sep)  |  portal closes Tue 30 Sep
+TMC-2 closer-Sun pass: CLOSED - the pass does not cover SAC's frame (below)
 ```
 
-**The submission is DONE and sitting on disk.** Deck v8 PDF, portal text, evidence frozen, all
-committed and pushed. The repository is public and slide 6 carries its URL. Nothing is
-half-finished. Everything from here is either the TMC-2 decision below (deadline: tomorrow) or
-optional upside.
+**Deck v9 is final and on disk**: `presentation/SIH26166_LunaXX_deck.pdf`, 1,143,265 bytes,
+sha256 `e1786a39…`, `AUDIT: clean`, `PDF CHECK: clean`, claim-checked (4 HIGH / 9 MEDIUM / 8 LOW,
+all applied, 0 fabricated numbers). What remains is Samartha at the portal - it needs Samartha's login.
 
-The old college-round gates (Days 5, 8, 10, 11, 12) are all past and do not apply. The national
-round has cut-offs, not gates — the four dates above are all of them.
+The old college-round gates (Days 5, 8, 10, 11, 12) are all past and do not apply.
 
 ## Read this first
 
@@ -37,19 +32,21 @@ round has cut-offs, not gates — the four dates above are all of them.
    diff against the frozen render is the header timestamp and one new table, no logged number
    changed. `ops/trust_real_calibration.py` is still 0 behavioural lines (comments only).
 
-2. **Deck is v8**, commit `f876759`. `AUDIT: clean`, `PDF CHECK: clean`, 6 pages,
-   **1,090,972 bytes**, sha256 `ae571678…`. This is the file for the portal:
-   `presentation/SIH26166_LunaXX_deck.pdf`.
-
-   The full arc, v4→v8, so nobody re-litigates it: v4/v5 were correct and read like a lab
-   report. v6 was a pitch rewrite — same figures, argument reshaped, thesis moved to the front.
-   Two claim-check passes (v6→v7, v7→v8) each found real defects and both were fixed the same
-   night; nothing shipped uncorrected. The last fix (v8) restored a "160 windows / 8 pairings"
-   line that had been accidentally dropped from every slide, and upgraded the OHRC→TMC-2 bullet
-   from an argument-by-construction to a measured one: **0.13–0.96 px per axis in-sample on
-   6–7 inliers, 0% of held-out matches within 3 px, on all four windows** — the exact regime
-   the strongest visible competitor's own README admits it ships (in-sample only, no held-out
-   validation possible). That is now the headline of slide 4's hardest bullet, not a caveat.
+2. **Deck is v9** (23 Sep, `f26535a` + the STATUS commit). The template-and-visuals pass:
+   32 idea decks on the 2024/25 template were rendered and read first (only 3 are verifiable
+   national winners - Cannon Crew 2024, ExpertChain 2024, Ourobonics 2025; the "winning PPTs"
+   repos mislabel the rest). So: the idea title replaces "TITLE PAGE" and "IDEA TITLE"; the grey
+   pointer prompts are gone and every pointer is a heading tab in the template's words
+   (`_check_pointers` proves it); the blue footer bar stays; prose became native-shape diagrams,
+   KPI tiles, a PS scorecard, a risk -> strategy map, benefit cards, numbered references and a QR
+   code (decodes to the repo URL - checked with OpenCV on the exported PDF).
+   **The v9 claim-check found one sentence false since v8** and it is fixed: "at 5 m, 105 of 120
+   trials still say good" - 79 of those are `unconfirmed`; now "refuses 0 of 120 at 3 m, only 15
+   of 120 at 5 m". Full list: `presentation/DECK_V2_DRAFT.md`, v9 block.
+   The portal idea title changed with it (`SUBMISSION_FIELDS.md`): no "Sun-, scale- and
+   sensor-robust" - slide 4 shows where that is not true.
+   The preview renderer used to iterate on layout without PowerPoint lives only in this
+   session's scratchpad (`preview.py`); the PowerPoint print is still the only real check.
 
    **Exporting the PDF needs PyMuPDF on `PYTHONPATH`** — deliberately not in the demo venv
    (`presentation/export_pdf.py` docstring). What works, first try:
@@ -82,47 +79,39 @@ round has cut-offs, not gates — the four dates above are all of them.
 
 ## In flight — resume here
 
-**Nothing is running.** No server, no background job, no PowerPoint process. Working tree clean,
-pushed to `origin/main` at `f876759`.
+**Nothing is running.** Tree clean, pushed.
 
-**The first thing to pick up is the TMC-2 decision below — it is now urgent, not optional.**
-"Decide by Wed 23 Sep" was today. It is still undecided: `C:\Users\samar\sih26166_data\calibrated\`
-has no `20251107` folder, confirmed by listing it tonight. The evidence cut-off is **tomorrow**,
-Thu 24 Sep 18:00. If the download does not start early tomorrow there will not be time for the
-full chain (cut → run → freeze → re-read every deck row → rebuild → re-export → claim-check),
-which the last session measured at about two hours once the download is in hand.
+**The TMC-2 closer-Sun pass is closed - it cannot be run.** Downloaded 23 Sep
+(`<data>/pradan/tmc2/…/20251107/`, zip kept beside the 20250707 ones): the 22:05 strip
+`ch2_tmc_ncn_20251107T2205342105` spans 24.38-25.00 °E at SAC's latitudes; SAC's OHRC frame is
+25.13-25.25 °E - **a ~4 km miss**, from the product's own geometry grid, and PRADAN's footprint
+catalogue (`TMC2_ShapeFiles`, s1-s14, to 2 Jul 2026) agrees. `cut_pradan_pairs` wrote 0 pairs
+("window not covered"). The catalogue has no calibrated pass over SAC's frame with the Sun closer
+than 20250707 (the only other one, 20200203, covers half the frame with the Sun farther), and no
+TMC-2 pass over the 74 °S site at all. The 19-20 Sep claim that 20251107 "covers the frame fully"
+was wrong. Q&A answer: *the 120° pass is the closest-Sun TMC-2 coverage of that frame in the
+archive; we checked the next candidate and it misses by 4 km.*
 
 ## Samartha — what is actually left
 
-1. **TMC-2 closer-Sun pass — decide and start TOMORROW MORNING, not later.** Needs a PRADAN
-   login and a 0.6–0.9 GB download of `ch2_tmc_ncn_20251107T2205342105_d_img_d18.zip`
-   (calibrated nadir; PRADAN Table View, TMC-2, 2025-11-07). Commands are in
-   `ops/specs/day_24.md` under "The one measurable improvement left". It is the only pass over
-   SAC's frame with the Sun ~9° in azimuth from the OHRC's. **Either outcome is a publishable
-   result** — if it registers, slide 4's weakest line becomes a second success; if it refuses at
-   ~9° of Sun (much closer than the 120° pass already on the deck), that is a *stronger*
-   statement about the trust layer than anything currently on the slide. Not running it at all
-   is the only outcome that leaves the gap open. If the download or the chain does not finish
-   in time for the Thu 18:00 cut-off, do not force it — the deck as shipped (v8) is complete and
-   submittable without this.
+1. **Submit today** - `ops/national_round/SUBMISSION_FIELDS.md` has every field; the idea
+   title is its NEW long form (105 characters). Open the repo logged-out first (HTTP 200 at
+   11:40 today), upload `presentation/SIH26166_LunaXX_deck.pdf` (check its mtime is later than
+   the .pptx's), screenshot the confirmation, write the time into this file.
+   **Decide first: a LICENSE file.** The repository has none (`gh repo view`: licenseInfo null),
+   so v9 does not call our code open-source. Adding one (Apache-2.0 matches LoFTR) is Samartha's call;
+   if added, slide 5's cards may say "open-source" again.
 
 2. **Put `C:\sih26166_backup\` on a USB stick**, if not already done. `weights/`, `data/pairs/`,
    `demo_cache/` — gitignored, inside OneDrive, and the only unrecoverable thing in this
    project. Not verified from this session (it is a physical action).
 
-3. **Read the v8 PDF cold**, then portal: PS, title, description from `SUBMISSION_FIELDS.md`,
-   upload the PDF, screenshot the confirmation. **Open `github.com/samarthputhraya/sih26166` in
-   a private/logged-out window first** and confirm it loads — a dead link on slide 6 is worse
-   than no link. Verified reachable tonight (HTTP 200, logged-out).
-   - If the TMC-2 pass lands before Fri 25 Sep 22:00, the deck needs one more rebuild/export/
-     claim-check cycle before this step. If it doesn't land, skip straight to submitting v8.
-
-4. **Optional, in rough order of value:** rehearse the Mission Console and the v8 deck numbers
+3. **Optional, in rough order of value:** rehearse the Mission Console and the v9 deck numbers
    cold (nobody has yet, and the finale wants each module explained without notes); cut the
    video narration to fit the film, then voice it if a Gemini key arrives; a by-hand Gate 4 run
    through `app/streamlit_app.py`.
 
-5. **If a judge will browse the repo**, spend ten minutes on `ops/specs/` and `ops/audit/`. They
+4. **If a judge will browse the repo**, spend ten minutes on `ops/specs/` and `ops/audit/`. They
    are honest working notes addressed to teammates, not to a reviewer. Nothing in them is
    wrong; some of it is stale in a way that invites a question not worth spending time on
    (Known issue 15).
