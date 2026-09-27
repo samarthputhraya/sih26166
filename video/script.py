@@ -4,15 +4,15 @@ Every figure spoken or shown is one the claim-checked deck v10 already carries, 
 at the freeze commit 7dd4e5b. Live runs on screen are live: the narration never quotes their
 counts, only what the evidence logs hold.
 
-`say` is what the voice reads (spelled for the speech engine); `cap` is the caption on screen.
+`say` is what the voice reads (spelled for the speech engine); `cap` is the caption on screen;
+`style` is an optional delivery note for that line, never read aloud.
 `scene` names the picture in film.html that plays under the line.
 """
 
-VOICE = "en-US-AndrewMultilingualNeural"      # Microsoft neural voice: warm, confident, unhurried
-RATE = "-1%"                                  # a touch slower than default: judges read along
+# The voice itself (Gemini 2.5 Pro TTS, Charon, Indian English) is set in voice.py.
 
 BEATS = [
-    dict(scene="hook",
+    dict(scene="hook", style="quietly intriguing, as if opening a story",
          cap="On the Moon, the ground never moves. The shadows do. Under a different Sun, the same "
              "crater can look like a different place.",
          say="On the Moon, the ground never moves. The shadows do. Under a different Sun, the same "
@@ -43,7 +43,7 @@ BEATS = [
              "place.",
          say="If the pixels disagree with the matcher, the answer is refused, and a declared "
              "fallback takes its place."),
-    dict(scene="live-accept",
+    dict(scene="live-accept", style="a little lift on the word Accepted",
          cap="Here it is, live. Chandrayaan-2's OHRC against NASA's LRO camera, Suns 174° apart, "
              "so every shadow is reversed. Accepted, and the map shows where it holds.",
          say="Here it is, running live. Chandrayaan 2's O-H-R-C against NASA's L-R-O camera, "
@@ -83,7 +83,7 @@ BEATS = [
              "apart refused 4 of 4.",
          say="And it tells you what it cannot do. Near infrared: refused, three of three. T-M-C 2, "
              "with the Suns a hundred and twenty degrees apart: refused, four of four."),
-    dict(scene="close",
+    dict(scene="close", style="warm and assured, a confident close",
          cap="LunaXX. Offline, on a laptop, open source. Lunar image registration that knows when "
              "it is wrong.",
          say="Luna Double X. Offline, on a laptop, and open source. Lunar image registration... "
