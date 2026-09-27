@@ -59,7 +59,7 @@ SKELETON = """<!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="dark">
-<meta name="description" content="Chandrayaan-2 image registration across Sun angle, scale and sensor, with an independent area check that never sees the matches and a verdict for every region of every result. Team LunaXX, SIH 2026 problem statement SIH26166.">
+<meta name="description" content="Chandrayaan-2 image registration across Sun angle, scale and sensor, with an independent area check that never sees the matches and a verdict region by region. Team LunaXX, SIH 2026 problem statement SIH26166.">
 <style>
   :root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
   body{margin:0;font:14px system-ui,-apple-system,sans-serif;background:#faf9f7}

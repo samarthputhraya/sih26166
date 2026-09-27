@@ -102,7 +102,7 @@ def trust(pid, label, sub, tag, plain):
 # SAME SENSOR, and only visible-to-infrared or optical-to-elevation is MULTI-MODAL.
 ROSTER = [
     ("sac_ohrc_nac_w06", "Chandrayaan-2 OHRC \u2192 LRO NAC", "SAC's own published benchmark pair. Sun azimuths 174\u00b0 apart, so every shadow points the opposite way.", "CROSS-SENSOR",
-     "The hardest lighting there is, and it holds. Two different cameras on two different missions, photographed under opposite Suns, and the matches and the pixels independently agree on the same alignment."),
+     "Suns 174° apart, and it holds. Two different cameras on two different missions, photographed under opposite Suns, and the matches and the pixels independently agree on the same alignment."),
     ("sac_polar_ohrc_nac_w06", "Chandrayaan-2 OHRC \u2192 LRO NAC, polar", "SAC's polar pair at 62\u00a0\u00b0S. Sun azimuths 132\u00b0 apart, long shadows over steep ground.", "CROSS-SENSOR",
      "Four of the six windows on this pair were accepted. This is one of the two that were not. Nothing about the picture tells you that \u2014 the area check did, and the window was flagged rather than shipped."),
     ("site_m1153871873le_m1363141432re_w01_t", "LRO NAC \u2192 LRO NAC", "One instrument against itself at 74\u00a0\u00b0S. A pure Sun-angle test, and deliberately not a cross-sensor one.", "SAME SENSOR",

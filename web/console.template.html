@@ -248,8 +248,8 @@ footer{border-top:1px solid var(--rule);margin-top:clamp(30px,5vw,60px);padding-
 <main class="wrap">
   <section class="open">
     <h1>Lunar registration that knows when it is <em>wrong</em></h1>
-    <p>Chandrayaan-2 images aligned to lunar references across Sun angle, scale and sensor, with a verdict for every region of every result. The verdict comes from an independent area check that never sees the matches.</p>
-    <p class="what"><b>What this console is.</b> <span id="whatmode">An instrument panel over results already produced and frozen.</span> The engine is Python — LoFTR, sub-pixel refinement and MAGSAC++ — and it runs on a CPU laptop with the network off, which a browser cannot do. Every figure, image and cell on this page was read back from the evidence logs, whose rows were measured at the freeze commit <span id="fz2"></span> — the same commit the submitted deck quotes. Nothing here is drawn by hand or filled with example data.</p>
+    <p>Chandrayaan-2 images aligned to lunar references across Sun angle, scale and sensor, with a verdict region by region. The verdict comes from an independent area check that never sees the matches.</p>
+    <p class="what"><b>What this console is.</b> <span id="whatmode">An instrument panel over results already produced and frozen.</span> The engine is Python — LoFTR, sub-pixel refinement and MAGSAC++ — and it runs on a CPU laptop with the network off, which a browser cannot do. Every figure, image and cell on this page is read back from the evidence logs, whose rows were measured at the freeze commit <span id="fz2"></span> — the same commit the submitted deck quotes — or, for the per-pair panels, from the pipeline's own saved run of that pair. The two can differ by a few inliers, because MAGSAC++ samples at random; the verdicts do not. Nothing here is drawn by hand or filled with example data.</p>
     <div class="tele" id="tele"></div>
   </section>
 
@@ -297,7 +297,7 @@ footer{border-top:1px solid var(--rule);margin-top:clamp(30px,5vw,60px);padding-
       </div>
       <div class="stack">
         <div class="verdict" id="lverdict"><b style="color:var(--dim)">AWAITING A PAIR</b><span>The result appears here, drawn by the same renderer the frozen pairs use, so a live panel and a frozen panel cannot disagree about what a verdict means.</span></div>
-        <div class="gloss" id="lgloss">A judge's fair question is whether these results are real or replayed. This is the answer: hand it two images and watch the verdict be computed in front of you. If the matcher fails on your pair, the area check should say so &mdash; that outcome is a pass, not a bug.</div>
+        <div class="gloss" id="lgloss">A fair question is whether these results are real or replayed. This is the answer: hand it two images and watch the verdict be computed in front of you. If the matcher fails on your pair, the area check should say so &mdash; that outcome is a pass, not a bug.</div>
         <div class="io" id="lio" hidden></div>
       </div>
     </div>
@@ -368,7 +368,7 @@ footer{border-top:1px solid var(--rule);margin-top:clamp(30px,5vw,60px);padding-
         <p class="lede">We shift the true transform by a known distance and plant matches that agree with the <em>wrong</em> answer perfectly, so nothing the matcher reports can reveal it. Then we ask the area check. At 0 m it must stay silent: <strong>0 of 44 and 0 of 16 false alarms</strong>. From 5 m it flags every one on the near-Sun windows. Below 3 m it sees almost nothing, and that floor is the honest limit of the method.</p>
         <div class="meter" id="m1"></div>
         <div class="meter" id="m2"></div>
-        <p class="note">Rotation and scale are caught cell by cell, not by the frame verdict. A rotation about the centre leaves the centre still and moves the corners, so the frame can still say <em>agrees</em> while a corner is 3 px out. The 8×8 map is what carries it. The second meter is the control: the map is not simply refusing everything.</p>
+        <p class="note">Rotation and scale are caught cell by cell, not by the frame verdict. A rotation about the centre leaves the centre still and moves the corners, so the frame can still say <em>agrees</em> while a corner is 3 m out: at 3 m it refuses 0 of 120 trials, at 5 m only 15 of 120. The 8×8 map is what carries it. The second meter is the control: the map is not simply refusing everything.</p>
       </div>
     </div>
   </section>
@@ -426,7 +426,7 @@ footer{border-top:1px solid var(--rule);margin-top:clamp(30px,5vw,60px);padding-
         <thead><tr><th>Pairing</th><th>What happened</th><th>Count</th></tr></thead>
         <tbody>
           <tr><td>Kaguya TC → MI 1548 nm <span class="tagk">MULTI-MODAL</span></td><td>Matcher refused on every window. The declared fallback lands 3.4 to 16.2 m from the visible-band registration of the same window (0.23 to 1.09 px on MI's 14.8 m grid).</td><td>3 / 3 refused</td></tr>
-          <tr><td>Kaguya TC → Chandrayaan-2 IIRS <span class="tagk">MULTI-MODAL</span></td><td>12× scale gap, 89 m grid. None registers.</td><td>10 / 11 refused</td></tr>
+          <tr><td>Kaguya TC → Chandrayaan-2 IIRS <span class="tagk">MULTI-MODAL</span></td><td>Near-infrared at 89 m per pixel, 12× coarser than TC. None registers.</td><td>10 / 11 refused</td></tr>
           <tr><td>OHRC → TMC-2 at SAC's site <span class="tagk">SAME MISSION</span></td><td>Two different cameras on one spacecraft. Sun azimuths 120° and incidence 59° apart.</td><td>4 / 4 refused</td></tr>
           <tr><td>OHRC → NAC, Sun azimuths 60° to 120° apart <span class="tagk">CROSS-SENSOR</span></td><td>The hard band of the real sweep. Nothing accepted, and nothing wrongly accepted.</td><td>0 / 12 accepted</td></tr>
           <tr><td>MiLOI NAC ↔ NAC, Sun vectors 90° or more apart <span class="tagk">SAME SENSOR</span></td><td>No method registered any of them: ours, SIFT, ORB or AKAZE. All in scene S3.</td><td>0 / 16 any method</td></tr>
