@@ -1,0 +1,643 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<title>LunaXX explainer</title>
+<style>
+@font-face{font-family:Jost;src:url(../web/fonts/jost-normal-latin.woff2) format("woff2");font-weight:100 900;font-style:normal}
+@font-face{font-family:Jost;src:url(../web/fonts/jost-italic-latin.woff2) format("woff2");font-weight:100 900;font-style:italic}
+:root{--night:#0e0e0d;--ground:#bab8b2;--white:#f4f4f1;--dim:#a9a9a3;--dim2:#6f6f69;--mag:#c2127a;--mag2:#ee5aa8}
+*{box-sizing:border-box}
+html,body{margin:0;width:1920px;height:1080px;overflow:hidden;background:#000}
+#stage{position:relative;width:1920px;height:1080px;overflow:hidden;background:var(--night);font-family:Jost,sans-serif;color:var(--white);-webkit-font-smoothing:antialiased}
+.scene{position:absolute;inset:0;overflow:hidden;visibility:hidden}
+.abs{position:absolute}
+.full{position:absolute;inset:0;width:100%;height:100%}
+.h1{font-weight:600;font-size:76px;line-height:1;letter-spacing:-.02em}
+.h2{font-weight:600;font-size:54px;line-height:1.05;letter-spacing:-.015em}
+.lab{font-size:28px;line-height:1.3;color:var(--dim)}
+.lab b{color:var(--white);font-weight:500}
+.big{font-weight:500;font-size:150px;line-height:.9;letter-spacing:-.03em}
+.panel{position:absolute;overflow:hidden;background:#000;outline:1px solid #3a3a37}
+.panel img,.panel canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.chip{position:absolute;padding:10px 20px;border:2px solid var(--white);font-size:26px;font-weight:500;white-space:nowrap;background:rgba(14,14,13,.72)}
+.hatch-mag{background:repeating-linear-gradient(-45deg,var(--mag) 0 5px,transparent 5px 13px)}
+#cap{position:absolute;left:0;right:0;bottom:0;height:190px;display:flex;align-items:flex-end;justify-content:center;padding:0 180px 46px;pointer-events:none;
+  background:linear-gradient(to bottom,rgba(0,0,0,0),rgba(0,0,0,.72) 58%);z-index:50}
+#cap span{font-size:38px;line-height:1.3;font-weight:450;text-align:center;color:#fff;text-shadow:0 2px 6px rgba(0,0,0,.8);max-width:1500px}
+#fade{position:absolute;inset:0;background:#000;z-index:60;opacity:0}
+</style></head>
+<body><div id="stage"><div id="cap"><span></span></div><div id="fade"></div></div>
+<script src="dist/data.js"></script>
+<script>
+"use strict";
+const ST = document.getElementById('stage');
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const prog = (t, a, b) => clamp((t - a) / (b - a));
+const eIO = p => p < .5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
+const eOut = p => 1 - Math.pow(1 - p, 3);
+const eBack = p => { const c = 1.5; return 1 + (c + 1) * Math.pow(p - 1, 3) + c * Math.pow(p - 1, 2); };
+const lerp = (a, b, p) => a + (b - a) * p;
+const mk = (tag, cls, parent, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; parent.appendChild(e); return e; };
+const put = (e, css) => { for (const k in css) e.style[k] = css[k]; return e; };
+const byId = id => D.maps.find(m => m.id === id);
+const lay = (m, k) => (m.layers.find(l => l.k === k) || {}).img;
+const loadImg = src => new Promise(res => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(i); i.src = src; });
+const wt = (W, re, fb = 0) => { const w = W.find(w => re.test(w.w)); return w ? w.t : fb; };
+const fmtN = n => n.toLocaleString('en-IN');
+const gsd = v => v >= 10 ? Math.round(v) + '' : v >= 1 ? v.toFixed(1).replace(/\.0$/, '') : v.toFixed(2);
+
+// ------------------------------------------------------------------ terrain (the site's hero)
+function u16(b64){ const s = atob(b64), a = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) a[i] = s.charCodeAt(i); return new Uint16Array(a.buffer); }
+const DEM = u16(D.dem.b64), DN = D.dem.n;
+class Terrain {
+  constructor(W, H, lines, o = {}){
+    this.W = W; this.H = H; const c = this.canvas = document.createElement('canvas'); c.width = W; c.height = H;
+    this.g = c.getContext('2d'); this.img = this.g.createImageData(W, H);
+    const Hf = this.Hf = new Float32Array(W * H), sc = DN / Math.max(W, H) * (o.zoom || 1), y0 = (DN - H * sc) / 2, x0 = (DN - W * sc) / 2;
+    const amp = (D.dem.hi - D.dem.lo) * Math.max(W, H) / (D.dem.km * 1000) * (o.relief || .55);
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++){
+      const fx = clamp(x0 + x * sc, 0, DN - 1.001), fy = clamp(y0 + y * sc, 0, DN - 1.001), ix = fx | 0, iy = fy | 0, tx = fx - ix, ty = fy - iy;
+      const a = DEM[iy*DN+ix], b = DEM[iy*DN+ix+1], cc = DEM[(iy+1)*DN+ix], d = DEM[(iy+1)*DN+ix+1];
+      Hf[y*W+x] = ((a*(1-tx) + b*tx)*(1-ty) + (cc*(1-tx) + d*tx)*ty) / 65535 * amp;
+    }
+    const rad = Math.max(1, Math.round(1 / sc / 2)), tmp = new Float32Array(W * H);
+    for (let pass = 0; pass < 2; pass++){
+      for (let y = 0; y < H; y++){ let acc = 0, n = 0; for (let x = -rad; x < W + rad; x++){
+        if (x + rad < W){ acc += Hf[y*W + x + rad]; n++; } if (x - rad - 1 >= 0){ acc -= Hf[y*W + x - rad - 1]; n--; } if (x >= 0 && x < W) tmp[y*W + x] = acc / n; } }
+      for (let x = 0; x < W; x++){ let acc = 0, n = 0; for (let y = -rad; y < H + rad; y++){
+        if (y + rad < H){ acc += tmp[(y + rad)*W + x]; n++; } if (y - rad - 1 >= 0){ acc -= tmp[(y - rad - 1)*W + x]; n--; } if (y >= 0 && y < H) Hf[y*W + x] = acc / n; } }
+    }
+    if (o.detail){
+      let seed = o.seed || 5; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+      const A = amp * o.detail;
+      const layer = (cell, wgt) => { const gw = Math.ceil(W / cell) + 2, gh = Math.ceil(H / cell) + 2, g = new Float32Array(gw * gh);
+        for (let i = 0; i < g.length; i++) g[i] = rnd() - .5;
+        for (let y = 0; y < H; y++){ const fy = y / cell, iy = fy | 0, ty = fy - iy, sy = ty * ty * (3 - 2 * ty);
+          for (let x = 0; x < W; x++){ const fx = x / cell, ix = fx | 0, tx = fx - ix, sx = tx * tx * (3 - 2 * tx);
+            const a = g[iy*gw+ix], b = g[iy*gw+ix+1], c = g[(iy+1)*gw+ix], d = g[(iy+1)*gw+ix+1];
+            Hf[y*W+x] += ((a*(1-sx) + b*sx)*(1-sy) + (c*(1-sx) + d*sx)*sy) * A * wgt; } } };
+      [[40, 1], [20, .55], [10, .3], [5, .16], [2.5, .08]].forEach(([c, w]) => layer(c, w));
+      // craters, many small and few large, as a bowl with a raised rim
+      const n = o.craters || 160;
+      for (let k = 0; k < n; k++){
+        const r = 2.5 + (o.rmax || 30) * Math.pow(rnd(), 3.4), cx = rnd() * W, cy = rnd() * H, depth = r * .3, R2 = r * 1.6;
+        for (let y = Math.max(0, cy - R2 | 0); y < Math.min(H, cy + R2 + 1); y++) for (let x = Math.max(0, cx - R2 | 0); x < Math.min(W, cx + R2 + 1); x++){
+          const d = Math.hypot(x - cx, y - cy) / r; if (d > 1.6) continue;
+          const h = d < 1 ? (d * d - 1) * depth + .22 * depth * Math.pow(d, 6) : .22 * depth * Math.exp(-Math.pow((d - 1) / .22, 2));
+          Hf[y*W+x] += h; }
+      }
+    }
+    let md = null;
+    if (lines){
+      const m = document.createElement('canvas'); m.width = W; m.height = H; const mg = m.getContext('2d');
+      let fs = 400; mg.font = `700 ${fs}px Jost`;
+      const widest = Math.max(...lines.map(l => mg.measureText(l).width));
+      fs = Math.min(fs * W * (o.textW || .7) / widest, H * (o.textH || .3));
+      mg.fillStyle = '#000'; mg.fillRect(0, 0, W, H);
+      mg.filter = `blur(${Math.max(.6, fs / 110)}px)`; mg.fillStyle = '#fff'; mg.textAlign = 'center'; mg.font = `700 ${fs}px Jost`;
+      const lh = fs * .98, top = H * (o.textY || .5) - lh * lines.length / 2;
+      lines.forEach((l, i) => mg.fillText(l, W / 2, top + fs * .8 + i * lh));
+      md = mg.getImageData(0, 0, W, H).data; this.fs = fs;
+    }
+    const LH = (this.fs || 0) * .075; let maxH = 0, seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    this.Alb = new Float32Array(W * H);
+    for (let i = 0; i < W * H; i++){ const t = md ? md[i*4] / 255 : 0; Hf[i] += t * LH; if (Hf[i] > maxH) maxH = Hf[i]; this.Alb[i] = .78 + (rnd() - .5) * .09 + t * .05; }
+    this.maxH = maxH;
+    const NX = this.NX = new Float32Array(W * H), NY = this.NY = new Float32Array(W * H), NZ = this.NZ = new Float32Array(W * H);
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++){ const i = y*W + x;
+      const dx = (Hf[y*W + Math.min(x+1, W-1)] - Hf[y*W + Math.max(x-1, 0)]) / 2, dy = (Hf[Math.min(y+1, H-1)*W + x] - Hf[Math.max(y-1, 0)*W + x]) / 2, n = Math.hypot(dx, dy, 1);
+      NX[i] = -dx / n; NY[i] = -dy / n; NZ[i] = 1 / n; }
+    this.Sh = new Float32Array(W * H); this.last = null;
+  }
+  render(az, el = 15){
+    const key = az.toFixed(2) + '/' + el; if (key === this.last) return; this.last = key;
+    const {W, H, Hf, NX, NY, NZ, Alb, Sh} = this, d = this.img.data;
+    const a = az * Math.PI / 180, e = el * Math.PI / 180;
+    const lx = Math.sin(a) * Math.cos(e), ly = -Math.cos(a) * Math.cos(e), lz = Math.sin(e);
+    const sx = Math.sin(a), sy = -Math.cos(a), rise = Math.tan(e), byCol = Math.abs(sx) >= Math.abs(sy);
+    const L = 1 / (byCol ? Math.abs(sx) : Math.abs(sy)), drop = rise * L, off = (byCol ? sy : sx) * L, sg = (byCol ? sx : sy) > 0 ? 1 : -1;
+    const shadeAt = (i, cast) => { const h = Hf[i]; Sh[i] = cast > h ? cast : h;
+      const lit = NX[i]*lx + NY[i]*ly + NZ[i]*lz, vis = clamp((h - cast) / .9 + .5);
+      const v = lit > 0 ? Math.min(1.35, lit * vis / lz * .52) : 0, c = Math.min(255, Math.pow(Alb[i] * v, .9) * 212 + 9);
+      d[i*4] = c; d[i*4+1] = c; d[i*4+2] = c * .985; d[i*4+3] = 255; };
+    if (byCol) for (let n = 0; n < W; n++){ const x = sg > 0 ? W - 1 - n : n, xu = x + sg, inside = xu >= 0 && xu < W;
+      for (let y = 0; y < H; y++){ let up = -1e9; if (inside){ const f = y + off; if (f >= 0 && f <= H - 1){ const iy = f | 0, t = f - iy, j = iy*W + xu; up = iy + 1 < H ? Sh[j]*(1-t) + Sh[j+W]*t : Sh[j]; } } shadeAt(y*W + x, up - drop); } }
+    else for (let n = 0; n < H; n++){ const y = sg > 0 ? H - 1 - n : n, yu = y + sg, inside = yu >= 0 && yu < H;
+      for (let x = 0; x < W; x++){ let up = -1e9; if (inside){ const f = x + off; if (f >= 0 && f <= W - 1){ const ix = f | 0, t = f - ix, j = yu*W + ix; up = ix + 1 < W ? Sh[j]*(1-t) + Sh[j+1]*t : Sh[j]; } } shadeAt(y*W + x, up - drop); } }
+    this.g.putImageData(this.img, 0, 0);
+  }
+}
+
+// ------------------------------------------------------------------ shared drawing
+function hatchPattern(ctx, colour, w = 3, gap = 11, alpha = 1){
+  const c = document.createElement('canvas'); c.width = c.height = gap; const g = c.getContext('2d');
+  g.strokeStyle = colour; g.globalAlpha = alpha; g.lineWidth = w;
+  for (let k = -1; k <= 1; k++){ g.beginPath(); g.moveTo(k * gap, gap); g.lineTo(k * gap + gap, 0); g.stroke(); }
+  return ctx.createPattern(c, 'repeat');
+}
+function stipplePattern(ctx, colour, step = 12, r = 1.8){
+  const c = document.createElement('canvas'); c.width = c.height = step; const g = c.getContext('2d');
+  g.fillStyle = colour; g.beginPath(); g.arc(step / 2, step / 2, r, 0, Math.PI * 2); g.fill();
+  return ctx.createPattern(c, 'repeat');
+}
+function cellsCanvas(size){ const c = document.createElement('canvas'); c.width = c.height = size; c.className = 'full'; return c; }
+// draw an 8x8 trust map: states resolved up to `upto` cells (fractional -> fade of the next one)
+function drawCells(ctx, size, cells, upto, o = {}){
+  ctx.clearRect(0, 0, size, size);
+  const s = size / 8, W = o.weak || (o._w = o._w || hatchPattern(ctx, 'rgba(255,255,255,.9)', 3, 13)),
+        N = o.none || (o._n = o._n || stipplePattern(ctx, 'rgba(255,255,255,.9)', 13, 2.1));
+  for (let i = 0; i < 64; i++){
+    const x = (i % 8) * s, y = Math.floor(i / 8) * s, a = clamp(upto - i);
+    if (a > 0){
+      const st = cells[i].s;
+      if (st !== 'verified'){ ctx.globalAlpha = a; ctx.fillStyle = st === 'weak' ? W : N; ctx.fillRect(x, y, s, s); }
+      else if (a < 1 && o.flash){ ctx.globalAlpha = (1 - a) * .55; ctx.fillStyle = '#fff'; ctx.fillRect(x, y, s, s); }
+      ctx.globalAlpha = 1;
+    }
+  }
+  ctx.strokeStyle = 'rgba(255,255,255,.38)'; ctx.lineWidth = 1.5;
+  for (let k = 1; k < 8; k++){ ctx.beginPath(); ctx.moveTo(k * s, 0); ctx.lineTo(k * s, size); ctx.moveTo(0, k * s); ctx.lineTo(size, k * s); ctx.stroke(); }
+  if (o.cursor !== undefined && o.cursor >= 0 && o.cursor < 64){
+    const i = o.cursor, x = (i % 8) * s, y = Math.floor(i / 8) * s;
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 5; ctx.strokeRect(x + 2.5, y + 2.5, s - 5, s - 5);
+  }
+}
+function logo(size){
+  return `<svg width="${size}" height="${size}" viewBox="0 0 22 22"><circle cx="11" cy="11" r="9.5" fill="#f4f4f1" stroke="#000" stroke-width="1"/><path d="M11 1.5a9.5 9.5 0 0 0 0 19c-3.2-2.4-4.6-5.8-4.6-9.5S7.8 3.9 11 1.5z" fill="#000"/></svg>`;
+}
+function dialSvg(az){
+  const a = az * Math.PI / 180, x = 27 + 19 * Math.sin(a), y = 27 - 19 * Math.cos(a);
+  let t = ''; for (let k = 0; k < 36; k++){ const b = k * Math.PI / 18, r1 = k % 9 ? 22.5 : 20.5; t += `M${27 + r1*Math.sin(b)} ${27 - r1*Math.cos(b)}L${27 + 24*Math.sin(b)} ${27 - 24*Math.cos(b)}`; }
+  return `<svg width="84" height="84" viewBox="0 0 54 54"><circle cx="27" cy="27" r="24" fill="none" stroke="#f4f4f1" stroke-width="1"/><path d="${t}" stroke="#f4f4f1" stroke-width=".8"/><text x="27" y="12" text-anchor="middle" font-size="7" fill="#f4f4f1" font-family="Jost">N</text><circle cx="${x}" cy="${y}" r="4.2" fill="#fff"/></svg>`;
+}
+
+// gradient-orientation glyphs of an image, on a coarse grid, for the illumination step
+async function glyphs(src, n = 34){
+  const im = await loadImg(src), S = 448, c = document.createElement('canvas'); c.width = c.height = S;
+  const g = c.getContext('2d'); g.drawImage(im, 0, 0, S, S); const d = g.getImageData(0, 0, S, S).data, L = new Float32Array(S * S);
+  for (let i = 0; i < S * S; i++) L[i] = d[i * 4];
+  const out = [], cs = S / n; let mx = 0;
+  for (let cy = 0; cy < n; cy++) for (let cx = 0; cx < n; cx++){
+    let gx = 0, gy = 0;
+    for (let y = Math.floor(cy * cs) + 1; y < Math.floor((cy + 1) * cs) - 1; y += 1) for (let x = Math.floor(cx * cs) + 1; x < Math.floor((cx + 1) * cs) - 1; x += 1){
+      const i = y * S + x, ax = L[i + 1] - L[i - 1], ay = L[i + S] - L[i - S];
+      // orientation doubled so opposite gradients (a reversed Sun) point the same way
+      const m = Math.hypot(ax, ay); if (m < 1) continue; const th = Math.atan2(ay, ax) * 2; gx += m * Math.cos(th); gy += m * Math.sin(th); }
+    const m = Math.hypot(gx, gy); if (m > mx) mx = m; out.push({x: (cx + .5) / n, y: (cy + .5) / n, a: Math.atan2(gy, gx) / 2, m});
+  }
+  out.forEach(o => { o.m /= mx; }); return out;
+}
+
+// ------------------------------------------------------------------ scenes
+const W06 = byId('sac_ohrc_nac_w06'), MI15 = byId('site_tc_morning_mi1548_w01'), TMC = byId('sac_ohrc_tmc_w01');
+const SCENES = {};
+
+SCENES.hook = {
+  async init(r){
+    const s = {};
+    s.tr = new Terrain(960, 540, null, {relief: .55, zoom: 1, detail: .045, craters: 120, rmax: 30, seed: 9});
+    s.tw = put(mk('div', 'full', r), {}); s.tw.appendChild(s.tr.canvas); put(s.tr.canvas, {width: '100%', height: '100%', position: 'absolute', inset: 0});
+    s.dial = put(mk('div', 'abs', r), {right: '44px', top: '38px', display: 'flex', alignItems: 'center', gap: '16px', fontSize: '26px', padding: '10px 22px 10px 12px', background: 'rgba(0,0,0,.62)'});
+    s.pair = put(mk('div', 'full', r), {background: 'var(--night)'});
+    const P = 600;
+    s.L = put(mk('div', 'panel', s.pair), {width: P + 'px', height: P + 'px', top: '150px'}); mk('img', '', s.L).src = lay(W06, 'warp');
+    s.R = put(mk('div', 'panel', s.pair), {width: P + 'px', height: P + 'px', top: '150px'}); mk('img', '', s.R).src = lay(W06, 'ref');
+    s.lL = put(mk('div', 'abs lab', s.pair, '<b>Chandrayaan-2 OHRC</b><br>Sun A'), {top: '772px'});
+    s.lR = put(mk('div', 'abs lab', s.pair, '<b>LRO NAC</b><br>Sun B, 174° away in azimuth'), {top: '772px'});
+    s.head = put(mk('div', 'abs h2', s.pair, 'Same crater. Two Suns.'), {left: '0', right: '0', top: '58px', textAlign: 'center'});
+    s.blinkLab = put(mk('div', 'abs lab', s.pair, 'Same ground, every shadow reversed'), {left: 0, right: 0, top: '790px', textAlign: 'center', fontSize: '30px'});
+    return s;
+  },
+  draw(s, t, dur, W){
+    const pairAt = wt(W, /^Under/, 4.8) - .5, blinkAt = wt(W, /^same/, 6.5) - .2;
+    const az = 55 + 200 * eIO(prog(t, 0, pairAt + 1.2));
+    s.tr.render(az, 13);
+    put(s.tw, {transform: `scale(${1.02 + .06 * prog(t, 0, pairAt + 1)})`});
+    s.dial.innerHTML = dialSvg(az) + `<span>Sun at ${Math.round(((az % 360) + 360) % 360)}°<br>13° above the horizon</span>`;
+    const pa = eOut(prog(t, pairAt, pairAt + .9)); put(s.pair, {opacity: pa});
+    const m = eIO(prog(t, blinkAt, blinkAt + 1.0)), P = 600, gapx = 80;
+    const lx = lerp(960 - P - gapx / 2, 960 - P / 2, m), rx = lerp(960 + gapx / 2, 960 - P / 2, m);
+    put(s.L, {left: lx - (1 - pa) * 70 + 'px'}); put(s.R, {left: rx + (1 - pa) * 70 + 'px'});
+    put(s.lL, {left: lx + 'px', opacity: 1 - m}); put(s.lR, {left: rx + 'px', opacity: 1 - m});
+    const blinkOn = t > blinkAt + 1.0 ? (Math.floor((t - blinkAt - 1.0) / .55) % 2 === 0) : true;
+    put(s.R, {opacity: m > 0 && m >= 1 ? (blinkOn ? 1 : 0) : 1, zIndex: 2});
+    put(s.blinkLab, {opacity: eOut(prog(t, blinkAt + .8, blinkAt + 1.4))});
+  }
+};
+
+SCENES.problem = {
+  async init(r){
+    const s = {};
+    s.head = put(mk('div', 'abs h2', r, 'Different cameras. Different scales. Different Suns.'), {left: 0, right: 0, top: '120px', textAlign: 'center'});
+    const cards = [
+      ['Chandrayaan-2 OHRC', lay(W06, 'src'), W06.a.gsd], ['LRO NAC', lay(W06, 'ref'), W06.b.gsd],
+      ['Chandrayaan-2 TMC-2', lay(TMC, 'ref'), TMC.b.gsd], ['Kaguya TC', lay(byId('site_tc_morning_mi749_w01'), 'src'), byId('site_tc_morning_mi749_w01').a.gsd],
+      ['Kaguya MI, 1548 nm', lay(MI15, 'ref'), MI15.b.gsd], ['Chandrayaan-2 IIRS', lay(byId('site_tc_ortho_iirs1000_w04'), 'ref'), byId('site_tc_ortho_iirs1000_w04').b.gsd]];
+    s.cards = cards.map(([name, src, g], k) => {
+      const c = put(mk('div', 'abs', r), {width: '250px', top: '300px', left: (960 - 3 * 280 + k * 280 + 15) + 'px'});
+      const p = put(mk('div', 'panel', c), {position: 'relative', width: '250px', height: '250px'}); mk('img', '', p).src = src;
+      mk('div', 'lab', c, `<b>${name}</b><br>${gsd(g)} m per pixel`).style.marginTop = '14px';
+      return c;
+    });
+    s.ans = put(mk('div', 'full', r), {});
+    s.P = put(mk('div', 'panel', s.ans), {width: '600px', height: '600px', left: '360px', top: '170px'});
+    s.pw = mk('img', '', s.P); s.pw.src = lay(TMC, 'warp'); s.pr = mk('img', '', s.P); s.pr.src = lay(TMC, 'ref');
+    s.al = put(mk('div', 'abs lab', s.ans, '<b>Chandrayaan-2 OHRC → TMC-2</b><br>the matcher\'s answer'), {left: '360px', top: '790px'});
+    s.chip = put(mk('div', 'chip', s.ans, '✓ Answer returned'), {left: '1030px', top: '330px'});
+    s.q = put(mk('div', 'abs', s.ans, 'Is it right?'), {left: '1030px', top: '430px', fontSize: '84px', fontWeight: 600, letterSpacing: '-.02em'});
+    s.note = put(mk('div', 'abs lab', s.ans, 'Alternating the answer with the reference:<br>the ground does not line up.'), {left: '1030px', top: '560px', maxWidth: '640px'});
+    return s;
+  },
+  draw(s, t, dur, W){
+    const ansAt = wt(W, /^And$/, 5) - .35, wrongAt = wt(W, /wrong/, 8.5) - .25;
+    put(s.head, {opacity: eOut(prog(t, .2, .9)) * (1 - eIO(prog(t, ansAt - .4, ansAt + .2))), transform: `translateY(${(1 - eOut(prog(t, .2, .9))) * 24}px)`});
+    s.cards.forEach((c, k) => { const p = eOut(prog(t, .35 + k * .16, .95 + k * .16)), out = eIO(prog(t, ansAt - .4, ansAt + .3));
+      put(c, {opacity: p * (1 - out), transform: `translateY(${(1 - p) * 60 - out * 40}px)`}); });
+    const a = eOut(prog(t, ansAt, ansAt + .8)); put(s.ans, {opacity: a});
+    put(s.P, {transform: `scale(${.94 + .06 * a})`});
+    const bl = t > wrongAt ? (Math.floor((t - wrongAt) / .5) % 2 === 1) : false; put(s.pr, {opacity: bl ? 1 : 0});
+    const w = prog(t, wrongAt, wrongAt + .4);
+    put(s.chip, {opacity: eOut(prog(t, ansAt + .4, ansAt + 1)), borderColor: w > 0 ? 'var(--mag2)' : 'var(--white)', color: w > 0 ? 'var(--mag2)' : 'var(--white)'});
+    s.chip.textContent = w > 0 ? '✗ The ground does not line up' : '✓ Answer returned';
+    put(s.q, {opacity: eOut(prog(t, wrongAt - .6, wrongAt)), transform: `translateX(${(1 - eOut(prog(t, wrongAt - .6, wrongAt))) * 30}px)`});
+    put(s.note, {opacity: eOut(prog(t, wrongAt + .3, wrongAt + .9))});
+  }
+};
+
+SCENES.title = {
+  async init(r){
+    const s = {};
+    s.tr = new Terrain(960, 540, ['LunaXX'], {textW: .62, textH: .42, textY: .42, relief: .5, zoom: .9, detail: .03, craters: 55, rmax: 16, seed: 21});
+    s.tw = put(mk('div', 'full', r), {}); s.tw.appendChild(s.tr.canvas); put(s.tr.canvas, {width: '100%', height: '100%', position: 'absolute'});
+    s.shade = put(mk('div', 'full', r), {background: 'linear-gradient(to bottom, rgba(14,14,13,0) 50%, rgba(14,14,13,.85) 80%)'});
+    s.sub = put(mk('div', 'abs', r, 'Lunar image registration that knows when it is wrong'), {left: 0, right: 0, top: '690px', textAlign: 'center', fontSize: '54px', fontWeight: 500, letterSpacing: '-.01em'});
+    s.meta = put(mk('div', 'abs lab', r, 'Team LunaXX &nbsp;&nbsp;|&nbsp;&nbsp; Smart India Hackathon 2026 &nbsp;&nbsp;|&nbsp;&nbsp; Problem statement SIH26166'), {left: 0, right: 0, top: '772px', textAlign: 'center', fontSize: '28px', color: '#d3d3cd'});
+    return s;
+  },
+  draw(s, t, dur, W){
+    s.tr.render(120 + 110 * eIO(prog(t, 0, dur + .5)), 14);
+    put(s.tw, {transform: `scale(${1.08 - .06 * eOut(prog(t, 0, dur))})`});
+    const a = eOut(prog(t, .9, 1.7)), b = eOut(prog(t, 1.5, 2.3));
+    put(s.sub, {opacity: a, transform: `translateY(${(1 - a) * 26}px)`}); put(s.meta, {opacity: b, transform: `translateY(${(1 - b) * 20}px)`});
+  }
+};
+
+SCENES.pipeline = {
+  async init(r){
+    const s = {}, P = s.P = 600, LX = s.LX = 250, RX = s.RX = 1070, Y = s.Y = 190;
+    s.steps = ['Common scale', 'Illumination', 'LoFTR matching', 'MAGSAC++ fit'].map((n, k) => {
+      const e = put(mk('div', 'abs', r, `<span style="color:var(--dim)">${k + 1}</span>&nbsp; ${n}`), {top: '70px', left: (250 + k * 360) + 'px', fontSize: '30px', fontWeight: 500, paddingBottom: '10px', borderBottom: '3px solid transparent'});
+      return e; });
+    s.Lw = put(mk('div', 'abs', r), {left: LX + 'px', top: Y + 'px', width: P + 'px', height: P + 'px'});
+    s.L = put(mk('div', 'panel', s.Lw), {inset: 0, width: '100%', height: '100%'}); s.Li = mk('img', '', s.L); s.Li.src = lay(W06, 'src');
+    s.Ln = mk('img', '', s.L); s.Ln.src = X.norm.src;
+    s.Lwarp = mk('img', '', s.L); s.Lwarp.src = lay(W06, 'warp');
+    s.R = put(mk('div', 'panel', r), {left: RX + 'px', top: Y + 'px', width: P + 'px', height: P + 'px'}); s.Ri = mk('img', '', s.R); s.Ri.src = lay(W06, 'ref');
+    s.Rn = mk('img', '', s.R); s.Rn.src = X.norm.ref;
+    s.gL = cellsCanvas(P); s.gL.width = s.gL.height = P; s.L.appendChild(s.gL); s.gR = cellsCanvas(P); s.R.appendChild(s.gR);
+    s.lines = put(mk('canvas', 'full', r), {zIndex: 5}); s.lines.width = 1920; s.lines.height = 1080;
+    s.labL = put(mk('div', 'abs lab', r), {left: LX + 'px', top: (Y + P + 18) + 'px'});
+    s.labR = put(mk('div', 'abs lab', r, '<b>LRO NAC</b>, 1.62 m per pixel'), {left: RX + 'px', top: (Y + P + 18) + 'px'});
+    s.note = put(mk('div', 'abs lab', r), {left: 0, right: 0, top: (Y + P + 70) + 'px', textAlign: 'center', fontSize: '30px', color: 'var(--white)'});
+    const M = X.matches, S = W06.a && 3721;
+    s.inl = M.inliers; s.out = M.outliers; s.srcN = M.src_n; s.refN = M.ref_n;
+    return s;
+  },
+  draw(s, t, dur, W){
+    const {P, LX, RX, Y} = s;
+    const t2 = wt(W, /^lighting/, 3) - .3, t3 = wt(W, /Loft/, 6.5) - .3, t4 = wt(W, /MAG/, 10) - .3;
+    const act = t < t2 ? 0 : t < t3 ? 1 : t < t4 ? 2 : 3;
+    s.steps.forEach((e, k) => put(e, {color: k === act ? 'var(--white)' : 'var(--dim2)', borderBottomColor: k === act ? 'var(--white)' : 'transparent', opacity: eOut(prog(t, .1 + k * .12, .6 + k * .12))}));
+    // 1: one ground scale - the OHRC's fine grid coarsens to the NAC's
+    const sc = eIO(prog(t, .6, 2.4)), nL = Math.round(lerp(46, 10, sc)), gl = s.gL.getContext('2d'), gr = s.gR.getContext('2d');
+    const grid = (g, n, a) => { g.clearRect(0, 0, P, P); if (a <= 0) return; g.strokeStyle = `rgba(255,255,255,${.28 * a})`; g.lineWidth = 1; for (let k = 1; k < n; k++){ const v = k * P / n; g.beginPath(); g.moveTo(v, 0); g.lineTo(v, P); g.moveTo(0, v); g.lineTo(P, v); g.stroke(); } };
+    const ga = 1 - prog(t, t2 - .3, t2 + .2);
+    grid(gl, nL, ga); grid(gr, 10, ga);
+    s.labL.innerHTML = `<b>Chandrayaan-2 OHRC</b>, ${sc < .5 ? '0.28' : '1.62'} m per pixel`;
+    // 2: illumination -> the gradient-orientation images the matcher actually sees (a wipe, left to right)
+    const ill = eIO(prog(t, t2, t2 + 1.3)), illOut = eIO(prog(t, t3 + .3, t3 + 1.1)), nA = ill * (1 - illOut), dimA = 1;
+    const wipe = v => v <= 0 ? 'inset(0 100% 0 0)' : v >= 1 ? 'inset(0 0 0 0)' : `inset(0 ${(1 - v) * 100}% 0 0)`;
+    put(s.Ln, {clipPath: wipe(ill), opacity: 1 - illOut}); put(s.Rn, {clipPath: wipe(ill), opacity: 1 - illOut});
+    if (ill > 0 && ill < 1){ const x = ill * P; [gl, gr].forEach(g => { g.fillStyle = '#fff'; g.fillRect(x - 2, 0, 4, P); }); }
+    // 3 + 4: matches, then MAGSAC++ removes outliers and the source moves into register
+    const lc = s.lines.getContext('2d'); lc.clearRect(0, 0, 1920, 1080);
+    const mv = eIO(prog(t, t4 + 1.5, t4 + 3.3)), offX = (RX - LX) * mv;
+    put(s.Lw, {transform: `translateX(${offX}px)`, zIndex: mv > 0 ? 4 : 1}); put(s.Lwarp, {opacity: mv}); put(s.Li, {opacity: dimA * (1 - mv)});
+    const drawSet = (set, colour, t0, span, fade) => set.forEach((m, k) => {
+      const p = prog(t, t0 + k / set.length * span, t0 + k / set.length * span + .35); if (p <= 0) return;
+      const x1 = LX + offX + m[0] * P, y1 = Y + m[1] * P, x2 = RX + m[2] * P, y2 = Y + m[3] * P;
+      lc.globalAlpha = p * fade; lc.strokeStyle = colour; lc.lineWidth = 1.6;
+      lc.beginPath(); lc.moveTo(x1, y1); lc.lineTo(lerp(x1, x2, eOut(p)), lerp(y1, y2, eOut(p))); lc.stroke();
+      lc.fillStyle = colour; lc.beginPath(); lc.arc(x1, y1, 3, 0, 7); lc.fill(); if (p >= 1){ lc.beginPath(); lc.arc(x2, y2, 3, 0, 7); lc.fill(); } });
+    const outCol = t > t4 + .2 ? '#ee5aa8' : 'rgba(255,255,255,1)';
+    drawSet(s.inl, 'rgba(255,255,255,1)', t3 + .1, 2.2, .42 * (1 - mv));
+    drawSet(s.out, outCol, t3 + .3, 2.0, .7 * (1 - prog(t, t4 + .6, t4 + 1.3)));
+    lc.globalAlpha = 1;
+    const n = [[0, 'one ground grid for both images'], [t2, 'brightness thrown away, only the orientation of each slope kept: a shadow and its mirror look alike'], [t3, 'dense matches between the two images, found on a laptop CPU'], [t4, 'outliers rejected (magenta), one transform fitted, and the image moves into register']].filter(v => t >= v[0]).pop();
+    s.note.textContent = n[1]; put(s.note, {opacity: eOut(prog(t, n[0] + .1, n[0] + .5))});
+  }
+};
+
+SCENES.check = {
+  async init(r){
+    const s = {}, P = s.P = 720;
+    s.pl = put(mk('div', 'panel', r), {left: '210px', top: '150px', width: P + 'px', height: P + 'px'}); mk('img', '', s.pl).src = lay(W06, 'warp');
+    s.c = cellsCanvas(P); s.pl.appendChild(s.c);
+    s.dots = cellsCanvas(P); s.pl.appendChild(s.dots);
+    s.read = put(mk('div', 'chip', r), {fontSize: '24px', padding: '8px 14px', zIndex: 3});
+    const x = 1010;
+    s.t1 = put(mk('div', 'abs h2', r, 'The independent check'), {left: x + 'px', top: '160px'});
+    s.t2 = put(mk('div', 'abs lab', r, 'Pixels against pixels, square by square.<br><b>It never reads a match position.</b>'), {left: x + 'px', top: '250px', fontSize: '32px'});
+    const rows = [['verified', 'matches and pixels agree'], ['weak', 'measured, does not hold'], ['no evidence', 'nothing to measure, nothing claimed']];
+    s.rows = rows.map(([k, g], i) => { const e = put(mk('div', 'abs', r), {left: x + 'px', top: (430 + i * 130) + 'px', display: 'flex', alignItems: 'center', gap: '26px'});
+      const sw = put(mk('canvas', '', e), {width: '70px', height: '70px', outline: '2px solid #777'}); sw.width = sw.height = 70;
+      const g2 = sw.getContext('2d'); g2.fillStyle = '#4a4a46'; g2.fillRect(0, 0, 70, 70);
+      if (i === 1){ g2.fillStyle = hatchPattern(g2, 'rgba(255,255,255,.95)', 3, 13); g2.fillRect(0, 0, 70, 70); }
+      if (i === 2){ g2.fillStyle = stipplePattern(g2, 'rgba(255,255,255,.95)', 13, 2.1); g2.fillRect(0, 0, 70, 70); }
+      const tx = mk('div', '', e, `<div style="font-size:36px;font-weight:500"><span class="n" style="display:inline-block;min-width:78px">0</span> ${k}</div><div class="lab" style="font-size:26px">${g}</div>`);
+      return {e, n: tx.querySelector('.n'), k}; });
+    return s;
+  },
+  draw(s, t, dur, W){
+    const P = s.P, cells = W06.cells;
+    const never = wt(W, /^never$/, 4.5), a0 = wt(W, /compares/, 2) - .2, a1 = a0 + 5.2;
+    const up = 64 * eIO(prog(t, a0, a1));
+    const ctx = s.c.getContext('2d'); drawCells(ctx, P, cells, up, Object.assign(s._o = s._o || {}, {flash: true, cursor: up < 64 && t > a0 ? Math.floor(up) : -1}));
+    // the inlier positions, shown and then taken away: the check does not use them
+    const dg = s.dots.getContext('2d'); dg.clearRect(0, 0, P, P);
+    const da = eOut(prog(t, .2, .8)) * (1 - eIO(prog(t, never - .1, never + .8)));
+    if (da > 0){ dg.fillStyle = `rgba(255,255,255,${.85 * da})`; X.matches.inliers.forEach(m => { dg.beginPath(); dg.arc(m[2] * P, m[3] * P, 3.2, 0, 7); dg.fill(); }); }
+    const cur = Math.floor(up);
+    if (up < 64 && t > a0){ const c = cells[cur], sz = P / 8, x = 210 + (cur % 8) * sz, y = 150 + Math.floor(cur / 8) * sz;
+      s.read.textContent = c.ncc === null ? 'no correlation to measure' : `correlation ${c.ncc > 0 ? '+' : ''}${c.ncc.toFixed(2)}`;
+      put(s.read, {left: Math.min(x + sz + 10, 820) + 'px', top: (y + sz / 2 - 24) + 'px', opacity: 1}); }
+    else put(s.read, {opacity: 0});
+    put(s.t1, {opacity: eOut(prog(t, .1, .7))}); put(s.t2, {opacity: eOut(prog(t, .5, 1.1))});
+    const done = cells.slice(0, Math.floor(up)), cnt = {verified: 0, weak: 0, 'no evidence': 0};
+    done.forEach(c => { cnt[c.s === 'no_evidence' ? 'no evidence' : c.s]++; });
+    const hi = [wt(W, /^verified/, 8), wt(W, /^weak/, 9), wt(W, /^evidence/, 10) - .4];
+    const after = t > hi[2] + 1.1;
+    s.rows.forEach((row, i) => { row.n.textContent = cnt[row.k]; const on = !after && t > hi[i] - .15 && (i === 2 || t < hi[i + 1] - .15);
+      put(row.e, {opacity: eOut(prog(t, .9 + i * .15, 1.5 + i * .15)) * (on || after || t < hi[0] - .15 ? 1 : .45), transform: `translateX(${on ? 14 : 0}px)`}); });
+  }
+};
+
+SCENES.refuse = {
+  async init(r){
+    const s = {}, P = s.P = 640;
+    s.bd = put(mk('div', 'abs hatch-mag', r), {left: '240px', top: '150px', width: (P + 40) + 'px', height: (P + 40) + 'px'});
+    s.pl = put(mk('div', 'panel', r), {left: '260px', top: '170px', width: P + 'px', height: P + 'px'});
+    s.iw = mk('img', '', s.pl); s.iw.src = lay(MI15, 'warp'); s.ifb = mk('img', '', s.pl); s.ifb.src = lay(MI15, 'fb') || lay(MI15, 'ref');
+    s.c = cellsCanvas(P); s.pl.appendChild(s.c);
+    s.cap = put(mk('div', 'abs lab', r, '<b>Kaguya TC → Kaguya MI, 1548 nm</b><br>visible against near-infrared'), {left: '260px', top: '850px'});
+    s.v = put(mk('div', 'abs', r, 'Refused'), {left: '1040px', top: '300px', fontSize: '150px', fontWeight: 600, color: 'var(--mag2)', letterSpacing: '-.03em', lineHeight: .9});
+    s.v2 = put(mk('div', 'abs h2', r, 'fallback declared'), {left: '1046px', top: '450px'});
+    s.v3 = put(mk('div', 'abs lab', r, 'The matcher\'s answer is thrown out. A phase-correlation<br>fallback is delivered in its place, and labelled as one.'), {left: '1046px', top: '540px', fontSize: '30px'});
+    s.tag = put(mk('div', 'chip', r, 'declared fallback'), {left: '280px', top: '190px', zIndex: 3});
+    return s;
+  },
+  draw(s, t, dur, W){
+    const rf = wt(W, /refused/, 3.5) - .25, fb = wt(W, /fallback/, 5.2) - .3;
+    drawCells(s.c.getContext('2d'), s.P, MI15.cells, 64 * eIO(prog(t, .2, rf - .2)), s._o = s._o || {});
+    const b = eOut(prog(t, rf, rf + .5)); put(s.bd, {opacity: b, transform: `scale(${1.04 - .04 * b})`});
+    put(s.v, {opacity: b, transform: `translateX(${(1 - b) * 40}px)`});
+    const f = eOut(prog(t, fb, fb + .7)); put(s.v2, {opacity: f}); put(s.v3, {opacity: eOut(prog(t, fb + .3, fb + 1))});
+    put(s.ifb, {opacity: f}); put(s.c, {opacity: 1 - .7 * f}); put(s.tag, {opacity: f});
+    put(s.pl, {opacity: eOut(prog(t, 0, .5))}); put(s.cap, {opacity: eOut(prog(t, .3, .9))});
+  }
+};
+
+// a recorded clip of the live workbench, re-timed and framed by a camera
+function clipScene(name){
+  return {
+    async init(r, entry){
+      const s = {C: entry.clip}; s.wrap = put(mk('div', 'full', r), {transformOrigin: '0 0'});
+      s.img = put(mk('img', 'full', s.wrap), {objectFit: 'cover'}); s.cur = -1;
+      s.live = put(mk('div', 'chip', r, '<span style="color:#ff5a5a">●</span>&nbsp; LIVE &nbsp;<span style="font-weight:400;color:#d3d3cd">core.pipeline.run_all on a laptop CPU</span>'),
+        {left: '36px', top: '32px', fontSize: '24px', padding: '8px 16px', background: 'rgba(0,0,0,.78)', zIndex: 4});
+      s.badge = put(mk('div', 'chip', r), {right: '36px', top: '32px', fontSize: '24px', padding: '8px 16px', background: 'rgba(0,0,0,.78)', zIndex: 4});
+      return s;
+    },
+    draw(s, t){
+      const C = s.C, seg = C.plan.find(g => t < g.o1) || C.plan[C.plan.length - 1];
+      const ct = clamp(lerp(seg.c0, seg.c1, clamp((t - seg.o0) / Math.max(1e-6, seg.o1 - seg.o0))), 0, C.frames / 30 - 1 / 30);
+      const idx = Math.min(C.frames - 1, Math.round(ct * 30));
+      if (idx !== s.cur){ s.cur = idx; s.img.src = `dist/clips/${name}/f_${String(idx).padStart(5, '0')}.jpg`; s.wait = s.img.decode().catch(() => {}); }
+      // camera: keys {t, cx, cy, z}; each move eases over `dur` seconds from its key time
+      let cx = 960, cy = 540, z = 1;
+      for (const k of C.cam){ const p = eIO(prog(t, k.t, k.t + (k.d || .9))); if (p <= 0) break; cx = lerp(cx, k.cx, p); cy = lerp(cy, k.cy, p); z = lerp(z, k.z, p); }
+      const hw = 960 / z, hh = 540 / z; cx = clamp(cx, hw, 1920 - hw); cy = clamp(cy, hh, 1080 - hh);
+      put(s.wrap, {transform: `translate(${960 - cx * z}px, ${540 - cy * z}px) scale(${z})`});
+      const sp = (seg.c1 - seg.c0) / Math.max(1e-6, seg.o1 - seg.o0);
+      put(s.badge, {opacity: seg.badge && sp > 1.05 ? 1 : 0}); s.badge.innerHTML = `▶▶ &nbsp;shown at ×${sp.toFixed(1)}`;
+      put(s.live, {opacity: 1});
+      return s.wait;
+    }
+  };
+}
+SCENES['live-accept'] = clipScene('accept');
+SCENES['live-refuse'] = clipScene('refuse');
+SCENES['live-known'] = clipScene('known');
+
+SCENES.outputs = {
+  async init(r){
+    const s = {};
+    s.btn = put(mk('div', 'chip', r, 'Download the result (.zip)'), {left: '50%', top: '150px', transform: 'translateX(-50%)', fontSize: '34px', padding: '16px 34px'});
+    s.cur = put(mk('div', 'abs', r, '<svg width="44" height="44" viewBox="0 0 30 30"><path d="M5 3 L5 24 L10.5 18.6 L14.6 27.5 L18.2 26 L14.1 17.2 L21.6 17.2 Z" fill="#fff" stroke="#111" stroke-width="1.7" stroke-linejoin="round"/></svg>'), {zIndex: 5});
+    s.ring = put(mk('div', 'abs', r), {width: '70px', height: '70px', margin: '-35px 0 0 -35px', borderRadius: '50%', border: '4px solid #fff', zIndex: 4});
+    const files = [['registered_product.tif', 'GeoTIFF on the reference grid', 'geo'], ['gcps.txt', 'control points for GDAL', 'gcp'], ['gcps.points', 'control points for QGIS', 'gcp'], ['matches_isis.csv', 'match list for USGS ISIS', 'match'],
+                   ['matches.csv', 'every match, residual, trust', 'match'], ['trust_map.csv', 'the 8×8 verdicts', 'trust'], ['report.json', 'metrics, timings, input hashes', 'rep'], ['report.md', 'the same, to read', 'rep']];
+    s.cards = files.map(([f, d, k], i) => { const e = put(mk('div', 'abs', r), {width: '400px', height: '176px', left: (140 + (i % 4) * 420) + 'px', top: (320 + Math.floor(i / 4) * 206) + 'px',
+      border: '2px solid #4a4a46', padding: '28px 28px', background: '#151514'});
+      mk('div', '', e, f).style.cssText = 'font-size:34px;font-weight:500;letter-spacing:-.005em';
+      mk('div', 'lab', e, d).style.cssText = 'font-size:27px;margin-top:12px;color:var(--dim)';
+      return {e, k}; });
+    return s;
+  },
+  draw(s, t, dur, W){
+    const click = .9;
+    const cp = eIO(prog(t, 0, click)); put(s.cur, {left: lerp(1300, 1010, cp) + 'px', top: lerp(560, 190, cp) + 'px', opacity: 1 - prog(t, click + .8, click + 1.2)});
+    const rp = prog(t, click, click + .45); put(s.ring, {left: '1010px', top: '190px', opacity: rp > 0 && rp < 1 ? 1 - rp : 0, transform: `scale(${.4 + rp})`});
+    put(s.btn, {background: t > click && t < click + .25 ? 'var(--white)' : 'rgba(14,14,13,.72)', color: t > click && t < click + .25 ? '#000' : 'var(--white)', opacity: eOut(prog(t, 0, .4))});
+    const hl = {geo: wt(W, /GeoTIFF/, 2), gcp: wt(W, /control/, 4), match: wt(W, /^match/, 5), trust: wt(W, /standard/, 6), rep: wt(W, /tools/, 7)};
+    s.cards.forEach((c, i) => { const p = eBack(clamp(prog(t, click + .3 + i * .09, click + .8 + i * .09)));
+      const on = t > hl[c.k] - .1 && t < hl[c.k] + 1.6;
+      put(c.e, {opacity: clamp(prog(t, click + .3 + i * .09, click + .6 + i * .09)), transform: `translateY(${(1 - p) * -120}px) scale(${.85 + .15 * p})`, borderColor: on ? '#f4f4f1' : '#4a4a46', background: on ? '#232321' : '#151514'}); });
+  }
+};
+
+SCENES.evidence = {
+  async init(r){
+    const s = {};
+    s.top = put(mk('div', 'abs lab', r, 'Evidence frozen at commit <b>7dd4e5b</b>, every figure in REPORT.md'), {left: '140px', top: '70px', fontSize: '28px'});
+    const stats = [['160', 'distinct ground windows'], ['8', 'instrument pairings'], ['6 of 6', 'accepted on SAC\'s benchmark pair,<br>Sun azimuths 174° apart'],
+                   ['37 of 37', 'windows of one whole lit overlap'], ['0.57 m', 'held-out median<br>(0.61 px on the 0.93 m NAC grid)']];
+    s.stats = stats.map(([n, l], i) => { const e = put(mk('div', 'abs', r), {left: '120px', top: '0', display: 'flex', alignItems: 'baseline', gap: '28px', width: '880px'});
+      const a = mk('div', 'big', e, n), b = mk('div', 'lab', e, l); a.style.whiteSpace = 'nowrap'; b.style.cssText = 'line-height:1.25;color:#d3d3cd;max-width:560px'; e._n = a; e._l = b; return e; });
+    // right: the pairing mosaic, SAC's pair, then the 37 tiles in place
+    s.mos = put(mk('div', 'abs', r), {left: '1040px', top: '170px', width: '760px', display: 'grid', gridTemplateColumns: 'repeat(5, 140px)', gap: '15px'});
+    s.mos.innerHTML = D.maps.map(m => `<div class="panel" style="position:relative;width:140px;height:140px"><img src="${lay(m, 'ref')}"></div>`).join('');
+    s.mosTiles = [...s.mos.children];
+    s.sac = put(mk('div', 'abs', r), {left: '1080px', top: '160px'});
+    const p1 = put(mk('div', 'panel', s.sac), {width: '330px', height: '330px', left: 0, top: 0}); mk('img', '', p1).src = lay(W06, 'warp');
+    const p2 = put(mk('div', 'panel', s.sac), {width: '330px', height: '330px', left: '350px', top: 0}); mk('img', '', p2).src = lay(W06, 'ref');
+    put(mk('div', 'abs lab', s.sac, '<b>OHRC</b> and <b>LRO NAC</b>, SAC\'s own pair'), {left: 0, top: '350px', width: '700px'});
+    s.tm = put(mk('canvas', 'abs', r), {left: '1000px', top: '140px', width: '820px', height: '700px'}); s.tm.width = 820; s.tm.height = 700;
+    return s;
+  },
+  draw(s, t, dur, W){
+    const cue = [wt(W, /hundred/, 2) - .5, wt(W, /^eight/, 4) - .3, wt(W, /benchmark/, 6) - .5, wt(W, /overlap/, 9) - .6, wt(W, /median/, 12) - .6];
+    put(s.top, {opacity: eOut(prog(t, 0, .6))});
+    s.stats.forEach((e, i) => { const p = eOut(prog(t, cue[i], cue[i] + .6)), next = i < 4 ? prog(t, cue[i + 1], cue[i + 1] + .6) : 0;
+      // the newest stat is large at the top; earlier ones step down the column, smaller
+      const k = s.stats.filter((_, j) => t >= cue[j]).length - 1 - i, big = k <= 0;
+      const y = big ? 150 : 360 + (k - 1) * 104;
+      put(e, {opacity: p * (big ? 1 : .62), transform: `translateY(${y + (1 - p) * 30}px)`});
+      put(e._n, {fontSize: big ? '136px' : '64px'}); put(e._l, {fontSize: big ? '32px' : '25px'}); e._l.innerHTML = big ? e._l.dataset.full || (e._l.dataset.full = e._l.innerHTML) : (e._l.dataset.full || e._l.innerHTML).replace(/<br>/g, ' '); });
+    const mosA = eOut(prog(t, cue[0], cue[0] + .7)) * (1 - eIO(prog(t, cue[2] - .3, cue[2] + .2)));
+    put(s.mos, {opacity: mosA}); s.mosTiles.forEach((e, i) => put(e, {opacity: clamp(prog(t, cue[0] + i * .08, cue[0] + .4 + i * .08)), outline: t > cue[1] && t < cue[2] ? '2px solid #f4f4f1' : '1px solid #3a3a37'}));
+    put(s.sac, {opacity: eOut(prog(t, cue[2], cue[2] + .6)) * (1 - eIO(prog(t, cue[3] - .3, cue[3] + .2)))});
+    const ta = eOut(prog(t, cue[3], cue[3] + .5)); put(s.tm, {opacity: ta});
+    if (ta > 0){
+      const g = s.tm.getContext('2d'), T = D.tiles, w = T[0].w, pad = w * .8; g.clearRect(0, 0, 820, 700);
+      const x0 = Math.min(...T.map(v => v.x)) - pad, x1 = Math.max(...T.map(v => v.x)) + pad, y0 = Math.min(...T.map(v => v.y)) - pad, y1 = Math.max(...T.map(v => v.y)) + pad;
+      const k = Math.min(820 / (x1 - x0), 640 / (y1 - y0)), X0 = (820 - (x1 - x0) * k) / 2;
+      const order = T.map((v, i) => i).sort((a, b) => T[b].y - T[a].y || T[a].x - T[b].x);
+      const shown = 37 * eIO(prog(t, cue[3] + .1, cue[3] + 2.4));
+      order.forEach((i, n) => { const a = clamp(shown - n); if (a <= 0) return; const v = T[i];
+        const x = X0 + (v.x - w / 2 - x0) * k, y = (y1 - v.y - w / 2) * k, sz = w * k * .92;
+        const hi = t > cue[4] && v.med <= 3; g.globalAlpha = a; g.fillStyle = `rgba(244,244,241,${hi ? .30 + .5 * clamp(1 - v.med / 1.5) : .22})`; g.fillRect(x, y, sz, sz);
+        g.strokeStyle = '#f4f4f1'; g.lineWidth = 1.4; g.setLineDash(v.med > 3 ? [6, 4] : []); g.strokeRect(x, y, sz, sz); });
+      g.setLineDash([]); g.globalAlpha = 1; g.fillStyle = '#d3d3cd'; g.font = '500 28px Jost';
+      g.fillText(`${Math.min(37, Math.round(shown))} of 37 windows accepted, none hand-picked`, 20, 690);
+    }
+  }
+};
+
+SCENES.calibration = {
+  async init(r){
+    const s = {};
+    s.t1 = put(mk('div', 'abs h2', r, 'We tested the checker, too.'), {left: '140px', top: '120px'});
+    s.t2 = put(mk('div', 'abs lab', r, 'Wrong answers of known size, planted as <b>shifts</b><br>in 30 real windows.'), {left: '140px', top: '210px', fontSize: '32px'});
+    s.fa = put(mk('div', 'abs', r), {left: '140px', top: '400px'});
+    s.fa.innerHTML = `<div class="big" style="font-size:120px">0 / 44</div><div class="lab" style="font-size:28px;margin:6px 0 34px">false alarms, Sun azimuths within 10° apart</div>
+      <div class="big" style="font-size:120px">0 / 16</div><div class="lab" style="font-size:28px;margin-top:6px">false alarms, Sun azimuths 132–174° apart</div>`;
+    s.ch = put(mk('canvas', 'abs', r), {left: '960px', top: '150px', width: '860px', height: '720px'}); s.ch.width = 860; s.ch.height = 720;
+    return s;
+  },
+  draw(s, t, dur, W){
+    const cb = wt(W, /planted/, 3) - .2, cf = wt(W, /alarms/, 5) - .4, c5 = wt(W, /^five/, 8) - .3;
+    put(s.t1, {opacity: eOut(prog(t, 0, .6))}); put(s.t2, {opacity: eOut(prog(t, cb - .3, cb + .3))});
+    put(s.fa, {opacity: eOut(prog(t, cf, cf + .6)), transform: `translateY(${(1 - eOut(prog(t, cf, cf + .6))) * 30}px)`});
+    const g = s.ch.getContext('2d'); g.clearRect(0, 0, 860, 720);
+    const near = D.near, hard = D.hard, L = 80, R = 840, T = 70, B = 600, n = near.length, bw = (R - L) / n, y = p => B - p / 100 * (B - T);
+    g.font = '500 30px Jost'; g.fillStyle = '#f4f4f1'; g.globalAlpha = eOut(prog(t, cb, cb + .5)); g.fillText('Planted shifts: how many are flagged?', L - 60, 30);
+    g.font = '24px Jost'; g.fillStyle = '#a9a9a3';
+    [0, 50, 100].forEach(p => { g.globalAlpha = .9 * eOut(prog(t, cb, cb + .5)); g.fillText(p + '%', L - 72, y(p) + 8); g.strokeStyle = 'rgba(244,244,241,.14)'; g.beginPath(); g.moveTo(L, y(p)); g.lineTo(R, y(p)); g.stroke(); });
+    near.forEach((d, i) => { const gp = eOut(prog(t, cb + .2 + i * .1, cb + .8 + i * .1)), p = 100 * d.hit / d.n * gp, cx = L + bw * (i + .5);
+      const dimmed = t > c5 && d.m < 5; g.globalAlpha = dimmed ? .35 : 1;
+      g.fillStyle = d.m === 0 ? '#6f6f69' : '#e9e9e4'; g.fillRect(cx - bw * .32, y(p), bw * .64, B - y(p));
+      g.fillStyle = '#f4f4f1'; g.font = '500 22px Jost'; g.textAlign = 'center'; if (gp > .9) g.fillText(Math.round(100 * d.hit / d.n) + '%', cx, y(p) - 12);
+      g.fillStyle = '#a9a9a3'; g.font = '24px Jost'; g.fillText(d.m + '', cx, B + 34);
+      const h = hard.find(q => q.m === d.m); if (h && gp > .5){ const hp = 100 * h.hit / h.n, yy = y(hp);
+        g.strokeStyle = '#f4f4f1'; g.lineWidth = 3; g.fillStyle = '#0e0e0d'; g.beginPath(); g.moveTo(cx, yy - 10); g.lineTo(cx + 10, yy); g.lineTo(cx, yy + 10); g.lineTo(cx - 10, yy); g.closePath(); g.fill(); g.stroke(); }
+      g.textAlign = 'left'; });
+    g.globalAlpha = eOut(prog(t, cb, cb + .5)); g.fillStyle = '#a9a9a3'; g.font = '24px Jost'; g.textAlign = 'center';
+    g.fillText('planted shift, metres', (L + R) / 2, B + 76); g.textAlign = 'left';
+    g.fillStyle = '#e9e9e4'; g.fillRect(L, B + 98, 22, 22); g.fillStyle = '#d3d3cd'; g.fillText('Suns 3–9° apart, 22 windows', L + 34, B + 118);
+    g.strokeStyle = '#f4f4f1'; g.lineWidth = 3; g.fillStyle = '#0e0e0d'; const dx = L + 470, dy = B + 109; g.beginPath(); g.moveTo(dx, dy - 10); g.lineTo(dx + 10, dy); g.lineTo(dx, dy + 10); g.lineTo(dx - 10, dy); g.closePath(); g.fill(); g.stroke();
+    g.fillStyle = '#d3d3cd'; g.fillText('Suns 132–174°, 8 windows', dx + 22, B + 118);
+    const bp = eOut(prog(t, c5, c5 + .6)); if (bp > 0){ const i5 = near.findIndex(d => d.m === 5), xa = L + bw * i5 + 6, xb = R - 6;
+      g.globalAlpha = bp; g.strokeStyle = '#f4f4f1'; g.lineWidth = 3; g.beginPath(); g.moveTo(xa, T - 4); g.lineTo(xa, T - 18); g.lineTo(xb, T - 18); g.lineTo(xb, T - 4); g.stroke();
+      g.font = '500 26px Jost'; g.fillStyle = '#f4f4f1'; g.textAlign = 'center'; g.fillText('every one caught, Suns close', (xa + xb) / 2, T - 28); g.textAlign = 'left'; }
+    g.globalAlpha = 1;
+  }
+};
+
+SCENES.limits = {
+  async init(r){
+    const s = {};
+    s.h = put(mk('div', 'abs h2', r, 'And it says what it cannot do.'), {left: 0, right: 0, top: '90px', textAlign: 'center'});
+    const card = (m, x, name, sub, big) => { const c = put(mk('div', 'abs', r), {left: x + 'px', top: '200px', width: '620px'});
+      const bd = put(mk('div', 'hatch-mag', c), {position: 'relative', width: '520px', height: '520px', padding: '16px'});
+      const p = put(mk('div', 'panel', bd), {position: 'relative', width: '488px', height: '488px'}); mk('img', '', p).src = lay(m, 'warp');
+      mk('div', 'lab', c, `<b>${name}</b><br>${sub}`).style.cssText = 'margin-top:18px;font-size:28px';
+      const b = put(mk('div', 'abs', c, big), {left: '0', top: '640px', fontSize: '58px', fontWeight: 600, color: 'var(--mag2)', letterSpacing: '-.015em'});
+      return {c, b}; };
+    s.a = card(MI15, 290, 'Kaguya TC → MI, 1548 nm', 'visible against near-infrared', '3 of 3 refused');
+    s.b = card(TMC, 1010, 'Chandrayaan-2 OHRC → TMC-2', 'Sun azimuths 120° apart', '4 of 4 refused');
+    return s;
+  },
+  draw(s, t, dur, W){
+    const ca = wt(W, /^Near/, 3) - .3, cb = wt(W, /^T-M-C/, 6.5) - .3;
+    put(s.h, {opacity: eOut(prog(t, 0, .6))});
+    [[s.a, ca], [s.b, cb]].forEach(([k, c]) => { const p = eOut(prog(t, c, c + .7)); put(k.c, {opacity: p, transform: `translateY(${(1 - p) * 40}px)`});
+      const q = eBack(clamp(prog(t, c + 1.2, c + 1.8))); put(k.b, {opacity: clamp(prog(t, c + 1.2, c + 1.5)), transform: `scale(${.8 + .2 * q})`, transformOrigin: '0 50%'}); });
+  }
+};
+
+SCENES.close = {
+  async init(r){
+    const s = {};
+    s.tr = new Terrain(960, 540, null, {relief: .55, zoom: .9, detail: .04, craters: 110, rmax: 26, seed: 33});
+    s.tw = put(mk('div', 'full', r), {opacity: .55}); s.tw.appendChild(s.tr.canvas); put(s.tr.canvas, {width: '100%', height: '100%', position: 'absolute'});
+    put(mk('div', 'full', r), {background: 'radial-gradient(ellipse at center, rgba(14,14,13,.55), rgba(14,14,13,.92) 75%)'});
+    s.m = put(mk('div', 'abs', r, `${logo(120)}<span>LunaXX</span>`), {left: 0, right: 0, top: '220px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '34px', fontSize: '150px', fontWeight: 600, letterSpacing: '-.02em'});
+    s.l = put(mk('div', 'abs', r, 'Lunar image registration that knows when it is wrong.'), {left: 0, right: 0, top: '430px', textAlign: 'center', fontSize: '50px', fontWeight: 500});
+    s.p = put(mk('div', 'abs', r), {left: 0, right: 0, top: '540px', display: 'flex', justifyContent: 'center', gap: '22px'});
+    s.pills = ['Offline', 'Laptop CPU, no GPU', 'Open source, Apache-2.0'].map(v => put(mk('div', 'chip', s.p, v), {position: 'relative', fontSize: '30px'}));
+    s.u = put(mk('div', 'abs', r, 'github.com/samarthputhraya/sih26166'), {left: 0, right: 0, top: '680px', textAlign: 'center', fontSize: '40px', fontWeight: 500});
+    s.f = put(mk('div', 'abs lab', r, 'Team LunaXX &nbsp;&nbsp;|&nbsp;&nbsp; Smart India Hackathon 2026 &nbsp;&nbsp;|&nbsp;&nbsp; SIH26166'), {left: 0, right: 0, top: '760px', textAlign: 'center'});
+    return s;
+  },
+  draw(s, t, dur, W){
+    s.tr.render(200 + 60 * prog(t, 0, dur), 14);
+    const at = [0.2, .7, 1.4, 2.0, 2.5];
+    [s.m, s.l, s.p, s.u, s.f].forEach((e, i) => { const p = eOut(prog(t, at[i], at[i] + .7)); put(e, {opacity: p, transform: `translateY(${(1 - p) * 24}px)`}); });
+  }
+};
+
+// ------------------------------------------------------------------ timeline, captions, seek
+const TLN = TL.scenes;
+const roots = {}, states = {};
+function phrases(cap, words, voice){
+  const parts = cap.split(/(?<=[.,:;?!])\s+/).reduce((acc, p) => { if (acc.length && (acc[acc.length - 1].length + p.length < 62)) acc[acc.length - 1] += ' ' + p; else acc.push(p); return acc; }, []);
+  const total = parts.reduce((a, p) => a + p.split(/\s+/).length, 0); let k = 0;
+  return parts.map(p => { const n = p.split(/\s+/).length, i0 = Math.floor(k / total * words.length); k += n;
+    return {p, t: words.length ? words[Math.min(words.length - 1, i0)].t : 0}; });
+}
+async function init(){
+  await document.fonts.load('600 80px Jost'); await document.fonts.load('italic 400 30px Jost');
+  for (const e of TLN){
+    const r = mk('div', 'scene', ST); r.dataset.scene = e.scene; ST.insertBefore(r, document.getElementById('cap'));
+    roots[e.scene] = r; states[e.scene] = await SCENES[e.scene].init(r, e);
+    e.ph = phrases(e.cap, e.words, e.voice);
+  }
+  await Promise.all([...document.images].map(i => i.decode().catch(() => {})));
+}
+const READY = init();
+const FADE = .35;
+window.FILM = {
+  ready: READY,
+  duration: TL.duration,
+  async seek(T){
+    await READY;
+    const waits = []; let capText = '', capA = 0;
+    TLN.forEach((e, i) => {
+      const a0 = e.start - (i ? FADE : 0), a1 = e.start + e.dur + (i < TLN.length - 1 ? FADE : 0), r = roots[e.scene];
+      if (T < a0 || T > a1){ r.style.visibility = 'hidden'; return; }
+      const fi = i ? clamp((T - a0) / (2 * FADE)) : 1, fo = i < TLN.length - 1 ? clamp((a1 - T) / (2 * FADE)) : 1;
+      r.style.visibility = 'visible'; r.style.opacity = Math.min(fi, fo); r.style.zIndex = i;
+      const w = SCENES[e.scene].draw(states[e.scene], Math.max(0, T - e.start), e.dur, e.words); if (w) waits.push(w);
+      if (T >= e.start && T < e.start + e.dur){ const lt = T - e.start, ph = e.ph.filter(p => lt >= p.t - .05).pop();
+        if (ph && lt < e.voice + e.vdur + .15){ capText = ph.p; capA = clamp((lt - ph.t + .05) / .18); } }
+    });
+    const cap = document.querySelector('#cap span'); if (cap.textContent !== capText) cap.textContent = capText;
+    document.getElementById('cap').style.opacity = capText && location.hash !== '#nocap' ? 1 : 0; cap.style.opacity = capA;
+    document.getElementById('fade').style.opacity = Math.max(1 - clamp(T / .6), clamp((T - (TL.duration - 1.2)) / 1.2));
+    await Promise.all(waits);
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    return true;
+  }
+};
+</script>
+</body></html>
