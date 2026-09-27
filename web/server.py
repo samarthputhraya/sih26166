@@ -62,7 +62,7 @@ SKELETON = """<!doctype html>
 <meta name="description" content="Chandrayaan-2 image registration across Sun angle, scale and sensor, with an independent area check that never sees the matches and a verdict region by region. Team LunaXX, SIH 2026 problem statement SIH26166.">
 <style>
   :root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-  body{margin:0;font:14px system-ui,-apple-system,sans-serif;background:#edefea}
+  body{margin:0;font:14px system-ui,-apple-system,sans-serif;background:#bab8b2}
   img{max-width:100%}
   [hidden]{display:none!important}
 </style>
@@ -74,10 +74,9 @@ SKELETON = """<!doctype html>
 
 FAVICON = (
     b'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">'
-    b'<rect width="32" height="32" fill="#edefea"/>'
-    b'<circle cx="16" cy="16" r="9.5" fill="none" stroke="#000" stroke-width="1.8"/>'
-    b'<path d="M16 2v28M2 16h28" stroke="#0c6b89" stroke-width="1.8"/>'
-    b'<path d="M16 6.5a9.5 9.5 0 0 0 0 19z" fill="#000"/></svg>'
+    b'<rect width="32" height="32" fill="#bab8b2"/>'
+    b'<circle cx="16" cy="16" r="12" fill="#f4f4f1" stroke="#000" stroke-width="1.8"/>'
+    b'<path d="M16 4a12 12 0 0 0 0 24c-4-3-5.8-7.3-5.8-12S12 7 16 4z" fill="#000"/></svg>'
 )
 
 

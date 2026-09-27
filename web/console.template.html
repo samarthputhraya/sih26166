@@ -1,492 +1,423 @@
-<title>LunaXX lunar registration chart</title>
+<title>LunaXX: shadows move, the ground doesn't</title>
 <style>
 /*__FONTS__*/
-/* The page is drawn as a lunar chart, because the problem is a charting problem: two images of
-   the same ground have to be tied to one grid. Every ink has one meaning and no ink is decoration.
-     cyan     the chart grid, and what the area check verified
-     magenta  refused: the chart convention for a restricted area, drawn as hatching
-     ochre    weak or unconfirmed
-     stipple  no evidence: nothing was measured there, so nothing is drawn
-   Italic is kept for names (instruments, pairings), as charts keep it for named features.
-   Roman is for measurements. Nothing is set in capitals only, and nothing is in a mono face. */
+/* The page stands on the Moon. Its ground is lit regolith, its instruments sit in the night side,
+   and colour is spent on one thing only: what the system refuses to vouch for. Verified ground is
+   shown as it is, with nothing drawn over it. Doubt is drawn, never decorated.
+   Set entirely in Jost, a revival of Futura, the typeface on the plaque Apollo 11 left on the Moon. */
 :root{
   color-scheme:light;
-  --paper:#edefea; --paper2:#e3e6df; --paper3:#f6f7f3; --sheet:#fbfbf8;
-  --ink:#000; --ink2:#3a3f42; --ink3:#5b6063; --rule:#c5cac2; --rule2:#9aa19b;
-  --grid:#0c6b89; --grid-soft:rgba(12,107,137,.16);
-  --mag:#a8175f; --ochre:#855a0c; --none:#8d918c;
-  --f-sans:"Archivo","Helvetica Neue",Arial,sans-serif;
-  --f-it:"Newsreader","Iowan Old Style","Palatino Linotype",Georgia,serif;
-  --measure:64ch; --gut:clamp(18px,4vw,56px);
+  --ground:#bab8b2; --ground2:#afada7; --lit:#d4d2cc; --night:#0e0e0d; --night2:#1a1a19;
+  --ink:#000; --ink2:#262624; --ink3:#46463f; --white:#f4f4f1; --dimw:#a9a9a3;
+  --refuse:#8f0050; --refuse-hatch:#c2127a;
+  --f:"Jost","Futura","Century Gothic","Avenir Next",sans-serif;
+  --gut:clamp(18px,4.2vw,64px); --measure:62ch;
 }
 *{box-sizing:border-box}
-html{scroll-behavior:smooth;scroll-padding-top:84px}
-body{margin:0;background:var(--paper);color:var(--ink);
-  font:400 17px/1.55 var(--f-sans);font-stretch:100%;
-  font-variant-numeric:lining-nums tabular-nums;-webkit-font-smoothing:antialiased;overflow-x:hidden}
-a{color:inherit;text-decoration-color:var(--grid);text-underline-offset:3px}
-:focus-visible{outline:2px solid var(--grid);outline-offset:3px}
-.wrap{max-width:1240px;margin-inline:auto;padding-inline:var(--gut)}
-em,.it{font-family:var(--f-it);font-style:italic;font-weight:420}
-h1,h2,h3{font-family:var(--f-sans);margin:0;font-weight:600}
+html{scroll-behavior:smooth;scroll-padding-top:70px}
+body{margin:0;background:var(--ground);color:var(--ink);font:400 18px/1.6 var(--f);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+/* the regolith itself: a fine grain over the whole page */
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.35;mix-blend-mode:multiply;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)'/%3E%3C/svg%3E")}
+main,header,footer{position:relative;z-index:1}
+a{color:inherit;text-underline-offset:4px;text-decoration-thickness:1px}
+:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.wrap{max-width:1280px;margin-inline:auto;padding-inline:var(--gut)}
+h1,h2,h3,h4{margin:0;font-weight:600;text-wrap:balance}
 p{margin:0}
-.src{font:italic 400 15px/1.4 var(--f-it);color:var(--ink3)}
-.note{font-size:14.5px;line-height:1.55;color:var(--ink2);max-width:var(--measure)}
-.lab{font-size:13.5px;font-stretch:78%;font-weight:560;letter-spacing:.02em;color:var(--ink2)}
+.it{font-style:italic}
+.num{font-variant-numeric:tabular-nums lining-nums}
 
-/* ---------- running head ---------- */
-.top{position:sticky;top:0;z-index:30;background:rgba(237,239,234,.94);
-  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border-bottom:1px solid var(--rule)}
-.top__in{display:flex;align-items:center;gap:10px 28px;min-height:60px;flex-wrap:wrap;padding-block:8px}
-.mark{display:flex;align-items:center;gap:10px;text-decoration:none;font-weight:650;font-stretch:118%;font-size:19px;letter-spacing:.01em}
-.mark svg{width:24px;height:24px;flex:none}
-.top nav{display:flex;gap:4px 20px;flex-wrap:wrap}
-.top nav a{font-size:14.5px;font-stretch:84%;text-decoration:none;color:var(--ink2);padding:4px 0;border-bottom:2px solid transparent}
-.top nav a:hover{color:var(--ink)}
-.top nav a[aria-current]{color:var(--ink);border-bottom-color:var(--grid)}
-.frozen{margin-left:auto;font-size:13.5px;font-stretch:84%;color:var(--ink3)}
-.frozen b{font-weight:600;color:var(--ink2)}
-@media (max-width:760px){
-  .top__in{gap:6px 16px}
-  .top nav{order:3;width:100%;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;gap:18px}
-  .top nav::-webkit-scrollbar{display:none}
-  .top nav a{white-space:nowrap}
-  html{scroll-padding-top:112px}
-}
+/* ---------- bar ---------- */
+.bar{position:sticky;top:0;z-index:40;background:rgba(186,184,178,.9);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.bar__in{display:flex;align-items:center;gap:8px 30px;min-height:58px;flex-wrap:wrap}
+.mark{display:flex;align-items:center;gap:10px;text-decoration:none;font-weight:650;font-size:20px;letter-spacing:.02em}
+.mark svg{width:22px;height:22px}
+.bar nav{display:flex;gap:4px 24px;flex-wrap:wrap}
+.bar nav a{font-size:16px;text-decoration:none;color:var(--ink2);padding:6px 0;border-bottom:1.5px solid transparent}
+.bar nav a:hover{color:var(--ink)}
+.bar nav a[aria-current]{color:var(--ink);border-bottom-color:var(--ink)}
+.frozen{margin-left:auto;font-size:15px;color:var(--ink3)}
+@media (max-width:720px){.bar nav{order:3;width:100%;overflow-x:auto;flex-wrap:nowrap;scrollbar-width:none;gap:20px}.bar nav::-webkit-scrollbar{display:none}.bar nav a{white-space:nowrap}html{scroll-padding-top:104px}}
 
-/* ---------- the chart plate: an image inside a lettered, numbered collar ---------- */
-.plate{--c:20px;display:grid;grid-template-columns:var(--c) minmax(0,1fr) var(--c);
-  grid-template-rows:var(--c) auto var(--c);background:var(--sheet);border:1px solid var(--ink);
-  padding:6px;position:relative}
-.plate__cols,.plate__rows{display:flex;font-size:11.5px;font-stretch:80%;color:var(--grid);font-weight:600}
-.plate__cols{grid-column:2;justify-content:space-around;align-items:center}
-.plate__cols.b{grid-row:3}
-.plate__rows{flex-direction:column;justify-content:space-around;align-items:center;grid-row:2}
-.plate__rows.r{grid-column:3}
-.plate__img{grid-column:2;grid-row:2;position:relative;aspect-ratio:1/1;overflow:hidden;background:#1d1f1e;
-  outline:1px solid var(--ink)}
-.plate__img img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
-.plate__img svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
-/* the verdict is drawn in the neatline itself, the way a chart marks an area's status */
-.plate[data-v="agrees"]{box-shadow:0 0 0 3px var(--sheet),0 0 0 5px var(--grid)}
-.plate[data-v="unconfirmed"]{box-shadow:0 0 0 3px var(--sheet);outline:2px dashed var(--ochre);outline-offset:3px}
-.plate[data-v="contradicted"]{border:10px solid;border-image:repeating-linear-gradient(-45deg,var(--mag) 0 2.2px,transparent 2.2px 6px) 10}
-.cell{cursor:crosshair;stroke:rgba(12,107,137,.55);stroke-width:1;vector-effect:non-scaling-stroke}
+/* ---------- the ground, with the words standing on it ---------- */
+.hero{position:relative;height:clamp(520px,84vh,900px);overflow:hidden;background:#6f6d68;touch-action:pan-y;cursor:ew-resize}
+#terrain{position:absolute;inset:0;width:100%;height:100%;display:block}
+.dial{position:absolute;right:var(--gut);top:22px;display:flex;align-items:center;gap:12px;color:var(--white);
+  font-size:15px;line-height:1.35;text-shadow:0 1px 2px rgba(0,0,0,.55);pointer-events:none}
+.dial svg{width:54px;height:54px;flex:none;filter:drop-shadow(0 1px 2px rgba(0,0,0,.5))}
+.hero__foot{position:absolute;left:0;right:0;bottom:0;padding-block:28px 30px;
+  background:linear-gradient(to bottom,rgba(14,14,13,0),rgba(14,14,13,.78) 42%);color:var(--white)}
+.hero__foot .wrap{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px 40px;align-items:end}
+.hero__foot p.lede{font-size:clamp(17px,1.35vw,20px);line-height:1.5;max-width:58ch}
+.hero__foot .go{display:flex;flex-wrap:wrap;gap:12px 22px;font-size:17px}
+.hero__foot .go a{color:var(--white);text-decoration:underline}
+.hero__foot small{display:block;margin-top:10px;font-size:14px;color:var(--dimw)}
+@media (max-width:820px){.hero__foot .wrap{grid-template-columns:minmax(0,1fr)}}
+
+/* ---------- sections ---------- */
+section.part{padding-block:clamp(56px,8vw,112px)}
+.head{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.85fr);gap:14px 60px;align-items:end;margin-bottom:clamp(26px,3.6vw,48px)}
+@media (max-width:900px){.head{grid-template-columns:minmax(0,1fr)}}
+.head h2{font-size:clamp(34px,4.4vw,64px);line-height:1;letter-spacing:-.018em;font-weight:600}
+.head p{font-size:17px;color:var(--ink2);max-width:52ch}
+.src{font-size:15px;color:var(--ink3);font-style:italic}
+.body{max-width:var(--measure)}
+.body strong{font-weight:600}
+.two{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:clamp(26px,4vw,64px);align-items:start}
+@media (max-width:940px){.two{grid-template-columns:minmax(0,1fr)}}
+.col{display:flex;flex-direction:column;gap:20px;min-width:0}
+.note{font-size:15.5px;color:var(--ink2);max-width:var(--measure)}
+.rule{height:1px;background:var(--ink);opacity:.35;border:0;margin:0}
+
+/* night-side instruments: images sit in black, as they do in space */
+.night{background:var(--night);color:var(--white)}
+.night .note,.night .src{color:var(--dimw)}
+.btn{appearance:none;border:1.5px solid currentColor;background:none;color:inherit;font:inherit;font-size:16px;padding:9px 16px;cursor:pointer}
+.btn:hover{background:var(--ink);color:var(--ground)}
+.night .btn:hover{background:var(--white);color:var(--night)}
+.btn[aria-pressed="true"]{background:var(--ink);color:var(--ground)}
+.night .btn[aria-pressed="true"]{background:var(--white);color:var(--night)}
+.row{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px}
+
+/* ---------- line it up ---------- */
+#align{padding-block:0}
+#align .inner{padding-block:clamp(56px,8vw,104px)}
+.align{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.9fr);grid-template-rows:auto 1fr;grid-template-areas:"stage head" "stage ctl";gap:18px clamp(26px,4.5vw,72px);align-items:start}
+.align .ahead{grid-area:head;display:flex;flex-direction:column;gap:14px}
+.align .stage{grid-area:stage}
+.align .col{grid-area:ctl;gap:16px}
+@media (max-width:940px){.align{grid-template-columns:minmax(0,1fr);grid-template-rows:none;grid-template-areas:"head" "stage" "ctl"}#ascore{order:-1}}
+.stage{position:relative;aspect-ratio:1/1;width:100%;max-width:620px;justify-self:center;overflow:hidden;background:#000;
+  cursor:grab;touch-action:none;user-select:none;outline:1px solid #3a3a37}
+.stage:active{cursor:grabbing}
+.stage img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;pointer-events:none;-webkit-user-drag:none}
+#amove{opacity:.55;will-change:transform}
+.stage svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.score{font-size:clamp(56px,6.4vw,100px);line-height:.9;font-weight:500;letter-spacing:-.03em}
+.score small{font-size:.3em;letter-spacing:0;font-weight:400;color:var(--dimw)}
+.readout{font-size:17px;color:var(--dimw)}
+.readout b{color:var(--white);font-weight:500}
+.verdictline{font-size:19px;line-height:1.45;min-height:4.4em}
+.align h2{font-size:clamp(34px,4.4vw,64px);line-height:1;letter-spacing:-.018em}
+.apair{font-size:17px;color:var(--dimw);max-width:48ch}
+.apair em{color:var(--white)}
+
+/* ---------- two Suns ---------- */
+.relief{position:relative;aspect-ratio:1/1;max-width:640px;touch-action:none;user-select:none}
+.relief canvas{position:absolute;left:9%;top:9%;width:82%;height:82%;border-radius:50%;box-shadow:0 0 0 1.5px var(--ink)}
+.relief svg{position:absolute;inset:0;width:100%;height:100%}
+.rose text{font-family:var(--f);font-weight:500;fill:var(--ink)}
+input[type=range]{width:100%;accent-color:var(--ink);height:28px;margin:0;cursor:pointer}
+.band{border-top:1.5px solid var(--ink)}
+.band h3{font-size:22px;font-weight:600;padding:14px 0 8px}
+.band h3 span{display:block;font-weight:400;font-size:16px;color:var(--ink3)}
+.band dl{display:grid;grid-template-columns:1fr auto;margin:0}
+.band dt,.band dd{margin:0;padding:8px 0;border-bottom:1px solid rgba(0,0,0,.18);font-size:17px}
+.band dd{text-align:right;font-weight:500}
+.band dt i{display:inline-block;width:18px;margin-right:10px;font-style:normal;vertical-align:-2px}
+.band .zero dt,.band .zero dd{font-weight:600;font-size:19px;border-bottom:1.5px solid var(--ink)}
+.band .ex{padding-top:10px;font-size:15.5px;color:var(--ink2)}
+svg.chart{width:100%;height:auto;display:block;overflow:visible}
+svg.chart text{font-family:var(--f);fill:var(--ink2)}
+figure{margin:0}
+figcaption{margin-top:10px}
+
+/* ---------- every pairing ---------- */
+.sheet{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:22px 14px;align-items:start;margin-bottom:clamp(28px,4vw,46px)}
+@media (max-width:900px){.sheet{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.frame{appearance:none;display:block;width:100%;text-align:left;background:none;border:0;padding:0;cursor:pointer;color:var(--white);font:inherit}
+.frame__img{position:relative;display:block;aspect-ratio:1/1;background:#000;border:6px solid var(--night)}
+.frame__img img{width:100%;height:100%;object-fit:cover;display:block;filter:grayscale(1)}
+.frame[data-v="contradicted"] .frame__img{border:6px solid;border-image:repeating-linear-gradient(-45deg,var(--refuse-hatch) 0 2px,var(--night) 2px 5px) 6}
+.frame[data-v="unconfirmed"] .frame__img{border:6px dashed #8d8d86}
+.frame__cap{display:block;padding:8px 2px 0;color:var(--ink);font-size:15px;line-height:1.3}
+.frame__cap em{display:block;font-size:15.5px}
+.frame__cap small{display:block;color:var(--ink3);font-size:14px;margin-top:2px}
+.frame[aria-pressed="true"] .frame__img{outline:2.5px solid var(--ink);outline-offset:3px}
+.viewer{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.86fr);gap:clamp(22px,3.4vw,54px);align-items:start}
+@media (max-width:900px){.viewer{grid-template-columns:minmax(0,1fr)}}
+.plate{position:relative;display:grid;grid-template-columns:22px minmax(0,1fr) 22px;grid-template-rows:22px auto 22px;background:var(--night);padding:8px}
+.plate[data-v="contradicted"]{border:12px solid;border-image:repeating-linear-gradient(-45deg,var(--refuse-hatch) 0 2.5px,var(--night) 2.5px 7px) 12}
+.plate[data-v="unconfirmed"]{outline:2px dashed #6d6d67;outline-offset:-5px}
+.cols,.rows{display:flex;font-size:13px;color:var(--dimw);font-weight:500}
+.cols{grid-column:2;justify-content:space-around;align-items:center}
+.cols.b{grid-row:3}
+.rows{flex-direction:column;justify-content:space-around;align-items:center;grid-row:2}
+.rows.r{grid-column:3}
+.pimg{grid-column:2;grid-row:2;position:relative;aspect-ratio:1/1;overflow:hidden;background:#000}
+.pimg img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+.pimg svg{position:absolute;inset:0;width:100%;height:100%}
+.cell{cursor:crosshair;stroke:rgba(255,255,255,.28);stroke-width:1;vector-effect:non-scaling-stroke}
 .cell.on{stroke:#fff;stroke-width:2.6}
 .nogrid .cell{fill-opacity:0!important;stroke-opacity:0}
 .nogrid .cell.on{stroke-opacity:1}
-
-.legend{display:flex;flex-wrap:wrap;gap:6px 20px;font-size:14px;color:var(--ink2);margin-top:12px}
-.legend span{display:inline-flex;align-items:center;gap:8px}
-.sw{width:18px;height:13px;display:inline-block;border:1px solid var(--ink2);flex:none}
-.sw.ver{background:var(--sheet);border:1.5px solid var(--grid)}
-.sw.weak{background:repeating-linear-gradient(-45deg,var(--ochre) 0 1.6px,transparent 1.6px 4px);border-color:var(--ochre)}
-.sw.none{background:radial-gradient(circle,var(--none) .9px,transparent 1.2px) 0 0/4px 4px}
-.sw.mag{background:repeating-linear-gradient(-45deg,var(--mag) 0 1.6px,transparent 1.6px 4px);border-color:var(--mag)}
-
-.scalebar{display:flex;align-items:flex-end;gap:12px;margin-top:12px;font-size:12.5px;font-stretch:84%;color:var(--ink2)}
-.scalebar svg{height:22px;overflow:visible}
-
-/* ---------- opening ---------- */
-.open{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.94fr);gap:clamp(28px,5vw,80px);
-  align-items:start;padding-block:clamp(40px,7vw,96px) clamp(40px,6vw,72px)}
-@media (max-width:980px){.open{grid-template-columns:minmax(0,1fr)}}
-h1{font-size:clamp(36px,4.3vw,60px);line-height:1.02;font-stretch:112%;font-weight:640;letter-spacing:-.012em;
-  max-width:15ch;text-wrap:balance}
-.open .lede{font-size:clamp(18px,1.45vw,21px);line-height:1.5;margin-top:26px;max-width:36ch;color:var(--ink)}
-.open .said{margin-top:18px;max-width:46ch;color:var(--ink2);font-size:16.5px}
-.open .prov{margin-top:28px;padding-top:14px;border-top:1px solid var(--rule);max-width:56ch}
-.open figure{margin:0}
-.open figcaption{margin-top:14px}
-.replay{appearance:none;background:none;border:0;padding:0;font:inherit;font-size:14px;color:var(--grid);
-  text-decoration:underline;text-underline-offset:3px;cursor:pointer}
-#hwarp{mix-blend-mode:multiply;opacity:.62;transform-origin:50% 50%;will-change:transform}
-.hv{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 16px;margin-top:14px}
-.hv b{font-size:22px;font-stretch:112%;font-weight:640;color:var(--grid)}
-
-/* ---------- sections ---------- */
-section.part{padding-block:clamp(46px,7vw,92px);border-top:1px solid var(--rule)}
-.part__head{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:6px 24px;margin-bottom:clamp(22px,3vw,36px)}
-.part__head h2{font-size:clamp(28px,3.1vw,42px);line-height:1.05;font-stretch:112%;letter-spacing:-.008em}
-.part__head .src{grid-column:1/-1}
-.two{display:grid;grid-template-columns:minmax(0,1.08fr) minmax(0,1fr);gap:clamp(24px,4vw,64px);align-items:start}
-@media (max-width:940px){.two{grid-template-columns:minmax(0,1fr)}}
-.col{display:flex;flex-direction:column;gap:18px;min-width:0}
-.body{font-size:17px;line-height:1.6;max-width:var(--measure)}
-.body strong{font-weight:620}
-
-/* ---------- two Suns ---------- */
-.relief{position:relative;aspect-ratio:1/1;background:var(--sheet);border:1px solid var(--ink);touch-action:none;user-select:none}
-.relief canvas{position:absolute;left:9%;top:9%;width:82%;height:82%;border-radius:50%;box-shadow:0 0 0 1px var(--ink)}
-.relief svg{position:absolute;inset:0;width:100%;height:100%}
-.rose text{font-family:var(--f-sans);font-weight:600;font-stretch:80%;fill:var(--grid)}
-.sunB{cursor:grab}
-.sunB:active{cursor:grabbing}
-.ctl{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px}
-.seg{display:inline-flex;border:1px solid var(--ink2);background:var(--sheet)}
-.seg button{appearance:none;border:0;border-right:1px solid var(--ink2);background:none;color:var(--ink2);
-  font:inherit;font-size:14.5px;font-stretch:88%;padding:8px 14px;cursor:pointer}
-.seg button:last-child{border-right:0}
-.seg button:hover{background:var(--paper2);color:var(--ink)}
-.seg button[aria-pressed="true"]{background:var(--ink);color:var(--sheet)}
-input[type=range]{width:100%;accent-color:var(--grid);height:28px;margin:0;cursor:pointer}
-.band{background:var(--sheet);border:1px solid var(--rule2)}
-.band h3{font-size:17px;font-stretch:100%;padding:12px 16px;border-bottom:1px solid var(--rule)}
-.band h3 span{font-weight:400;color:var(--ink3);font-size:14.5px;margin-left:8px}
-.band dl{display:grid;grid-template-columns:1fr auto;margin:0}
-.band dt,.band dd{margin:0;padding:8px 16px;border-bottom:1px solid var(--paper2);font-size:15px}
-.band dd{text-align:right;font-weight:560}
-.band dt i{display:inline-block;width:14px;margin-right:8px;text-align:center;font-style:normal}
-.band .zero{background:var(--paper3)}
-.band .zero dt,.band .zero dd{font-weight:640;border-bottom:0}
-.band .ex{padding:10px 16px;border-top:1px solid var(--rule);font-size:14px;color:var(--ink2)}
-figure.fig{margin:0}
-figure.fig figcaption{margin-top:8px}
-svg.chart{width:100%;height:auto;display:block;overflow:visible}
-svg.chart text{font-family:var(--f-sans);font-stretch:84%;fill:var(--ink2)}
-
-/* ---------- every pairing ---------- */
-.pairs{display:grid;grid-template-columns:minmax(230px,.62fr) minmax(0,1.38fr);gap:clamp(22px,3.2vw,48px);align-items:start}
-@media (max-width:980px){.pairs{grid-template-columns:minmax(0,1fr)}}
-.gaz{list-style:none;margin:0;padding:0;border-top:1px solid var(--ink)}
-.gaz button{appearance:none;width:100%;display:grid;grid-template-columns:18px minmax(0,1fr);gap:4px 10px;text-align:left;
-  background:none;border:0;border-bottom:1px solid var(--rule);padding:11px 6px 11px 4px;cursor:pointer;color:var(--ink);font:inherit}
-.gaz button:hover{background:var(--paper2)}
-.gaz button[aria-pressed="true"]{background:var(--sheet);box-shadow:inset 3px 0 0 var(--ink)}
-.gaz em{font-size:17.5px;line-height:1.25;display:block}
-.gaz small{display:block;font-size:13px;font-stretch:84%;color:var(--ink3);margin-top:2px}
-.gsym{width:14px;height:14px;margin-top:4px}
-.pview{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.72fr);gap:clamp(18px,2.4vw,32px);align-items:start}
-@media (max-width:760px){.pview{grid-template-columns:minmax(0,1fr)}}
-.vblock h3{font-size:clamp(24px,2.3vw,30px);font-stretch:112%;line-height:1.1}
-.vblock .what{margin-top:6px;font-size:15px;color:var(--ink2)}
-.vblock .facts{margin:14px 0 0;display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:14.5px}
-.vblock dt{color:var(--ink3)} .vblock dd{margin:0}
-.gloss{font:italic 400 17px/1.55 var(--f-it);color:var(--ink);border-left:2px solid var(--grid);padding-left:14px;max-width:62ch}
+.tabs{display:flex;flex-wrap:wrap;gap:4px 20px;margin-top:12px}
+.tabs button{appearance:none;background:none;border:0;border-bottom:1.5px solid transparent;font:inherit;font-size:16px;padding:4px 0;cursor:pointer;color:var(--ink2)}
+.tabs button[aria-pressed="true"]{color:var(--ink);border-bottom-color:var(--ink)}
+.vword{font-size:clamp(34px,3.6vw,52px);line-height:1;font-weight:600;letter-spacing:-.015em}
+.vword.contradicted{color:var(--refuse)}
+.vsub{font-size:18px;margin-top:10px}
+.facts{margin:16px 0 0;display:grid;grid-template-columns:auto 1fr;gap:7px 18px;font-size:16px}
+.facts dt{color:var(--ink3)} .facts dd{margin:0}
+.gloss{font-size:18px;line-height:1.55;font-style:italic;max-width:62ch;border-left:2px solid var(--ink);padding-left:16px}
 .gloss b{font-weight:600}
-.layers{display:flex;flex-wrap:wrap;gap:4px 18px}
-.layers button{appearance:none;border:0;border-bottom:2px solid transparent;background:none;font:inherit;font-size:14.5px;font-stretch:86%;padding:4px 0;cursor:pointer;color:var(--ink2)}
-.layers button:hover{color:var(--ink)}
-.layers button[aria-pressed="true"]{color:var(--ink);border-bottom-color:var(--grid)}
-.inputs{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.inputs figure{margin:0}
-.inputs img{width:100%;aspect-ratio:1/1;object-fit:cover;display:block;border:1px solid var(--ink)}
-.inputs figcaption{font-size:13.5px;line-height:1.4;color:var(--ink2);margin-top:6px}
-.inputs figcaption em{font-size:15px;color:var(--ink)}
-.square{background:var(--sheet);border:1px solid var(--rule2)}
-.square h4{margin:0;padding:10px 14px;border-bottom:1px solid var(--rule);font-size:15.5px;font-weight:600;display:flex;justify-content:space-between;gap:10px;align-items:center}
-.square h4 span{font-weight:500;font-size:13.5px;font-stretch:86%}
-.square dl{display:grid;grid-template-columns:1fr auto;margin:0}
-.square dt,.square dd{margin:0;padding:7px 14px;border-bottom:1px solid var(--paper2);font-size:14px}
-.square dd{text-align:right;font-weight:560}
-.square dl > :nth-last-child(-n+2){border-bottom:0}
-.twin{background:var(--sheet);border:1px solid var(--rule2)}
-.twin h4{margin:0;padding:12px 14px;border-bottom:1px solid var(--rule);font-size:15px;font-weight:560;line-height:1.4}
-.twin table{width:100%;border-collapse:collapse;font-size:14px}
-.twin th,.twin td{padding:7px 14px;border-bottom:1px solid var(--paper2);text-align:right}
+.sq{border-top:1.5px solid var(--ink)}
+.sq h4{display:flex;justify-content:space-between;gap:10px;font-size:19px;padding:10px 0 6px}
+.sq h4 span{font-weight:400;font-size:16px}
+.sq dl{display:grid;grid-template-columns:1fr auto;margin:0}
+.sq dt,.sq dd{margin:0;padding:6px 0;border-bottom:1px solid rgba(0,0,0,.16);font-size:16px}
+.sq dd{text-align:right;font-weight:500}
+.inputs{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.inputs img{width:100%;aspect-ratio:1/1;object-fit:cover;display:block;background:#000}
+.inputs figcaption{font-size:15px;line-height:1.4;color:var(--ink2);margin-top:6px}
+.twin{border-top:1.5px solid var(--ink)}
+.twin h4{font-size:17px;font-weight:500;padding:10px 0}
+.twin table{width:100%;border-collapse:collapse;font-size:15.5px}
+.twin th,.twin td{padding:6px 10px 6px 0;border-bottom:1px solid rgba(0,0,0,.16);text-align:right}
 .twin th:first-child,.twin td:first-child{text-align:left;color:var(--ink2)}
-.twin thead th{font-weight:560;font-size:13px;color:var(--ink3)}
+.twin thead th{font-weight:500;color:var(--ink3);font-size:14.5px}
 
-/* ---------- whole overlap ---------- */
-svg.tilemap{width:100%;height:auto;display:block;background:var(--sheet);border:1px solid var(--ink)}
-.tilemap .t{cursor:crosshair;vector-effect:non-scaling-stroke;stroke:var(--grid);stroke-width:1}
-.tilemap .t.on{stroke:var(--ink);stroke-width:2.4}
-.tilemap .t.out{stroke:var(--ochre);stroke-dasharray:5 3;stroke-width:1.8}
+/* ---------- the check, tested; the whole overlap ---------- */
+.big{font-size:clamp(46px,5.4vw,80px);line-height:.95;font-weight:500;letter-spacing:-.03em}
+.big small{display:block;font-size:17px;letter-spacing:0;line-height:1.45;font-weight:400;color:var(--ink2);margin-top:10px;max-width:40ch}
+.night .big small{color:var(--dimw)}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+@media (max-width:620px){.pair{grid-template-columns:1fr}}
+.tiles{width:100%;height:auto;display:block;background:var(--night)}
+.tiles .t{cursor:crosshair;vector-effect:non-scaling-stroke;stroke:#e9e9e4;stroke-width:1}
+.tiles .t.on{stroke:#fff;stroke-width:2.6}
+.tiles .t.out{stroke:#e9e9e4;stroke-dasharray:5 3}
 
-/* ---------- planted errors ---------- */
-.scale{display:flex;flex-direction:column;gap:8px;padding:16px;background:var(--sheet);border:1px solid var(--rule2)}
-.scale b{font-size:30px;font-stretch:112%;font-weight:640;line-height:1}
-.scale b small{font-size:14px;font-weight:450;font-stretch:90%;color:var(--ink3);margin-left:10px}
-.scale svg{width:100%;height:26px}
-.scale p{font-size:15px;color:var(--ink2)}
-
-/* ---------- how it works: a surveyor's traverse ---------- */
-.trav{position:relative;list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:12px}
-.trav::before{content:"";position:absolute;left:7px;right:7px;top:9px;height:0;border-top:1.5px solid var(--ink)}
-.trav li{position:relative;padding-top:30px}
-.trav li::before{content:"";position:absolute;left:0;top:1px;width:0;height:0;border-left:8px solid transparent;
-  border-right:8px solid transparent;border-bottom:14px solid var(--ink)}
-.trav b{display:block;font-size:16px;font-weight:600;font-stretch:96%;line-height:1.2}
-.trav span{display:block;font-size:14px;line-height:1.4;color:var(--ink2);margin-top:4px}
-@media (max-width:980px){
-  .trav{grid-template-columns:minmax(0,1fr);gap:0}
-  .trav::before{left:7px;right:auto;top:6px;bottom:6px;height:auto;border-top:0;border-left:1.5px solid var(--ink)}
-  .trav li{padding:0 0 18px 34px}
-}
-.check{margin-top:26px;display:grid;grid-template-columns:auto minmax(0,1fr);gap:16px;align-items:start;
-  padding:18px 20px;background:var(--sheet);border:2px solid var(--grid)}
-.check svg{width:34px;height:34px}
-.check b{font-size:20px;font-stretch:108%;font-weight:640;display:block}
-.check p{font-size:15.5px;color:var(--ink2);margin-top:4px;max-width:70ch}
-.outs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:14px}
-@media (max-width:860px){.outs{grid-template-columns:minmax(0,1fr)}}
-.outs div{padding:14px 16px;background:var(--sheet);font-size:15px;line-height:1.45;color:var(--ink2)}
-.outs b{display:block;font-size:17px;font-weight:620;color:var(--ink);margin-bottom:4px}
-.outs .o1{border-top:4px solid var(--grid)}
-.outs .o2{border-top:4px dashed var(--ochre)}
-.outs .o3{border-top:8px solid;border-image:repeating-linear-gradient(-45deg,var(--mag) 0 2px,transparent 2px 5px) 8}
-.hw{margin-top:16px;font-size:15px;color:var(--ink2)}
-
-/* ---------- tables ---------- */
-.scroll{overflow-x:auto}
-table.gz{width:100%;border-collapse:collapse;min-width:640px;font-size:15.5px}
-.gz th{text-align:left;font-weight:560;font-size:13.5px;font-stretch:86%;color:var(--ink3);padding:0 14px 10px 0;border-bottom:1px solid var(--ink)}
-.gz td{padding:13px 14px 13px 0;border-bottom:1px solid var(--rule);vertical-align:top;color:var(--ink2);line-height:1.45}
-.gz td:first-child{color:var(--ink);width:34%}
-.gz td:first-child em{font-size:17px}
-.gz td:first-child small{display:block;font-size:13px;font-stretch:86%;color:var(--ink3);margin-top:2px}
-.gz td:last-child,.gz th:last-child{text-align:right;white-space:nowrap;padding-right:0}
-.gz td:last-child{color:var(--ink);font-weight:560}
-.gz .swc{display:inline-block;width:12px;height:12px;margin-right:9px;vertical-align:-1px}
+/* ---------- ledgers ---------- */
+.ledger{list-style:none;margin:0;padding:0;border-top:1.5px solid var(--ink)}
+.ledger li{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1.6fr) 11.5em;gap:4px 28px;padding:16px 0;border-bottom:1px solid rgba(0,0,0,.2);align-items:baseline}
+@media (max-width:760px){.ledger li{grid-template-columns:minmax(0,1fr) auto}.ledger b{white-space:nowrap}.ledger li p{grid-column:1/-1;order:3}}
+.ledger em{font-size:18px}
+.ledger small{display:block;font-size:14.5px;color:var(--ink3);margin-top:2px}
+.ledger p{font-size:16px;color:var(--ink2)}
+.ledger b{font-weight:600;text-align:right}
+#ledgers{padding-top:clamp(24px,3vw,40px)}
+.ledger.refused li{padding-left:24px;position:relative}
+.ledger.refused li::before{content:"";position:absolute;left:0;top:23px;width:12px;height:12px;
+  background:repeating-linear-gradient(-45deg,var(--refuse-hatch) 0 1.6px,transparent 1.6px 4px);outline:1.5px solid var(--refuse-hatch)}
 
 /* ---------- try a pair ---------- */
 .drops{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 @media (max-width:560px){.drops{grid-template-columns:1fr}}
-.drop{position:relative;background:var(--sheet);border:1px dashed var(--ink2);min-height:150px;padding:16px;cursor:pointer;
-  display:flex;flex-direction:column;justify-content:center;align-items:center;gap:6px;text-align:center}
-.drop:hover,.drop.over{border-style:solid;border-color:var(--grid)}
-.drop b{font-size:17px;font-weight:600}
-.drop span{font-size:13.5px;color:var(--ink3);overflow-wrap:anywhere}
-.drop img{width:84px;height:84px;object-fit:cover;border:1px solid var(--ink)}
+.drop{position:relative;border:1.5px dashed #6d6d67;min-height:160px;padding:16px;cursor:pointer;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:6px;text-align:center}
+.drop:hover,.drop.over{border-style:solid;border-color:var(--white)}
+.drop b{font-size:19px;font-weight:500}
+.drop span{font-size:14.5px;color:var(--dimw);overflow-wrap:anywhere}
+.drop img{width:86px;height:86px;object-fit:cover}
 .drop input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
-.go{appearance:none;border:1px solid var(--ink);background:var(--ink);color:var(--sheet);font:inherit;font-weight:600;
-  font-size:16px;padding:12px 22px;cursor:pointer}
-.go[disabled]{background:none;color:var(--ink3);border-color:var(--rule2);cursor:not-allowed}
-.log{font-size:14.5px;color:var(--ink2);min-height:1.5em;white-space:pre-wrap}
-.log.bad{color:var(--mag)}
+.log{font-size:15.5px;color:var(--dimw);min-height:1.5em;white-space:pre-wrap}
+.log.bad{color:#ff7ab8}
+.go2[disabled]{opacity:.45;cursor:not-allowed}
 
-/* ---------- colophon ---------- */
-footer{border-top:1px solid var(--ink);margin-top:20px;padding-block:40px 64px;background:var(--paper2)}
-.colo{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:26px 48px}
-.colo h3{font-size:16px;font-weight:620;margin-bottom:10px}
-.colo p{font-size:14.5px;line-height:1.55;color:var(--ink2);margin-bottom:8px}
-.colo code{font-family:var(--f-sans);font-weight:560;color:var(--ink);background:var(--sheet);padding:1px 5px;border:1px solid var(--rule)}
-.imprint{margin-top:34px;padding-top:14px;border-top:1px solid var(--rule2);font-size:13.5px;color:var(--ink3);display:flex;flex-wrap:wrap;gap:6px 26px}
+footer{padding-block:48px 70px;border-top:1.5px solid var(--ink)}
+.colo{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:28px 52px}
+.colo h3{font-size:19px;font-weight:600;margin-bottom:10px}
+.colo p{font-size:16px;color:var(--ink2);margin-bottom:8px}
+.colo code{font-family:var(--f);font-weight:500;color:var(--ink)}
+.imprint{margin-top:36px;font-size:15px;color:var(--ink3);display:flex;flex-wrap:wrap;gap:6px 30px}
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
 </style>
 
-<header class="top"><div class="wrap top__in">
-  <a class="mark" href="#top"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7.5" fill="none" stroke="#000" stroke-width="1.4"/><path d="M12 1v22M1 12h22" stroke="#0c6b89" stroke-width="1.4"/><path d="M12 4.5a7.5 7.5 0 0 0 0 15z" fill="#000"/></svg>LunaXX</a>
+<header class="bar"><div class="wrap bar__in">
+  <a class="mark" href="#top"><svg viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="11" r="9.5" fill="#f4f4f1" stroke="#000" stroke-width="1.3"/><path d="M11 1.5a9.5 9.5 0 0 0 0 19c-3.2-2.4-4.6-5.8-4.6-9.5S7.8 3.9 11 1.5z" fill="#000"/></svg>LunaXX</a>
   <nav aria-label="Sections">
+    <a href="#align">Line it up</a>
     <a href="#suns">Two Suns</a>
-    <a href="#live" id="navlive" hidden>Try a pair</a>
     <a href="#pairs">Every pairing</a>
-    <a href="#overlap">Whole overlap</a>
-    <a href="#planted">Planted errors</a>
-    <a href="#method">How it works</a>
-    <a href="#results">Results</a>
-    <a href="#refusals">Refusals</a>
+    <a href="#planted">The check, tested</a>
+    <a href="#ledgers">Results</a>
+    <a href="#live" id="navlive" hidden>Try a pair</a>
   </nav>
-  <span class="frozen">Evidence frozen at <b><span id="fz"></span></b></span>
+  <span class="frozen">Evidence frozen at <span id="fz"></span></span>
 </div></header>
 
-<main class="wrap" id="top">
-  <section class="open">
-    <div>
-      <h1>Lunar registration that knows when it is wrong</h1>
-      <p class="lede">We align Chandrayaan-2 images to lunar references across Sun angle, scale and sensor. Then a second test, which never reads the matches, checks the result region by region and says whether it can be trusted.</p>
-      <p class="said">Across 160 real ground windows and 8 instrument pairings, the check raised no false alarm in either Sun population, and caught every planted 5 m error on the windows whose Suns were within 10° of each other.</p>
-      <p class="note prov" id="whatmode">This page reads the evidence logs, whose rows were measured at the freeze commit <span id="fz2"></span>, the same commit the submitted deck quotes. The per-pair panels come from the pipeline's own saved run of each pair, which can differ from the logged row by a few inliers because MAGSAC++ samples at random; the verdicts do not. Nothing here is drawn by hand or filled with example data.</p>
-    </div>
-    <figure>
-      <div class="plate" id="hplate" data-v="agrees">
-        <div class="plate__cols" aria-hidden="true"></div>
-        <div class="plate__rows" aria-hidden="true"></div>
-        <div class="plate__img" id="himg" role="img" aria-label="Trust map of SAC's own benchmark pair: Chandrayaan-2 OHRC registered onto LRO NAC">
-          <img id="href" alt=""><img id="hwarp" alt="">
-          <svg id="hgrid" viewBox="0 0 8 8" preserveAspectRatio="none"></svg>
-        </div>
-        <div class="plate__rows r" aria-hidden="true"></div>
-        <div class="plate__cols b" aria-hidden="true"></div>
+<main id="top">
+  <section class="hero" id="hero" aria-labelledby="h1">
+    <canvas id="terrain" aria-hidden="true"></canvas>
+    <h1 class="sr" id="h1">Shadows move. The ground doesn't.</h1>
+    <div class="dial" aria-live="polite"><svg id="sundial" viewBox="0 0 54 54" aria-hidden="true"></svg><span id="sunsay"></span></div>
+    <div class="hero__foot"><div class="wrap">
+      <div>
+        <p class="lede">LunaXX aligns Chandrayaan-2 images to lunar references across Sun angle, scale and sensor. Then it checks the answer square by square, with a test that never looks at the matches, and says where it will not vouch for the result.</p>
+        <small>The ground above is the real 74°S site from the LOLA elevation model, and the letters stand on it. Drag across it to move the Sun.</small>
       </div>
-      <div class="hv" id="hv" aria-live="polite"></div>
-      <div class="legend">
-        <span><i class="sw ver"></i>verified: shown clear, matches and pixels agree</span>
-        <span><i class="sw weak"></i>weak: measured, does not hold</span>
-        <span><i class="sw none"></i>no evidence: nothing measured, nothing guessed</span>
-      </div>
-      <figcaption class="src" id="hcap"></figcaption>
-    </figure>
+      <p class="go"><a href="#align">Line two images up yourself</a><a href="#pairs">See every verdict</a></p>
+    </div></div>
   </section>
 
-  <section class="part" id="suns">
-    <div class="part__head"><h2>Same ground, two Suns</h2>
-      <p class="src">From REPORT.md, <span class="it">Real sun-angle sweep</span>. Relief from the LOLA 60 m elevation model of the 74°S site.</p></div>
+  <section class="part night" id="align"><div class="wrap inner">
+    <div class="align">
+      <div class="stage" id="stage" role="application" aria-label="Drag the upper image to align it with the reference. Arrow keys move it one pixel." tabindex="0">
+        <img id="aref" alt=""><img id="amove" alt="">
+        <svg id="agrid" viewBox="0 0 8 8" preserveAspectRatio="none"></svg>
+      </div>
+      <div class="ahead"><h2>Line it up yourself</h2><p class="apair" id="apair"></p></div>
+      <div class="col">
+        <div class="row" role="group" aria-label="Which pair">
+          <button class="btn" type="button" id="apA" aria-pressed="true">A pair it accepted</button>
+          <button class="btn" type="button" id="apR" aria-pressed="false">A pair it refused</button>
+        </div>
+        <p class="score num" id="ascore">0 <small>of 64 squares agree</small></p>
+        <p class="readout num" id="aoff"></p>
+        <p class="verdictline" id="asay"></p>
+        <div class="row"><button class="btn" type="button" id="asnap">Let the pipeline align it</button><button class="btn" type="button" id="ascat">Scatter it again</button></div>
+        <p class="note">A simplified version of our check, running in your browser: each square compares pixels at the current shift, nothing else. The real check runs in Python, searches each square for its correlation peak, and never reads a match position.</p>
+      </div>
+    </div>
+  </div></section>
+
+  <section class="part" id="suns"><div class="wrap">
+    <div class="head"><h2>Same ground, two Suns</h2>
+      <p>At the lunar south pole the Sun never climbs high, so shadows run long and swing right round the compass. Every shadow edge a matcher could use moves, or turns inside out.</p></div>
     <div class="two">
       <div class="col">
         <div class="relief" id="relief">
           <canvas id="shade" aria-label="Shaded relief of the 74 degrees South site from the LOLA elevation model, lit by a movable Sun"></canvas>
           <svg id="rose" viewBox="0 0 100 100" aria-hidden="true"></svg>
         </div>
-        <div class="ctl">
-          <div class="seg" role="group" aria-label="Which Sun lights the relief">
-            <button type="button" id="litA" aria-pressed="false">Lit by Sun A</button>
-            <button type="button" id="litB" aria-pressed="true">Lit by Sun B</button>
-            <button type="button" id="litX" aria-pressed="false">Alternate</button>
-          </div>
+        <div class="row" role="group" aria-label="Which Sun lights the relief">
+          <button class="btn" type="button" id="litA" aria-pressed="false">Lit by Sun A</button>
+          <button class="btn" type="button" id="litB" aria-pressed="true">Lit by Sun B</button>
+          <button class="btn" type="button" id="litX" aria-pressed="false">Alternate</button>
         </div>
-        <label class="lab" for="dz">Angle between the two Suns, <span id="dzv">0°</span></label>
+        <label class="note" for="dz">Angle between the two Suns: <span id="dzv" class="num">0°</span></label>
         <input id="dz" type="range" min="0" max="180" step="1" value="0">
-        <p class="note">Sun A is the OHRC frame's own Sun, 7° above the horizon. Drag Sun B round the compass, or use the slider. Every shadow edge a matcher could use moves or turns inside out. The relief is an illustration of why the problem is hard; the counts beside it are real windows.</p>
+        <p class="src">Sun A is the OHRC frame's own, 7° above the horizon. Drag Sun B round the compass. Relief and shadows from the LOLA 60 m elevation model; contours every 250 m.</p>
       </div>
       <div class="col">
-        <p class="body">One OHRC frame against <strong>25 LRO NAC frames</strong> whose Suns differ from it by 3° to 153° in azimuth. Each mark in the figure is a real 640-pixel window. In every band the line that matters is the last: a failure the system did not catch. It is zero in every band.</p>
+        <p class="body">We registered one OHRC frame against <strong>25 LRO NAC frames</strong> whose Suns differ from it by 3° to 153° in azimuth: 69 real windows. Wherever you put Sun B, the last line below is the one that matters.</p>
         <div class="band" id="band" aria-live="polite"></div>
-        <figure class="fig">
+        <figure>
           <svg class="chart" id="scatter" viewBox="0 0 560 310" role="img" aria-label="Inlier matches per window against Sun azimuth difference, 69 real windows"></svg>
-          <figcaption class="src">Inlier matches per window against the angle between the Suns, 69 windows. Outcome by image evidence.</figcaption>
+          <figcaption class="src">From REPORT.md, Real sun-angle sweep. Inlier matches per window against the angle between the Suns; outcome judged by image evidence.</figcaption>
         </figure>
       </div>
     </div>
-  </section>
+  </div></section>
 
-  <section class="part" id="live" hidden>
-    <div class="part__head"><h2>Try a pair of your own</h2>
-      <p class="src">Runs <span class="it">core/pipeline.py</span>, the same function that produced every frozen number, on this computer.</p></div>
+  <section class="part night" id="live" hidden><div class="wrap">
+    <div class="head"><h2>Try a pair of your own</h2>
+      <p style="color:var(--dimw)">This runs the real pipeline, the same function that produced every frozen number, on this computer.</p></div>
     <div class="two">
       <div class="col">
         <div class="drops">
           <label class="drop" id="dropA"><b>Image A</b><span>the image to align</span><input type="file" id="fileA" accept=".tif,.tiff,.img,.xml,.lbl,.png,.jpg,.jpeg"></label>
           <label class="drop" id="dropB"><b>Image B</b><span>the reference grid</span><input type="file" id="fileB" accept=".tif,.tiff,.img,.xml,.lbl,.png,.jpg,.jpeg"></label>
         </div>
-        <div class="ctl"><button class="go" id="go" type="button" disabled>Register the pair</button><span class="lab" id="hint">Choose two images</span></div>
+        <div class="row"><button class="btn go2" id="go" type="button" disabled>Register the pair</button><span class="note" id="hint">Choose two images</span></div>
         <p class="log" id="log" aria-live="polite"></p>
-        <p class="note">GeoTIFF, PDS (.img, .xml, .lbl), PNG and JPEG are accepted. Expect up to a minute on a busy laptop. Nothing is saved: the uploads sit in a temporary folder that is deleted when the run ends, and no evidence log is touched. If the matcher fails on your pair, the check should say so, and that is a pass.</p>
+        <p class="note">GeoTIFF, PDS (.img, .xml, .lbl), PNG and JPEG. Expect up to a minute on a busy laptop. Nothing is kept: the uploads sit in a temporary folder that is deleted when the run ends. If the matcher fails on your pair, the check should say so, and that is a pass.</p>
       </div>
       <div class="col">
-        <div class="vblock" id="lverdict"><h3 style="color:var(--ink3)">Waiting for two images</h3><p class="what">The result is drawn by the same code as every pair below, so a live verdict and a frozen one mean the same thing.</p></div>
-        <p class="gloss" id="lgloss">A fair question is whether these results are real or replayed. Hand it two images and watch the verdict being computed.</p>
+        <p class="vword" id="lword" style="color:var(--dimw)">Waiting for two images</p>
+        <p class="note" id="lsay">The result is drawn by the same code as every pair on this page, so a live verdict and a frozen one mean the same thing.</p>
       </div>
     </div>
-  </section>
+  </div></section>
 
-  <section class="part" id="pairs">
-    <div class="part__head"><h2>Every pairing, and its verdict</h2>
-      <p class="src">From <span class="it">evaluation/real_pairs_log.csv</span> and the pipeline's saved run of each pair. One representative of every instrument pairing, and of all three verdicts.</p></div>
-    <div class="pairs">
-      <ul class="gaz" id="gaz" aria-label="Pairings"></ul>
+  <section class="part" id="pairs"><div class="wrap">
+    <div class="head"><h2>Every pairing, and what the check said</h2>
+      <p>One window from every instrument pairing we tested, and all three verdicts. Pick a plate. Hatching in magenta marks what the system refused.</p></div>
+    <div class="sheet" id="sheet"></div>
+    <div class="viewer">
       <div class="col">
-        <div class="pview">
-          <div class="col">
-            <div class="plate" id="pplate">
-              <div class="plate__cols" aria-hidden="true"></div>
-              <div class="plate__rows" aria-hidden="true"></div>
-              <div class="plate__img" id="pimg" tabindex="0" role="application" aria-label="Trust map. Arrow keys move between grid squares.">
-                <img id="imgA" alt=""><img id="imgB" alt="" hidden>
-                <svg id="grid" viewBox="0 0 8 8" preserveAspectRatio="none"></svg>
-              </div>
-              <div class="plate__rows r" aria-hidden="true"></div>
-              <div class="plate__cols b" aria-hidden="true"></div>
-            </div>
-            <div class="layers" id="layers" role="group" aria-label="What the plate shows"></div>
-            <div class="ctl"><label class="lab"><input type="checkbox" id="gridon" checked> Show the grid</label><span class="note" id="layname"></span></div>
+        <div class="plate" id="plate">
+          <div class="cols" aria-hidden="true"></div><div class="rows" aria-hidden="true"></div>
+          <div class="pimg" id="pimg" tabindex="0" role="application" aria-label="Trust map. Arrow keys move between grid squares.">
+            <img id="imgA" alt=""><img id="imgB" alt="" hidden>
+            <svg id="grid" viewBox="0 0 8 8" preserveAspectRatio="none"></svg>
           </div>
-          <div class="col">
-            <div class="vblock" id="verdict"></div>
-            <div class="square" id="square"></div>
-          </div>
+          <div class="rows r" aria-hidden="true"></div><div class="cols b" aria-hidden="true"></div>
         </div>
+        <div class="tabs" id="layers" role="group" aria-label="What the plate shows"></div>
+        <div class="row" style="justify-content:space-between"><label class="note"><input type="checkbox" id="gridon" checked> Show the squares</label><span class="note" id="layname"></span></div>
+        <p class="note">Squares shown clear are verified: matches and pixels agree. Hatched squares are weak. Dotted squares had no matches, so nothing is claimed there. A square is verified only with at least 3 inliers, a local inlier ratio of 0.5 or more, and a correlation that peaks within 2 px at 0.3 or more.</p>
+      </div>
+      <div class="col">
+        <div id="verdict"></div>
         <p class="gloss" id="gloss"></p>
+        <div class="sq" id="square"></div>
         <div class="inputs" id="inputs"></div>
         <div class="twin" id="twin" hidden></div>
-        <p class="note">A square is verified only with at least 3 inliers, a local inlier ratio of 0.5 or more, and a cross-correlation of the warped image against the reference that peaks within 2 px at 0.3 or more. A square with no matches is left empty rather than filled in from its neighbours. The frame is refused when fewer than a quarter of the squares the check could measure agree with the matcher.</p>
       </div>
     </div>
-  </section>
+  </div></section>
 
-  <section class="part" id="overlap">
-    <div class="part__head"><h2>The whole overlap, not chosen windows</h2>
-      <p class="src">From REPORT.md, <span class="it">The whole lit overlap of one OHRC frame with one NAC</span>.</p></div>
+  <section class="part night" id="planted"><div class="wrap">
+    <div class="head"><h2>The check, tested on purpose</h2>
+      <p style="color:var(--dimw)">A failure detector is only worth something if its false alarms and its blind spot are measured. So we planted wrong answers of known size in 30 real windows and asked it.</p></div>
     <div class="two">
-      <figure class="fig">
-        <svg class="tilemap" id="tilemap" role="img" aria-label="Map of 37 tiled windows in south polar stereographic coordinates"></svg>
-        <figcaption class="src">Window footprints in their true positions, south polar stereographic. None overlaps, so the 13.1 km² is distinct ground. Deeper fill means a smaller held-out error.</figcaption>
-      </figure>
-      <div class="col">
-        <p class="body">Every non-overlapping 640-pixel window the cutter finds in shared, lit, textured ground of one OHRC frame and NAC <span class="it">M1153871873LE</span>, chosen before any matching ran: <strong>37 windows, 13.1 km², all 37 accepted</strong>. The held-out median is 0.61 px, which is 0.57 m on the 0.93 m NAC grid.</p>
-        <p class="body">36 of the 37 are under 3 px. The one that is not reports 316 px at an inlier ratio of 0.542: the held-out median is only robust while the inlier ratio stays well above one half. The image evidence says that window is registered; it is marked, not averaged away.</p>
-        <div class="square" id="tsquare"></div>
-      </div>
-    </div>
-  </section>
-
-  <section class="part" id="planted">
-    <div class="part__head"><h2>Wrong answers, planted on purpose</h2>
-      <p class="src">From <span class="it">evaluation/trust_real_calibration.csv</span>. 30 real windows in two Sun populations, never pooled.</p></div>
-    <div class="two">
-      <figure class="fig">
+      <figure>
         <svg class="chart" id="calchart" viewBox="0 0 560 320" role="img" aria-label="Share of planted registration errors flagged, by size of error in metres, for two Sun populations"></svg>
-        <figcaption class="src">Bars: 22 windows whose Suns are under 10° apart. Diamonds: SAC's 8 windows, Suns 132° to 174° apart. At 0 m nothing is wrong, so any flag is a false alarm.</figcaption>
+        <figcaption class="src">From evaluation/trust_real_calibration.csv. Bars: 22 windows whose Suns are under 10° apart. Diamonds: SAC's 8 windows, Suns 132° to 174° apart. The two are never pooled. At 0 m nothing is wrong, so any flag is a false alarm.</figcaption>
       </figure>
       <div class="col">
-        <p class="body">We move the true answer by a known distance and plant matches that agree with the wrong answer perfectly, so nothing the matcher reports can give it away. Then we ask the check. At 0 m it must stay silent, and it does: <strong>0 of 44 and 0 of 16</strong>. From 5 m it flags every planted error on the near-Sun windows. Below 2 m it catches almost nothing, and that is the honest floor of the method.</p>
-        <p class="body">A rotation or scale change about the centre leaves the centre still and moves the corners, so a verdict for the whole frame watches the wrong place: at 3 m of corner movement it refuses 0 of 120 trials, at 5 m only 15. The squares carry it instead.</p>
-        <div class="scale" id="m1"></div>
-        <div class="scale" id="m2"></div>
+        <div class="pair">
+          <p class="big num">0 of 44<small>false alarms with the Suns within 10°, and 0 of 16 with them 132° to 174° apart</small></p>
+          <p class="big num">5 m<small>and up: every planted error is flagged on the near-Sun windows. Below 2 m almost nothing is, and that is the floor.</small></p>
+        </div>
+        <hr class="rule" style="background:var(--white)">
+        <p class="note">A rotation or scale change about the centre leaves the centre still and moves the corners, so a verdict for the whole frame watches the wrong place: at 3 m of corner movement it refuses 0 of 120 trials, at 5 m only 15. The squares carry it instead.</p>
+        <div class="pair" id="rs"></div>
       </div>
     </div>
-  </section>
+  </div></section>
 
-  <section class="part" id="method">
-    <div class="part__head"><h2>How it works</h2>
-      <p class="src"><span class="it">core/pipeline.py</span>, in the order it runs.</p></div>
-    <ol class="trav">
-      <li><b>Input pair</b><span>A Chandrayaan-2 image and a lunar reference</span></li>
-      <li><b>One ground scale</b><span>Both resampled to one ground distance per pixel</span></li>
-      <li><b>Lighting removed</b><span>Reduced to gradient orientation</span></li>
-      <li><b>LoFTR</b><span>Dense matching without detectors, tiled, on the CPU</span></li>
-      <li><b>Sub-pixel</b><span>Each match refined by correlation</span></li>
-      <li><b>MAGSAC++</b><span>Outliers rejected, the transform fitted</span></li>
-      <li><b>Coverage</b><span>How the inliers spread over the 8×8 grid</span></li>
-    </ol>
-    <div class="check">
-      <svg viewBox="0 0 34 34" aria-hidden="true"><circle cx="17" cy="17" r="15" fill="none" stroke="#0c6b89" stroke-width="2"/><circle cx="17" cy="17" r="4.5" fill="#0c6b89"/><path d="M17 0v8M17 26v8M0 17h8M26 17h8" stroke="#0c6b89" stroke-width="2"/></svg>
-      <div><b>The independent area check</b><p>Cross-correlates the warped image against the reference, square by square, and never reads a match position. The squares vote on the matcher's transform, and this is the only step allowed to overrule the others.</p></div>
+  <section class="part" id="overlap"><div class="wrap">
+    <div class="head"><h2>The whole overlap, not chosen windows</h2>
+      <p>Every non-overlapping 640-pixel window in the shared, lit, textured ground of one OHRC frame and NAC <span class="it">M1153871873LE</span>, chosen before any matching ran.</p></div>
+    <div class="two">
+      <figure>
+        <svg class="tiles" id="tilemap" role="img" aria-label="Map of 37 tiled windows in south polar stereographic coordinates"></svg>
+        <figcaption class="src">From REPORT.md, The whole lit overlap of one OHRC frame with one NAC. Window footprints in their true positions; brighter means a smaller held-out error.</figcaption>
+      </figure>
+      <div class="col">
+        <p class="big num">37 of 37<small>windows accepted over 13.1 km²; held-out median 0.61 px, which is 0.57 m on the 0.93 m NAC grid</small></p>
+        <p class="note">36 of the 37 are under 3 px. The one that is not reports 316 px at an inlier ratio of 0.542: the held-out median is only robust while the inlier ratio stays well above one half. The image evidence says that window is registered; it is marked, not averaged away.</p>
+        <div class="sq" id="tsquare"></div>
+      </div>
     </div>
-    <div class="outs">
-      <div class="o1"><b>Agrees</b>The aligned GeoTIFF on the reference grid, control points for GDAL and QGIS, an ISIS match list, the metrics and the trust map.</div>
-      <div class="o2"><b>Unconfirmed</b>Kept and labelled, not certified.</div>
-      <div class="o3"><b>Contradicted</b>The matcher's answer is refused. A phase-correlation fallback is delivered, declared as a fallback, with its uncertainty in metres.</div>
-    </div>
-    <p class="hw">Runs on a laptop CPU with no discrete GPU and the network off: a median of 8.2 s per 640-pixel window over 89 OHRC to NAC windows.</p>
-  </section>
+  </div></section>
 
-  <section class="part" id="results">
-    <div class="part__head"><h2>What it registers</h2>
-      <p class="src">Each row is a section of REPORT.md, measured at the freeze commit and reproducible with one command.</p></div>
-    <div class="scroll"><table class="gz">
-      <thead><tr><th>Pairing</th><th>What was measured</th><th>Result</th></tr></thead>
-      <tbody>
-        <tr><td><em>OHRC onto LRO NAC, 74°S</em><small>whole lit overlap, tiled; cross-sensor</small></td><td>Every non-overlapping 640-pixel window in shared, lit, textured ground, 13.1 km², none chosen by hand. Held-out median on the 0.93 m grid.</td><td>37 of 37 accepted<br>0.61 px = 0.57 m</td></tr>
-        <tr><td><em>OHRC onto LRO NAC, SAC's equatorial pair</em><small>cross-sensor</small></td><td>SAC's own published pair (arXiv:2509.04775). Suns 174° apart in azimuth, every shadow reversed. Held-out median on the 1.62 m grid.</td><td>6 of 6 accepted<br>0.69–1.68 px = 1.1–2.7 m</td></tr>
-        <tr><td><em>OHRC onto LRO NAC, SAC's polar pair</em><small>cross-sensor</small></td><td>Suns 132° apart in azimuth. Two windows flagged rather than delivered.</td><td>4 of 6 accepted</td></tr>
-        <tr><td><em>OHRC onto LRO NAC, the Sun sweep</em><small>cross-sensor</small></td><td>One OHRC frame against 25 NAC frames, Suns 3° to 153° apart, 69 windows. Nothing wrongly accepted in any band.</td><td>51 registered<br>0 undetected failures</td></tr>
-        <tr><td><em>Kaguya TC onto Kaguya MI 749 nm</em><small>cross-sensor</small></td><td>Visible against visible, a 2× scale gap, on MI's 14.8 m grid.</td><td>3 of 3 accepted<br>0.23–0.47 px = 3.5–6.9 m</td></tr>
-        <tr><td><em>Kaguya TC onto Kaguya MI 1548 nm</em><small>multi-modal</small></td><td>The matcher is refused; global correlation is delivered instead and declared as such. Measured against the visible-band fit of the same window, on MI's 14.8 m grid.</td><td>3 of 3 delivered<br>0.23–1.09 px</td></tr>
-        <tr><td><em>OHRC onto Kaguya TC ortho map</em><small>cross-sensor</small></td><td>A 29.6× scale gap, 0.25 m against 7.4 m.</td><td>3 of 4 accepted</td></tr>
-        <tr><td><em>OHRC to NAC A to NAC B, closed loops</em><small>the A to B leg is the same sensor</small></td><td>Three registrations round a loop must return to the start. That cancels any error tied to one image, so it measures consistency, not accuracy. Closure on the 1.245 m grid of NAC B.</td><td>6 loops close to<br>0.086 px = 0.107 m</td></tr>
-        <tr><td><em>MiLOI, LRO NAC with itself</em><small>same sensor</small></td><td>81 published pairs of one ground under many Suns, judged against a truth network built from other pairs.</td><td>33 of 33 accepted<br>are correct</td></tr>
-      </tbody>
-    </table></div>
-    <p class="note" style="margin-top:18px">Two kinds of evidence run through this table and are never added together. Against exact truth, a synthetic pair rendered from the LOLA elevation model with a known transform, the error is 0.086 px = 5.1 m on the 60 m grid with the Suns 0° and 15° apart. On real imagery there is no ground truth, so the figure is a held-out residual: the median error over the 20% of matches the fit never saw.</p>
-  </section>
+  <section class="part" id="ledgers"><div class="wrap">
+    <div class="head"><h2>What it registers</h2>
+      <p>Each line is a section of REPORT.md, measured at the freeze commit and reproducible with one command.</p></div>
+    <ul class="ledger">
+      <li><span><em>OHRC onto LRO NAC, 74°S</em><small>whole lit overlap, tiled; cross-sensor</small></span><p>Every window in the shared ground, 13.1 km², none chosen by hand. Held-out median on the 0.93 m grid.</p><b class="num">37 of 37, 0.57 m</b></li>
+      <li><span><em>OHRC onto LRO NAC, SAC's equatorial pair</em><small>cross-sensor</small></span><p>SAC's own published pair (arXiv:2509.04775). Suns 174° apart, every shadow reversed. Held-out median 0.69–1.68 px on the 1.62 m grid.</p><b class="num">6 of 6, 1.1–2.7 m</b></li>
+      <li><span><em>OHRC onto LRO NAC, SAC's polar pair</em><small>cross-sensor</small></span><p>Suns 132° apart. Two windows flagged rather than delivered.</p><b class="num">4 of 6</b></li>
+      <li><span><em>OHRC onto LRO NAC, the Sun sweep</em><small>cross-sensor</small></span><p>One OHRC frame against 25 NAC frames, Suns 3° to 153° apart, 69 windows. Nothing wrongly accepted in any band.</p><b class="num">51 registered, 0 missed</b></li>
+      <li><span><em>Kaguya TC onto Kaguya MI 749 nm</em><small>cross-sensor</small></span><p>Visible against visible, a 2× scale gap. Held-out median 0.23–0.47 px on MI's 14.8 m grid.</p><b class="num">3 of 3, 3.5–6.9 m</b></li>
+      <li><span><em>Kaguya TC onto Kaguya MI 1548 nm</em><small>multi-modal</small></span><p>The matcher is refused; global correlation is delivered instead and declared, landing 0.23–1.09 px from the visible-band fit of the same window.</p><b class="num">3 of 3 delivered</b></li>
+      <li><span><em>OHRC onto Kaguya TC ortho map</em><small>cross-sensor</small></span><p>A 29.6× scale gap, 0.25 m against 7.4 m.</p><b class="num">3 of 4</b></li>
+      <li><span><em>OHRC to NAC A to NAC B, closed loops</em><small>the A to B leg is the same sensor</small></span><p>Three registrations round a loop must return to the start: consistency, not accuracy. Closure on the 1.245 m grid of NAC B.</p><b class="num">0.107 m</b></li>
+      <li><span><em>MiLOI, LRO NAC with itself</em><small>same sensor</small></span><p>81 published pairs of one ground under many Suns, judged against a truth network built from other pairs.</p><b class="num">33 accepted, 33 correct</b></li>
+    </ul>
+    <p class="note" style="margin-top:18px">Against exact truth, a synthetic pair rendered from the LOLA model with a known transform, the error is 0.086 px = 5.1 m on the 60 m grid with the Suns 0° and 15° apart. On real imagery there is no ground truth, so the figures above are held-out residuals: the median error over the 20% of matches the fit never saw. The two kinds are never added together.</p>
 
-  <section class="part" id="refusals">
-    <div class="part__head"><h2>What it declines to register</h2>
-      <p class="src">Each row is a section of REPORT.md. Hatched in magenta, as a chart marks ground it will not vouch for.</p></div>
-    <div class="scroll"><table class="gz">
-      <thead><tr><th>Pairing</th><th>What happened</th><th>Count</th></tr></thead>
-      <tbody>
-        <tr><td><i class="sw mag swc"></i><em>Kaguya TC onto MI 1548 nm</em><small>multi-modal</small></td><td>The matcher is refused on every window. The declared fallback lands 3.4 to 16.2 m from the visible-band registration of the same window (0.23 to 1.09 px on MI's 14.8 m grid).</td><td>3 of 3 refused</td></tr>
-        <tr><td><i class="sw mag swc"></i><em>Kaguya TC onto Chandrayaan-2 IIRS</em><small>multi-modal</small></td><td>Near-infrared at 89 m per pixel, 12× coarser than TC. None registers.</td><td>10 of 11 refused</td></tr>
-        <tr><td><i class="sw mag swc"></i><em>OHRC onto TMC-2 at SAC's site</em><small>two cameras, one spacecraft</small></td><td>Suns 120° apart in azimuth and 59° in incidence. This is the closest-Sun TMC-2 coverage of the frame in PRADAN's footprint catalogue.</td><td>4 of 4 refused</td></tr>
-        <tr><td><i class="sw mag swc"></i><em>OHRC onto NAC, Suns 60° to 120° apart</em><small>cross-sensor</small></td><td>The hard band of the real sweep. Nothing accepted, and nothing wrongly accepted.</td><td>0 of 12 accepted</td></tr>
-        <tr><td><i class="sw mag swc"></i><em>MiLOI, Sun vectors 90° or more apart</em><small>same sensor</small></td><td>No method registered any of them: ours, SIFT, ORB or AKAZE. All in scene S3.</td><td>0 of 16, any method</td></tr>
-        <tr><td><i class="sw mag swc"></i><em>TMC-2 fore onto aft</em><small>same sensor</small></td><td>Relief parallax is not a homography. Held-out median 2.6 px (15.5 m) on its 5.9 m grid.</td><td>1 of 4 accepted</td></tr>
-        <tr><td><i class="sw mag swc"></i><em>OHRC onto LOLA shaded relief</em><small>multi-modal, optical to elevation</small></td><td>Declared a failure rung before it was run.</td><td>declared failure</td></tr>
-      </tbody>
-    </table></div>
-  </section>
+    <div class="head" style="margin-top:clamp(56px,8vw,96px)"><h2>What it refuses</h2>
+      <p>Each line is a section of REPORT.md, hatched the way the plates above are.</p></div>
+    <ul class="ledger refused">
+      <li><span><em>Kaguya TC onto MI 1548 nm</em><small>multi-modal</small></span><p>The matcher is refused on every window. The declared fallback lands 3.4 to 16.2 m from the visible-band registration of the same window.</p><b class="num">3 of 3 refused</b></li>
+      <li><span><em>Kaguya TC onto Chandrayaan-2 IIRS</em><small>multi-modal</small></span><p>Near-infrared at 89 m per pixel, 12× coarser than TC. None registers.</p><b class="num">10 of 11 refused</b></li>
+      <li><span><em>OHRC onto TMC-2 at SAC's site</em><small>two cameras, one spacecraft</small></span><p>Suns 120° apart in azimuth and 59° in incidence. The closest-Sun TMC-2 coverage of the frame in PRADAN's footprint catalogue.</p><b class="num">4 of 4 refused</b></li>
+      <li><span><em>OHRC onto NAC, Suns 60° to 120° apart</em><small>cross-sensor</small></span><p>The hard band of the real sweep. Nothing accepted, and nothing wrongly accepted.</p><b class="num">0 of 12 accepted</b></li>
+      <li><span><em>MiLOI, Sun vectors 90° or more apart</em><small>same sensor</small></span><p>No method registered any of them: ours, SIFT, ORB or AKAZE. All in scene S3.</p><b class="num">0 of 16, any method</b></li>
+      <li><span><em>TMC-2 fore onto aft</em><small>same sensor</small></span><p>Relief parallax is not a homography. Held-out median 2.6 px (15.5 m) on its 5.9 m grid.</p><b class="num">1 of 4 accepted</b></li>
+      <li><span><em>OHRC onto LOLA shaded relief</em><small>multi-modal, optical to elevation</small></span><p>Declared a failure rung before it was run.</p><b class="num">declared failure</b></li>
+    </ul>
+
+    <div class="head" style="margin-top:clamp(56px,8vw,96px)"><h2>How it runs</h2>
+      <p>core/pipeline.py, on a laptop CPU with no discrete GPU and the network off: a median of 8.2 s per 640-pixel window over 89 OHRC to NAC windows.</p></div>
+    <p class="body">Both images go to one ground scale. Lighting is reduced to gradient orientation. LoFTR matches them densely, tiled, on the CPU; each match is refined to sub-pixel by correlation; MAGSAC++ rejects outliers and fits the transform; the inliers' spread over the 8×8 grid is measured. Then the independent area check cross-correlates the warped image against the reference, square by square, and never reads a match position. It is the only step allowed to overrule the others. If it agrees, the result ships as a GeoTIFF on the reference grid with control points for GDAL and QGIS, an ISIS match list, the metrics and the trust map. If it is unconfirmed, it is kept and labelled. If it contradicts, the matcher's answer is refused and a phase-correlation fallback is delivered, declared as such, with its uncertainty in metres.</p>
+  </div></section>
 </main>
 
 <footer><div class="wrap">
@@ -496,110 +427,203 @@ footer{border-top:1px solid var(--ink);margin-top:20px;padding-block:40px 64px;b
       <p><b>Multi-modal</b> means visible with infrared, or optical with elevation. Two panchromatic cameras are not.</p>
       <p><b>Sub-pixel</b> always names its grid and gives metres.</p></div>
     <div><h3>Reproduce every number</h3>
-      <p><code>python -m ops.freeze</code> re-runs every piece of evidence on one clean commit.</p>
-      <p><code>python -m ops.make_report</code> renders REPORT.md from the logs. This page reads the same logs.</p></div>
+      <p>This page reads the evidence logs, whose rows were measured at the freeze commit <span id="fz2"></span>, the commit the submitted deck quotes. The per-pair plates come from the pipeline's saved run of each pair, which can differ from the logged row by a few inliers because MAGSAC++ samples at random; the verdicts do not.</p>
+      <p><code>python -m ops.freeze</code> re-runs every piece of evidence on one clean commit; <code>python -m ops.make_report</code> renders REPORT.md from the logs.</p></div>
     <div><h3>Sources</h3>
       <p>Chandrayaan-2 OHRC, TMC-2 and IIRS from ISRO's PRADAN. LRO NAC and LOLA from the NASA Planetary Data System. Kaguya TC and MI from JAXA's SELENE archive. MiLOI from Xie, Liu, Di et al., <span class="it">Remote Sensing</span> 17(13):2302.</p></div>
   </div>
-  <div class="imprint"><span>Team LunaXX, Smart India Hackathon 2026, problem statement SIH26166</span><span>Code and evidence at github.com/samarthputhraya/sih26166</span><span>Set in Archivo and Newsreader</span></div>
+  <div class="imprint"><span>Team LunaXX, Smart India Hackathon 2026, problem statement SIH26166</span><span>Code and evidence at github.com/samarthputhraya/sih26166</span><span>Set in Jost, a revival of Futura, the typeface of the Apollo 11 lunar plaque</span></div>
 </div></footer>
 
 <script>
 const D = /*__DATA__*/null;
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
-const cssv = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-const C = {ink:'#000', ink2:cssv('--ink2'), ink3:cssv('--ink3'), rule:cssv('--rule'), rule2:cssv('--rule2'),
-           grid:cssv('--grid'), mag:cssv('--mag'), ochre:cssv('--ochre'), none:cssv('--none'), sheet:cssv('--sheet'), paper2:cssv('--paper2')};
 const fmt = n => Number(n).toLocaleString('en-IN');
 const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-const COLS = 'ABCDEFGH';
-const sq = i => COLS[i % 8] + (Math.floor(i / 8) + 1);
-/* Two tests run over the same 64 squares. The square STATES count match evidence; the verdict
-   note from core/reliability.py counts squares where the AREA CHECK got a peak. Say which. */
+const COLS = 'ABCDEFGH', sqName = i => COLS[i % 8] + (Math.floor(i / 8) + 1);
+const HATCH = '#c2127a';
 const whySaid = w => String(w).replace(/\s*->\s*/g, ', so the verdict is ').replace(/measurable cells/g, 'squares the area check could measure')
-                              .replace(/(\d+) cells\)/, '$1 of them)').replace(/\bH\b/g, "the matcher's transform");
+  .replace(/(\d+) cells\)/, '$1 of them)').replace(/\bH\b/g, "the matcher's transform");
 const countsSaid = c => `${c.verified} of 64 squares verified, ${c.weak} weak, ${c.no_evidence} with no match evidence`;
-$('#fz').textContent = D.freeze;
-$('#fz2').textContent = D.freeze;
-
-/* ---------- shared: plate collar, grid overlay, patterns ---------- */
-function collar(plate){
-  plate.querySelectorAll('.plate__cols').forEach(e => { e.innerHTML = [...COLS].map(c => `<span>${c}</span>`).join(''); });
-  plate.querySelectorAll('.plate__rows').forEach(e => { e.innerHTML = [1,2,3,4,5,6,7,8].map(n => `<span>${n}</span>`).join(''); });
-}
-const PAT = id => `<defs>
-  <pattern id="${id}w" width=".16" height=".16" patternUnits="userSpaceOnUse" patternTransform="rotate(-45)"><rect width=".04" height=".16" fill="#e2a12a"/></pattern>
-  <pattern id="${id}n" width=".2" height=".2" patternUnits="userSpaceOnUse"><circle cx=".1" cy=".1" r=".028" fill="#e9ebe6"/></pattern></defs>`;
-const cellFill = (id, s) => s === 'verified' ? `fill="${C.grid}" fill-opacity="0"`
-                          : s === 'weak' ? `fill="url(#${id}w)" fill-opacity=".95"`
-                          : `fill="url(#${id}n)" fill-opacity=".85"`;
-function gridSVG(id, cells, on){
-  let s = PAT(id);
-  cells.forEach((c, i) => { const x = i % 8, y = (i - x) / 8;
-    s += `<rect class="cell${i === on ? ' on' : ''}" data-i="${i}" x="${x}" y="${y}" width="1" height="1" ${cellFill(id, c.s)}/>`; });
-  return s;
-}
-function vword(m){
-  if (m.ok) return {w:'Accepted', col:C.grid, v:'agrees'};
-  if (m.verdict === 'unconfirmed') return {w:'Unconfirmed', col:C.ochre, v:'unconfirmed'};
-  return {w:'Refused', col:C.mag, v:'contradicted'};
-}
 const layerImg = (m, k) => (m.layers.find(x => x.k === k) || {}).img || null;
+function vword(m){ if (m.ok) return {w:'Accepted', v:'agrees'}; if (m.verdict === 'unconfirmed') return {w:'Unconfirmed', v:'unconfirmed'}; return {w:'Refused', v:'contradicted'}; }
+$('#fz').textContent = D.freeze; $('#fz2').textContent = D.freeze;
+function u16(b64){ const s = atob(b64), a = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) a[i] = s.charCodeAt(i); return new Uint16Array(a.buffer); }
+const DEM = u16(D.dem.b64), DN = D.dem.n;
 
-/* ---------- opening: the one moment of motion ----------
-   SAC's own pair, drawn out of register and brought into it, then the squares inked in. The
-   misregistered start is illustration; the squares and the verdict are the pipeline's result. */
+/* ================= the ground, with the words standing on it =================
+   The words are a heightfield set on the real LOLA relief of the 74°S site, lit by one low Sun
+   with cast shadows. Move the Sun and every shadow the letters throw swings round: the problem
+   this project exists to solve, set as the headline. */
+const hero = {az:118, el:15, touched:false, ms:0};
 {
-  const m = D.maps[0], plate = $('#hplate');
-  collar(plate);
-  $('#href').src = layerImg(m, 'ref'); $('#href').alt = '';
-  const warp = $('#hwarp'); warp.src = layerImg(m, 'warp') || layerImg(m, 'src');
-  const g = $('#hgrid');
-  const km = m.ref_px ? (m.ref_px[1] * m.gsd / 1000) : null;
-  $('#hcap').innerHTML = `<em>Chandrayaan-2 OHRC</em> registered onto <em>LRO NAC</em>, SAC's own benchmark pair, with the Suns 174° apart. `
-    + (km ? `The window is ${km.toFixed(2)} km across on the ${m.gsd} m grid. ` : '')
-    + `The drift at the start is drawn to show what registration corrects; the squares and the verdict are the pipeline's result.`;
-  const done = () => {
-    g.innerHTML = gridSVG('h', m.cells, -1);
-    $('#hv').innerHTML = `<b>Accepted</b><span>${countsSaid(m.counts)}; ${fmt(m.inliers)} inliers of ${fmt(m.n_matches)} matches</span>`;
-  };
-  function play(){
-    g.innerHTML = ''; $('#hv').innerHTML = '';
-    if (reduce){ warp.style.transform = 'none'; warp.style.opacity = '0'; done(); return; }
-    warp.style.transition = 'none'; warp.style.opacity = '.62';
-    warp.style.transform = 'translate(4.5%, -3.2%) rotate(1.4deg) scale(1.02)';
-    void warp.offsetWidth;
-    warp.style.transition = 'transform 1.9s cubic-bezier(.2,.7,.1,1), opacity .7s ease 2s';
-    warp.style.transform = 'none';
-    setTimeout(() => {
-      warp.style.opacity = '0';
-      let s = PAT('h'); g.innerHTML = s;
-      const order = [...m.cells.keys()].sort((a, b) => (a % 8 + Math.floor(a / 8)) - (b % 8 + Math.floor(b / 8)));
-      order.forEach((i, k) => setTimeout(() => {
-        const c = m.cells[i], x = i % 8, y = (i - x) / 8;
-        g.insertAdjacentHTML('beforeend', `<rect class="cell" x="${x}" y="${y}" width="1" height="1" ${cellFill('h', c.s)}/>`);
-        if (k === order.length - 1) done();
-      }, 900 + k * 16));
-    }, 1700);
+  const cv = $('#terrain'), g = cv.getContext('2d');
+  let W = 0, H = 0, S = 1, Hf = null, Alb = null, NX = null, NY = null, NZ = null, maxH = 0, img = null;
+  const LINES2 = ['Shadows move.', 'The ground doesn’t.'], LINES4 = ['Shadows', 'move.', 'The ground', 'doesn’t.'];
+  function build(){
+    const r = cv.getBoundingClientRect(); if (!r.width) return false;
+    S = Math.min(1, 1200 / r.width);
+    W = Math.round(r.width * S); H = Math.round(r.height * S);
+    cv.width = W; cv.height = H; img = g.createImageData(W, H);
+    Hf = new Float32Array(W * H);
+    /* the site's relief at 0.55 of its true height, so a 15° Sun still lights most of it */
+    const sc = DN / Math.max(W, H), y0 = (DN - H * sc) / 2, amp = (D.dem.hi - D.dem.lo) * Math.max(W, H) / (D.dem.km * 1000) * .55;
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++){
+      const fx = Math.min(DN - 1.001, x * sc), fy = Math.min(DN - 1.001, Math.max(0, y0 + y * sc)), ix = fx | 0, iy = fy | 0, tx = fx - ix, ty = fy - iy;
+      const a = DEM[iy*DN+ix], b = DEM[iy*DN+ix+1], c = DEM[(iy+1)*DN+ix], d = DEM[(iy+1)*DN+ix+1];
+      Hf[y*W+x] = ((a*(1-tx) + b*tx)*(1-ty) + (c*(1-tx) + d*tx)*ty) / 65535 * amp;
+    }
+    /* bilinear facets show as a faint grid under a low Sun; two box passes round them off */
+    const rad = Math.max(1, Math.round(1 / sc / 2)), tmp = new Float32Array(W * H);
+    for (let pass = 0; pass < 2; pass++){
+      for (let y = 0; y < H; y++){ let acc = 0, n = 0; for (let x = -rad; x < W + rad; x++){
+        if (x + rad < W){ acc += Hf[y*W + x + rad]; n++; } if (x - rad - 1 >= 0){ acc -= Hf[y*W + x - rad - 1]; n--; } if (x >= 0 && x < W) tmp[y*W + x] = acc / n; } }
+      for (let x = 0; x < W; x++){ let acc = 0, n = 0; for (let y = -rad; y < H + rad; y++){
+        if (y + rad < H){ acc += tmp[(y + rad)*W + x]; n++; } if (y - rad - 1 >= 0){ acc -= tmp[(y - rad - 1)*W + x]; n--; } if (y >= 0 && y < H) Hf[y*W + x] = acc / n; } }
+    }
+    const m = document.createElement('canvas'); m.width = W; m.height = H; const mg = m.getContext('2d');
+    /* the words start on the same left edge as the text column below them */
+    const wr = document.querySelector('.hero__foot .wrap'), padX = (wr.getBoundingClientRect().left - r.left + parseFloat(getComputedStyle(wr).paddingLeft)) * S;
+    const narrow = W / S < 760, lines = narrow ? LINES4 : LINES2;
+    let fs = 400; mg.font = `700 ${fs}px Jost, Futura, sans-serif`;
+    const widest = Math.max(...lines.map(l => mg.measureText(l).width));
+    fs = Math.min(fs * (W - 2 * padX) / widest, H * (narrow ? .15 : .27));
+    const lh = fs * .98, top = H * (narrow ? .13 : .1);
+    mg.fillStyle = '#000'; mg.fillRect(0, 0, W, H);
+    mg.filter = `blur(${Math.max(.6, fs / 110)}px)`; mg.fillStyle = '#fff'; mg.textBaseline = 'alphabetic';
+    mg.font = `700 ${fs}px Jost, Futura, sans-serif`;
+    lines.forEach((l, i) => mg.fillText(l, padX, top + fs * .8 + i * lh));
+    const md = mg.getImageData(0, 0, W, H).data, LH = fs * .075;
+    maxH = 0; Alb = new Float32Array(W * H);
+    let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    for (let i = 0; i < W * H; i++){ const t = md[i*4] / 255; Hf[i] += t * LH; if (Hf[i] > maxH) maxH = Hf[i];
+      Alb[i] = .78 + (rnd() - .5) * .09 + t * .05; }
+    NX = new Float32Array(W * H); NY = new Float32Array(W * H); NZ = new Float32Array(W * H);
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++){ const i = y*W + x;
+      const dx = (Hf[y*W + Math.min(x+1, W-1)] - Hf[y*W + Math.max(x-1, 0)]) / 2, dy = (Hf[Math.min(y+1, H-1)*W + x] - Hf[Math.max(y-1, 0)*W + x]) / 2, n = Math.hypot(dx, dy, 1);
+      NX[i] = -dx / n; NY[i] = -dy / n; NZ[i] = 1 / n; }
+    return true;
   }
-  const b = document.createElement('button'); b.className = 'replay'; b.type = 'button'; b.textContent = 'Play the registration again';
-  b.onclick = play; $('#hcap').after(b);
-  let played = false;
-  new IntersectionObserver(es => { if (es[0].isIntersecting && !played){ played = true; play(); } }, {threshold:.35}).observe(plate);
+  function dial(){
+    const a = hero.az * Math.PI / 180, x = 27 + 19 * Math.sin(a), y = 27 - 19 * Math.cos(a);
+    let t = ''; for (let k = 0; k < 36; k++){ const b = k * Math.PI / 18, r1 = k % 9 ? 22.5 : 20.5; t += `M${27 + r1*Math.sin(b)} ${27 - r1*Math.cos(b)}L${27 + 24*Math.sin(b)} ${27 - 24*Math.cos(b)}`; }
+    $('#sundial').innerHTML = `<circle cx="27" cy="27" r="24" fill="none" stroke="#f4f4f1" stroke-width="1"/><path d="${t}" stroke="#f4f4f1" stroke-width=".8"/>
+      <text x="27" y="12" text-anchor="middle" font-size="7" fill="#f4f4f1" font-family="Jost">N</text><circle cx="${x}" cy="${y}" r="4.2" fill="#fff"/>`;
+    $('#sunsay').innerHTML = `Sun at ${Math.round(((hero.az % 360) + 360) % 360)}°,<br>${hero.el}° above the horizon`;
+  }
+  /* Cast shadows by sweeping away from the Sun one pixel column (or row) at a time, carrying the
+     height of the shadow surface forward: one pass, whatever the Sun's height. */
+  let Sh = null;
+  function render(){
+    if (!Hf) return;
+    const t0 = performance.now();
+    if (!Sh || Sh.length !== W * H) Sh = new Float32Array(W * H);
+    const a = hero.az * Math.PI / 180, e = hero.el * Math.PI / 180;
+    const lx = Math.sin(a) * Math.cos(e), ly = -Math.cos(a) * Math.cos(e), lz = Math.sin(e);
+    const sx = Math.sin(a), sy = -Math.cos(a), rise = Math.tan(e), d = img.data, byCol = Math.abs(sx) >= Math.abs(sy);
+    const L = 1 / (byCol ? Math.abs(sx) : Math.abs(sy)), drop = rise * L, off = (byCol ? sy : sx) * L, sg = (byCol ? sx : sy) > 0 ? 1 : -1;
+    const shadeAt = (i, cast) => {
+      const h = Hf[i]; Sh[i] = cast > h ? cast : h;
+      let lit = NX[i]*lx + NY[i]*ly + NZ[i]*lz;
+      const vis = Math.max(0, Math.min(1, (h - cast) / .9 + .5));
+      const v = lit > 0 ? Math.min(1.35, lit * vis / lz * .52) : 0;
+      const c = Math.min(255, Math.pow(Alb[i] * v, .9) * 212 + 9);
+      d[i*4] = c; d[i*4+1] = c; d[i*4+2] = c * .985; d[i*4+3] = 255;
+    };
+    if (byCol) for (let n = 0; n < W; n++){ const x = sg > 0 ? W - 1 - n : n, xu = x + sg, inside = xu >= 0 && xu < W;
+      for (let y = 0; y < H; y++){ let up = -1e9;
+        if (inside){ const f = y + off; if (f >= 0 && f <= H - 1){ const iy = f | 0, t = f - iy, j = iy*W + xu; up = iy + 1 < H ? Sh[j]*(1-t) + Sh[j+W]*t : Sh[j]; } }
+        shadeAt(y*W + x, up - drop); } }
+    else for (let n = 0; n < H; n++){ const y = sg > 0 ? H - 1 - n : n, yu = y + sg, inside = yu >= 0 && yu < H;
+      for (let x = 0; x < W; x++){ let up = -1e9;
+        if (inside){ const f = x + off; if (f >= 0 && f <= W - 1){ const ix = f | 0, t = f - ix, j = yu*W + ix; up = ix + 1 < W ? Sh[j]*(1-t) + Sh[j+1]*t : Sh[j]; } }
+        shadeAt(y*W + x, up - drop); } }
+    g.putImageData(img, 0, 0);
+    hero.ms = performance.now() - t0;
+    dial();
+  }
+  let raf = 0; const ask = () => { if (!raf) raf = requestAnimationFrame(() => { raf = 0; render(); }); };
+  const start = () => {
+    if (!build()) return;
+    if (reduce){ render(); return; }
+    /* the one unprompted motion on the page: the Sun swings once, and every shadow swings with it */
+    const t0 = performance.now() + 700, a0 = 118, a1 = 242, T = 3600;
+    const step = () => { if (hero.touched) return; const p = Math.max(0, Math.min(1, (performance.now() - t0) / T)), q = p < .5 ? 2*p*p : 1 - Math.pow(-2*p + 2, 2) / 2;
+      hero.az = a0 + (a1 - a0) * q; render(); if (p < 1) setTimeout(() => requestAnimationFrame(step), 40); };
+    render(); setTimeout(() => requestAnimationFrame(step), 700);
+  };
+  (document.fonts && document.fonts.load ? document.fonts.load('700 100px Jost') : Promise.resolve()).then(start, start);
+  let rt = 0; addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { if (build()) render(); }, 200); });
+  const heroEl = $('#hero'); let drag = null;
+  heroEl.addEventListener('pointerdown', e => { if (e.target.closest('a')) return; hero.touched = true; drag = {x:e.clientX, az:hero.az}; });
+  addEventListener('pointermove', e => { if (!drag) return; hero.az = drag.az + (e.clientX - drag.x) * 360 / heroEl.clientWidth; ask(); });
+  addEventListener('pointerup', () => { drag = null; });
 }
 
-/* ---------- two Suns: shaded relief with contours, and a Sun compass ---------- */
+/* ================= line it up yourself =================
+   Each square correlates the two images' pixels at the current shift (absolute correlation,
+   because opposite Suns invert shading). A simplified stand-in for the real check, said so. */
+{
+  const A = {pairs:[D.maps[0], D.maps.find(m => m.id === 'sac_ohrc_tmc_w01') || D.maps[D.maps.length - 1]], p:0, ox:0, oy:0, ref:null, mov:null, n:448};
+  const stage = $('#stage'), ref = $('#aref'), mov = $('#amove'), grid = $('#agrid');
+  const grey = src => new Promise(res => { const im = new Image(); im.onload = () => { const c = document.createElement('canvas'); c.width = c.height = A.n;
+    const cx = c.getContext('2d'); cx.drawImage(im, 0, 0, A.n, A.n); const dd = cx.getImageData(0, 0, A.n, A.n).data, o = new Float32Array(A.n * A.n);
+    for (let i = 0; i < o.length; i++) o[i] = dd[i*4]; res(o); }; im.src = src; });
+  const pat = `<defs><pattern id="aw" width=".16" height=".16" patternUnits="userSpaceOnUse" patternTransform="rotate(-45)"><rect width=".04" height=".16" fill="#fff" fill-opacity=".62"/></pattern>
+    <pattern id="an" width=".2" height=".2" patternUnits="userSpaceOnUse"><circle cx=".1" cy=".1" r=".03" fill="#fff" fill-opacity=".8"/></pattern></defs>`;
+  function score(){
+    if (!A.ref || !A.mov) return;
+    const n = A.n, c = n / 8, ox = Math.round(A.ox), oy = Math.round(A.oy);
+    let s = pat, ok = 0;
+    for (let cy = 0; cy < 8; cy++) for (let cxx = 0; cxx < 8; cxx++){
+      let N = 0, sa = 0, sb = 0, saa = 0, sbb = 0, sab = 0, tot = 0;
+      for (let y = cy*c; y < (cy+1)*c; y += 2) for (let x = cxx*c; x < (cxx+1)*c; x += 2){
+        tot++; const mx = x - ox, my = y - oy; if (mx < 0 || my < 0 || mx >= n || my >= n) continue;
+        const b = A.mov[my*n + mx]; if (b < 3) continue; const a = A.ref[y*n + x];
+        N++; sa += a; sb += b; saa += a*a; sbb += b*b; sab += a*b; }
+      let st = 'n';
+      if (N > tot * .4){ const va = saa - sa*sa/N, vb = sbb - sb*sb/N, r = (sab - sa*sb/N) / Math.sqrt(Math.max(va*vb, 1e-9)); st = Math.abs(r) >= .3 ? 'v' : 'w'; }
+      if (st === 'v') ok++;
+      s += `<rect x="${cxx}" y="${cy}" width="1" height="1" fill="${st === 'v' ? 'none' : st === 'w' ? 'url(#aw)' : 'url(#an)'}" stroke="rgba(255,255,255,.35)" stroke-width="1" vector-effect="non-scaling-stroke"/>`;
+    }
+    grid.innerHTML = s;
+    $('#ascore').innerHTML = `${ok} <small>of 64 squares agree</small>`;
+    const r = Math.hypot(ox, oy), m = A.pairs[A.p];
+    $('#aoff').innerHTML = r < .5 ? '<b>Where the pipeline put it.</b>' : `Shifted <b>${Math.abs(ox)} px ${ox > 0 ? 'right' : 'left'}</b> and <b>${Math.abs(oy)} px ${oy > 0 ? 'down' : 'up'}</b> from where the pipeline put it.`;
+    $('#asay').innerHTML = A.p === 0
+      ? (r < .5 ? `Aligned. The real check on this pair: <b>${m.counts.verified} of 64 squares verified, accepted</b>, with the Suns 174° apart.` : 'Keep going. The squares agree when the ground lines up, whatever the shadows do.')
+      : (r < .5 ? 'This is where the matcher put it, and almost nothing agrees. The real check refused it and delivered a phase-correlation fallback instead, <b>declared as one</b>.' : 'Try any shift you like: this pair never lines up. The matcher’s answer is wrong in a way that sliding cannot fix.');
+  }
+  let raf = 0; const ask = () => { if (!raf) raf = requestAnimationFrame(() => { raf = 0; mov.style.transform = `translate(${A.ox / A.n * 100}%, ${A.oy / A.n * 100}%)`; score(); }); };
+  async function load(p){
+    A.p = p; const m = A.pairs[p]; ref.src = layerImg(m, 'ref'); mov.src = layerImg(m, 'warp') || layerImg(m, 'src');
+    $('#apair').innerHTML = `<em>${m.label}</em>. ${m.sub} Drag the paler image until the squares stop objecting.`;
+    $('#apA').setAttribute('aria-pressed', String(p === 0)); $('#apR').setAttribute('aria-pressed', String(p === 1));
+    [A.ref, A.mov] = await Promise.all([grey(ref.src), grey(mov.src)]); scatter();
+  }
+  function scatter(){ A.ox = 38; A.oy = -27; ask(); }
+  function snap(){ if (reduce){ A.ox = A.oy = 0; ask(); return; } const x0 = A.ox, y0 = A.oy, t0 = performance.now();
+    const f = t => { const p = Math.min(1, (t - t0) / 900), q = 1 - Math.pow(1 - p, 3); A.ox = x0 * (1 - q); A.oy = y0 * (1 - q); ask(); if (p < 1) requestAnimationFrame(f); }; requestAnimationFrame(f); }
+  let drag = null;
+  stage.addEventListener('pointerdown', e => { drag = {x:e.clientX, y:e.clientY, ox:A.ox, oy:A.oy}; try { stage.setPointerCapture(e.pointerId); } catch(_){} });
+  stage.addEventListener('pointermove', e => { if (!drag) return; const k = A.n / stage.clientWidth;
+    A.ox = Math.max(-90, Math.min(90, drag.ox + (e.clientX - drag.x) * k)); A.oy = Math.max(-90, Math.min(90, drag.oy + (e.clientY - drag.y) * k)); ask(); });
+  ['pointerup','pointercancel'].forEach(t => stage.addEventListener(t, () => { drag = null; A.ox = Math.round(A.ox); A.oy = Math.round(A.oy); ask(); }));
+  stage.addEventListener('keydown', e => { const d = {ArrowLeft:[-1,0], ArrowRight:[1,0], ArrowUp:[0,-1], ArrowDown:[0,1]}[e.key]; if (!d) return; e.preventDefault(); A.ox += d[0]; A.oy += d[1]; ask(); });
+  $('#apA').onclick = () => load(0); $('#apR').onclick = () => load(1);
+  $('#asnap').onclick = snap; $('#ascat').onclick = scatter;
+  load(0);
+}
+
+/* ================= two Suns: polar relief with cast shadows and a Sun compass ================= */
 const SUN_A = 70.5, ELEV = 6.93 * Math.PI / 180;
 const sun = {dz:0, sgn:1, lit:'B', alt:false, dirty:true};
-function u16(b64){ const s = atob(b64), a = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) a[i] = s.charCodeAt(i); return new Uint16Array(a.buffer); }
-const Hm = u16(D.dem.b64), N = D.dem.n, RELIEF = (D.dem.hi - D.dem.lo) / (D.dem.km * 1000);
-const cv = $('#shade'), gx = cv.getContext('2d');
-cv.width = cv.height = N;
-const img = gx.createImageData(N, N), kz = RELIEF / 65535 * (N - 1);
-/* contours, traced once: every 250 m, every 1000 m drawn heavier */
+const N = DN, cv2 = $('#shade'), gx = cv2.getContext('2d'); cv2.width = cv2.height = N;
+const simg = gx.createImageData(N, N), kz = (D.dem.hi - D.dem.lo) / (D.dem.km * 1000) / 65535 * (N - 1);
+const Hpx = Float32Array.from(DEM, h => h / 65535 * (D.dem.hi - D.dem.lo) / (D.dem.km * 1000 / N));
 const contours = (() => {
-  const lo = D.dem.lo, hi = D.dem.hi, z = i => lo + Hm[i] / 65535 * (hi - lo), paths = [];
+  const lo = D.dem.lo, hi = D.dem.hi, z = i => lo + DEM[i] / 65535 * (hi - lo), paths = [];
   for (let lev = Math.ceil(lo / 250) * 250; lev < hi; lev += 250){
     const p = new Path2D();
     for (let y = 0; y < N - 1; y++) for (let x = 0; x < N - 1; x++){
@@ -615,306 +639,242 @@ const contours = (() => {
   }
   return paths;
 })();
-/* Height in pixel units, for cast shadows: at a 7 degree Sun a crater rim throws its shadow a long
-   way, and those shadow edges are exactly what a matcher latches onto and what a second Sun moves. */
-const Hpx = Float32Array.from(Hm, h => h / 65535 * (D.dem.hi - D.dem.lo) / (D.dem.km * 1000 / N));
 function shade(){
   const a = (SUN_A + (sun.lit === 'A' ? 0 : sun.sgn * sun.dz)) * Math.PI / 180;
-  const lx = Math.sin(a) * Math.cos(ELEV), ly = -Math.cos(a) * Math.cos(ELEV), lz = Math.sin(ELEV);
-  const sxs = Math.sin(a), sys = -Math.cos(a), rise = Math.tan(ELEV);
+  const lx = Math.sin(a) * Math.cos(ELEV), ly = -Math.cos(a) * Math.cos(ELEV), lz = Math.sin(ELEV), sxs = Math.sin(a), sys = -Math.cos(a), rise = Math.tan(ELEV);
   for (let y = 0; y < N; y++) for (let x = 0; x < N; x++){
     const i = y*N + x, xm = y*N + Math.max(x-1, 0), xp = y*N + Math.min(x+1, N-1), ym = Math.max(y-1, 0)*N + x, yp = Math.min(y+1, N-1)*N + x;
-    const dx = (Hm[xp] - Hm[xm]) * kz / 2, dy = (Hm[yp] - Hm[ym]) * kz / 2, n = Math.hypot(dx, dy, 1);
+    const dx = (DEM[xp] - DEM[xm]) * kz / 2, dy = (DEM[yp] - DEM[ym]) * kz / 2, n = Math.hypot(dx, dy, 1);
     let lit = Math.max(0, (-dx*lx - dy*ly + lz) / n);
-    if (lit > 0){ const h0 = Hpx[i];
-      for (let k = 1; k < 150; k += 1){ const px = Math.round(x + sxs*k), py = Math.round(y + sys*k);
-        if (px < 0 || py < 0 || px >= N || py >= N) break;
-        if (Hpx[py*N + px] > h0 + k*rise){ lit = 0; break; } } }
-    const v = Math.min(1, lit * 4.2 + .006), t = Math.pow(v, 1/2.0);
-    img.data[i*4] = 24 + t*214; img.data[i*4+1] = 26 + t*213; img.data[i*4+2] = 26 + t*207; img.data[i*4+3] = 255;
+    if (lit > 0){ const h0 = Hpx[i]; for (let k = 1; k < 150; k++){ const px = Math.round(x + sxs*k), py = Math.round(y + sys*k);
+      if (px < 0 || py < 0 || px >= N || py >= N) break; if (Hpx[py*N + px] > h0 + k*rise){ lit = 0; break; } } }
+    const t = Math.pow(Math.min(1, lit / lz * .4), .85);
+    simg.data[i*4] = 12 + t*228; simg.data[i*4+1] = 12 + t*227; simg.data[i*4+2] = 11 + t*223; simg.data[i*4+3] = 255;
   }
-  gx.putImageData(img, 0, 0);
-  contours.forEach(({p, index}) => { gx.lineWidth = index ? .9 : .45; gx.strokeStyle = index ? 'rgba(12,107,137,.85)' : 'rgba(12,107,137,.45)'; gx.stroke(p); });
+  gx.putImageData(simg, 0, 0);
+  contours.forEach(({p, index}) => { gx.lineWidth = index ? .8 : .4; gx.strokeStyle = index ? 'rgba(255,255,255,.55)' : 'rgba(255,255,255,.26)'; gx.stroke(p); });
 }
-const R0 = 43.5, CX = 50, CY = 50;
-const pt = (deg, r) => [CX + r * Math.sin(deg * Math.PI / 180), CY - r * Math.cos(deg * Math.PI / 180)];
+const R0 = 43.5, CX = 50, CY = 50, pt = (deg, r) => [CX + r * Math.sin(deg * Math.PI / 180), CY - r * Math.cos(deg * Math.PI / 180)];
 function rose(){
   const bAz = SUN_A + sun.sgn * sun.dz, [ax, ay] = pt(SUN_A, R0), [bx, by] = pt(bAz, R0);
-  let s = `<g class="rose"><circle cx="${CX}" cy="${CY}" r="${R0}" fill="none" stroke="${C.grid}" stroke-width=".35"/>`;
-  for (let d = 0; d < 360; d += 10){ const [x1, y1] = pt(d, R0), [x2, y2] = pt(d, R0 + (d % 30 ? 1.3 : 2.4));
-    s += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${C.grid}" stroke-width=".35"/>`; }
+  let s = `<g class="rose"><circle cx="${CX}" cy="${CY}" r="${R0}" fill="none" stroke="#000" stroke-width=".35"/>`;
+  for (let d = 0; d < 360; d += 10){ const [x1, y1] = pt(d, R0), [x2, y2] = pt(d, R0 + (d % 30 ? 1.3 : 2.4)); s += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#000" stroke-width=".35"/>`; }
   [['N',0],['E',90],['S',180],['W',270]].forEach(([l, d]) => { const [x, y] = pt(d, R0 + 4.6); s += `<text x="${x}" y="${y + 1.3}" text-anchor="middle" font-size="3.6">${l}</text>`; });
-  const lo = Math.min(SUN_A, bAz), large = Math.abs(bAz - SUN_A) > 180 ? 1 : 0, [sx0, sy0] = pt(SUN_A, R0 - 3.2), [sx1, sy1] = pt(bAz, R0 - 3.2);
-  if (sun.dz > 0) s += `<path d="M${sx0} ${sy0}A${R0-3.2} ${R0-3.2} 0 ${large} ${sun.sgn > 0 ? 1 : 0} ${sx1} ${sy1}" fill="none" stroke="#000" stroke-width=".7" stroke-dasharray="1.4 1"/>`;
-  s += `</g><g><circle cx="${ax}" cy="${ay}" r="2.6" fill="${C.sheet}" stroke="#000" stroke-width=".6"/><text x="${pt(SUN_A, R0 + 6.6)[0]}" y="${pt(SUN_A, R0 + 6.6)[1] + 1.3}" text-anchor="middle" style="font:600 3.6px var(--f-sans);fill:#000">A</text></g>`;
+  const [sx0, sy0] = pt(SUN_A, R0 - 3.2), [sx1, sy1] = pt(bAz, R0 - 3.2);
+  if (sun.dz > 0) s += `<path d="M${sx0} ${sy0}A${R0-3.2} ${R0-3.2} 0 0 ${sun.sgn > 0 ? 1 : 0} ${sx1} ${sy1}" fill="none" stroke="#000" stroke-width=".6" stroke-dasharray="1.4 1"/>`;
+  s += `</g><circle cx="${ax}" cy="${ay}" r="2.5" fill="#d4d2cc" stroke="#000" stroke-width=".6"/><text x="${pt(SUN_A, R0 + 6.6)[0]}" y="${pt(SUN_A, R0 + 6.6)[1] + 1.3}" text-anchor="middle" style="font:500 3.6px Jost;fill:#000">A</text>`;
   let rays = ''; for (let k = 0; k < 8; k++){ const t = k * Math.PI / 4; rays += `M${bx + Math.cos(t)*3.3} ${by + Math.sin(t)*3.3}L${bx + Math.cos(t)*4.6} ${by + Math.sin(t)*4.6}`; }
-  s += `<g class="sunB" id="sunB"><circle cx="${bx}" cy="${by}" r="6.5" fill="transparent"/><circle cx="${bx}" cy="${by}" r="2.6" fill="#000"/><path d="${rays}" stroke="#000" stroke-width=".6"/>
-    <text x="${pt(bAz, R0 - 8)[0]}" y="${pt(bAz, R0 - 8)[1] + 1.3}" text-anchor="middle" style="font:600 3.6px var(--f-sans);fill:#000;paint-order:stroke;stroke:#fbfbf8;stroke-width:.8px">B</text></g>`;
+  s += `<g id="sunB" style="cursor:grab"><circle cx="${bx}" cy="${by}" r="6.5" fill="transparent"/><circle cx="${bx}" cy="${by}" r="2.6" fill="#fff" stroke="#000" stroke-width=".5"/><path d="${rays}" stroke="#000" stroke-width=".6"/>
+    <text x="${pt(bAz, R0 - 8)[0]}" y="${pt(bAz, R0 - 8)[1] + 1.3}" text-anchor="middle" style="font:500 3.6px Jost;fill:#fff;paint-order:stroke;stroke:#000;stroke-width:.9px">B</text></g>`;
   $('#rose').innerHTML = s;
 }
-const OUT = {correct_accepted:['registered and accepted', C.grid, 'dot'], caught_failure:['failed, and the system said so', C.mag, 'sq'],
-             false_alarm:['correct, but refused', C.ochre, 'dia'], inconclusive:['the image cannot judge', C.ink3, 'plus']};
+const OUT = {correct_accepted:['registered and accepted', '#000', 'dot'], caught_failure:['failed, and the system said so', HATCH, 'sq'],
+             false_alarm:['correct, but refused', '#000', 'dia'], inconclusive:['the image cannot judge', '#46463f', 'plus']};
 const glyph = (k, x, y, r) => { const [, col, sh] = OUT[k];
   if (sh === 'dot') return `<circle cx="${x}" cy="${y}" r="${r}" fill="${col}"/>`;
   if (sh === 'sq') return `<rect x="${x-r}" y="${y-r}" width="${2*r}" height="${2*r}" fill="${col}"/>`;
-  if (sh === 'dia') return `<path d="M${x} ${y-r*1.3}L${x+r*1.3} ${y}L${x} ${y+r*1.3}L${x-r*1.3} ${y}Z" fill="${col}"/>`;
+  if (sh === 'dia') return `<path d="M${x} ${y-r*1.3}L${x+r*1.3} ${y}L${x} ${y+r*1.3}L${x-r*1.3} ${y}Z" fill="none" stroke="${col}" stroke-width="1.4"/>`;
   return `<path d="M${x-r} ${y}H${x+r}M${x} ${y-r}V${y+r}" stroke="${col}" stroke-width="1.5"/>`; };
-const glyphHTML = k => `<svg width="14" height="14" viewBox="-7 -7 14 14" aria-hidden="true">${glyph(k, 0, 0, 4)}</svg>`;
+const glyphHTML = k => `<svg width="16" height="16" viewBox="-8 -8 16 16" aria-hidden="true">${glyph(k, 0, 0, 4.5)}</svg>`;
 const EXACT = [[0,'0.086 px = 5.1 m'],[15,'0.086 px = 5.1 m'],[30,'0.314 px = 18.8 m'],[45,'1.096 px = 65.8 m']];
-const sx = v => 52 + v / 180 * (548 - 52), sy = n => 16 + (1 - Math.log10(Math.max(n, 1)) / 4) * (262 - 16);
-function scatter(){
+const sx = v => 58 + v / 180 * (548 - 58), sy = n => 16 + (1 - Math.log10(Math.max(n, 1)) / 4) * (262 - 16);
+function drawScatter(){
   const dz = sun.dz, b = D.bins.find(b => dz >= b.a && dz < b.b) || D.bins[D.bins.length - 1];
-  let s = `<rect x="${sx(b.a)}" y="16" width="${sx(Math.min(b.b, 180)) - sx(b.a)}" height="246" fill="${C.grid}" fill-opacity=".07"/>`;
-  [1, 10, 100, 1000, 10000].forEach((n, i) => { s += `<line x1="52" x2="548" y1="${sy(n)}" y2="${sy(n)}" stroke="${C.rule}"/>
-    <text x="44" y="${sy(n) + 4}" font-size="11.5" text-anchor="end">${['1','10','100','1,000','10,000'][i]}</text>`; });
-  for (let v = 0; v <= 180; v += 30) s += `<line x1="${sx(v)}" x2="${sx(v)}" y1="262" y2="267" stroke="${C.ink2}"/><text x="${sx(v)}" y="282" font-size="11.5" text-anchor="middle">${v}°</text>`;
-  s += `<line x1="52" x2="548" y1="262" y2="262" stroke="${C.ink2}"/>
-    <text x="300" y="304" font-size="12" text-anchor="middle">angle between the two Suns, in azimuth</text>
-    <text transform="translate(12,139) rotate(-90)" font-size="12" text-anchor="middle">inlier matches per window</text>`;
+  let s = `<rect x="${sx(b.a)}" y="16" width="${sx(Math.min(b.b, 180)) - sx(b.a)}" height="246" fill="#000" fill-opacity=".08"/>`;
+  [1, 10, 100, 1000, 10000].forEach((n, i) => { s += `<line x1="58" x2="548" y1="${sy(n)}" y2="${sy(n)}" stroke="#000" stroke-opacity=".18"/><text x="50" y="${sy(n) + 4}" font-size="12" text-anchor="end">${['1','10','100','1,000','10,000'][i]}</text>`; });
+  for (let v = 0; v <= 180; v += 30) s += `<line x1="${sx(v)}" x2="${sx(v)}" y1="262" y2="267" stroke="#000"/><text x="${sx(v)}" y="283" font-size="12" text-anchor="middle">${v}°</text>`;
+  s += `<line x1="58" x2="548" y1="262" y2="262" stroke="#000"/><text x="303" y="305" font-size="13" text-anchor="middle">angle between the two Suns, in azimuth</text>
+    <text transform="translate(12,139) rotate(-90)" font-size="13" text-anchor="middle">inlier matches per window</text>`;
   D.sweep.forEach(p => { s += glyph(p.o, sx(p.az), sy(p.inl), 3.6); });
-  s += `<line x1="${sx(Math.min(dz, 180))}" x2="${sx(Math.min(dz, 180))}" y1="10" y2="262" stroke="#000" stroke-width="1.3"/>`;
+  s += `<line x1="${sx(Math.min(dz, 180))}" x2="${sx(Math.min(dz, 180))}" y1="10" y2="262" stroke="#000" stroke-width="1.4"/>`;
   $('#scatter').innerHTML = s;
-  const o = b.o, g = k => o[k] || 0;
-  const ex = dz <= 52 ? EXACT.reduce((a, e) => Math.abs(e[0] - dz) < Math.abs(a[0] - dz) ? e : a) : null;
+  const o = b.o, g = k => o[k] || 0, ex = dz <= 52 ? EXACT.reduce((a, e) => Math.abs(e[0] - dz) < Math.abs(a[0] - dz) ? e : a) : null;
   $('#band').innerHTML = `<h3>Suns ${b.a}° to ${b.b}° apart<span>${b.n} windows from ${b.frames} NAC frames</span></h3><dl>
-    ${['correct_accepted','caught_failure','false_alarm','inconclusive'].map(k => `<dt><i>${glyphHTML(k)}</i>${OUT[k][0]}</dt><dd>${g(k)}</dd>`).join('')}
-    <dt>median inlier matches per window</dt><dd>${fmt(b.inl)}</dd></dl>
-    <dl class="zero"><dt>failed, and not caught</dt><dd>${g('missed_failure')}</dd></dl>`
-    + (ex ? `<p class="ex">Against exact truth, on a synthetic LOLA render with the Suns ${ex[0]}° apart: ${ex[1]} on the 60 m grid.</p>`
-          : `<p class="ex">No exact-truth figure is quoted past 45°; the synthetic curve in REPORT.md stops there.</p>`);
+    ${['correct_accepted','caught_failure','false_alarm','inconclusive'].map(k => `<dt><i>${glyphHTML(k)}</i>${OUT[k][0]}</dt><dd class="num">${g(k)}</dd>`).join('')}
+    <dt>median inlier matches per window</dt><dd class="num">${fmt(b.inl)}</dd></dl>
+    <dl class="zero"><dt>failed, and not caught</dt><dd class="num">${g('missed_failure')}</dd></dl>`
+    + (ex ? `<p class="ex">Against exact truth, on a synthetic LOLA render with the Suns ${ex[0]}° apart: ${ex[1]} on the 60 m grid.</p>` : `<p class="ex">No exact-truth figure is quoted past 45°; the synthetic curve in REPORT.md stops there.</p>`);
   $('#dzv').textContent = Math.round(dz) + '°';
 }
-function setLit(v){ sun.alt = v === 'X'; if (v !== 'X') sun.lit = v; sun.dirty = true;
-  [['A','#litA'],['B','#litB'],['X','#litX']].forEach(([k, id]) => $(id).setAttribute('aria-pressed', String(k === v))); }
+function setLit(v){ sun.alt = v === 'X'; if (v !== 'X') sun.lit = v; sun.dirty = true; [['A','#litA'],['B','#litB'],['X','#litX']].forEach(([k, id]) => $(id).setAttribute('aria-pressed', String(k === v))); }
 $('#litA').onclick = () => setLit('A'); $('#litB').onclick = () => setLit('B'); $('#litX').onclick = () => setLit('X');
-const dial = $('#dz');
-const setDz = (d, sgn) => { sun.dz = Math.max(0, Math.min(180, Math.round(d))); if (sgn) sun.sgn = sgn; dial.value = sun.dz; sun.dirty = true; if (sun.lit === 'A' && !sun.alt) setLit('B'); };
-dial.addEventListener('input', () => setDz(+dial.value, 1));
-{ const svg = $('#rose'), box = $('#relief'); let drag = false;
+const dialIn = $('#dz');
+const setDz = (d, sgn) => { sun.dz = Math.max(0, Math.min(180, Math.round(d))); if (sgn) sun.sgn = sgn; dialIn.value = sun.dz; sun.dirty = true; if (sun.lit === 'A' && !sun.alt) setLit('B'); };
+dialIn.addEventListener('input', () => setDz(+dialIn.value, 1));
+{ const box = $('#relief'); let drag = false;
   const angleAt = e => { const r = box.getBoundingClientRect(), x = (e.clientX - r.left) / r.width * 100 - CX, y = (e.clientY - r.top) / r.height * 100 - CY;
-    let d = Math.atan2(x, -y) * 180 / Math.PI - SUN_A; d = ((d % 360) + 540) % 360 - 180; return d; };
-  box.addEventListener('pointerdown', e => { if (!e.target.closest('#sunB') && !e.target.closest('#rose')) return; drag = true; try { box.setPointerCapture(e.pointerId); } catch(_){} const d = angleAt(e); setDz(Math.abs(d), d < 0 ? -1 : 1); });
+    let d = Math.atan2(x, -y) * 180 / Math.PI - SUN_A; return ((d % 360) + 540) % 360 - 180; };
+  box.addEventListener('pointerdown', e => { drag = true; try { box.setPointerCapture(e.pointerId); } catch(_){} const d = angleAt(e); setDz(Math.abs(d), d < 0 ? -1 : 1); });
   box.addEventListener('pointermove', e => { if (!drag) return; const d = angleAt(e); setDz(Math.abs(d), d < 0 ? -1 : 1); });
-  ['pointerup','pointercancel'].forEach(t => box.addEventListener(t, () => { drag = false; }));
-}
+  ['pointerup','pointercancel'].forEach(t => box.addEventListener(t, () => { drag = false; })); }
 let lastDz = -1, seen = true;
 new IntersectionObserver(es => { seen = es[0].isIntersecting; }).observe($('#relief'));
 function tick(t){
   if (sun.alt && seen){ const w = Math.floor(t / 800) % 2 ? 'A' : 'B'; if (w !== sun.lit){ sun.lit = w; sun.dirty = true; } }
-  if (sun.dirty){ sun.dirty = false; shade(); rose(); if (sun.dz !== lastDz){ lastDz = sun.dz; scatter(); } }
+  if (sun.dirty && seen){ sun.dirty = false; shade(); rose(); }
+  if (sun.dz !== lastDz){ lastDz = sun.dz; drawScatter(); }
   requestAnimationFrame(tick);
 }
 requestAnimationFrame(tick);
 
-/* ---------- every pairing ---------- */
+/* ================= every pairing ================= */
 const tr = {p:0, cell:27, layer:'ref', timer:null};
-const gsym = m => { const v = vword(m);
-  if (v.v === 'agrees') return `<svg class="gsym" viewBox="0 0 14 14" aria-hidden="true"><rect x="1" y="1" width="12" height="12" fill="${C.grid}" fill-opacity=".35" stroke="${C.grid}" stroke-width="1.4"/></svg>`;
-  if (v.v === 'unconfirmed') return `<svg class="gsym" viewBox="0 0 14 14" aria-hidden="true"><rect x="1" y="1" width="12" height="12" fill="none" stroke="${C.ochre}" stroke-width="1.6" stroke-dasharray="3 2"/></svg>`;
-  return `<svg class="gsym" viewBox="0 0 14 14" aria-hidden="true"><defs><pattern id="gm${m.id.length}" width="3.2" height="3.2" patternUnits="userSpaceOnUse" patternTransform="rotate(-45)"><rect width="1.3" height="3.2" fill="${C.mag}"/></pattern></defs><rect x="1" y="1" width="12" height="12" fill="url(#gm${m.id.length})" stroke="${C.mag}" stroke-width="1.4"/></svg>`; };
-const gazItem = (m, i) => `<li><button type="button" data-p="${i}" aria-pressed="${i === tr.p}">${gsym(m)}<span><em>${m.label}</em><small>${m.tag.toLowerCase()}, ${vword(m).w.toLowerCase()}</small></span></button></li>`;
-$('#gaz').innerHTML = D.maps.map(gazItem).join('');
-collar($('#pplate'));
-function drawGrid(){ $('#grid').innerHTML = gridSVG('p', D.maps[tr.p].cells, tr.cell); }
+const PAT = id => `<defs><pattern id="${id}w" width=".16" height=".16" patternUnits="userSpaceOnUse" patternTransform="rotate(-45)"><rect width=".045" height=".16" fill="#fff" fill-opacity=".85"/></pattern>
+  <pattern id="${id}n" width=".2" height=".2" patternUnits="userSpaceOnUse"><circle cx=".1" cy=".1" r=".03" fill="#fff" fill-opacity=".85"/></pattern></defs>`;
+const cellFill = (id, s) => s === 'verified' ? 'fill="#000" fill-opacity="0"' : s === 'weak' ? `fill="url(#${id}w)"` : `fill="url(#${id}n)"`;
+function collar(el){ el.querySelectorAll('.cols').forEach(e => { e.innerHTML = [...COLS].map(c => `<span>${c}</span>`).join(''); });
+  el.querySelectorAll('.rows').forEach(e => { e.innerHTML = [1,2,3,4,5,6,7,8].map(n => `<span>${n}</span>`).join(''); }); }
+collar($('#plate'));
+const frameHTML = (m, i) => `<button type="button" class="frame" data-p="${i}" data-v="${vword(m).v}" aria-pressed="${i === tr.p}">
+  <span class="frame__img"><img src="${layerImg(m, 'ref')}" alt=""></span>
+  <span class="frame__cap"><em>${m.label}</em><small>${m.tag.toLowerCase()}, ${vword(m).w.toLowerCase()}</small></span></button>`;
+$('#sheet').innerHTML = D.maps.map(frameHTML).join('');
+function drawGrid(){ let s = PAT('p'); D.maps[tr.p].cells.forEach((c, i) => { const x = i % 8, y = (i - x) / 8;
+  s += `<rect class="cell${i === tr.cell ? ' on' : ''}" data-i="${i}" x="${x}" y="${y}" width="1" height="1" ${cellFill('p', c.s)}/>`; }); $('#grid').innerHTML = s; }
 function drawSquare(){
-  const m = D.maps[tr.p], c = m.cells[tr.cell], st = {verified:['verified', C.grid], weak:['weak', C.ochre], no_evidence:['no evidence', C.ink3]}[c.s];
-  $('#square').innerHTML = `<h4>Grid square ${sq(tr.cell)}<span style="color:${st[1]}">${st[0]}</span></h4><dl>
-    <dt>inliers, of raw matches here</dt><dd>${fmt(c.n)} of ${fmt(c.raw)}</dd>
-    <dt>local inlier ratio</dt><dd>${c.lir === null || c.lir === undefined ? (c.raw ? 'not measurable' : 'no matches') : c.lir.toFixed(2)}</dd>
-    <dt>area check, correlation at the peak</dt><dd>${c.ncc === null ? 'not measurable' : (c.ncc > 0 ? '+' : '') + c.ncc.toFixed(2)}</dd>
-    <dt>median inlier residual</dt><dd>${c.res === null ? 'none' : c.res.toFixed(2) + ' px = ' + (c.res * m.gsd).toFixed(2) + ' m'}</dd>
-    <dt>pixel grid of the reference</dt><dd>${m.gsd} m</dd></dl>`;
+  const m = D.maps[tr.p], c = m.cells[tr.cell], st = {verified:'verified', weak:'weak', no_evidence:'no evidence'}[c.s];
+  $('#square').innerHTML = `<h4>Square ${sqName(tr.cell)}<span>${st}</span></h4><dl>
+    <dt>inliers, of raw matches here</dt><dd class="num">${fmt(c.n)} of ${fmt(c.raw)}</dd>
+    <dt>local inlier ratio</dt><dd class="num">${c.lir === null || c.lir === undefined ? (c.raw ? 'not measurable' : 'no matches') : c.lir.toFixed(2)}</dd>
+    <dt>area check, correlation at the peak</dt><dd class="num">${c.ncc === null ? 'not measurable' : (c.ncc > 0 ? '+' : '') + c.ncc.toFixed(2)}</dd>
+    <dt>median inlier residual</dt><dd class="num">${c.res === null ? 'none' : c.res.toFixed(2) + ' px = ' + (c.res * m.gsd).toFixed(2) + ' m'}</dd>
+    <dt>reference grid</dt><dd class="num">${m.gsd} m per pixel</dd></dl>`;
 }
 function drawVerdict(){
   const m = D.maps[tr.p], v = vword(m);
-  $('#pplate').dataset.v = v.v;
-  $('#verdict').innerHTML = `<h3 style="color:${v.col}">${v.w}${v.v === 'contradicted' ? ', fallback declared' : ''}</h3>
-    <p class="what"><em>${m.label}</em>. ${m.sub}</p>
-    <dl class="facts"><dt>squares</dt><dd>${countsSaid(m.counts)}</dd>
-      <dt>matches</dt><dd>${fmt(m.inliers)} inliers of ${fmt(m.n_matches)}</dd>
-      <dt>time</dt><dd>${m.seconds} s on the CPU</dd>
-      <dt>method declared</dt><dd>${m.method}</dd>
-      <dt>the check says</dt><dd>${whySaid(m.why)}</dd></dl>`;
+  $('#plate').dataset.v = v.v;
+  $('#verdict').innerHTML = `<p class="vword ${v.v}">${v.w}${v.v === 'contradicted' ? ',<br>fallback declared' : ''}</p>
+    <p class="vsub"><em>${m.label}</em>. ${m.sub}</p>
+    <dl class="facts"><dt>squares</dt><dd>${countsSaid(m.counts)}</dd><dt>matches</dt><dd class="num">${fmt(m.inliers)} inliers of ${fmt(m.n_matches)}</dd>
+      <dt>time</dt><dd class="num">${m.seconds} s on the CPU</dd><dt>method</dt><dd>${m.method}</dd><dt>the check says</dt><dd>${whySaid(m.why)}</dd></dl>`;
   $('#gloss').innerHTML = m.plain;
 }
-const cap = s => `<em>${s.inst}</em>` + (s.band ? `, ${s.band}` : '') + `<br>${s.gsd} m per pixel`;
-function drawInputs(){
-  const m = D.maps[tr.p];
-  $('#inputs').innerHTML = `<figure><img src="${layerImg(m, 'src')}" alt="Image A: ${m.a.inst}"><figcaption>Image A, the one moved: ${cap(m.a)}</figcaption></figure>
-    <figure><img src="${layerImg(m, 'ref')}" alt="Image B: ${m.b.inst}"><figcaption>Image B, the reference grid: ${cap(m.b)}</figcaption></figure>`;
-}
+const cap = s => `<em>${s.inst}</em>` + (s.band ? `, ${s.band}` : '') + `, ${s.gsd} m per pixel`;
+function drawInputs(){ const m = D.maps[tr.p];
+  $('#inputs').innerHTML = `<figure><img src="${layerImg(m, 'src')}" alt="Image A: ${m.a.inst}"><figcaption>Moved: ${cap(m.a)}</figcaption></figure>
+    <figure><img src="${layerImg(m, 'ref')}" alt="Image B: ${m.b.inst}"><figcaption>Reference: ${cap(m.b)}</figcaption></figure>`; }
 function drawTwin(){
   const m = D.maps[tr.p], w = m.twin, el = $('#twin');
   if (!w){ el.hidden = true; el.innerHTML = ''; return; }
-  el.hidden = false;
-  const row = (lab, a, b) => `<tr><td>${lab}</td><td>${a}</td><td>${b}</td></tr>`;
-  const sh = (w.a.sharp / w.b.sharp).toFixed(1);
-  el.innerHTML = `<h4>Is the infrared frame only blurrier? The same source image against two bands of the same map product.</h4>
-    <div class="scroll"><table><thead><tr><th></th><th>${w.other_band}</th><th>${w.band}</th></tr></thead><tbody>
-    ${row('reference grid', w.a.gsd + ' m per pixel', w.b.gsd + ' m per pixel')}
-    ${row('fine detail', w.a.sharp, w.b.sharp + ', ' + sh + '× less')}
-    ${row('matches found', fmt(w.a.matches), fmt(w.b.matches))}
-    ${row('inliers', fmt(w.a.inliers), fmt(w.b.inliers))}
-    ${row('inlier ratio', w.a.ratio, w.b.ratio)}
-    ${row('frame coverage', Math.round(w.a.cov * 100) + '%', Math.round(w.b.cov * 100) + '%')}
+  el.hidden = false; const row = (l, a, b) => `<tr><td>${l}</td><td>${a}</td><td>${b}</td></tr>`, sh = (w.a.sharp / w.b.sharp).toFixed(1);
+  el.innerHTML = `<h4>Is the infrared frame only blurrier? The same source against two bands of the same map product.</h4>
+    <div style="overflow-x:auto"><table><thead><tr><th></th><th>${w.other_band}</th><th>${w.band}</th></tr></thead><tbody>
+    ${row('reference grid', w.a.gsd + ' m', w.b.gsd + ' m')}${row('fine detail', w.a.sharp, w.b.sharp + ', ' + sh + '× less')}
+    ${row('matches found', fmt(w.a.matches), fmt(w.b.matches))}${row('inliers', fmt(w.a.inliers), fmt(w.b.inliers))}
+    ${row('inlier ratio', w.a.ratio, w.b.ratio)}${row('frame coverage', Math.round(w.a.cov * 100) + '%', Math.round(w.b.cov * 100) + '%')}
     ${row('verdict', w.a.verdict + ', ' + w.a.med + ' px', w.b.verdict)}
-    ${w.fallback_px !== null ? row('fallback against the visible-band fit', 'none', w.fallback_px + ' px = ' + w.fallback_m + ' m') : ''}
-    </tbody></table></div>`;
+    ${w.fallback_px !== null ? row('fallback against the visible fit', 'none', w.fallback_px + ' px = ' + w.fallback_m + ' m') : ''}</tbody></table></div>`;
 }
 const LNAME = {src:'Image A, before', ref:'Image B, reference', warp:"The matcher's answer", blink:'Alternate with B', fb:'The fallback, delivered'};
 function setLayer(l){
-  const m = D.maps[tr.p];
-  if (!m.layers.some(x => x.k === l)) l = 'ref';
+  const m = D.maps[tr.p]; if (!m.layers.some(x => x.k === l)) l = 'ref';
   tr.layer = l; clearInterval(tr.timer); tr.timer = null;
   $$('#layers button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.l === l)));
-  const A = $('#imgA'), B = $('#imgB');
-  A.src = l === 'blink' ? layerImg(m, 'ref') : layerImg(m, l);
-  A.alt = LNAME[l];
-  const w = layerImg(m, 'warp'); if (w) B.src = w;
-  B.hidden = true;
-  const refused = !m.ok && l === 'warp';
-  $('#layname').textContent = l === 'blink' ? "The matcher's answer and image B, alternating. If they are aligned, nothing jumps."
-    : refused ? 'This is the answer the check refused.' : '';
-  if (l === 'blink') tr.timer = setInterval(() => { B.hidden = !B.hidden; }, reduce ? 1600 : 650);
+  const Ai = $('#imgA'), Bi = $('#imgB'); Ai.src = l === 'blink' ? layerImg(m, 'ref') : layerImg(m, l); Ai.alt = LNAME[l];
+  const w = layerImg(m, 'warp'); if (w) Bi.src = w; Bi.hidden = true;
+  $('#layname').textContent = l === 'blink' ? 'If they are aligned, nothing jumps.' : (!m.ok && l === 'warp') ? 'The answer the check refused.' : '';
+  if (l === 'blink') tr.timer = setInterval(() => { Bi.hidden = !Bi.hidden; }, reduce ? 1600 : 650);
 }
 function setPair(i){
-  tr.p = i; $$('#gaz [data-p]').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.p === i)));
-  const m = D.maps[i];
-  tr.cell = i === 0 ? 27 : m.cells.findIndex(c => c.s === 'weak'); if (tr.cell < 0) tr.cell = 27;
+  tr.p = i; $$('#sheet .frame').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.p === i)));
+  const m = D.maps[i]; tr.cell = i === 0 ? 27 : m.cells.findIndex(c => c.s === 'weak'); if (tr.cell < 0) tr.cell = 27;
   $('#layers').innerHTML = m.layers.map(l => `<button type="button" data-l="${l.k}" aria-pressed="false">${LNAME[l.k] || l.n}</button>`).join('');
   $$('#layers button').forEach(b => { b.onclick = () => setLayer(b.dataset.l); });
   drawGrid(); drawSquare(); drawVerdict(); drawInputs(); drawTwin();
   setLayer(m.ok ? 'blink' : (m.layers.some(x => x.k === 'warp') ? 'warp' : 'ref'));
 }
 function pickCell(i){ if (i === tr.cell || i < 0 || i > 63) return; tr.cell = i; $$('#grid .cell').forEach((r, k) => r.classList.toggle('on', k === i)); drawSquare(); }
-$('#gaz').addEventListener('click', e => { const b = e.target.closest('[data-p]'); if (b) setPair(+b.dataset.p); });
+$('#sheet').addEventListener('click', e => { const b = e.target.closest('.frame'); if (b) setPair(+b.dataset.p); });
 ['pointerover','click'].forEach(t => $('#grid').addEventListener(t, e => { const r = e.target.closest('.cell'); if (r) pickCell(+r.dataset.i); }));
 $('#pimg').addEventListener('keydown', e => { const d = {ArrowLeft:-1, ArrowRight:1, ArrowUp:-8, ArrowDown:8}[e.key]; if (!d) return; e.preventDefault();
   const x = tr.cell % 8; if ((d === -1 && x === 0) || (d === 1 && x === 7)) return; pickCell(tr.cell + d); });
 $('#gridon').addEventListener('change', e => $('#pimg').classList.toggle('nogrid', !e.target.checked));
 setPair(0);
 
-/* ---------- whole overlap ---------- */
+/* ================= the check, tested ================= */
+{ const near = D.near, hard = D.hard, L = 58, R = 548, Tt = 24, B = 262, n = near.length, bw = (R - L) / n, y = p => B - p / 100 * (B - Tt);
+  let s = `<defs><pattern id="bh" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(-45)"><rect width="1.7" height="4" fill="#f4f4f1"/></pattern></defs>`;
+  [0, 25, 50, 75, 100].forEach(p => { s += `<line x1="${L}" x2="${R}" y1="${y(p)}" y2="${y(p)}" stroke="#f4f4f1" stroke-opacity=".18"/><text x="${L - 8}" y="${y(p) + 4}" font-size="12" text-anchor="end" style="fill:#a9a9a3">${p}%</text>`; });
+  near.forEach((d, i) => { const p = 100 * d.hit / d.n, cx = L + bw * (i + .5), h = hard.find(q => q.m === d.m), hp = h ? 100 * h.hit / h.n : null;
+    s += `<rect x="${cx - bw*.3}" y="${y(p)}" width="${bw*.6}" height="${Math.max(B - y(p), 1.5)}" fill="url(#bh)" stroke="#f4f4f1" stroke-width="1"><title>${d.hit} of ${d.n} flagged at ${d.m} m</title></rect>
+      <text x="${cx}" y="${Math.min(y(p), hp !== null ? y(hp) - 7 : 1e9) - 8}" font-size="12.5" text-anchor="middle" style="fill:#f4f4f1">${Math.round(p)}%</text>
+      <text x="${cx}" y="${B + 19}" font-size="12.5" text-anchor="middle" style="fill:#a9a9a3">${d.m}</text>`;
+    if (hp !== null) s += `<path d="M${cx} ${y(hp) - 6}L${cx + 6} ${y(hp)}L${cx} ${y(hp) + 6}L${cx - 6} ${y(hp)}Z" fill="#0e0e0d" stroke="#f4f4f1" stroke-width="2"><title>${h.hit} of ${h.n} flagged at ${h.m} m, Suns 132 to 174 degrees apart</title></path>`; });
+  s += `<line x1="${L}" x2="${R}" y1="${B}" y2="${B}" stroke="#f4f4f1"/><text x="${(L + R) / 2}" y="${B + 44}" font-size="13" text-anchor="middle" style="fill:#a9a9a3">size of the planted error, in metres</text>
+    <text transform="translate(12,${(Tt + B) / 2}) rotate(-90)" font-size="13" text-anchor="middle" style="fill:#a9a9a3">flagged as wrong</text>`;
+  $('#calchart').innerHTML = s;
+  const r = D.rotscale, a = 100 * r.refused / r.moved, b = 100 * r.kept / r.still;
+  $('#rs').innerHTML = `<p class="big num" style="font-size:clamp(38px,4vw,58px)">${a.toFixed(1)}%<small>of squares a planted rotation or scale error moved past 2 px lose their verified state (${fmt(r.refused)} of ${fmt(r.moved)}, over ${fmt(r.trials)} trials)</small></p>
+    <p class="big num" style="font-size:clamp(38px,4vw,58px)">${b.toFixed(1)}%<small>of squares the same errors moved by under 1 px stay verified: it is not simply refusing everything</small></p>`; }
+
+/* ================= the whole overlap ================= */
 { const T = D.tiles, w = T[0].w, pad = w * 1.4;
   const x0 = Math.min(...T.map(t => t.x)) - pad, x1 = Math.max(...T.map(t => t.x)) + pad, y0 = Math.min(...T.map(t => t.y)) - pad - w, y1 = Math.max(...T.map(t => t.y)) + pad;
   const k = 1000 / (x1 - x0), W = 1000, Hh = (y1 - y0) * k, X = v => (v - x0) * k, Y = v => (y1 - v) * k, svg = $('#tilemap');
   svg.setAttribute('viewBox', `0 0 ${W} ${Hh.toFixed(0)}`);
   let s = ''; const step = 2000;
-  for (let gxv = Math.ceil(x0 / step) * step; gxv < x1; gxv += step) s += `<line x1="${X(gxv)}" x2="${X(gxv)}" y1="0" y2="${Hh}" stroke="${C.grid}" stroke-opacity=".35" vector-effect="non-scaling-stroke"/>`;
-  for (let gyv = Math.ceil(y0 / step) * step; gyv < y1; gyv += step) s += `<line y1="${Y(gyv)}" y2="${Y(gyv)}" x1="0" x2="${W}" stroke="${C.grid}" stroke-opacity=".35" vector-effect="non-scaling-stroke"/>`;
-  T.forEach((t, i) => { const out = t.med > 3, op = Math.max(.12, Math.min(.62, 1 - t.med * .75));
-    s += `<rect class="t${out ? ' out' : ''}" data-i="${i}" x="${X(t.x - w/2) + w*k*.03}" y="${Y(t.y + w/2) + w*k*.03}" width="${w*k*.94}" height="${w*k*.94}" fill="${out ? C.ochre : C.grid}" fill-opacity="${out ? .1 : op.toFixed(2)}"/>`; });
-  const bx = 30, by = Hh - 28, L = 2000 * k;
-  s += `<rect x="${bx}" y="${by - 6}" width="${L/2}" height="6" fill="#000"/><rect x="${bx + L/2}" y="${by - 6}" width="${L/2}" height="6" fill="${C.sheet}" stroke="#000" vector-effect="non-scaling-stroke"/>
-    <text x="${bx}" y="${by - 13}" font-size="22" style="fill:#000">0</text><text x="${bx + L}" y="${by - 13}" font-size="22" text-anchor="middle" style="fill:#000">2 km</text>
-    <text x="${W - 26}" y="${by}" font-size="22" text-anchor="end" style="fill:${C.ink2}">grid every 2 km, near 74.2°S 43.6°E</text>`;
+  for (let gv = Math.ceil(x0 / step) * step; gv < x1; gv += step) s += `<line x1="${X(gv)}" x2="${X(gv)}" y1="0" y2="${Hh}" stroke="#f4f4f1" stroke-opacity=".14" vector-effect="non-scaling-stroke"/>`;
+  for (let gv = Math.ceil(y0 / step) * step; gv < y1; gv += step) s += `<line y1="${Y(gv)}" y2="${Y(gv)}" x1="0" x2="${W}" stroke="#f4f4f1" stroke-opacity=".14" vector-effect="non-scaling-stroke"/>`;
+  T.forEach((t, i) => { const out = t.med > 3, op = Math.max(.14, Math.min(.85, 1.15 - t.med * .8));
+    s += `<rect class="t${out ? ' out' : ''}" data-i="${i}" x="${X(t.x - w/2) + w*k*.03}" y="${Y(t.y + w/2) + w*k*.03}" width="${w*k*.94}" height="${w*k*.94}" fill="#f4f4f1" fill-opacity="${out ? .04 : op.toFixed(2)}"/>`; });
+  const bx = 30, by = Hh - 28, L2 = 2000 * k;
+  s += `<rect x="${bx}" y="${by - 6}" width="${L2/2}" height="6" fill="#f4f4f1"/><rect x="${bx + L2/2}" y="${by - 6}" width="${L2/2}" height="6" fill="none" stroke="#f4f4f1" vector-effect="non-scaling-stroke"/>
+    <text x="${bx}" y="${by - 13}" font-size="22" style="fill:#f4f4f1;font-family:Jost">0</text><text x="${bx + L2}" y="${by - 13}" font-size="22" text-anchor="middle" style="fill:#f4f4f1;font-family:Jost">2 km</text>
+    <text x="${W - 26}" y="${by}" font-size="22" text-anchor="end" style="fill:#a9a9a3;font-family:Jost">grid every 2 km, near 74.2°S 43.6°E</text>`;
   svg.innerHTML = s;
   let cur = -1; const show = i => { if (i === cur || i < 0) return; cur = i; const t = T[i], out = t.med > 3;
     svg.querySelectorAll('.t').forEach((r, kk) => r.classList.toggle('on', kk === i));
-    $('#tsquare').innerHTML = `<h4>Window ${t.id}<span style="color:${out ? C.ochre : C.grid}">${out ? 'accepted, at the limit of the metric' : 'accepted'}</span></h4><dl>
-      <dt>held-out median</dt><dd>${t.med.toFixed(2)} px = ${(t.med * .931).toFixed(2)} m</dd>
-      <dt>inliers, and the inlier ratio</dt><dd>${fmt(t.inl)}, ${t.ratio.toFixed(3)}</dd>
-      <dt>squares verified</dt><dd>${t.ver} of 64</dd>
-      <dt>verdict for the window</dt><dd>${t.verdict}</dd>
-      <dt>time on the CPU</dt><dd>${t.sec} s</dd></dl>`; };
+    $('#tsquare').innerHTML = `<h4>Window ${t.id}<span>${out ? 'accepted, at the limit of the metric' : 'accepted'}</span></h4><dl>
+      <dt>held-out median</dt><dd class="num">${t.med.toFixed(2)} px = ${(t.med * .931).toFixed(2)} m</dd><dt>inliers, and the inlier ratio</dt><dd class="num">${fmt(t.inl)}, ${t.ratio.toFixed(3)}</dd>
+      <dt>squares verified</dt><dd class="num">${t.ver} of 64</dd><dt>verdict for the window</dt><dd>${t.verdict}</dd><dt>time on the CPU</dt><dd class="num">${t.sec} s</dd></dl>`; };
   ['pointerover','click'].forEach(ev => svg.addEventListener(ev, e => { const r = e.target.closest('.t'); if (r) show(+r.dataset.i); }));
   show(T.findIndex(t => t.med > 3)); }
 
-/* ---------- planted errors ---------- */
-{ const near = D.near, hard = D.hard, L = 52, R = 548, Tt = 24, B = 262, n = near.length, bw = (R - L) / n;
-  const y = p => B - p / 100 * (B - Tt); let s = `<defs><pattern id="bh" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(-45)"><rect width="1.6" height="4" fill="#000"/></pattern></defs>`;
-  [0, 25, 50, 75, 100].forEach(p => { s += `<line x1="${L}" x2="${R}" y1="${y(p)}" y2="${y(p)}" stroke="${C.rule}"/><text x="${L - 8}" y="${y(p) + 4}" font-size="11.5" text-anchor="end">${p}%</text>`; });
-  near.forEach((d, i) => { const p = 100 * d.hit / d.n, cx = L + bw * (i + .5), h = hard.find(q => q.m === d.m), hp = h ? 100 * h.hit / h.n : null;
-    s += `<rect x="${cx - bw*.3}" y="${y(p)}" width="${bw*.6}" height="${Math.max(B - y(p), 1.5)}" fill="url(#bh)" stroke="#000" stroke-width="1"><title>${d.hit} of ${d.n} flagged at ${d.m} m</title></rect>
-      <text x="${cx}" y="${Math.min(y(p), hp !== null ? y(hp) - 7 : 1e9) - 7}" font-size="11.5" text-anchor="middle" style="fill:#000">${Math.round(p)}%</text>
-      <text x="${cx}" y="${B + 18}" font-size="11.5" text-anchor="middle">${d.m}</text>`;
-    if (hp !== null) s += `<path d="M${cx} ${y(hp) - 6}L${cx + 6} ${y(hp)}L${cx} ${y(hp) + 6}L${cx - 6} ${y(hp)}Z" fill="${C.sheet}" stroke="${C.grid}" stroke-width="2"><title>${h.hit} of ${h.n} flagged at ${h.m} m, Suns 132 to 174 degrees apart</title></path>`; });
-  s += `<line x1="${L}" x2="${R}" y1="${B}" y2="${B}" stroke="${C.ink2}"/>
-    <text x="${(L + R) / 2}" y="${B + 42}" font-size="12" text-anchor="middle">size of the planted error, in metres</text>
-    <text transform="translate(12,${(Tt + B) / 2}) rotate(-90)" font-size="12" text-anchor="middle">flagged as wrong</text>`;
-  $('#calchart').innerHTML = s;
-  /* the two shares drawn as chart scale bars: alternating segments, filled to the value */
-  const bar = (p, col) => { let g = ''; for (let k = 0; k < 10; k++) g += `<rect x="${k*10}%" y="6" width="10%" height="10" fill="${k % 2 ? C.sheet : '#000'}" fill-opacity="${k % 2 ? 1 : .12}" stroke="#000" stroke-width=".6"/>`;
-    return `<svg viewBox="0 0 100 26" preserveAspectRatio="none" aria-hidden="true">${g}<rect x="0" y="6" width="${p}" height="10" fill="${col}" fill-opacity=".85"/><line x1="${p}" x2="${p}" y1="1" y2="21" stroke="#000" stroke-width=".8" vector-effect="non-scaling-stroke"/></svg>`; };
-  const r = D.rotscale, a = 100 * r.refused / r.moved, b = 100 * r.kept / r.still;
-  $('#m1').innerHTML = `<b>${a.toFixed(1)}%<small>${fmt(r.refused)} of ${fmt(r.moved)} squares</small></b>${bar(a, C.grid)}<p>of the squares that a planted rotation or scale error moved by more than 2 px lose their verified state, over ${fmt(r.trials)} trials.</p>`;
-  $('#m2').innerHTML = `<b>${b.toFixed(1)}%<small>${fmt(r.kept)} of ${fmt(r.still)} squares</small></b>${bar(b, C.grid)}<p>of the squares the same errors moved by less than 1 px stay verified: the check is not simply refusing everything.</p>`; }
+/* ================= where the reader is ================= */
+{ const links = $$('.bar nav a'), parts = $$('section.part'); let raf = 0;
+  const mark = () => { raf = 0; const mid = innerHeight * .45, here = parts.find(p => !p.hidden && p.getBoundingClientRect().top <= mid && p.getBoundingClientRect().bottom > mid);
+    const id = here && (here.id === 'overlap' ? 'planted' : here.id);
+    links.forEach(a => a.toggleAttribute('aria-current', !!id && a.getAttribute('href') === '#' + id)); };
+  addEventListener('scroll', () => { if (!raf) raf = requestAnimationFrame(mark); }, {passive:true}); addEventListener('resize', mark); mark(); }
 
-/* ---------- running head: say where the reader is ---------- */
-{ const links = $$('.top nav a'), parts = $$('section.part');
-  let raf = 0;
-  const mark = () => { raf = 0; const mid = innerHeight * .45;
-    const here = parts.find(p => !p.hidden && p.getBoundingClientRect().top <= mid && p.getBoundingClientRect().bottom > mid);
-    links.forEach(a => a.toggleAttribute('aria-current', !!here && a.getAttribute('href') === '#' + here.id)); };
-  addEventListener('scroll', () => { if (!raf) raf = requestAnimationFrame(mark); }, {passive:true});
-  addEventListener('resize', mark); mark(); }
-
-/* ---------- try a pair: only when web/server.py is serving this page ---------- */
+/* ================= try a pair: only when web/server.py is serving this page ================= */
 (function(){
-  const files = {a:null, b:null}, log = $('#log'), go = $('#go');
-  let maxBytes = 0;
+  const files = {a:null, b:null}, log = $('#log'), go = $('#go'); let maxBytes = 0;
   const say = (msg, bad) => { log.textContent = msg; log.classList.toggle('bad', !!bad); };
-  /* JSON and base64 inflate the upload by 4/3 against the server's cap, so check it here: the
-     server's own refusal arrives as a dropped connection, which tells the operator nothing. */
-  const payloadBytes = () => Math.ceil((files.a.size + files.b.size) / 3) * 4 + 512;
-  const mb = n => (n / 1048576).toFixed(1) + ' MB';
-  const clearResult = head => {
-    $('#lverdict').innerHTML = `<h3 style="color:var(--ink3)">${head}</h3><p class="what">Nothing is claimed about this pair until the pipeline returns.</p>`;
-    $('#lgloss').textContent = '';
-  };
-  const b64 = f => new Promise((res, rej) => { const r = new FileReader();
-    r.onload = () => res(r.result.slice(r.result.indexOf(',') + 1)); r.onerror = rej; r.readAsDataURL(f); });
+  const payloadBytes = () => Math.ceil((files.a.size + files.b.size) / 3) * 4 + 512, mb = n => (n / 1048576).toFixed(1) + ' MB';
+  const clearResult = head => { $('#lword').textContent = head; $('#lword').style.color = 'var(--dimw)'; $('#lsay').textContent = 'Nothing is claimed about this pair until the pipeline returns.'; };
+  const b64 = f => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result.slice(r.result.indexOf(',') + 1)); r.onerror = rej; r.readAsDataURL(f); });
   function pick(which, file){
-    if (!file) return;
-    files[which] = file;
-    const box = $('#drop' + which.toUpperCase()), n = file.name;
-    const nm = n.length > 30 ? n.slice(0, 14) + '…' + n.slice(-13) : n;   /* two windows of one frame share their prefix */
+    if (!file) return; files[which] = file;
+    const box = $('#drop' + which.toUpperCase()), n = file.name, nm = n.length > 30 ? n.slice(0, 14) + '…' + n.slice(-13) : n;
     box.querySelector('span').textContent = nm + ', ' + mb(file.size);
-    if (/\.(png|jpe?g)$/i.test(n)){ const u = URL.createObjectURL(file), old = box.querySelector('img'); if (old) old.remove();
-      const im = new Image(); im.src = u; im.alt = ''; im.onload = () => URL.revokeObjectURL(u); box.appendChild(im); }
+    if (/\.(png|jpe?g)$/i.test(n)){ const u = URL.createObjectURL(file), old = box.querySelector('img'); if (old) old.remove(); const im = new Image(); im.src = u; im.alt = ''; im.onload = () => URL.revokeObjectURL(u); box.appendChild(im); }
     go.disabled = !(files.a && files.b);
-    if (!go.disabled && maxBytes && payloadBytes() > maxBytes){
-      go.disabled = true; $('#hint').textContent = 'Too large to send';
-      say(`${mb(files.a.size + files.b.size)} of image travels as ${mb(payloadBytes())}, and this server accepts ${mb(maxBytes)} per request (about ${mb(maxBytes * 3 / 4)} of image). Crop one of them, or register a 640-pixel window instead of the whole frame, as every pair on this page does.`, true);
-      return;
-    }
-    $('#hint').textContent = go.disabled ? 'Choose two images' : 'Ready';
-    if (!go.disabled) say('');
+    if (!go.disabled && maxBytes && payloadBytes() > maxBytes){ go.disabled = true; $('#hint').textContent = 'Too large to send';
+      say(`${mb(files.a.size + files.b.size)} of image travels as ${mb(payloadBytes())}, and this server accepts ${mb(maxBytes)} per request (about ${mb(maxBytes * 3 / 4)} of image). Crop one, or register a 640-pixel window instead of the whole frame, as every pair on this page does.`, true); return; }
+    $('#hint').textContent = go.disabled ? 'Choose two images' : 'Ready'; if (!go.disabled) say('');
   }
-  ['a','b'].forEach(w => {
-    const box = $('#drop' + w.toUpperCase()), inp = $('#file' + w.toUpperCase());
+  ['a','b'].forEach(w => { const box = $('#drop' + w.toUpperCase()), inp = $('#file' + w.toUpperCase());
     inp.addEventListener('change', e => pick(w, e.target.files[0]));
     ['dragenter','dragover'].forEach(t => box.addEventListener(t, e => { e.preventDefault(); box.classList.add('over'); }));
     ['dragleave','drop'].forEach(t => box.addEventListener(t, e => { e.preventDefault(); box.classList.remove('over'); }));
-    box.addEventListener('drop', e => pick(w, e.dataTransfer.files[0]));
-  });
+    box.addEventListener('drop', e => pick(w, e.dataTransfer.files[0])); });
   go.addEventListener('click', async () => {
-    go.disabled = true; $('#hint').textContent = 'Registering';
-    clearResult('Registering…');
-    const t0 = performance.now();
-    const tk = setInterval(() => say('Running the pipeline on the CPU, ' + ((performance.now() - t0) / 1000).toFixed(0) + ' s so far'), 1000);
+    go.disabled = true; $('#hint').textContent = 'Registering'; clearResult('Registering…');
+    const t0 = performance.now(), tk = setInterval(() => say('Running the pipeline on the CPU, ' + ((performance.now() - t0) / 1000).toFixed(0) + ' s so far'), 1000);
     say('Reading the two files');
     try {
-      const [a, b] = await Promise.all([b64(files.a), b64(files.b)]);
-      say('Matching. This is the slow part.');
-      const res = await fetch('api/register', {method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({a:{name:files.a.name, data:a}, b:{name:files.b.name, data:b}})});
-      const m = await res.json();
-      clearInterval(tk);
+      const [a, b] = await Promise.all([b64(files.a), b64(files.b)]); say('Matching. This is the slow part.');
+      const res = await fetch('api/register', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({a:{name:files.a.name, data:a}, b:{name:files.b.name, data:b}})});
+      const m = await res.json(); clearInterval(tk);
       if (!res.ok){ say(m.error || ('The server answered ' + res.status), true); clearResult('Not registered'); go.disabled = false; $('#hint').textContent = 'Ready'; return; }
       say('Registered in ' + ((performance.now() - t0) / 1000).toFixed(1) + ' s, of which ' + m.seconds + ' s inside the pipeline');
-      D.maps.push(m);
-      const i = D.maps.length - 1;
-      $('#gaz').insertAdjacentHTML('beforeend', gazItem(m, i));
-      setPair(i);
-      const v = vword(m);
-      $('#lverdict').innerHTML = `<h3 style="color:${v.col}">${v.w}${v.v === 'contradicted' ? ', fallback declared' : ''}</h3>
-        <p class="what">${countsSaid(m.counts)}; ${fmt(m.inliers)} inliers of ${fmt(m.n_matches)} matches; ${m.seconds} s on the CPU. Method declared: ${m.method}. ${whySaid(m.why)}</p>`;
-      $('#lgloss').innerHTML = m.plain;
+      D.maps.push(m); const i = D.maps.length - 1; $('#sheet').insertAdjacentHTML('beforeend', frameHTML(m, i)); setPair(i);
+      const v = vword(m); $('#lword').textContent = v.w + (v.v === 'contradicted' ? ', fallback declared' : ''); $('#lword').style.color = v.v === 'contradicted' ? '#ff7ab8' : 'var(--white)';
+      $('#lsay').innerHTML = `${countsSaid(m.counts)}; ${fmt(m.inliers)} inliers of ${fmt(m.n_matches)} matches; ${m.seconds} s on the CPU. Method declared: ${m.method}. ${whySaid(m.why)}`;
       $('#pairs').scrollIntoView({behavior: reduce ? 'auto' : 'smooth', block:'start'});
     } catch (e) {
-      clearInterval(tk);
-      const raw = String(e && e.message || e);
+      clearInterval(tk); const raw = String(e && e.message || e);
       say(/fetch/i.test(raw) ? `The connection to web/server.py dropped before it answered (${raw}). Check that the terminal running "python -m web.server" is still open, then try again. If the pair is large, register a window rather than the whole frame.` : raw, true);
       clearResult('Not registered');
     }
@@ -922,8 +882,7 @@ setPair(0);
   });
   fetch('api/health').then(r => r.ok ? r.json() : null).then(h => {
     if (!h || h.service !== 'lunaxx-console') return;
-    $('#live').hidden = false; $('#navlive').hidden = false;
-    maxBytes = Number(h.max_bytes) || 0;
+    $('#live').hidden = false; $('#navlive').hidden = false; maxBytes = Number(h.max_bytes) || 0;
     say(`Ready. Code at commit ${h.commit}; up to ${mb(maxBytes * 3 / 4)} of image per pair.`);
   }).catch(() => {});
 })();

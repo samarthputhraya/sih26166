@@ -9,29 +9,38 @@ It lives in `web/`, **outside `core/`, `evaluation/`, `ops/` and `app/`**, so bu
 re-stamp an evidence row or a demo cache. You can rebuild it as often as you like without
 invalidating the freeze.
 
-<p align="center"><img src="preview.jpg" width="720" alt="The console's opening: the headline beside SAC's pair drawn as a chart plate, with a lettered and numbered grid-square collar"></p>
+<p align="center"><img src="preview.jpg" width="720" alt="The console's opening: the words 'Shadows move. The ground doesn't.' standing as relief on the 74°S LOLA terrain, lit by a low Sun that casts their shadows across the ground"></p>
 
 ### How it looks, and why
 
-The page is drawn as a lunar chart, because registration is a charting problem: two images of the
-same ground have to be tied to one grid. Each ink carries one meaning and nothing is decoration.
+The problem is that the Moon's ground stays put while its shadows swing round it, so the page is
+built from that one fact.
 
-| Ink | Means |
-|---|---|
-| cyan | the chart grid, and a region the area check verified (shown clear, with nothing drawn over it) |
-| magenta hatching | refused: the chart convention for a restricted area; a refused pair's whole plate border is hatched |
-| ochre hatching or dashes | weak, or unconfirmed |
-| stipple | no evidence: nothing was measured there, so nothing is drawn |
+- **The headline is terrain.** "Shadows move. The ground doesn't." is set as a heightfield standing
+  on the real 74 °S site from the LOLA DEM, and lit by one low Sun with cast shadows. On load the
+  Sun swings once across the sky and every shadow the letters throw swings with it. That sweep is
+  the only motion on the page that runs by itself; after it, dragging across the ground moves the
+  Sun.
+- **The reader registers a pair by hand.** "Line it up yourself" puts a real accepted pair (SAC's
+  OHRC → NAC, Suns 174° apart) under an 8 × 8 grid. Each square correlates the two images' pixels
+  at the current shift, so the squares clear as the ground lines up, whatever the shadows do. The
+  refused pair (OHRC → TMC-2) never clears at any shift. The page says plainly that this is a
+  simplified in-browser version of the check, not the check itself.
+- **One colour, one meaning.** Everything is lunar grey, black and white, the colours of the
+  imagery. The only hue is magenta hatching, and it marks what the system refused: a refused
+  pair's plate border, its verdict, and the "What it refuses" ledger. Weak squares are white
+  hatching, no-evidence squares are stipple, and a verified square has nothing drawn on it.
+- **Images sit in the dark, as they do in space.** Sections that hold imagery or instruments use
+  a night background; reading sections use the lit ground.
 
 The 8 × 8 trust map is referenced like a chart's grid squares, columns A to H and rows 1 to 8, so a
-square is named "D4" wherever it appears. The Sun section is a polar chart of the 74 °S site from
-the LOLA DEM, with cast shadows at the OHRC frame's 7° Sun, contours every 250 m, and a compass you
-drag the second Sun round. The one piece of motion that runs by itself is the opening plate
-drifting into register once; everything else answers the reader.
+square is named "D4" wherever it appears. The Sun section is a polar relief of the same site with
+cast shadows at the OHRC frame's 7° Sun, contours every 250 m, and a compass you drag the second
+Sun round.
 
-Type is Archivo (one variable file, widths 62–125 %) and Newsreader italic, kept for names the way
-charts keep italic for named features. Both are SIL OFL 1.1 and live in `web/fonts/` with their
-licences; the build embeds them, so the page needs no network at all.
+Type is Jost alone, a revival of Futura, the typeface on the plaque Apollo 11 left on the Moon. It
+is SIL OFL 1.1 and lives in `web/fonts/` with its licence; the build embeds it, so the page needs no
+network at all.
 
 ---
 
@@ -146,13 +155,15 @@ without you changing the evidence, something is wrong.
 
 | Section | The question it answers | Where the numbers live |
 |---|---|---|
+| **Shadows move. The ground doesn't.** | What is the problem, in one look? | the LOLA DEM of the 74 °S site |
+| **Line it up yourself** | What does the area check actually test? | cached `run_all()` images; the verdict line quotes the pair's cached counts |
 | **Same ground, two Suns** | Does Sun angle break it, and does it know when it has? | `REPORT.md` → Real sun-angle sweep |
-| **Every pairing, and its verdict** | What does a verdict actually mean, square by square? | cached `run_all()` + `real_pairs_log.csv` |
-| **The whole overlap** | Did you pick the windows that worked? | `REPORT.md` → The whole lit overlap |
-| **Wrong answers, planted on purpose** | How wrong does an answer have to be before you catch it? | `trust_real_calibration.csv` |
-| **How it works** | What actually runs? | `core/pipeline.py::run_all` |
+| **Every pairing, and what the check said** | What does a verdict actually mean, square by square? | cached `run_all()` + `real_pairs_log.csv` |
+| **The check, tested on purpose** | How wrong does an answer have to be before you catch it? | `trust_real_calibration.csv` |
+| **The whole overlap, not chosen windows** | Did you pick the windows that worked? | `REPORT.md` → The whole lit overlap |
 | **What it registers** | What does it register, and how well? | `REPORT.md`, one section per row |
-| **What it declines to register** | What does it decline, and did it say so itself? | `REPORT.md`, one section per row |
+| **What it refuses** | What does it decline, and did it say so itself? | `REPORT.md`, one section per row |
+| **How it runs** | What actually runs? | `core/pipeline.py::run_all` |
 
 ## 5. What runs where
 
@@ -166,7 +177,7 @@ page can run them. So there are two deployments of the one built file:
 | Needs Python running | no | yes |
 | Shareable | yes | no — loopback only |
 
-Section 7 covers the live one. The other live demo is `app/streamlit_app.py`, which runs the same
+Section 6 covers the live one. The other live demo is `app/streamlit_app.py`, which runs the same
 pipeline with the cached pairs and is what Gate 4 tests:
 
 ```
@@ -182,7 +193,7 @@ python -m web.build_console        # once, if the page is not built
 python -m web.server              # http://127.0.0.1:8000
 ```
 
-The page served this way grows a **"Try a pair of your own"** section near the top: drop in two images, press
+The page served this way grows a **"Try a pair of your own"** section after the Sun section: drop in two images, press
 *Register the pair*, and `core.pipeline.run_all` runs on this CPU. The result is appended to the
 pair roster and rendered by `web/panel.py` — **the same renderer the frozen pairs use**, so a
 live panel and a frozen panel cannot disagree about what a verdict means.

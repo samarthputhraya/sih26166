@@ -136,8 +136,8 @@ file, and the prior art they build on is cited in its docstring [6–9].
 
 <p align="center">
   <img src="web/preview.jpg" width="760"
-       alt="The Mission Console, drawn as a lunar chart: SAC's pair on a grid-square plate beside the headline">
-  <br/><sub>The Mission Console (<code>web/</code>): every instrument pairing and its verdict, drawn as a lunar chart, and a live section that registers a pair you upload.</sub>
+       alt="The Mission Console opens on the words 'Shadows move. The ground doesn't.' standing as relief on the real 74°S terrain, lit by a low Sun">
+  <br/><sub>The Mission Console (<code>web/</code>): the problem as terrain, a pair you align by hand, every instrument pairing and its verdict, and a live section that registers a pair you upload.</sub>
 </p>
 
 ---

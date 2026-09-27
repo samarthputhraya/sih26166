@@ -3,12 +3,11 @@ Copyright 2026 the LunaXX team (Smart India Hackathon 2026, problem statement SI
 
 Licensed under the Apache License, Version 2.0 - see LICENSE.
 
-This repository contains the team's own code, documents and evidence logs, and two typefaces used
-by the Mission Console, each under the SIL Open Font License 1.1 with its licence beside it in
+This repository contains the team's own code, documents and evidence logs, and one typeface used
+by the Mission Console, under the SIL Open Font License 1.1 with its licence beside it in
 web/fonts/:
 
-  Archivo      Copyright 2020 The Archivo Project Authors (github.com/Omnibus-Type/Archivo)
-  Newsreader   Copyright 2020 The Newsreader Project Authors (github.com/productiontype/Newsreader)
+  Jost         Copyright 2020 The Jost Project Authors (github.com/indestructible-type/Jost)
 
 It depends on, but does not include, the following third-party software (versions pinned in
 requirements.txt):

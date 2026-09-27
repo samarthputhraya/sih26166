@@ -180,9 +180,9 @@ MARK = "/*__DATA__*/null"
 if tpl.count(MARK) != 1:
     raise SystemExit(f"template must contain {MARK!r} exactly once, found {tpl.count(MARK)}")
 
-# The page must work with the network off (Gate 4), so its two typefaces travel inside it rather
-# than coming from a font service: Archivo (one variable file, widths 62-125 %) and Newsreader
-# italic, latin subset, both SIL OFL 1.1 - see web/fonts/. A missing file fails the build loudly;
+# The page must work with the network off (Gate 4), so its typeface travels inside it rather
+# than coming from a font service: Jost, roman and italic, latin subset, SIL OFL 1.1 - see
+# web/fonts/. A missing file fails the build loudly;
 # a page that silently fell back to Arial would still "work" and look like nothing we designed.
 FONTS_MARK = "/*__FONTS__*/"
 if tpl.count(FONTS_MARK) != 1:
