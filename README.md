@@ -136,8 +136,8 @@ file, and the prior art they build on is cited in its docstring [6–9].
 
 <p align="center">
   <img src="web/preview.jpg" width="760"
-       alt="The Mission Console opens on the words 'Shadows move. The ground doesn't.' standing as relief on the real 74°S terrain, lit by a low Sun">
-  <br/><sub>The Mission Console (<code>web/</code>): the problem as terrain, a pair you align by hand, every instrument pairing and its verdict, and a live section that registers a pair you upload.</sub>
+       alt="The Mission Console workbench: real pairs and drop zones on the left, and the empty bench on the right, the words 'Shadows move. The ground doesn't.' standing as relief on the 74°S terrain">
+  <br/><sub>The Mission Console (<code>web/</code>, run with <code>python -m web.server</code>): register two images, test one image against a known warp, or re-run any of the real pairs live, and download the result. The frozen evidence is one click away.</sub>
 </p>
 
 ---
@@ -172,7 +172,7 @@ Each pair folder records the product ids, grids, Sun geometry and the command th
 | `streamlit run app/streamlit_app.py` | the demo app, offline, from cached results in `demo_cache/` |
 | `python -m ops.precompute_demo_cache <pair> ...` | fill that cache for the pairs you name |
 | `python -m web.build_console` | the Mission Console → `web/dist/index.html` (see `web/README.md`) |
-| `python -m web.server` | the console plus a live bay that registers a pair you upload |
+| `python -m web.server` | the console as a live workbench: register your own images, a one-image known-answer test, or any real pair, and download the result |
 | `python -m ops.run_real_pairs "sac_ohrc_nac_w*" --log` | register pairs, export deliverables, append to the evidence log |
 | `python -m ops.make_report` | regenerate REPORT.md from the logs |
 | `python -m ops.freeze --plan` / `--check` | the evidence freeze: what would re-run / whether every row is from one commit |
@@ -211,7 +211,7 @@ whether each logged row was measured at it. The real-pair rows were measured at 
 | `evaluation/` | metrics, synthetic and shaded-relief pairs, the real-pair evaluators, the evidence logs |
 | `baselines/` | SIFT, ORB and AKAZE, and their sweeps |
 | `app/` | `streamlit_app.py` (the demo) and `change_detection.py`, gated by the trust map |
-| `web/` | the Mission Console: one self-contained page over the logged evidence, plus a local server with a live upload bay |
+| `web/` | the Mission Console: a registration workbench plus the logged evidence in one self-contained page, and the local server that makes the workbench live |
 | `ops/` | pair cutting, runners, the evidence freeze, the report generator, and the PRADAN data guide (`ops/national_round/PRADAN_GUIDE.md`) |
 | `presentation/` | the pitch deck's builder (`build_deck.py`) and its figures (`make_figures.py`) |
 

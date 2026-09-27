@@ -1,42 +1,48 @@
 # The Mission Console — how to drive it
 
-The console at `web/` is a **read-only instrument panel over frozen evidence**. It never computes
-a result. It reads the evidence logs, the demo caches, `geometry_prior.json` and the LOLA DEM, and
-draws them. That is deliberate: a page that could compute its own numbers could disagree with
-`REPORT.md`, and then neither could be trusted.
+The console at `web/` is two things in one built page:
+
+- **A workbench.** Served by `python -m web.server`, it registers images on the spot: two images
+  you drop in, one image tested against a transform it chose itself, or any of the real pairs in
+  `data/pairs/`, re-run live from their files. Every run is `core.pipeline.run_all` on this CPU,
+  followed live, and the result can be downloaded as the full set of deliverables.
+- **The evidence.** The frozen results, drawn from the evidence logs, the demo caches,
+  `geometry_prior.json` and the LOLA DEM. This part never computes a number: a page that computed
+  its own could disagree with `REPORT.md`, and then neither could be trusted.
+
+Opened without the server (the published link, or `dist/index.html` double-clicked), the page
+cannot run Python. It says so on the workbench, and the real pairs there open their saved runs.
 
 It lives in `web/`, **outside `core/`, `evaluation/`, `ops/` and `app/`**, so building it can never
-re-stamp an evidence row or a demo cache. You can rebuild it as often as you like without
-invalidating the freeze.
+re-stamp an evidence row or a demo cache, and nothing the workbench runs is written anywhere.
 
-<p align="center"><img src="preview.jpg" width="720" alt="The console's opening: the words 'Shadows move. The ground doesn't.' standing as relief on the 74°S LOLA terrain, lit by a low Sun that casts their shadows across the ground"></p>
+<p align="center"><img src="preview.jpg" width="720" alt="The workbench: the pair library and drop zones on the left, and on the right the empty bench, the words 'Shadows move. The ground doesn't.' standing as relief on the 74°S LOLA terrain"></p>
 
 ### How it looks, and why
 
 The problem is that the Moon's ground stays put while its shadows swing round it, so the page is
 built from that one fact.
 
-- **The headline is terrain.** "Shadows move. The ground doesn't." is set as a heightfield standing
-  on the real 74 °S site from the LOLA DEM, and lit by one low Sun with cast shadows. On load the
-  Sun swings once across the sky and every shadow the letters throw swings with it. That sweep is
-  the only motion on the page that runs by itself; after it, dragging across the ground moves the
-  Sun.
-- **The reader registers a pair by hand.** "Line it up yourself" puts a real accepted pair (SAC's
-  OHRC → NAC, Suns 174° apart) under an 8 × 8 grid. Each square correlates the two images' pixels
-  at the current shift, so the squares clear as the ground lines up, whatever the shadows do. The
-  refused pair (OHRC → TMC-2) never clears at any shift. The page says plainly that this is a
-  simplified in-browser version of the check, not the check itself.
-- **One colour, one meaning.** Everything is lunar grey, black and white, the colours of the
-  imagery. The only hue is magenta hatching, and it marks what the system refused: a refused
-  pair's plate border, its verdict, and the "What it refuses" ledger. Weak squares are white
-  hatching, no-evidence squares are stipple, and a verified square has nothing drawn on it.
-- **Images sit in the dark, as they do in space.** Sections that hold imagery or instruments use
-  a night background; reading sections use the lit ground.
+- **The tool comes first.** The page opens on the workbench: what to register on the left, the
+  result on the right. The evidence is one link away in the bar, not a slide deck to scroll past.
+- **The empty bench is terrain.** Before anything runs, the result area shows "Shadows move. The
+  ground doesn't." set as a heightfield on the real 74 °S site from the LOLA DEM, lit by one low
+  Sun with cast shadows. On load the Sun swings once and every shadow swings with it; dragging
+  across the ground moves it after that. That sweep is the only motion that runs by itself.
+- **A result is a plate.** The warped image under the 8 × 8 trust map, squares referenced A–H and
+  1–8 like a chart's grid squares, with the verdict, every square's numbers, and the download.
+  The same viewer draws the frozen pairs in the evidence, so a live verdict and a saved one mean
+  the same thing.
+- **One colour, one meaning.** Lunar grey, black and white, the colours of the imagery. The only
+  hue is magenta, and it marks what the system refused. Weak squares are white hatching,
+  no-evidence squares are stipple, and a verified square has nothing drawn on it.
+- **Images sit in the dark, as they do in space.** The result area and the instruments use a night
+  background; the controls and the reading sections use the lit ground.
 
-The 8 × 8 trust map is referenced like a chart's grid squares, columns A to H and rows 1 to 8, so a
-square is named "D4" wherever it appears. The Sun section is a polar relief of the same site with
-cast shadows at the OHRC frame's 7° Sun, contours every 250 m, and a compass you drag the second
-Sun round.
+In the evidence, "Line it up yourself" lets the reader drag a real pair into register while a
+simplified in-browser version of the check scores each square, and says that it is simplified.
+The Sun section is a polar relief of the same site with cast shadows at the OHRC frame's 7° Sun,
+contours every 250 m, and a compass you drag the second Sun round.
 
 Type is Jost alone, a revival of Futura, the typeface on the plaque Apollo 11 left on the Moon. It
 is SIL OFL 1.1 and lives in `web/fonts/` with its licence; the build embeds it, so the page needs no
@@ -144,7 +150,7 @@ layer actually looks like what the verdict claims.
 **Quick sanity run:**
 
 ```
-python -m pytest -q                   # 340 passed
+python -m pytest -q                   # 352 passed
 python -m web.build_console           # prints the row counts it found
 ```
 
@@ -155,7 +161,7 @@ without you changing the evidence, something is wrong.
 
 | Section | The question it answers | Where the numbers live |
 |---|---|---|
-| **Shadows move. The ground doesn't.** | What is the problem, in one look? | the LOLA DEM of the 74 °S site |
+| **Workbench** | Does it work on images I choose, right now? | computed live by `core.pipeline.run_all`; not evidence |
 | **Line it up yourself** | What does the area check actually test? | cached `run_all()` images; the verdict line quotes the pair's cached counts |
 | **Same ground, two Suns** | Does Sun angle break it, and does it know when it has? | `REPORT.md` → Real sun-angle sweep |
 | **Every pairing, and what the check said** | What does a verdict actually mean, square by square? | cached `run_all()` + `real_pairs_log.csv` |
@@ -173,7 +179,7 @@ page can run them. So there are two deployments of the one built file:
 | | Published link | `python -m web.server` |
 |---|---|---|
 | Shows the frozen evidence | yes | yes |
-| "Try a pair of your own" section | hidden | **shown** |
+| Workbench | saved runs of the 10 roster pairs; says it cannot run Python | **live**: uploads, one-image tests, all real pairs in `data/pairs/` |
 | Needs Python running | no | yes |
 | Shareable | yes | no — loopback only |
 
@@ -186,38 +192,65 @@ streamlit run app/streamlit_app.py
 
 ---
 
-## 6. The live server — register a pair someone hands you
+## 6. The live server — the workbench
 
 ```
 python -m web.build_console        # once, if the page is not built
 python -m web.server              # http://127.0.0.1:8000
 ```
 
-The page served this way grows a **"Try a pair of your own"** section after the Sun section: drop in two images, press
-*Register the pair*, and `core.pipeline.run_all` runs on this CPU. The result is appended to the
-pair roster and rendered by `web/panel.py` — **the same renderer the frozen pairs use**, so a
-live panel and a frozen panel cannot disagree about what a verdict means.
+The server loads the LoFTR weights before it takes its first request, then serves the page with the
+workbench live. Three ways to run something:
 
-The section is hidden unless `GET api/health` answers with this service's marker. Opened as the
-published link that fetch fails, the section stays hidden, and the shared page stays read-only.
-One built file, two honest deployments.
+| On the workbench | What runs | What it shows |
+|---|---|---|
+| **Two images** | `run_all` on the two files you drop in | the verdict, the trust map, every square, and a download |
+| **One image, known answer** | the server warps your one image by the rotation, scale, shift, blur and noise you set, then registers the warped copy back onto the original | the same, plus the true error: RMS distance between the delivered and the true transform over a 20 × 20 grid, and the rotation, scale and shift asked for against those recovered |
+| **Real pairs** | any pair in `data/pairs/` (180 on this laptop), straight from its files | the same; filter by instrument pairing |
+
+Each run is a background job the page polls, so a long run shows its stage and time instead of a
+frozen button, and the *This session* list keeps every result to go back to. **Download the
+result (.zip)** is exactly what `core/export.py` writes for a pair: the registered image on the
+reference grid (GeoTIFF when the reference has a map), `matches.csv`, GCPs for GDAL and QGIS, an
+ISIS match list, the trust map and a report.
+
+The known-answer test is honest about its limits on the page: the two images are the same picture,
+so the Sun has not moved and it tests geometry, blur and noise, not lighting; images over 900 px are
+shrunk to 900 first; and the shift is always moved off the whole-pixel grid (+0.37, −0.63 px),
+because a whole-pixel shift copies pixels without interpolating and flatters the result (see
+`SYNTH_SHIFT_PX` in `core/pipeline.py`). Measured on 27 Sep with a 448-px OHRC display image,
+rotation 8°, scale 1.10, blur 1 px and 3 % noise: 0.52 px RMS, rotation recovered as 7.91°.
+
+The workbench stays in its offline state unless `GET api/health` answers with this service's
+marker, so the published link never pretends to run anything.
 
 | | |
 |---|---|
-| Accepts | GeoTIFF, PDS `.img` / `.xml` / `.lbl`, PNG, JPEG — 64 MB per **request**, which is about **48 MB of image** because the payload is JSON+base64 and inflates by 4/3 |
-| Speed | ~6–120 s per pair on CPU, and it is the image size that decides. Two 640-px windows: ~7 s. A 2,383-px frame against a 640-px reference: **119 s**. One at a time (LoFTR is memory-hungry) |
-| Writes | **nothing.** Uploads go to a temp folder deleted when the request ends. No evidence log, no cache, no repo file |
+| Accepts | GeoTIFF, PDS `.img` / `.xml` / `.lbl`, PNG, JPEG — 64 MB per **request**, which is about **48 MB of image** because the payload is JSON+base64 and inflates by 4/3. Photos over 1600 px can be shrunk in the browser first, both by one factor so their relative scale is kept |
+| Speed | ~6–120 s per pair on CPU, and it is the image size that decides. Two 640-px windows: ~7 s. A 2,383-px frame against a 640-px reference: **119 s**. One at a time (LoFTR is memory-hungry); a second run waits and says so |
+| Writes | **nothing to disk.** Uploads go to a temp folder deleted when the job ends; the last 8 results and their zips are held in memory only |
 | Binds | `127.0.0.1` only. No auth, and it runs an expensive pipeline on request — never expose it |
 | Needs | standard library only. Nothing to `pip install` on the demo laptop |
 
+| API | |
+|---|---|
+| `GET api/health` | the service marker, code commit, upload cap, modes, library size |
+| `GET api/library` | every real pair in `data/pairs/` with its instruments and the terminology from its own `geometry_prior.json` |
+| `GET api/thumb/<id>.jpg`, `<id>_source.jpg` | small previews of a pair's reference and source |
+| `POST api/jobs` | `{mode:"upload", a, b}`, `{mode:"sample", id}` or `{mode:"known", a, rot, scale, dx, dy, blur, noise}`; answers 202 with a job id |
+| `GET api/jobs/<id>` | state, stage, tile progress, and the panel once done |
+| `GET api/jobs/<id>/bundle.zip` | the deliverables for that run |
+| `POST api/register` | the older one-shot call, kept for scripts: waits and returns the panel |
+
 **A GeoTIFF exercises scale invariance; a PNG cannot.** PNG and JPEG carry no ground scale, so
 `to_common_gsd` has nothing to bridge and both images are taken to be at the same scale. The
-panel says so when it happens rather than hiding the assumption.
+result says so when it happens rather than hiding the assumption.
 
-**Verified end to end (20 Sep):** uploading `site_ohrc_m1153871873le_w02` through the API returned
-`agrees`, **5,112 matches** and **56 / 64 verified cells**. The frozen log for that same pair says
-`agrees`, **5,112 matches**, **56 verified**. Inlier counts differ by about 1 % run to run
-(4,630 vs 4,680) because MAGSAC++ samples randomly — say that before anyone else notices it.
+**Verified end to end (27 Sep), in the browser:** the real pair `sac_ohrc_nac_w06` through the job
+API returned `agrees` with 58 of 64 squares verified, as its cached run does; `sac_ohrc_nac_w01`
+from the library, `agrees`; the OHRC → TMC-2 window uploaded as two JPEGs, refused with the
+phase-correlation fallback declared. Inlier counts differ by about 1 % run to run because
+MAGSAC++ samples randomly — say that before anyone else notices it.
 
 ### Hand it something it cannot take
 
@@ -226,12 +259,11 @@ own file inputs on 20 Sep, not through curl.
 
 | They do this | What happens |
 |---|---|
-| Upload a pair over the cap (the 52.8 MB roster source) | **The page refuses before it uploads anything.** *Register the pair* greys out and the log names the two sizes, the base64 size, the cap and what to do. Nothing is sent, nothing waits |
+| Choose a pair over the cap | **The page refuses before it uploads anything.** *Register the pair* greys out and the log gives the size and the cap (checked 27 Sep with 55 MB of files) |
 | Post an over-size body anyway (curl, or a bypassed page) | A readable **413** in 0.2 s. The server drains the body first — replying without draining used to reset the connection, so the browser showed `Failed to fetch` and the operator never saw the message |
-| Watch the panel during a run | It reads **RUNNING…**. The previous pair's verdict is cleared the instant you press the button. A failed run clears it to **NOT REGISTERED** |
-| Upload two PNGs | It runs, and the panel says the uploads carried no ground scale, so scale invariance was *not* exercised. It does not silently assume 1:1 |
-| Upload one image twice | 64 / 64 verified, identity. A fine thing to show on purpose |
-| Upload a non-image, or nothing | Named, specific refusal; the button stays disabled with fewer than two files |
+| Upload something that is not an image | The run stops with **Not registered** and the reason: `notes.png: could not be decoded as an image` (checked 27 Sep) |
+| Upload two PNGs | It runs, and the result says the uploads carried no ground scale, so scale invariance was *not* exercised. It does not silently assume 1:1 |
+| Upload one image twice | 64 / 64 verified, identity. A fine thing to show on purpose; the one-image mode does the same with a known warp |
 
 **Demo tip:** in the Streamlit app, click **All deliverables (.zip)** and nothing else. Chrome
 blocks the second and later automatic downloads in a session, so clicking the other three buttons

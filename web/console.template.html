@@ -1,4 +1,4 @@
-<title>LunaXX: shadows move, the ground doesn't</title>
+<title>LunaXX: register Moon images</title>
 <style>
 /*__FONTS__*/
 /* The page stands on the Moon. Its ground is lit regolith, its instruments sit in the night side,
@@ -9,9 +9,9 @@
   color-scheme:light;
   --ground:#bab8b2; --ground2:#afada7; --lit:#d4d2cc; --night:#0e0e0d; --night2:#1a1a19;
   --ink:#000; --ink2:#262624; --ink3:#46463f; --white:#f4f4f1; --dimw:#a9a9a3;
-  --refuse:#8f0050; --refuse-hatch:#c2127a;
+  --rule:rgba(0,0,0,.18); --refuse:#8f0050; --refuse-hatch:#c2127a;
   --f:"Jost","Futura","Century Gothic","Avenir Next",sans-serif;
-  --gut:clamp(18px,4.2vw,64px); --measure:62ch;
+  --gut:clamp(18px,4.2vw,64px); --measure:62ch; --barh:58px;
 }
 *{box-sizing:border-box}
 html{scroll-behavior:smooth;scroll-padding-top:70px}
@@ -28,35 +28,121 @@ h1,h2,h3,h4{margin:0;font-weight:600;text-wrap:balance}
 p{margin:0}
 .it{font-style:italic}
 .num{font-variant-numeric:tabular-nums lining-nums}
+code{font-family:var(--f);font-weight:500}
+
+/* night-side instruments: images sit in black, as they do in space */
+.night{background:var(--night);color:var(--white);
+  --ink:#f4f4f1; --ink2:#d3d3cd; --ink3:#a9a9a3; --rule:rgba(255,255,255,.16); --refuse:#ec5aa6}
+.night .note,.night .src{color:var(--dimw)}
 
 /* ---------- bar ---------- */
-.bar{position:sticky;top:0;z-index:40;background:rgba(186,184,178,.9);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
-.bar__in{display:flex;align-items:center;gap:8px 30px;min-height:58px;flex-wrap:wrap}
+.bar{position:sticky;top:0;z-index:40;background:rgba(186,184,178,.92);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-bottom:1px solid var(--rule)}
+.bar__in{display:flex;align-items:center;gap:8px 30px;min-height:var(--barh);flex-wrap:wrap;max-width:none}
 .mark{display:flex;align-items:center;gap:10px;text-decoration:none;font-weight:650;font-size:20px;letter-spacing:.02em}
 .mark svg{width:22px;height:22px}
 .bar nav{display:flex;gap:4px 24px;flex-wrap:wrap}
 .bar nav a{font-size:16px;text-decoration:none;color:var(--ink2);padding:6px 0;border-bottom:1.5px solid transparent}
 .bar nav a:hover{color:var(--ink)}
 .bar nav a[aria-current]{color:var(--ink);border-bottom-color:var(--ink)}
-.frozen{margin-left:auto;font-size:15px;color:var(--ink3)}
-@media (max-width:720px){.bar nav{order:3;width:100%;overflow-x:auto;flex-wrap:nowrap;scrollbar-width:none;gap:20px}.bar nav::-webkit-scrollbar{display:none}.bar nav a{white-space:nowrap}html{scroll-padding-top:104px}}
+.bar nav a.wb{font-weight:600;color:var(--ink)}
+.barright{margin-left:auto;display:flex;align-items:center;gap:6px 22px;flex-wrap:wrap;font-size:15px;color:var(--ink3)}
+.pill{display:inline-flex;align-items:center;gap:8px;color:var(--ink)}
+.pill i{width:9px;height:9px;border-radius:50%;border:1.5px solid var(--ink)}
+.pill.on i{background:var(--ink)}
+@media (max-width:720px){.bar nav{order:3;width:100%;overflow-x:auto;flex-wrap:nowrap;scrollbar-width:none;gap:20px}.bar nav::-webkit-scrollbar{display:none}.bar nav a{white-space:nowrap}html{scroll-padding-top:104px}.frozen{display:none}}
 
-/* ---------- the ground, with the words standing on it ---------- */
-.hero{position:relative;height:clamp(520px,84vh,900px);overflow:hidden;background:#6f6d68;touch-action:pan-y;cursor:ew-resize}
+/* ---------- the workbench ---------- */
+.bench{display:grid;grid-template-columns:minmax(340px,410px) minmax(0,1fr);height:calc(100vh - var(--barh));min-height:620px}
+.deck{overflow-y:auto;padding:26px 26px 44px;display:flex;flex-direction:column;gap:22px;border-right:1.5px solid var(--ink);scrollbar-width:thin}
+.stagep{position:relative;overflow-y:auto;min-width:0}
+@media (max-width:980px){.bench{grid-template-columns:minmax(0,1fr);height:auto}.deck{border-right:0;overflow:visible}.stagep{min-height:88vh;overflow:visible}}
+.deck h1{font-size:30px;line-height:1.08;letter-spacing:-.01em}
+.status{font-size:15.5px;line-height:1.5;color:var(--ink2)}
+.status code{color:var(--ink);white-space:nowrap}
+.modes{display:grid;grid-template-columns:1fr 1fr;border:1.5px solid var(--ink)}
+.modes button{appearance:none;border:0;background:none;font:inherit;font-size:15.5px;padding:10px 8px;cursor:pointer;color:var(--ink2);line-height:1.25}
+.modes button+button{border-left:1.5px solid var(--ink)}
+.modes button[aria-selected="true"]{background:var(--ink);color:var(--ground)}
+.mode{display:flex;flex-direction:column;gap:14px}
+.mode[hidden]{display:none}
+.drops{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.drop{position:relative;border:1.5px dashed var(--ink3);min-height:132px;padding:12px;cursor:pointer;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:4px;text-align:center;background:rgba(255,255,255,.08)}
+.drop:hover,.drop.over{border-style:solid;border-color:var(--ink);background:rgba(255,255,255,.2)}
+.drop b{font-size:17px;font-weight:600}
+.drop span{font-size:13.5px;line-height:1.35;color:var(--ink3);overflow-wrap:anywhere}
+.drop img{width:74px;height:74px;object-fit:cover;background:#000}
+.drop input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.drop.one{min-height:110px}
+.dis .drop{opacity:.5;cursor:not-allowed}
+.check{display:flex;gap:10px;align-items:flex-start;font-size:15px;line-height:1.4;color:var(--ink2)}
+.check input{margin-top:4px;accent-color:var(--ink)}
+.go{appearance:none;border:0;background:var(--ink);color:var(--ground);font:inherit;font-size:17px;font-weight:500;padding:12px 18px;cursor:pointer;text-align:left}
+.go:hover{background:#262624}
+.go[disabled]{opacity:.4;cursor:not-allowed}
+.log{font-size:15px;line-height:1.45;color:var(--ink2);min-height:1.4em}
+.log.bad{color:var(--refuse)}
+.fine{font-size:14px;line-height:1.45;color:var(--ink3)}
+.sliders{display:grid;gap:4px}
+.sl{display:grid;grid-template-columns:1fr auto;align-items:center;font-size:15px;gap:0 10px}
+.sl output{font-weight:500}
+.sl input{grid-column:1/-1}
+.prev{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.prev canvas{width:100%;aspect-ratio:1/1;background:#000;display:block}
+.prev figcaption{font-size:13.5px;color:var(--ink3);margin-top:4px}
+.libh{display:flex;flex-direction:column;gap:6px;border-top:1.5px solid var(--ink);padding-top:16px}
+.libh h2{font-size:21px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips button{appearance:none;border:1px solid var(--ink3);background:none;font:inherit;font-size:14px;padding:4px 10px;cursor:pointer;color:var(--ink2)}
+.chips button[aria-pressed="true"]{background:var(--ink);color:var(--ground);border-color:var(--ink)}
+.lib{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px 10px}
+.lib button{appearance:none;background:none;border:0;padding:0;font:inherit;text-align:left;cursor:pointer;color:var(--ink)}
+.lib img{display:block;width:100%;aspect-ratio:1/1;object-fit:cover;background:#000;border:3px solid var(--night)}
+.lib button:hover img{border-color:var(--ink)}
+.lib button[data-v="contradicted"] img{border:3px solid;border-image:repeating-linear-gradient(-45deg,var(--refuse-hatch) 0 1.5px,var(--night) 1.5px 4px) 3}
+.lib button[data-v="unconfirmed"] img{border-style:dashed;border-color:#77776f}
+.lib span{display:block;font-size:12.5px;line-height:1.3;margin-top:4px;color:var(--ink2)}
+.lib small{display:block;font-size:12px;color:var(--ink3)}
+.lib[aria-busy="true"] button{opacity:.5;cursor:progress}
+.runs{border-top:1.5px solid var(--ink);padding-top:14px}
+.runs h2{font-size:19px;margin-bottom:6px}
+.runs ol{list-style:none;margin:0;padding:0}
+.runs button{appearance:none;width:100%;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;background:none;border:0;border-bottom:1px solid var(--rule);padding:8px 0;font:inherit;text-align:left;cursor:pointer;color:var(--ink)}
+.runs button[aria-current="true"] em{text-decoration:underline;text-underline-offset:3px}
+.runs em{font-size:15px;line-height:1.3}
+.runs b{font-size:15px;font-weight:600}
+.runs b.contradicted{color:var(--refuse)}
+.runs small{grid-column:1/-1;font-size:13px;color:var(--ink3)}
+
+/* the empty bench: the ground, with the words standing on it */
+.empty{position:absolute;inset:0;overflow:hidden;background:#6f6d68;touch-action:pan-y;cursor:ew-resize}
+@media (max-width:980px){.empty{position:relative;min-height:88vh}}
 #terrain{position:absolute;inset:0;width:100%;height:100%;display:block}
-.dial{position:absolute;right:var(--gut);top:22px;display:flex;align-items:center;gap:12px;color:var(--white);
+.dial{position:absolute;right:28px;top:22px;display:flex;align-items:center;gap:12px;color:var(--white);
   font-size:15px;line-height:1.35;text-shadow:0 1px 2px rgba(0,0,0,.55);pointer-events:none}
 .dial svg{width:54px;height:54px;flex:none;filter:drop-shadow(0 1px 2px rgba(0,0,0,.5))}
-.hero__foot{position:absolute;left:0;right:0;bottom:0;padding-block:28px 30px;
-  background:linear-gradient(to bottom,rgba(14,14,13,0),rgba(14,14,13,.78) 42%);color:var(--white)}
-.hero__foot .wrap{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px 40px;align-items:end}
-.hero__foot p.lede{font-size:clamp(17px,1.35vw,20px);line-height:1.5;max-width:58ch}
-.hero__foot .go{display:flex;flex-wrap:wrap;gap:12px 22px;font-size:17px}
-.hero__foot .go a{color:var(--white);text-decoration:underline}
-.hero__foot small{display:block;margin-top:10px;font-size:14px;color:var(--dimw)}
-@media (max-width:820px){.hero__foot .wrap{grid-template-columns:minmax(0,1fr)}}
+.efoot{position:absolute;left:0;right:0;bottom:0;padding:34px 7.5% 30px;
+  background:linear-gradient(to bottom,rgba(14,14,13,0),rgba(14,14,13,.8) 40%);color:var(--white)}
+.efoot p{font-size:clamp(17px,1.3vw,19px);line-height:1.5;max-width:60ch}
+.efoot small{display:block;margin-top:10px;font-size:14px;color:var(--dimw);max-width:70ch}
 
-/* ---------- sections ---------- */
+/* a run in progress */
+.running{padding:clamp(22px,4vw,48px);display:flex;flex-direction:column;gap:20px;max-width:900px}
+.rin{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.rin figure{margin:0}
+.rin img,.rin .ph{width:100%;aspect-ratio:1/1;object-fit:cover;display:block;background:#000;outline:1px solid #3a3a37}
+.rin .ph{display:flex;align-items:center;justify-content:center;padding:14px;text-align:center;color:var(--dimw);font-size:14px;overflow-wrap:anywhere}
+.rin figcaption{font-size:14.5px;color:var(--dimw);margin-top:6px}
+.rstage{font-size:clamp(22px,2.2vw,30px);line-height:1.25;font-weight:500}
+.rbar{height:3px;background:#2a2a28;overflow:hidden;position:relative}
+.rbar i{position:absolute;top:0;bottom:0;width:30%;background:var(--white);animation:sweep 1.6s ease-in-out infinite}
+.rbar.det i{animation:none;left:0;transition:width .3s}
+@keyframes sweep{0%{left:-30%}100%{left:100%}}
+@media (prefers-reduced-motion:reduce){.rbar i{animation:none;left:0;width:100%;opacity:.4}}
+.relapsed{font-size:16px;color:var(--dimw)}
+.result{padding:clamp(20px,3vw,40px)}
+.rtop{display:flex;justify-content:space-between;align-items:baseline;gap:10px 20px;flex-wrap:wrap;margin-bottom:18px;font-size:15px;color:var(--dimw)}
+
+/* ---------- sections of the evidence ---------- */
 section.part{padding-block:clamp(56px,8vw,112px)}
 .head{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.85fr);gap:14px 60px;align-items:end;margin-bottom:clamp(26px,3.6vw,48px)}
 @media (max-width:900px){.head{grid-template-columns:minmax(0,1fr)}}
@@ -70,20 +156,17 @@ section.part{padding-block:clamp(56px,8vw,112px)}
 .col{display:flex;flex-direction:column;gap:20px;min-width:0}
 .note{font-size:15.5px;color:var(--ink2);max-width:var(--measure)}
 .rule{height:1px;background:var(--ink);opacity:.35;border:0;margin:0}
-
-/* night-side instruments: images sit in black, as they do in space */
-.night{background:var(--night);color:var(--white)}
-.night .note,.night .src{color:var(--dimw)}
-.btn{appearance:none;border:1.5px solid currentColor;background:none;color:inherit;font:inherit;font-size:16px;padding:9px 16px;cursor:pointer}
+.btn{appearance:none;border:1.5px solid currentColor;background:none;color:inherit;font:inherit;font-size:16px;padding:9px 16px;cursor:pointer;text-decoration:none;display:inline-block}
 .btn:hover{background:var(--ink);color:var(--ground)}
 .night .btn:hover{background:var(--white);color:var(--night)}
 .btn[aria-pressed="true"]{background:var(--ink);color:var(--ground)}
 .night .btn[aria-pressed="true"]{background:var(--white);color:var(--night)}
 .row{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px}
+.evhead{padding-block:clamp(40px,6vw,80px) 0}
+.evhead p{font-size:18px;max-width:60ch;color:var(--ink2)}
+.evhead h1{font-size:clamp(38px,5vw,72px);line-height:1;letter-spacing:-.02em;margin-bottom:14px}
 
 /* ---------- line it up ---------- */
-#align{padding-block:0}
-#align .inner{padding-block:clamp(56px,8vw,104px)}
 .align{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.9fr);grid-template-rows:auto 1fr;grid-template-areas:"stage head" "stage ctl";gap:18px clamp(26px,4.5vw,72px);align-items:start}
 .align .ahead{grid-area:head;display:flex;flex-direction:column;gap:14px}
 .align .stage{grid-area:stage}
@@ -110,11 +193,12 @@ section.part{padding-block:clamp(56px,8vw,112px)}
 .relief svg{position:absolute;inset:0;width:100%;height:100%}
 .rose text{font-family:var(--f);font-weight:500;fill:var(--ink)}
 input[type=range]{width:100%;accent-color:var(--ink);height:28px;margin:0;cursor:pointer}
+input[type=checkbox]{accent-color:var(--ink)}
 .band{border-top:1.5px solid var(--ink)}
 .band h3{font-size:22px;font-weight:600;padding:14px 0 8px}
 .band h3 span{display:block;font-weight:400;font-size:16px;color:var(--ink3)}
 .band dl{display:grid;grid-template-columns:1fr auto;margin:0}
-.band dt,.band dd{margin:0;padding:8px 0;border-bottom:1px solid rgba(0,0,0,.18);font-size:17px}
+.band dt,.band dd{margin:0;padding:8px 0;border-bottom:1px solid var(--rule);font-size:17px}
 .band dd{text-align:right;font-weight:500}
 .band dt i{display:inline-block;width:18px;margin-right:10px;font-style:normal;vertical-align:-2px}
 .band .zero dt,.band .zero dd{font-weight:600;font-size:19px;border-bottom:1.5px solid var(--ink)}
@@ -124,7 +208,7 @@ svg.chart text{font-family:var(--f);fill:var(--ink2)}
 figure{margin:0}
 figcaption{margin-top:10px}
 
-/* ---------- every pairing ---------- */
+/* ---------- a result: the plate and what the check said ---------- */
 .sheet{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:22px 14px;align-items:start;margin-bottom:clamp(28px,4vw,46px)}
 @media (max-width:900px){.sheet{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .frame{appearance:none;display:block;width:100%;text-align:left;background:none;border:0;padding:0;cursor:pointer;color:var(--white);font:inherit}
@@ -138,10 +222,11 @@ figcaption{margin-top:10px}
 .frame[aria-pressed="true"] .frame__img{outline:2.5px solid var(--ink);outline-offset:3px}
 .viewer{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.86fr);gap:clamp(22px,3.4vw,54px);align-items:start}
 @media (max-width:900px){.viewer{grid-template-columns:minmax(0,1fr)}}
-.plate{position:relative;display:grid;grid-template-columns:22px minmax(0,1fr) 22px;grid-template-rows:22px auto 22px;background:var(--night);padding:8px}
+@media (min-width:981px) and (max-width:1250px){.stagep .viewer{grid-template-columns:minmax(0,1fr)}}
+.plate{position:relative;display:grid;grid-template-columns:22px minmax(0,1fr) 22px;grid-template-rows:22px auto 22px;background:#000;padding:8px;color:var(--dimw)}
 .plate[data-v="contradicted"]{border:12px solid;border-image:repeating-linear-gradient(-45deg,var(--refuse-hatch) 0 2.5px,var(--night) 2.5px 7px) 12}
 .plate[data-v="unconfirmed"]{outline:2px dashed #6d6d67;outline-offset:-5px}
-.cols,.rows{display:flex;font-size:13px;color:var(--dimw);font-weight:500}
+.cols,.rows{display:flex;font-size:13px;color:#a9a9a3;font-weight:500}
 .cols{grid-column:2;justify-content:space-around;align-items:center}
 .cols.b{grid-row:3}
 .rows{flex-direction:column;justify-content:space-around;align-items:center;grid-row:2}
@@ -163,26 +248,31 @@ figcaption{margin-top:10px}
 .facts dt{color:var(--ink3)} .facts dd{margin:0}
 .gloss{font-size:18px;line-height:1.55;font-style:italic;max-width:62ch;border-left:2px solid var(--ink);padding-left:16px}
 .gloss b{font-weight:600}
+.gloss code{font-style:normal}
 .sq{border-top:1.5px solid var(--ink)}
 .sq h4{display:flex;justify-content:space-between;gap:10px;font-size:19px;padding:10px 0 6px}
 .sq h4 span{font-weight:400;font-size:16px}
 .sq dl{display:grid;grid-template-columns:1fr auto;margin:0}
-.sq dt,.sq dd{margin:0;padding:6px 0;border-bottom:1px solid rgba(0,0,0,.16);font-size:16px}
+.sq dt,.sq dd{margin:0;padding:6px 0;border-bottom:1px solid var(--rule);font-size:16px}
 .sq dd{text-align:right;font-weight:500}
 .inputs{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .inputs img{width:100%;aspect-ratio:1/1;object-fit:cover;display:block;background:#000}
 .inputs figcaption{font-size:15px;line-height:1.4;color:var(--ink2);margin-top:6px}
-.twin{border-top:1.5px solid var(--ink)}
-.twin h4{font-size:17px;font-weight:500;padding:10px 0}
-.twin table{width:100%;border-collapse:collapse;font-size:15.5px}
-.twin th,.twin td{padding:6px 10px 6px 0;border-bottom:1px solid rgba(0,0,0,.16);text-align:right}
-.twin th:first-child,.twin td:first-child{text-align:left;color:var(--ink2)}
-.twin thead th{font-weight:500;color:var(--ink3);font-size:14.5px}
+.twin,.known{border-top:1.5px solid var(--ink)}
+.twin h4,.known h4{font-size:17px;font-weight:500;padding:10px 0}
+.twin table,.known table{width:100%;border-collapse:collapse;font-size:15.5px}
+.twin th,.twin td,.known th,.known td{padding:6px 10px 6px 0;border-bottom:1px solid var(--rule);text-align:right}
+.twin th:first-child,.twin td:first-child,.known th:first-child,.known td:first-child{text-align:left;color:var(--ink2)}
+.twin thead th,.known thead th{font-weight:500;color:var(--ink3);font-size:14.5px}
+.kbig{font-size:clamp(44px,4.4vw,68px);line-height:.95;font-weight:500;letter-spacing:-.03em;margin:4px 0 12px}
+.kbig small{display:block;font-size:16px;letter-spacing:0;line-height:1.45;font-weight:400;color:var(--ink2);margin-top:10px;max-width:46ch}
+.known .note{margin-top:10px;font-size:14.5px}
+.dl{display:flex;flex-direction:column;gap:8px}
+.dl .fine{color:var(--ink3)}
 
 /* ---------- the check, tested; the whole overlap ---------- */
 .big{font-size:clamp(46px,5.4vw,80px);line-height:.95;font-weight:500;letter-spacing:-.03em}
 .big small{display:block;font-size:17px;letter-spacing:0;line-height:1.45;font-weight:400;color:var(--ink2);margin-top:10px;max-width:40ch}
-.night .big small{color:var(--dimw)}
 .pair{display:grid;grid-template-columns:1fr 1fr;gap:24px}
 @media (max-width:620px){.pair{grid-template-columns:1fr}}
 .tiles{width:100%;height:auto;display:block;background:var(--night)}
@@ -192,7 +282,7 @@ figcaption{margin-top:10px}
 
 /* ---------- ledgers ---------- */
 .ledger{list-style:none;margin:0;padding:0;border-top:1.5px solid var(--ink)}
-.ledger li{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1.6fr) 11.5em;gap:4px 28px;padding:16px 0;border-bottom:1px solid rgba(0,0,0,.2);align-items:baseline}
+.ledger li{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1.6fr) 11.5em;gap:4px 28px;padding:16px 0;border-bottom:1px solid var(--rule);align-items:baseline}
 @media (max-width:760px){.ledger li{grid-template-columns:minmax(0,1fr) auto}.ledger b{white-space:nowrap}.ledger li p{grid-column:1/-1;order:3}}
 .ledger em{font-size:18px}
 .ledger small{display:block;font-size:14.5px;color:var(--ink3);margin-top:2px}
@@ -203,56 +293,105 @@ figcaption{margin-top:10px}
 .ledger.refused li::before{content:"";position:absolute;left:0;top:23px;width:12px;height:12px;
   background:repeating-linear-gradient(-45deg,var(--refuse-hatch) 0 1.6px,transparent 1.6px 4px);outline:1.5px solid var(--refuse-hatch)}
 
-/* ---------- try a pair ---------- */
-.drops{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-@media (max-width:560px){.drops{grid-template-columns:1fr}}
-.drop{position:relative;border:1.5px dashed #6d6d67;min-height:160px;padding:16px;cursor:pointer;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:6px;text-align:center}
-.drop:hover,.drop.over{border-style:solid;border-color:var(--white)}
-.drop b{font-size:19px;font-weight:500}
-.drop span{font-size:14.5px;color:var(--dimw);overflow-wrap:anywhere}
-.drop img{width:86px;height:86px;object-fit:cover}
-.drop input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
-.log{font-size:15.5px;color:var(--dimw);min-height:1.5em;white-space:pre-wrap}
-.log.bad{color:#ff7ab8}
-.go2[disabled]{opacity:.45;cursor:not-allowed}
-
 footer{padding-block:48px 70px;border-top:1.5px solid var(--ink)}
 .colo{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:28px 52px}
 .colo h3{font-size:19px;font-weight:600;margin-bottom:10px}
 .colo p{font-size:16px;color:var(--ink2);margin-bottom:8px}
-.colo code{font-family:var(--f);font-weight:500;color:var(--ink)}
+.colo code{color:var(--ink)}
 .imprint{margin-top:36px;font-size:15px;color:var(--ink3);display:flex;flex-wrap:wrap;gap:6px 30px}
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
 </style>
 
 <header class="bar"><div class="wrap bar__in">
-  <a class="mark" href="#top"><svg viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="11" r="9.5" fill="#f4f4f1" stroke="#000" stroke-width="1.3"/><path d="M11 1.5a9.5 9.5 0 0 0 0 19c-3.2-2.4-4.6-5.8-4.6-9.5S7.8 3.9 11 1.5z" fill="#000"/></svg>LunaXX</a>
+  <a class="mark" href="#bench"><svg viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="11" r="9.5" fill="#f4f4f1" stroke="#000" stroke-width="1.3"/><path d="M11 1.5a9.5 9.5 0 0 0 0 19c-3.2-2.4-4.6-5.8-4.6-9.5S7.8 3.9 11 1.5z" fill="#000"/></svg>LunaXX</a>
   <nav aria-label="Sections">
+    <a href="#bench" class="wb">Workbench</a>
     <a href="#align">Line it up</a>
     <a href="#suns">Two Suns</a>
     <a href="#pairs">Every pairing</a>
     <a href="#planted">The check, tested</a>
     <a href="#ledgers">Results</a>
-    <a href="#live" id="navlive" hidden>Try a pair</a>
   </nav>
-  <span class="frozen">Evidence frozen at <span id="fz"></span></span>
+  <div class="barright"><span class="pill" id="pill"><i></i><span>Checking for the pipeline</span></span><span class="frozen">Evidence frozen at <span id="fz"></span></span></div>
 </div></header>
 
-<main id="top">
-  <section class="hero" id="hero" aria-labelledby="h1">
-    <canvas id="terrain" aria-hidden="true"></canvas>
-    <h1 class="sr" id="h1">Shadows move. The ground doesn't.</h1>
-    <div class="dial" aria-live="polite"><svg id="sundial" viewBox="0 0 54 54" aria-hidden="true"></svg><span id="sunsay"></span></div>
-    <div class="hero__foot"><div class="wrap">
-      <div>
-        <p class="lede">LunaXX aligns Chandrayaan-2 images to lunar references across Sun angle, scale and sensor. Then it checks the answer square by square, with a test that never looks at the matches, and says where it will not vouch for the result.</p>
-        <small>The ground above is the real 74°S site from the LOLA elevation model, and the letters stand on it. Drag across it to move the Sun.</small>
-      </div>
-      <p class="go"><a href="#align">Line two images up yourself</a><a href="#pairs">See every verdict</a></p>
-    </div></div>
-  </section>
+<main id="bench" class="view">
+  <div class="bench">
+    <aside class="deck" aria-label="Choose what to register">
+      <h1>Register two images of the Moon</h1>
+      <p class="status" id="status">Looking for the registration server on this machine.</p>
 
-  <section class="part night" id="align"><div class="wrap inner">
+      <div class="modes" role="tablist" aria-label="What to register">
+        <button type="button" role="tab" id="tabPair" aria-selected="true" aria-controls="mPair">Two images</button>
+        <button type="button" role="tab" id="tabKnown" aria-selected="false" aria-controls="mKnown">One image, known answer</button>
+      </div>
+
+      <div class="mode" id="mPair" role="tabpanel" aria-labelledby="tabPair">
+        <div class="drops">
+          <label class="drop" id="dropA"><b>Image to align</b><span>the one that moves</span><input type="file" id="fileA" accept=".tif,.tiff,.img,.xml,.lbl,.png,.jpg,.jpeg"></label>
+          <label class="drop" id="dropB"><b>Reference</b><span>the grid it lands on</span><input type="file" id="fileB" accept=".tif,.tiff,.img,.xml,.lbl,.png,.jpg,.jpeg"></label>
+        </div>
+        <label class="check"><input type="checkbox" id="shrink" checked><span>Shrink photos larger than 1600 px before sending, both by the same factor. Faster, and it keeps their relative scale.</span></label>
+        <button type="button" class="go" id="goPair" disabled>Register the pair</button>
+        <p class="log" id="logPair" aria-live="polite"></p>
+        <p class="fine">GeoTIFF, PDS (.img, .xml, .lbl), PNG or JPEG. The two must show overlapping ground. A GeoTIFF's map scale is used; a PNG or JPEG has none, so both are taken to be at about the same scale.</p>
+      </div>
+
+      <div class="mode" id="mKnown" role="tabpanel" aria-labelledby="tabKnown" hidden>
+        <p class="fine" style="font-size:15px;color:var(--ink2)">Give it any Moon picture. The server warps it by the amounts below, registers the warped copy back onto the original and measures how far off it lands. Because the right answer is known, this is a real error, not an estimate. Images over 900 px are shrunk to 900 first, and the shifts are in those pixels.</p>
+        <label class="drop one" id="dropK"><b>Any Moon image</b><span>a photo, a screenshot, a PDS product</span><input type="file" id="fileK" accept=".tif,.tiff,.img,.xml,.lbl,.png,.jpg,.jpeg"></label>
+        <div class="prev" id="kprev" hidden>
+          <figure><canvas id="kc0" width="220" height="220"></canvas><figcaption>Your image, the reference</figcaption></figure>
+          <figure><canvas id="kc1" width="220" height="220"></canvas><figcaption>What the pipeline is handed</figcaption></figure>
+        </div>
+        <div class="sliders" id="ksl"></div>
+        <div class="row"><button type="button" class="btn" id="kRand" style="font-size:15px;padding:7px 12px">Random transform</button></div>
+        <button type="button" class="go" id="goKnown" disabled>Warp it and register it back</button>
+        <p class="log" id="logKnown" aria-live="polite"></p>
+      </div>
+
+      <div class="libh">
+        <h2 id="libTitle">Real pairs</h2>
+        <p class="fine" id="libSay"></p>
+        <div class="chips" id="chips" role="group" aria-label="Filter the pairs"></div>
+      </div>
+      <div class="lib" id="lib"></div>
+
+      <div class="runs" id="runs" hidden><h2>This session</h2><ol id="runList"></ol></div>
+    </aside>
+
+    <section class="stagep night" id="stagep" aria-label="Result">
+      <div class="empty" id="empty">
+        <canvas id="terrain" aria-hidden="true"></canvas>
+        <p class="sr">Shadows move. The ground doesn't.</p>
+        <div class="dial" aria-live="polite"><svg id="sundial" viewBox="0 0 54 54" aria-hidden="true"></svg><span id="sunsay"></span></div>
+        <div class="efoot">
+          <p>LunaXX aligns Chandrayaan-2 images to lunar references across Sun angle, scale and sensor, then checks the answer square by square with a test that never looks at the matches, and says where it will not vouch for the result.</p>
+          <small>Choose images on the left, or pick a real pair, and the result appears here. This ground is the real 74°S site from the LOLA elevation model, with the letters standing on it; drag across it to move the Sun.</small>
+        </div>
+      </div>
+      <div class="running" id="running" hidden>
+        <div class="rin"><figure><div class="ph" id="ra"></div><figcaption>Image to align</figcaption></figure><figure><div class="ph" id="rb"></div><figcaption>Reference</figcaption></figure></div>
+        <p class="rstage" id="rstage">Sending</p>
+        <div class="rbar" id="rbar"><i></i></div>
+        <p class="relapsed num" id="relapsed"></p>
+        <p class="note">This is the real pipeline on this laptop's CPU: both images to one ground scale, lighting reduced to gradient orientation, LoFTR matching, sub-pixel refinement, MAGSAC++, then the area check square by square.</p>
+      </div>
+      <div class="result" id="result" hidden>
+        <div class="rtop"><span id="rsay"></span></div>
+        <div id="bview"></div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<main id="evidence" class="view" hidden>
+  <div class="wrap evhead">
+    <h1>The evidence</h1>
+    <p>Everything on the workbench runs live. Everything below was measured once, at the freeze commit, and every figure is in REPORT.md.</p>
+  </div>
+
+  <section class="part night" id="align"><div class="wrap">
     <div class="align">
       <div class="stage" id="stage" role="application" aria-label="Drag the upper image to align it with the reference. Arrow keys move it one pixel." tabindex="0">
         <img id="aref" alt=""><img id="amove" alt="">
@@ -302,52 +441,11 @@ footer{padding-block:48px 70px;border-top:1.5px solid var(--ink)}
     </div>
   </div></section>
 
-  <section class="part night" id="live" hidden><div class="wrap">
-    <div class="head"><h2>Try a pair of your own</h2>
-      <p style="color:var(--dimw)">This runs the real pipeline, the same function that produced every frozen number, on this computer.</p></div>
-    <div class="two">
-      <div class="col">
-        <div class="drops">
-          <label class="drop" id="dropA"><b>Image A</b><span>the image to align</span><input type="file" id="fileA" accept=".tif,.tiff,.img,.xml,.lbl,.png,.jpg,.jpeg"></label>
-          <label class="drop" id="dropB"><b>Image B</b><span>the reference grid</span><input type="file" id="fileB" accept=".tif,.tiff,.img,.xml,.lbl,.png,.jpg,.jpeg"></label>
-        </div>
-        <div class="row"><button class="btn go2" id="go" type="button" disabled>Register the pair</button><span class="note" id="hint">Choose two images</span></div>
-        <p class="log" id="log" aria-live="polite"></p>
-        <p class="note">GeoTIFF, PDS (.img, .xml, .lbl), PNG and JPEG. Expect up to a minute on a busy laptop. Nothing is kept: the uploads sit in a temporary folder that is deleted when the run ends. If the matcher fails on your pair, the check should say so, and that is a pass.</p>
-      </div>
-      <div class="col">
-        <p class="vword" id="lword" style="color:var(--dimw)">Waiting for two images</p>
-        <p class="note" id="lsay">The result is drawn by the same code as every pair on this page, so a live verdict and a frozen one mean the same thing.</p>
-      </div>
-    </div>
-  </div></section>
-
   <section class="part" id="pairs"><div class="wrap">
     <div class="head"><h2>Every pairing, and what the check said</h2>
-      <p>One window from every instrument pairing we tested, and all three verdicts. Pick a plate. Hatching in magenta marks what the system refused.</p></div>
+      <p>One window from every instrument pairing we tested, and all three verdicts, from the pipeline's saved runs. Pick a plate. Hatching in magenta marks what the system refused.</p></div>
     <div class="sheet" id="sheet"></div>
-    <div class="viewer">
-      <div class="col">
-        <div class="plate" id="plate">
-          <div class="cols" aria-hidden="true"></div><div class="rows" aria-hidden="true"></div>
-          <div class="pimg" id="pimg" tabindex="0" role="application" aria-label="Trust map. Arrow keys move between grid squares.">
-            <img id="imgA" alt=""><img id="imgB" alt="" hidden>
-            <svg id="grid" viewBox="0 0 8 8" preserveAspectRatio="none"></svg>
-          </div>
-          <div class="rows r" aria-hidden="true"></div><div class="cols b" aria-hidden="true"></div>
-        </div>
-        <div class="tabs" id="layers" role="group" aria-label="What the plate shows"></div>
-        <div class="row" style="justify-content:space-between"><label class="note"><input type="checkbox" id="gridon" checked> Show the squares</label><span class="note" id="layname"></span></div>
-        <p class="note">Squares shown clear are verified: matches and pixels agree. Hatched squares are weak. Dotted squares had no matches, so nothing is claimed there. A square is verified only with at least 3 inliers, a local inlier ratio of 0.5 or more, and a correlation that peaks within 2 px at 0.3 or more.</p>
-      </div>
-      <div class="col">
-        <div id="verdict"></div>
-        <p class="gloss" id="gloss"></p>
-        <div class="sq" id="square"></div>
-        <div class="inputs" id="inputs"></div>
-        <div class="twin" id="twin" hidden></div>
-      </div>
-    </div>
+    <div id="pview"></div>
   </div></section>
 
   <section class="part night" id="planted"><div class="wrap">
@@ -427,7 +525,7 @@ footer{padding-block:48px 70px;border-top:1.5px solid var(--ink)}
       <p><b>Multi-modal</b> means visible with infrared, or optical with elevation. Two panchromatic cameras are not.</p>
       <p><b>Sub-pixel</b> always names its grid and gives metres.</p></div>
     <div><h3>Reproduce every number</h3>
-      <p>This page reads the evidence logs, whose rows were measured at the freeze commit <span id="fz2"></span>, the commit the submitted deck quotes. The per-pair plates come from the pipeline's saved run of each pair, which can differ from the logged row by a few inliers because MAGSAC++ samples at random; the verdicts do not.</p>
+      <p>The evidence pages read the evidence logs, whose rows were measured at the freeze commit <span id="fz2"></span>, the commit the submitted deck quotes. The per-pair plates come from the pipeline's saved run of each pair, which can differ from the logged row by a few inliers because MAGSAC++ samples at random; the verdicts do not. Workbench runs are live and are not part of the frozen evidence.</p>
       <p><code>python -m ops.freeze</code> re-runs every piece of evidence on one clean commit; <code>python -m ops.make_report</code> renders REPORT.md from the logs.</p></div>
     <div><h3>Sources</h3>
       <p>Chandrayaan-2 OHRC, TMC-2 and IIRS from ISRO's PRADAN. LRO NAC and LOLA from the NASA Planetary Data System. Kaguya TC and MI from JAXA's SELENE archive. MiLOI from Xie, Liu, Di et al., <span class="it">Remote Sensing</span> 17(13):2302.</p></div>
@@ -440,6 +538,7 @@ const D = /*__DATA__*/null;
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
 const fmt = n => Number(n).toLocaleString('en-IN');
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const COLS = 'ABCDEFGH', sqName = i => COLS[i % 8] + (Math.floor(i / 8) + 1);
 const HATCH = '#c2127a';
@@ -452,17 +551,17 @@ $('#fz').textContent = D.freeze; $('#fz2').textContent = D.freeze;
 function u16(b64){ const s = atob(b64), a = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) a[i] = s.charCodeAt(i); return new Uint16Array(a.buffer); }
 const DEM = u16(D.dem.b64), DN = D.dem.n;
 
-/* ================= the ground, with the words standing on it =================
+/* ================= the empty bench: the ground, with the words standing on it =================
    The words are a heightfield set on the real LOLA relief of the 74°S site, lit by one low Sun
    with cast shadows. Move the Sun and every shadow the letters throw swings round: the problem
-   this project exists to solve, set as the headline. */
-const hero = {az:118, el:15, touched:false, ms:0};
+   this project exists to solve, shown before anything has been registered. */
+const hero = {az:118, el:15, touched:false, ms:0, built:false, rebuild:null};
 {
-  const cv = $('#terrain'), g = cv.getContext('2d');
+  const cv = $('#terrain'), g = cv.getContext('2d'), box = $('#empty');
   let W = 0, H = 0, S = 1, Hf = null, Alb = null, NX = null, NY = null, NZ = null, maxH = 0, img = null;
   const LINES2 = ['Shadows move.', 'The ground doesn’t.'], LINES4 = ['Shadows', 'move.', 'The ground', 'doesn’t.'];
   function build(){
-    const r = cv.getBoundingClientRect(); if (!r.width) return false;
+    const r = cv.getBoundingClientRect(); if (!r.width || !r.height) return false;
     S = Math.min(1, 1200 / r.width);
     W = Math.round(r.width * S); H = Math.round(r.height * S);
     cv.width = W; cv.height = H; img = g.createImageData(W, H);
@@ -483,13 +582,11 @@ const hero = {az:118, el:15, touched:false, ms:0};
         if (y + rad < H){ acc += tmp[(y + rad)*W + x]; n++; } if (y - rad - 1 >= 0){ acc -= tmp[(y - rad - 1)*W + x]; n--; } if (y >= 0 && y < H) Hf[y*W + x] = acc / n; } }
     }
     const m = document.createElement('canvas'); m.width = W; m.height = H; const mg = m.getContext('2d');
-    /* the words start on the same left edge as the text column below them */
-    const wr = document.querySelector('.hero__foot .wrap'), padX = (wr.getBoundingClientRect().left - r.left + parseFloat(getComputedStyle(wr).paddingLeft)) * S;
-    const narrow = W / S < 760, lines = narrow ? LINES4 : LINES2;
+    const narrow = W / S < 640, lines = narrow ? LINES4 : LINES2, padX = W * .075;
     let fs = 400; mg.font = `700 ${fs}px Jost, Futura, sans-serif`;
     const widest = Math.max(...lines.map(l => mg.measureText(l).width));
-    fs = Math.min(fs * (W - 2 * padX) / widest, H * (narrow ? .15 : .27));
-    const lh = fs * .98, top = H * (narrow ? .13 : .1);
+    fs = Math.min(fs * (W - 2 * padX) / widest, H * (narrow ? .14 : .22));
+    const lh = fs * .98, top = H * (narrow ? .13 : .12);
     mg.fillStyle = '#000'; mg.fillRect(0, 0, W, H);
     mg.filter = `blur(${Math.max(.6, fs / 110)}px)`; mg.fillStyle = '#fff'; mg.textBaseline = 'alphabetic';
     mg.font = `700 ${fs}px Jost, Futura, sans-serif`;
@@ -503,6 +600,7 @@ const hero = {az:118, el:15, touched:false, ms:0};
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++){ const i = y*W + x;
       const dx = (Hf[y*W + Math.min(x+1, W-1)] - Hf[y*W + Math.max(x-1, 0)]) / 2, dy = (Hf[Math.min(y+1, H-1)*W + x] - Hf[Math.max(y-1, 0)*W + x]) / 2, n = Math.hypot(dx, dy, 1);
       NX[i] = -dx / n; NY[i] = -dy / n; NZ[i] = 1 / n; }
+    hero.built = true;
     return true;
   }
   function dial(){
@@ -544,22 +642,323 @@ const hero = {az:118, el:15, touched:false, ms:0};
     dial();
   }
   let raf = 0; const ask = () => { if (!raf) raf = requestAnimationFrame(() => { raf = 0; render(); }); };
+  let swept = false;
   const start = () => {
     if (!build()) return;
-    if (reduce){ render(); return; }
+    if (reduce || swept){ render(); return; }
+    swept = true;
     /* the one unprompted motion on the page: the Sun swings once, and every shadow swings with it */
     const t0 = performance.now() + 700, a0 = 118, a1 = 242, T = 3600;
     const step = () => { if (hero.touched) return; const p = Math.max(0, Math.min(1, (performance.now() - t0) / T)), q = p < .5 ? 2*p*p : 1 - Math.pow(-2*p + 2, 2) / 2;
       hero.az = a0 + (a1 - a0) * q; render(); if (p < 1) setTimeout(() => requestAnimationFrame(step), 40); };
     render(); setTimeout(() => requestAnimationFrame(step), 700);
   };
+  hero.rebuild = () => { if (box.hidden) return; if (!hero.built) start(); else if (build()) render(); };
   (document.fonts && document.fonts.load ? document.fonts.load('700 100px Jost') : Promise.resolve()).then(start, start);
-  let rt = 0; addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { if (build()) render(); }, 200); });
-  const heroEl = $('#hero'); let drag = null;
-  heroEl.addEventListener('pointerdown', e => { if (e.target.closest('a')) return; hero.touched = true; drag = {x:e.clientX, az:hero.az}; });
-  addEventListener('pointermove', e => { if (!drag) return; hero.az = drag.az + (e.clientX - drag.x) * 360 / heroEl.clientWidth; ask(); });
+  let rt = 0; addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { if (!box.hidden && build()) render(); }, 200); });
+  let drag = null;
+  box.addEventListener('pointerdown', e => { hero.touched = true; drag = {x:e.clientX, az:hero.az}; });
+  addEventListener('pointermove', e => { if (!drag) return; hero.az = drag.az + (e.clientX - drag.x) * 360 / box.clientWidth; ask(); });
   addEventListener('pointerup', () => { drag = null; });
 }
+
+/* ================= a result: the plate, the verdict and every square =================
+   One viewer, used twice: on the workbench for live runs and in the evidence for the saved ones.
+   Both draw the dict web/panel.py makes, so a live verdict and a frozen one mean the same thing. */
+const PAT = id => `<defs><pattern id="${id}w" width=".16" height=".16" patternUnits="userSpaceOnUse" patternTransform="rotate(-45)"><rect width=".045" height=".16" fill="#fff" fill-opacity=".85"/></pattern>
+  <pattern id="${id}n" width=".2" height=".2" patternUnits="userSpaceOnUse"><circle cx=".1" cy=".1" r=".03" fill="#fff" fill-opacity=".85"/></pattern></defs>`;
+const cellFill = (id, s) => s === 'verified' ? 'fill="#000" fill-opacity="0"' : s === 'weak' ? `fill="url(#${id}w)"` : `fill="url(#${id}n)"`;
+function collar(el){ el.querySelectorAll('.cols').forEach(e => { e.innerHTML = [...COLS].map(c => `<span>${c}</span>`).join(''); });
+  el.querySelectorAll('.rows').forEach(e => { e.innerHTML = [1,2,3,4,5,6,7,8].map(n => `<span>${n}</span>`).join(''); }); }
+const LNAME = {src:'Image A, before', ref:'Image B, reference', warp:"The matcher's answer", blink:'Alternate with B', fb:'The fallback, delivered'};
+const cap = s => `<em>${esc(s.inst)}</em>` + (s.band ? `, ${esc(s.band)}` : '') + (s.gsd === 'unknown' ? '' : `, ${s.gsd} m per pixel`);
+const VIEWER = `<div class="viewer">
+  <div class="col">
+    <div class="plate">
+      <div class="cols" aria-hidden="true"></div><div class="rows" aria-hidden="true"></div>
+      <div class="pimg" tabindex="0" role="application" aria-label="Trust map. Arrow keys move between grid squares.">
+        <img class="imA" alt=""><img class="imB" alt="" hidden>
+        <svg class="grid" viewBox="0 0 8 8" preserveAspectRatio="none"></svg>
+      </div>
+      <div class="rows r" aria-hidden="true"></div><div class="cols b" aria-hidden="true"></div>
+    </div>
+    <div class="tabs" role="group" aria-label="What the plate shows"></div>
+    <div class="row" style="justify-content:space-between"><label class="note"><input type="checkbox" class="gridon" checked> Show the squares</label><span class="note layname"></span></div>
+    <p class="note">Squares shown clear are verified: matches and pixels agree. Hatched squares are weak. Dotted squares had no matches, so nothing is claimed there. A square is verified only with at least 3 inliers, a local inlier ratio of 0.5 or more, and a correlation that peaks within 2 px at 0.3 or more.</p>
+  </div>
+  <div class="col">
+    <div class="verdict"></div>
+    <div class="known" hidden></div>
+    <p class="gloss"></p>
+    <div class="dl" hidden></div>
+    <div class="sq"></div>
+    <div class="inputs"></div>
+    <div class="twin" hidden></div>
+  </div>
+</div>`;
+function makeViewer(root, id){
+  root.innerHTML = VIEWER; collar(root);
+  const q = s => root.querySelector(s), st = {m:null, cell:27, timer:null};
+  function drawGrid(){ let s = PAT(id); st.m.cells.forEach((c, i) => { const x = i % 8, y = (i - x) / 8;
+    s += `<rect class="cell${i === st.cell ? ' on' : ''}" data-i="${i}" x="${x}" y="${y}" width="1" height="1" ${cellFill(id, c.s)}/>`; }); q('.grid').innerHTML = s; }
+  function drawSquare(){
+    const m = st.m, c = m.cells[st.cell], s = {verified:'verified', weak:'weak', no_evidence:'no evidence'}[c.s], metres = typeof m.gsd === 'number';
+    q('.sq').innerHTML = `<h4>Square ${sqName(st.cell)}<span>${s}</span></h4><dl>
+      <dt>inliers, of raw matches here</dt><dd class="num">${fmt(c.n)} of ${fmt(c.raw)}</dd>
+      <dt>local inlier ratio</dt><dd class="num">${c.lir === null || c.lir === undefined ? (c.raw ? 'not measurable' : 'no matches') : c.lir.toFixed(2)}</dd>
+      <dt>area check, correlation at the peak</dt><dd class="num">${c.ncc === null ? 'not measurable' : (c.ncc > 0 ? '+' : '') + c.ncc.toFixed(2)}</dd>
+      <dt>median inlier residual</dt><dd class="num">${c.res === null ? 'none' : c.res.toFixed(2) + ' px' + (metres ? ' = ' + (c.res * m.gsd).toFixed(2) + ' m' : '')}</dd>
+      <dt>reference grid</dt><dd class="num">${metres ? m.gsd + ' m per pixel' : 'no ground scale, pixels only'}</dd></dl>`;
+  }
+  function drawVerdict(){
+    const m = st.m, v = vword(m);
+    q('.plate').dataset.v = v.v;
+    q('.verdict').innerHTML = `<p class="vword ${v.v}">${v.w}${v.v === 'contradicted' ? ',<br>fallback declared' : ''}</p>
+      <p class="vsub"><em>${esc(m.label)}</em>. ${esc(m.sub)}</p>
+      <dl class="facts"><dt>squares</dt><dd>${countsSaid(m.counts)}</dd><dt>matches</dt><dd class="num">${fmt(m.inliers)} inliers of ${fmt(m.n_matches)}</dd>
+        <dt>time</dt><dd class="num">${m.seconds} s on the CPU</dd><dt>method</dt><dd>${esc(m.method)}</dd><dt>the check says</dt><dd>${esc(whySaid(m.why))}</dd></dl>`;
+    q('.gloss').innerHTML = m.plain;
+  }
+  function drawKnown(){
+    const k = st.m.known, el = q('.known');
+    if (!k){ el.hidden = true; el.innerHTML = ''; return; }
+    el.hidden = false; const e = k.err_final, g = k.got, w = k.want, f = (v, n) => v === null || v === undefined ? '–' : Number(v).toFixed(n);
+    const row = (l, a, b) => `<tr><td>${l}</td><td class="num">${a}</td><td class="num">${b}</td></tr>`;
+    el.innerHTML = `<h4>Against the known answer</h4>
+      <p class="kbig num">${e ? f(e.rms, 2) + ' px' : 'No transform'}<small>${e ? `RMS distance between where the delivered transform and the true one send a 20 × 20 grid over your image; ${f(e.max, 2)} px at worst. Your image has no ground scale, so this is in its pixels, not metres.` : 'The pipeline delivered no transform, so there is nothing to measure.'}</small></p>
+      <div style="overflow-x:auto"><table><thead><tr><th></th><th>asked for</th><th>recovered</th></tr></thead><tbody>
+      ${row('rotation', f(w.rot, 2) + '°', g ? f(g.rot, 2) + '°' : '–')}${row('scale', f(w.scale, 3), g ? f(g.scale, 3) : '–')}
+      ${row('shift of the centre, across', f(w.dx, 2) + ' px', g ? f(g.dx, 2) + ' px' : '–')}${row('shift of the centre, down', f(w.dy, 2) + ' px', g ? f(g.dy, 2) + ' px' : '–')}
+      </tbody></table></div>
+      <p class="note">The shift is always moved off the whole-pixel grid (+0.37, −0.63 px): a whole-pixel shift copies pixels without interpolating, and would flatter the result.${k.shrunk_from ? ` Your image was shrunk from ${k.shrunk_from[0]} × ${k.shrunk_from[1]} to ${k.w} × ${k.h} px first.` : ''}${k.blur ? ` Blur ${k.blur} px.` : ''}${k.noise ? ` Noise ${k.noise}% of the image's range.` : ''}</p>`;
+  }
+  function drawDl(){
+    const m = st.m, el = q('.dl');
+    if (!m.bundle){ el.hidden = true; el.innerHTML = ''; return; }
+    el.hidden = false;
+    el.innerHTML = `<a class="btn" href="${m.bundle}" download>Download the result (.zip)</a>
+      <p class="fine">The registered image on the reference grid (GeoTIFF when the reference has a map), every match with its residual and trust state, control points for GDAL and QGIS, an ISIS match list, the trust map and a report.</p>`;
+  }
+  function drawInputs(){ const m = st.m;
+    q('.inputs').innerHTML = `<figure><img src="${layerImg(m, 'src')}" alt="Image A: ${esc(m.a.inst)}"><figcaption>Moved: ${cap(m.a)}</figcaption></figure>
+      <figure><img src="${layerImg(m, 'ref')}" alt="Image B: ${esc(m.b.inst)}"><figcaption>Reference: ${cap(m.b)}</figcaption></figure>`; }
+  function drawTwin(){
+    const w = st.m.twin, el = q('.twin');
+    if (!w){ el.hidden = true; el.innerHTML = ''; return; }
+    el.hidden = false; const row = (l, a, b) => `<tr><td>${l}</td><td>${a}</td><td>${b}</td></tr>`, sh = (w.a.sharp / w.b.sharp).toFixed(1);
+    el.innerHTML = `<h4>Is the infrared frame only blurrier? The same source against two bands of the same map product.</h4>
+      <div style="overflow-x:auto"><table><thead><tr><th></th><th>${w.other_band}</th><th>${w.band}</th></tr></thead><tbody>
+      ${row('reference grid', w.a.gsd + ' m', w.b.gsd + ' m')}${row('fine detail', w.a.sharp, w.b.sharp + ', ' + sh + '× less')}
+      ${row('matches found', fmt(w.a.matches), fmt(w.b.matches))}${row('inliers', fmt(w.a.inliers), fmt(w.b.inliers))}
+      ${row('inlier ratio', w.a.ratio, w.b.ratio)}${row('frame coverage', Math.round(w.a.cov * 100) + '%', Math.round(w.b.cov * 100) + '%')}
+      ${row('verdict', w.a.verdict + ', ' + w.a.med + ' px', w.b.verdict)}
+      ${w.fallback_px !== null ? row('fallback against the visible fit', 'none', w.fallback_px + ' px = ' + w.fallback_m + ' m') : ''}</tbody></table></div>`;
+  }
+  function setLayer(l){
+    const m = st.m; if (!m.layers.some(x => x.k === l)) l = 'ref';
+    clearInterval(st.timer); st.timer = null;
+    root.querySelectorAll('.tabs button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.l === l)));
+    const Ai = q('.imA'), Bi = q('.imB'); Ai.src = l === 'blink' ? layerImg(m, 'ref') : layerImg(m, l); Ai.alt = LNAME[l];
+    const w = layerImg(m, 'warp'); if (w) Bi.src = w; Bi.hidden = true;
+    q('.layname').textContent = l === 'blink' ? 'If they are aligned, nothing jumps.' : (!m.ok && l === 'warp') ? 'The answer the check refused.' : '';
+    if (l === 'blink') st.timer = setInterval(() => { Bi.hidden = !Bi.hidden; }, reduce ? 1600 : 650);
+  }
+  function pickCell(i){ if (i === st.cell || i < 0 || i > 63) return; st.cell = i; root.querySelectorAll('.grid .cell').forEach((r, k) => r.classList.toggle('on', k === i)); drawSquare(); }
+  ['pointerover','click'].forEach(t => q('.grid').addEventListener(t, e => { const r = e.target.closest('.cell'); if (r) pickCell(+r.dataset.i); }));
+  q('.pimg').addEventListener('keydown', e => { const d = {ArrowLeft:-1, ArrowRight:1, ArrowUp:-8, ArrowDown:8}[e.key]; if (!d) return; e.preventDefault();
+    const x = st.cell % 8; if ((d === -1 && x === 0) || (d === 1 && x === 7)) return; pickCell(st.cell + d); });
+  q('.gridon').addEventListener('change', e => q('.pimg').classList.toggle('nogrid', !e.target.checked));
+  return {
+    show(m, cell){
+      st.m = m; st.cell = cell !== undefined ? cell : (m.cells.findIndex(c => c.s === 'weak') >= 0 ? m.cells.findIndex(c => c.s === 'weak') : 27);
+      q('.tabs').innerHTML = m.layers.map(l => `<button type="button" data-l="${l.k}" aria-pressed="false">${LNAME[l.k] || esc(l.n)}</button>`).join('');
+      root.querySelectorAll('.tabs button').forEach(b => { b.onclick = () => setLayer(b.dataset.l); });
+      drawGrid(); drawSquare(); drawVerdict(); drawKnown(); drawDl(); drawInputs(); drawTwin();
+      setLayer(m.ok ? 'blink' : (m.layers.some(x => x.k === 'warp') ? 'warp' : 'ref'));
+    },
+    stop(){ clearInterval(st.timer); st.timer = null; }
+  };
+}
+
+/* ================= the workbench =================
+   Live when web/server.py is serving this page: every run is core.pipeline.run_all on this CPU.
+   Anywhere else the page cannot run Python, says so, and opens the saved runs instead. */
+const B = {live:false, health:null, busy:false, runs:[], cur:-1, lib:[], group:'all', files:{a:null, b:null, k:null}, kimg:null, maxBytes:0};
+const bview = makeViewer($('#bview'), 'bv');
+const mb = n => n < 1048576 ? Math.max(1, Math.round(n / 1024)) + ' KB' : (n / 1048576).toFixed(1) + ' MB';
+const isPic = f => /\.(png|jpe?g)$/i.test(f.name);
+const b64 = blob => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result.slice(r.result.indexOf(',') + 1)); r.onerror = rej; r.readAsDataURL(blob); });
+function panel(which){ ['empty','running','result'].forEach(k => { $('#' + k).hidden = k !== which; });
+  if (which !== 'result') bview.stop(); if (which === 'empty') hero.rebuild();
+  if (which !== 'empty' && matchMedia('(max-width:980px)').matches) $('#stagep').scrollIntoView({behavior: reduce ? 'auto' : 'smooth'}); }
+function say(id, msg, bad){ const el = $(id); el.textContent = msg; el.classList.toggle('bad', !!bad); }
+
+/* --- the two modes --- */
+function setMode(k){ const pair = k === 'pair'; $('#tabPair').setAttribute('aria-selected', String(pair)); $('#tabKnown').setAttribute('aria-selected', String(!pair));
+  $('#mPair').hidden = !pair; $('#mKnown').hidden = pair; }
+$('#tabPair').onclick = () => setMode('pair'); $('#tabKnown').onclick = () => setMode('known');
+$('.modes').addEventListener('keydown', e => { if (e.key === 'ArrowRight' || e.key === 'ArrowLeft'){ const k = $('#tabPair').getAttribute('aria-selected') === 'true' ? 'known' : 'pair'; setMode(k); $(k === 'pair' ? '#tabPair' : '#tabKnown').focus(); } });
+
+function showFile(box, file){
+  const n = file.name, nm = n.length > 26 ? n.slice(0, 12) + '…' + n.slice(-11) : n;
+  box.querySelector('span').textContent = nm + ', ' + mb(file.size);
+  const old = box.querySelector('img'); if (old) old.remove();
+  if (isPic(file)){ const u = URL.createObjectURL(file), im = new Image(); im.src = u; im.alt = ''; box.appendChild(im); }
+}
+function wireDrop(box, inp, onFile){
+  inp.addEventListener('change', e => { if (e.target.files[0]) onFile(e.target.files[0]); });
+  ['dragenter','dragover'].forEach(t => box.addEventListener(t, e => { e.preventDefault(); if (B.live) box.classList.add('over'); }));
+  ['dragleave','drop'].forEach(t => box.addEventListener(t, e => { e.preventDefault(); box.classList.remove('over'); }));
+  box.addEventListener('drop', e => { if (B.live && e.dataTransfer.files[0]) onFile(e.dataTransfer.files[0]); });
+  box.addEventListener('click', e => { if (!B.live){ e.preventDefault(); say('#' + box.closest('.mode').querySelector('.log').id, 'This copy of the page cannot run the pipeline. See the note at the top.', true); } });
+}
+function pairReady(){ const ok = B.live && !B.busy && B.files.a && B.files.b; $('#goPair').disabled = !ok;
+  if (B.files.a && B.files.b && B.maxBytes){ const est = Math.ceil((B.files.a.size + B.files.b.size) / 3) * 4 + 512;
+    if (est > B.maxBytes && !($('#shrink').checked && isPic(B.files.a) && isPic(B.files.b))){ $('#goPair').disabled = true;
+      say('#logPair', `${mb(B.files.a.size + B.files.b.size)} of image is more than this server takes in one request (about ${mb(B.maxBytes * 3 / 4)}). Crop one, or use a 640-pixel window as every real pair does.`, true); return; } }
+  if (ok) say('#logPair', ''); }
+wireDrop($('#dropA'), $('#fileA'), f => { B.files.a = f; showFile($('#dropA'), f); pairReady(); });
+wireDrop($('#dropB'), $('#fileB'), f => { B.files.b = f; showFile($('#dropB'), f); pairReady(); });
+
+/* both photos shrink by ONE factor, so their relative scale - which the matcher has to find - is kept */
+async function shrinkPair(fa, fb){
+  const load = f => new Promise((res, rej) => { const u = URL.createObjectURL(f), im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = u; });
+  const [ia, ib] = await Promise.all([load(fa), load(fb)]);
+  const k = 1600 / Math.max(ia.naturalWidth, ia.naturalHeight, ib.naturalWidth, ib.naturalHeight);
+  if (k >= 1) return [fa, fb, null];
+  const one = (im, f) => new Promise(res => { const c = document.createElement('canvas'); c.width = Math.round(im.naturalWidth * k); c.height = Math.round(im.naturalHeight * k);
+    c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); c.toBlob(b => res(new File([b], f.name.replace(/\.\w+$/, '') + '.png', {type:'image/png'})), 'image/png'); });
+  return [await one(ia, fa), await one(ib, fb), k];
+}
+$('#goPair').onclick = async () => {
+  let fa = B.files.a, fb = B.files.b, note = '';
+  if ($('#shrink').checked && isPic(fa) && isPic(fb)){ const [a, b, k] = await shrinkPair(fa, fb); if (k){ fa = a; fb = b; note = ` Both shrunk to ${Math.round(k * 100)}% first.`; } }
+  const thumbOf = f => isPic(f) ? URL.createObjectURL(f) : null;
+  run({mode:'upload', a:{name:fa.name, data:await b64(fa)}, b:{name:fb.name, data:await b64(fb)}},
+      {a: thumbOf(fa), b: thumbOf(fb), an: fa.name, bn: fb.name, title: `${fa.name} onto ${fb.name}`, note});
+};
+
+/* --- one image, a known answer --- */
+const KS = [['rot','Rotate','°',-30,30,.5,8],['scale','Scale','×',.75,1.35,.01,1.1],['dx','Shift across',' px',-80,80,1,24],['dy','Shift down',' px',-80,80,1,-14],['blur','Blur',' px',0,3,.1,0],['noise','Noise','%',0,10,.5,0]];
+$('#ksl').innerHTML = KS.map(([k, l, u, lo, hi, st, v]) => `<label class="sl"><span>${l}</span><output id="ko_${k}" class="num">${v}${u}</output><input type="range" id="k_${k}" min="${lo}" max="${hi}" step="${st}" value="${v}"></label>`).join('');
+const kval = k => +$('#k_' + k).value;
+function kpreview(){
+  KS.forEach(([k, , u]) => { $('#ko_' + k).textContent = (k === 'scale' ? kval(k).toFixed(2) : kval(k)) + u; });
+  if (!B.kimg) return;
+  const im = B.kimg, w = im.naturalWidth, h = im.naturalHeight, n = 220, s = n / Math.max(w, h), c0 = $('#kc0').getContext('2d'), c1 = $('#kc1').getContext('2d');
+  [c0, c1].forEach(c => { c.setTransform(1, 0, 0, 1, 0, 0); c.filter = 'none'; c.fillStyle = '#000'; c.fillRect(0, 0, n, n); });
+  const ox = (n - w * s) / 2, oy = (n - h * s) / 2;
+  c0.drawImage(im, ox, oy, w * s, h * s);
+  /* the server makes source = reference warped by inv(H), H = rotate and scale about the centre, then shift */
+  /* shifts are in the pixels of the image as the server sees it, shrunk to 900 px at most: kk converts them back */
+  const kk = Math.min(1, 900 / Math.max(w, h));
+  const th = kval('rot') * Math.PI / 180, sc = kval('scale'), a = sc * Math.cos(th), b = sc * Math.sin(th), cx = w / 2, cy = h / 2;
+  const H = [[a, b, (1 - a) * cx - b * cy + (kval('dx') + .37) / kk], [-b, a, b * cx + (1 - a) * cy + (kval('dy') - .63) / kk]];
+  const det = H[0][0] * H[1][1] - H[0][1] * H[1][0];
+  const I = [[H[1][1] / det, -H[0][1] / det], [-H[1][0] / det, H[0][0] / det]];
+  const it = [-(I[0][0] * H[0][2] + I[0][1] * H[1][2]), -(I[1][0] * H[0][2] + I[1][1] * H[1][2])];
+  c1.save(); c1.beginPath(); c1.rect(ox, oy, w * s, h * s); c1.clip();
+  c1.setTransform(s * I[0][0], s * I[1][0], s * I[0][1], s * I[1][1], ox + s * it[0], oy + s * it[1]);
+  c1.filter = kval('blur') ? `blur(${kval('blur') * s / kk}px)` : 'none';
+  c1.drawImage(im, 0, 0); c1.restore();
+}
+KS.forEach(([k]) => $('#k_' + k).addEventListener('input', kpreview));
+$('#kRand').onclick = () => { const r = (lo, hi) => lo + Math.random() * (hi - lo);
+  $('#k_rot').value = r(-25, 25).toFixed(1); $('#k_scale').value = r(.8, 1.3).toFixed(2); $('#k_dx').value = Math.round(r(-60, 60)); $('#k_dy').value = Math.round(r(-60, 60)); kpreview(); };
+wireDrop($('#dropK'), $('#fileK'), f => { B.files.k = f; showFile($('#dropK'), f);
+  if (isPic(f)){ const im = new Image(); im.onload = () => { B.kimg = im; $('#kprev').hidden = false; kpreview(); }; im.src = URL.createObjectURL(f); } else { B.kimg = null; $('#kprev').hidden = true; }
+  $('#goKnown').disabled = !(B.live && !B.busy); say('#logKnown', isPic(f) ? '' : 'Not a PNG or JPEG, so there is no preview here; the server reads it anyway.'); });
+$('#goKnown').onclick = async () => {
+  const f = B.files.k, body = {mode:'known', a:{name:f.name, data:await b64(f)}};
+  KS.forEach(([k]) => { body[k] = kval(k); });
+  const t = isPic(f) ? URL.createObjectURL(f) : null;
+  run(body, {a: $('#kprev').hidden ? null : $('#kc1').toDataURL('image/png'), b: t, an: 'your image, warped', bn: f.name, title: `${f.name} against itself`, note: ''});
+};
+
+/* --- running a job and following it --- */
+const STAGE = {queued:'Sending', wait:'Waiting for the run before this one', prepare:'Running the pipeline on the CPU', check:'Fitting MAGSAC++ and running the area check', pack:'Drawing the result', done:'Done'};
+function setBusy(b){ B.busy = b; $('#lib').setAttribute('aria-busy', String(b)); pairReady(); $('#goKnown').disabled = !(B.live && !b && B.files.k); }
+function inputFig(el, src, name){ el.outerHTML = src ? `<img id="${el.id}" src="${src}" alt="">` : `<div class="ph" id="${el.id}">${esc(name || '')}</div>`; }
+async function run(body, view){
+  if (B.busy) return;
+  setBusy(true); panel('running');
+  inputFig($('#ra'), view.a, view.an); inputFig($('#rb'), view.b, view.bn);
+  $('#rstage').textContent = 'Sending'; $('#relapsed').textContent = ''; $('#rbar').classList.remove('det'); $('#rbar i').style.width = '';
+  const t0 = performance.now(), tick = setInterval(() => { $('#relapsed').textContent = ((performance.now() - t0) / 1000).toFixed(0) + ' s'; }, 500);
+  const fail = msg => { clearInterval(tick); setBusy(false); $('#rstage').textContent = 'Not registered'; $('#relapsed').textContent = msg; $('#rbar').classList.add('det'); $('#rbar i').style.width = '0'; };
+  let job;
+  try {
+    const r = await fetch('api/jobs', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)});
+    job = await r.json(); if (!r.ok) return fail(job.error || ('The server answered ' + r.status));
+  } catch (e) { return fail(`The connection to web/server.py dropped (${e.message}). Check the terminal running it is still open.`); }
+  for (;;){
+    await new Promise(r => setTimeout(r, 700));
+    let j; try { j = await (await fetch('api/jobs/' + job.id)).json(); } catch (e) { return fail(`Lost the server while it was working (${e.message}).`); }
+    if (j.error && j.state !== 'running') return fail(j.error);
+    if (j.stage === 'match' && j.total){ $('#rstage').textContent = `Matching with LoFTR, tile ${j.done} of ${j.total}`; $('#rbar').classList.add('det'); $('#rbar i').style.width = (100 * j.done / j.total) + '%'; }
+    else $('#rstage').textContent = STAGE[j.stage] || 'Working';
+    if (j.state === 'done'){ clearInterval(tick); setBusy(false);
+      const secs = ((performance.now() - t0) / 1000).toFixed(1);
+      addRun(j.result, `${view.title}. ${secs} s here, ${j.result.seconds} s inside the pipeline.${view.note || ''}`); return; }
+  }
+}
+function addRun(m, line){
+  B.runs.unshift({m, line}); $('#runs').hidden = false; showRun(0);
+}
+function showRun(i){
+  B.cur = i; const r = B.runs[i];
+  $('#runList').innerHTML = B.runs.map((x, k) => { const v = vword(x.m);
+    return `<li><button type="button" data-k="${k}" aria-current="${k === i}"><em>${esc(x.m.label)}</em><b class="${v.v}">${v.w}</b><small>${esc(x.m.sub)}</small></button></li>`; }).join('');
+  $('#rsay').textContent = r.line; panel('result'); bview.show(r.m);
+}
+$('#runList').addEventListener('click', e => { const b = e.target.closest('button'); if (b) showRun(+b.dataset.k); });
+
+/* --- the library of real pairs --- */
+function drawChips(){
+  const groups = {}; B.lib.forEach(e => { groups[e.group] = (groups[e.group] || 0) + 1; });
+  const order = Object.entries(groups).sort((a, b) => b[1] - a[1]);
+  $('#chips').innerHTML = [['all', B.lib.length], ...order].map(([g, n]) => `<button type="button" data-g="${esc(g)}" aria-pressed="${g === B.group}">${g === 'all' ? 'All' : esc(g)} <span class="num">${n}</span></button>`).join('');
+}
+function drawLib(){
+  const list = B.lib.filter(e => B.group === 'all' || e.group === B.group);
+  $('#lib').innerHTML = list.map(e => `<button type="button" data-id="${esc(e.id)}"${e.v ? ` data-v="${e.v}"` : ''} title="${esc(e.label)}">
+    <img src="${e.thumb}" alt="" loading="lazy" width="120" height="120"><span>${esc(e.group)}${e.window ? ', w' + String(e.window).padStart(2, '0') : ''}</span><small>${esc(e.tag)}${e.v ? ', ' + vword(e.saved).w.toLowerCase() : ''}</small></button>`).join('');
+}
+$('#chips').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; B.group = b.dataset.g; drawChips(); drawLib(); });
+$('#lib').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b || B.busy) return;
+  const x = B.lib.find(l => l.id === b.dataset.id); if (!x) return;
+  if (x.saved) return addRun(x.saved, 'The saved run from the frozen evidence. Nothing ran just now: this copy of the page cannot run Python.');
+  run({mode:'sample', id:x.id}, {a:`api/thumb/${x.id}_source.jpg`, b:x.thumb, an:x.a, bn:x.b, title:`${x.label}, window ${String(x.window || '').padStart(2, '0')}, run live from its files`, note:''});
+});
+
+/* --- saved results only, until the server answers --- */
+const SHORT = s => s.replace('Chandrayaan-2 ', '').replace('LRO LROC ', '').replace('LRO ', '').replace('SELENE (Kaguya) Terrain Camera', 'Kaguya TC').replace('SELENE (Kaguya) Multiband Imager', 'Kaguya MI').replace('SELENE (Kaguya) ', 'Kaguya ');
+function offline(){
+  B.live = false; $('#pill').className = 'pill'; $('#pill span').textContent = 'Saved results only';
+  $('#status').innerHTML = `This copy of the page cannot run the pipeline: LoFTR and MAGSAC++ are Python, and a web page cannot run them. The pairs below open their saved results. To register your own images, run <code>python -m web.server</code> on a laptop with the project and open the address it prints.`;
+  $('#mPair').classList.add('dis'); $('#mKnown').classList.add('dis');
+  B.lib = D.maps.map((m, i) => ({id:'saved' + i, label:m.label, group:SHORT(m.label), tag:m.tag.toLowerCase(), thumb:layerImg(m, 'ref'), saved:m, v:vword(m).v, window:null}));
+  $('#libTitle').textContent = 'Real pairs, saved runs'; $('#libSay').textContent = `The ${D.maps.length} pairs from the evidence, one per instrument pairing, as the pipeline returned them.`;
+  $('#chips').innerHTML = ''; drawLib();
+}
+offline();
+fetch('api/health').then(r => r.ok ? r.json() : null).then(async h => {
+  if (!h || h.service !== 'lunaxx-console') return;
+  B.live = true; B.health = h; B.maxBytes = Number(h.max_bytes) || 0;
+  $('#pill').className = 'pill on'; $('#pill span').textContent = 'Live on this laptop';
+  $('#status').innerHTML = `Live. Every run is <code>core.pipeline.run_all</code> on this laptop's CPU, the same function behind every frozen number, at code commit ${esc(h.commit)}. Nothing you send is kept.`;
+  $('#mPair').classList.remove('dis'); $('#mKnown').classList.remove('dis');
+  try {
+    const L = (await (await fetch('api/library')).json()).pairs || [];
+    if (!L.length){ $('#libSay').textContent = 'No real pairs on this machine: data/pairs/ is empty. They live in the team Drive, not in git.'; B.lib = []; drawLib(); return; }
+    B.lib = L.map(e => ({...e, thumb:`api/thumb/${e.id}.jpg`}));
+    $('#libTitle').textContent = 'Real pairs';
+    $('#libSay').textContent = `${L.length} windows on this laptop, from Chandrayaan-2, LRO and Kaguya. Pick one to run it again, live, from its files.`;
+    B.group = 'all'; drawChips(); drawLib();
+  } catch (e) { $('#libSay').textContent = 'Could not list the real pairs: ' + e.message; }
+  pairReady();
+}).catch(() => {});
 
 /* ================= line it up yourself =================
    Each square correlates the two images' pixels at the current shift (absolute correlation,
@@ -707,7 +1106,7 @@ dialIn.addEventListener('input', () => setDz(+dialIn.value, 1));
   box.addEventListener('pointerdown', e => { drag = true; try { box.setPointerCapture(e.pointerId); } catch(_){} const d = angleAt(e); setDz(Math.abs(d), d < 0 ? -1 : 1); });
   box.addEventListener('pointermove', e => { if (!drag) return; const d = angleAt(e); setDz(Math.abs(d), d < 0 ? -1 : 1); });
   ['pointerup','pointercancel'].forEach(t => box.addEventListener(t, () => { drag = false; })); }
-let lastDz = -1, seen = true;
+let lastDz = -1, seen = false;
 new IntersectionObserver(es => { seen = es[0].isIntersecting; }).observe($('#relief'));
 function tick(t){
   if (sun.alt && seen){ const w = Math.floor(t / 800) % 2 ? 'A' : 'B'; if (w !== sun.lit){ sun.lit = w; sun.dirty = true; } }
@@ -717,78 +1116,15 @@ function tick(t){
 }
 requestAnimationFrame(tick);
 
-/* ================= every pairing ================= */
-const tr = {p:0, cell:27, layer:'ref', timer:null};
-const PAT = id => `<defs><pattern id="${id}w" width=".16" height=".16" patternUnits="userSpaceOnUse" patternTransform="rotate(-45)"><rect width=".045" height=".16" fill="#fff" fill-opacity=".85"/></pattern>
-  <pattern id="${id}n" width=".2" height=".2" patternUnits="userSpaceOnUse"><circle cx=".1" cy=".1" r=".03" fill="#fff" fill-opacity=".85"/></pattern></defs>`;
-const cellFill = (id, s) => s === 'verified' ? 'fill="#000" fill-opacity="0"' : s === 'weak' ? `fill="url(#${id}w)"` : `fill="url(#${id}n)"`;
-function collar(el){ el.querySelectorAll('.cols').forEach(e => { e.innerHTML = [...COLS].map(c => `<span>${c}</span>`).join(''); });
-  el.querySelectorAll('.rows').forEach(e => { e.innerHTML = [1,2,3,4,5,6,7,8].map(n => `<span>${n}</span>`).join(''); }); }
-collar($('#plate'));
-const frameHTML = (m, i) => `<button type="button" class="frame" data-p="${i}" data-v="${vword(m).v}" aria-pressed="${i === tr.p}">
+/* ================= every pairing: the saved runs ================= */
+const pview = makeViewer($('#pview'), 'pv');
+let pcur = 0;
+const frameHTML = (m, i) => `<button type="button" class="frame" data-p="${i}" data-v="${vword(m).v}" aria-pressed="${i === pcur}">
   <span class="frame__img"><img src="${layerImg(m, 'ref')}" alt=""></span>
   <span class="frame__cap"><em>${m.label}</em><small>${m.tag.toLowerCase()}, ${vword(m).w.toLowerCase()}</small></span></button>`;
 $('#sheet').innerHTML = D.maps.map(frameHTML).join('');
-function drawGrid(){ let s = PAT('p'); D.maps[tr.p].cells.forEach((c, i) => { const x = i % 8, y = (i - x) / 8;
-  s += `<rect class="cell${i === tr.cell ? ' on' : ''}" data-i="${i}" x="${x}" y="${y}" width="1" height="1" ${cellFill('p', c.s)}/>`; }); $('#grid').innerHTML = s; }
-function drawSquare(){
-  const m = D.maps[tr.p], c = m.cells[tr.cell], st = {verified:'verified', weak:'weak', no_evidence:'no evidence'}[c.s];
-  $('#square').innerHTML = `<h4>Square ${sqName(tr.cell)}<span>${st}</span></h4><dl>
-    <dt>inliers, of raw matches here</dt><dd class="num">${fmt(c.n)} of ${fmt(c.raw)}</dd>
-    <dt>local inlier ratio</dt><dd class="num">${c.lir === null || c.lir === undefined ? (c.raw ? 'not measurable' : 'no matches') : c.lir.toFixed(2)}</dd>
-    <dt>area check, correlation at the peak</dt><dd class="num">${c.ncc === null ? 'not measurable' : (c.ncc > 0 ? '+' : '') + c.ncc.toFixed(2)}</dd>
-    <dt>median inlier residual</dt><dd class="num">${c.res === null ? 'none' : c.res.toFixed(2) + ' px = ' + (c.res * m.gsd).toFixed(2) + ' m'}</dd>
-    <dt>reference grid</dt><dd class="num">${m.gsd} m per pixel</dd></dl>`;
-}
-function drawVerdict(){
-  const m = D.maps[tr.p], v = vword(m);
-  $('#plate').dataset.v = v.v;
-  $('#verdict').innerHTML = `<p class="vword ${v.v}">${v.w}${v.v === 'contradicted' ? ',<br>fallback declared' : ''}</p>
-    <p class="vsub"><em>${m.label}</em>. ${m.sub}</p>
-    <dl class="facts"><dt>squares</dt><dd>${countsSaid(m.counts)}</dd><dt>matches</dt><dd class="num">${fmt(m.inliers)} inliers of ${fmt(m.n_matches)}</dd>
-      <dt>time</dt><dd class="num">${m.seconds} s on the CPU</dd><dt>method</dt><dd>${m.method}</dd><dt>the check says</dt><dd>${whySaid(m.why)}</dd></dl>`;
-  $('#gloss').innerHTML = m.plain;
-}
-const cap = s => `<em>${s.inst}</em>` + (s.band ? `, ${s.band}` : '') + `, ${s.gsd} m per pixel`;
-function drawInputs(){ const m = D.maps[tr.p];
-  $('#inputs').innerHTML = `<figure><img src="${layerImg(m, 'src')}" alt="Image A: ${m.a.inst}"><figcaption>Moved: ${cap(m.a)}</figcaption></figure>
-    <figure><img src="${layerImg(m, 'ref')}" alt="Image B: ${m.b.inst}"><figcaption>Reference: ${cap(m.b)}</figcaption></figure>`; }
-function drawTwin(){
-  const m = D.maps[tr.p], w = m.twin, el = $('#twin');
-  if (!w){ el.hidden = true; el.innerHTML = ''; return; }
-  el.hidden = false; const row = (l, a, b) => `<tr><td>${l}</td><td>${a}</td><td>${b}</td></tr>`, sh = (w.a.sharp / w.b.sharp).toFixed(1);
-  el.innerHTML = `<h4>Is the infrared frame only blurrier? The same source against two bands of the same map product.</h4>
-    <div style="overflow-x:auto"><table><thead><tr><th></th><th>${w.other_band}</th><th>${w.band}</th></tr></thead><tbody>
-    ${row('reference grid', w.a.gsd + ' m', w.b.gsd + ' m')}${row('fine detail', w.a.sharp, w.b.sharp + ', ' + sh + '× less')}
-    ${row('matches found', fmt(w.a.matches), fmt(w.b.matches))}${row('inliers', fmt(w.a.inliers), fmt(w.b.inliers))}
-    ${row('inlier ratio', w.a.ratio, w.b.ratio)}${row('frame coverage', Math.round(w.a.cov * 100) + '%', Math.round(w.b.cov * 100) + '%')}
-    ${row('verdict', w.a.verdict + ', ' + w.a.med + ' px', w.b.verdict)}
-    ${w.fallback_px !== null ? row('fallback against the visible fit', 'none', w.fallback_px + ' px = ' + w.fallback_m + ' m') : ''}</tbody></table></div>`;
-}
-const LNAME = {src:'Image A, before', ref:'Image B, reference', warp:"The matcher's answer", blink:'Alternate with B', fb:'The fallback, delivered'};
-function setLayer(l){
-  const m = D.maps[tr.p]; if (!m.layers.some(x => x.k === l)) l = 'ref';
-  tr.layer = l; clearInterval(tr.timer); tr.timer = null;
-  $$('#layers button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.l === l)));
-  const Ai = $('#imgA'), Bi = $('#imgB'); Ai.src = l === 'blink' ? layerImg(m, 'ref') : layerImg(m, l); Ai.alt = LNAME[l];
-  const w = layerImg(m, 'warp'); if (w) Bi.src = w; Bi.hidden = true;
-  $('#layname').textContent = l === 'blink' ? 'If they are aligned, nothing jumps.' : (!m.ok && l === 'warp') ? 'The answer the check refused.' : '';
-  if (l === 'blink') tr.timer = setInterval(() => { Bi.hidden = !Bi.hidden; }, reduce ? 1600 : 650);
-}
-function setPair(i){
-  tr.p = i; $$('#sheet .frame').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.p === i)));
-  const m = D.maps[i]; tr.cell = i === 0 ? 27 : m.cells.findIndex(c => c.s === 'weak'); if (tr.cell < 0) tr.cell = 27;
-  $('#layers').innerHTML = m.layers.map(l => `<button type="button" data-l="${l.k}" aria-pressed="false">${LNAME[l.k] || l.n}</button>`).join('');
-  $$('#layers button').forEach(b => { b.onclick = () => setLayer(b.dataset.l); });
-  drawGrid(); drawSquare(); drawVerdict(); drawInputs(); drawTwin();
-  setLayer(m.ok ? 'blink' : (m.layers.some(x => x.k === 'warp') ? 'warp' : 'ref'));
-}
-function pickCell(i){ if (i === tr.cell || i < 0 || i > 63) return; tr.cell = i; $$('#grid .cell').forEach((r, k) => r.classList.toggle('on', k === i)); drawSquare(); }
+function setPair(i){ pcur = i; $$('#sheet .frame').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.p === i))); pview.show(D.maps[i], i === 0 ? 27 : undefined); }
 $('#sheet').addEventListener('click', e => { const b = e.target.closest('.frame'); if (b) setPair(+b.dataset.p); });
-['pointerover','click'].forEach(t => $('#grid').addEventListener(t, e => { const r = e.target.closest('.cell'); if (r) pickCell(+r.dataset.i); }));
-$('#pimg').addEventListener('keydown', e => { const d = {ArrowLeft:-1, ArrowRight:1, ArrowUp:-8, ArrowDown:8}[e.key]; if (!d) return; e.preventDefault();
-  const x = tr.cell % 8; if ((d === -1 && x === 0) || (d === 1 && x === 7)) return; pickCell(tr.cell + d); });
-$('#gridon').addEventListener('change', e => $('#pimg').classList.toggle('nogrid', !e.target.checked));
 setPair(0);
 
 /* ================= the check, tested ================= */
@@ -830,60 +1166,25 @@ setPair(0);
   ['pointerover','click'].forEach(ev => svg.addEventListener(ev, e => { const r = e.target.closest('.t'); if (r) show(+r.dataset.i); }));
   show(T.findIndex(t => t.med > 3)); }
 
-/* ================= where the reader is ================= */
-{ const links = $$('.bar nav a'), parts = $$('section.part'); let raf = 0;
-  const mark = () => { raf = 0; const mid = innerHeight * .45, here = parts.find(p => !p.hidden && p.getBoundingClientRect().top <= mid && p.getBoundingClientRect().bottom > mid);
-    const id = here && (here.id === 'overlap' ? 'planted' : here.id);
-    links.forEach(a => a.toggleAttribute('aria-current', !!id && a.getAttribute('href') === '#' + id)); };
-  addEventListener('scroll', () => { if (!raf) raf = requestAnimationFrame(mark); }, {passive:true}); addEventListener('resize', mark); mark(); }
-
-/* ================= try a pair: only when web/server.py is serving this page ================= */
-(function(){
-  const files = {a:null, b:null}, log = $('#log'), go = $('#go'); let maxBytes = 0;
-  const say = (msg, bad) => { log.textContent = msg; log.classList.toggle('bad', !!bad); };
-  const payloadBytes = () => Math.ceil((files.a.size + files.b.size) / 3) * 4 + 512, mb = n => (n / 1048576).toFixed(1) + ' MB';
-  const clearResult = head => { $('#lword').textContent = head; $('#lword').style.color = 'var(--dimw)'; $('#lsay').textContent = 'Nothing is claimed about this pair until the pipeline returns.'; };
-  const b64 = f => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result.slice(r.result.indexOf(',') + 1)); r.onerror = rej; r.readAsDataURL(f); });
-  function pick(which, file){
-    if (!file) return; files[which] = file;
-    const box = $('#drop' + which.toUpperCase()), n = file.name, nm = n.length > 30 ? n.slice(0, 14) + '…' + n.slice(-13) : n;
-    box.querySelector('span').textContent = nm + ', ' + mb(file.size);
-    if (/\.(png|jpe?g)$/i.test(n)){ const u = URL.createObjectURL(file), old = box.querySelector('img'); if (old) old.remove(); const im = new Image(); im.src = u; im.alt = ''; im.onload = () => URL.revokeObjectURL(u); box.appendChild(im); }
-    go.disabled = !(files.a && files.b);
-    if (!go.disabled && maxBytes && payloadBytes() > maxBytes){ go.disabled = true; $('#hint').textContent = 'Too large to send';
-      say(`${mb(files.a.size + files.b.size)} of image travels as ${mb(payloadBytes())}, and this server accepts ${mb(maxBytes)} per request (about ${mb(maxBytes * 3 / 4)} of image). Crop one, or register a 640-pixel window instead of the whole frame, as every pair on this page does.`, true); return; }
-    $('#hint').textContent = go.disabled ? 'Choose two images' : 'Ready'; if (!go.disabled) say('');
+/* ================= two views, and where the reader is =================
+   The workbench is the page; the evidence is one link away. Section links open the evidence
+   view and scroll to the section; anything else is the workbench. */
+{ const links = $$('.bar nav a'), parts = $$('#evidence section.part'), EV = parts.map(p => p.id).concat('evidence');
+  let raf = 0;
+  const mark = () => { raf = 0;
+    if (!$('#evidence').hidden){ const mid = innerHeight * .45, here = parts.find(p => p.getBoundingClientRect().top <= mid && p.getBoundingClientRect().bottom > mid);
+      const id = here && (here.id === 'overlap' ? 'planted' : here.id);
+      links.forEach(a => a.toggleAttribute('aria-current', !!id && a.getAttribute('href') === '#' + id)); }
+    else links.forEach(a => a.toggleAttribute('aria-current', a.getAttribute('href') === '#bench')); };
+  function route(){
+    const h = decodeURIComponent(location.hash.slice(1)), ev = EV.includes(h);
+    const wasEv = !$('#evidence').hidden;
+    $('#bench').hidden = ev; $('#evidence').hidden = !ev;
+    if (ev){ const t = document.getElementById(h); if (t && h !== 'evidence') t.scrollIntoView({behavior: wasEv && !reduce ? 'smooth' : 'instant'}); else scrollTo({top:0, behavior:'instant'}); }
+    else { scrollTo({top:0, behavior:'instant'}); if (!$('#empty').hidden) hero.rebuild(); }
+    mark();
   }
-  ['a','b'].forEach(w => { const box = $('#drop' + w.toUpperCase()), inp = $('#file' + w.toUpperCase());
-    inp.addEventListener('change', e => pick(w, e.target.files[0]));
-    ['dragenter','dragover'].forEach(t => box.addEventListener(t, e => { e.preventDefault(); box.classList.add('over'); }));
-    ['dragleave','drop'].forEach(t => box.addEventListener(t, e => { e.preventDefault(); box.classList.remove('over'); }));
-    box.addEventListener('drop', e => pick(w, e.dataTransfer.files[0])); });
-  go.addEventListener('click', async () => {
-    go.disabled = true; $('#hint').textContent = 'Registering'; clearResult('Registering…');
-    const t0 = performance.now(), tk = setInterval(() => say('Running the pipeline on the CPU, ' + ((performance.now() - t0) / 1000).toFixed(0) + ' s so far'), 1000);
-    say('Reading the two files');
-    try {
-      const [a, b] = await Promise.all([b64(files.a), b64(files.b)]); say('Matching. This is the slow part.');
-      const res = await fetch('api/register', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({a:{name:files.a.name, data:a}, b:{name:files.b.name, data:b}})});
-      const m = await res.json(); clearInterval(tk);
-      if (!res.ok){ say(m.error || ('The server answered ' + res.status), true); clearResult('Not registered'); go.disabled = false; $('#hint').textContent = 'Ready'; return; }
-      say('Registered in ' + ((performance.now() - t0) / 1000).toFixed(1) + ' s, of which ' + m.seconds + ' s inside the pipeline');
-      D.maps.push(m); const i = D.maps.length - 1; $('#sheet').insertAdjacentHTML('beforeend', frameHTML(m, i)); setPair(i);
-      const v = vword(m); $('#lword').textContent = v.w + (v.v === 'contradicted' ? ', fallback declared' : ''); $('#lword').style.color = v.v === 'contradicted' ? '#ff7ab8' : 'var(--white)';
-      $('#lsay').innerHTML = `${countsSaid(m.counts)}; ${fmt(m.inliers)} inliers of ${fmt(m.n_matches)} matches; ${m.seconds} s on the CPU. Method declared: ${m.method}. ${whySaid(m.why)}`;
-      $('#pairs').scrollIntoView({behavior: reduce ? 'auto' : 'smooth', block:'start'});
-    } catch (e) {
-      clearInterval(tk); const raw = String(e && e.message || e);
-      say(/fetch/i.test(raw) ? `The connection to web/server.py dropped before it answered (${raw}). Check that the terminal running "python -m web.server" is still open, then try again. If the pair is large, register a window rather than the whole frame.` : raw, true);
-      clearResult('Not registered');
-    }
-    go.disabled = false; $('#hint').textContent = 'Ready';
-  });
-  fetch('api/health').then(r => r.ok ? r.json() : null).then(h => {
-    if (!h || h.service !== 'lunaxx-console') return;
-    $('#live').hidden = false; $('#navlive').hidden = false; maxBytes = Number(h.max_bytes) || 0;
-    say(`Ready. Code at commit ${h.commit}; up to ${mb(maxBytes * 3 / 4)} of image per pair.`);
-  }).catch(() => {});
-})();
+  addEventListener('hashchange', route);
+  addEventListener('scroll', () => { if (!raf) raf = requestAnimationFrame(mark); }, {passive:true}); addEventListener('resize', mark);
+  route(); }
 </script>
