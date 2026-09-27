@@ -87,6 +87,18 @@ def print_to_pdf(src: pathlib.Path, out: pathlib.Path) -> None:
         raise SystemExit(f"printing failed: {r.stdout.strip()} {r.stderr.strip()[:400]}")
 
 
+def _family(font_program: bytes | None) -> str | None:
+    """The family name inside an embedded TrueType program, or None if it cannot be read."""
+    if not font_program:
+        return None
+    try:
+        import io
+        from PIL import ImageFont
+        return ImageFont.truetype(io.BytesIO(font_program), 12).getname()[0]
+    except (OSError, ValueError):
+        return None
+
+
 def crop_and_check(printed: pathlib.Path, final: pathlib.Path) -> int:
     try:
         import pymupdf
@@ -117,6 +129,14 @@ def crop_and_check(printed: pathlib.Path, final: pathlib.Path) -> int:
             for b in page.get_text("blocks"):
                 if b[3] > foot + 1 and not b[4].strip().isdigit():
                     problems.append(f"page {i + 1}: text runs into the footer: {b[4].strip()[:50]!r}")
+        # ONE face, as printed (SPOC review, 27 Sep). The .pptx names Calibri on every run, but
+        # PowerPoint's print path once set slide 1's second title line in Arial - the embedded
+        # subset names are anonymous (CIDFont+F2), so read each font program's own family name.
+        for f in page.get_fonts(full=True):
+            buf = doc.extract_font(f[0])[3]
+            fam = _family(buf)
+            if fam and fam != "Calibri":
+                problems.append(f"page {i + 1}: printed in {fam}, not Calibri - export again")
     doc.set_metadata({"title": "SIH26166 - LunaXX", "author": "Team LunaXX",
                       "subject": "Smart India Hackathon 2026, problem statement SIH26166"})
     doc.save(str(final), garbage=3, deflate=True)

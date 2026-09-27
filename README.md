@@ -52,13 +52,17 @@ Kaguya and LOLA data, plus synthetic pairs with exact truth.
 
 A failure detector is only worth something if its false-alarm rate and its detection floor are
 measured. We planted wrong answers of known size into 30 real windows, in two Sun populations
-that are never pooled (*Trust layer on real imagery*):
+that are never pooled (*Trust layer on real imagery*). For shifts:
 
 - **no false alarm** in 44 correct trials with the Suns within 10°, or in 16 with them
   132–174° apart;
-- **every 5 m error flagged** with the Suns within 10°, and every 10 m error with them 132–174°
+- **every 5 m shift flagged** with the Suns within 10°, and every 10 m shift with them 132–174°
   apart;
-- below 2 m almost nothing is caught. That is the floor, and we report it.
+- at 2 m or less almost nothing is caught. That is the floor, and we report it.
+
+Rotations and scale changes are a separate test: they move the corners and not the centre, so a
+whole-frame verdict misses them (0 of 120 trials refused at 3 m of corner movement), and it is the
+8 × 8 map that catches them, stripping the verified state from 94% of the cells they move past 2 px.
 
 <p align="center">
   <img src="presentation/figures/fig6_trust_real_calibration.png" width="620"

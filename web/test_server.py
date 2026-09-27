@@ -155,3 +155,29 @@ def test_the_routes_answer_and_refuse_what_they_should(live):
     code, err = _call(live + "api/jobs", {"mode": "nope"})
     assert code == 400 and "mode" in err["error"]
     assert _call(live + "api/nothing", {"mode": "upload"})[0] == 404
+
+
+def test_an_lzw_geotiff_can_be_drawn(tmp_path):
+    """LZW needs imagecodecs in tifffile; the demo laptop has none. The panel reads through
+    core's loader, which falls back to Pillow - an LZW upload used to fail after the whole run."""
+    from PIL import Image
+    from web.panel import jpg
+    arr = (np.random.default_rng(1).random((120, 160)) * 255).astype(np.uint8)
+    p = tmp_path / "lzw.tif"
+    Image.fromarray(arr).save(p, compression="tiff_lzw")
+    assert jpg(p).startswith("data:image/jpeg;base64,")
+
+
+def test_a_malformed_upload_is_refused_by_name(tmp_path):
+    with pytest.raises(ValueError, match="image A"):
+        server._save("not a dict", tmp_path, "a")
+
+
+def test_an_empty_post_is_a_400_not_a_413(live):
+    req = urllib.request.Request(live + "api/jobs", data=b"", method="POST")
+    try:
+        urllib.request.urlopen(req, timeout=10)
+        code = 200
+    except urllib.error.HTTPError as e:
+        code = e.code
+    assert code == 400

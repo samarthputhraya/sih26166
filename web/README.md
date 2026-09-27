@@ -150,7 +150,7 @@ layer actually looks like what the verdict claims.
 **Quick sanity run:**
 
 ```
-python -m pytest -q                   # 352 passed
+python -m pytest -q                   # 355 passed
 python -m web.build_console           # prints the row counts it found
 ```
 

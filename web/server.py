@@ -111,7 +111,9 @@ def _save(upload, into: pathlib.Path, stem: str) -> pathlib.Path:
     products only, so those are re-encoded as a plain TIFF - which carries no ground scale, and
     the caller is told so rather than being shown a silent assumption.
     """
-    name = pathlib.Path(upload.get("name") or "upload.tif").name
+    if not isinstance(upload, dict):
+        raise ValueError(f"image {stem.upper()}: send {{name, data}} with base64 data")
+    name = pathlib.Path(str(upload.get("name") or "upload.tif")).name
     ext = pathlib.Path(name).suffix.lower()
     if ext not in ALLOWED:
         raise ValueError(f"{name}: need one of {', '.join(sorted(ALLOWED))}")
@@ -579,7 +581,9 @@ class Handler(BaseHTTPRequestHandler):
             n = int(self.headers.get("Content-Length") or 0)
         except ValueError:
             return self._json(400, {"error": "bad Content-Length"})
-        if n <= 0 or n > MAX_UPLOAD:
+        if n <= 0:
+            return self._json(400, {"error": "empty request: send a JSON body"})
+        if n > MAX_UPLOAD:
             # Replying without reading the body leaves the client still uploading into a socket
             # nobody is draining: the connection resets and fetch() throws "Failed to fetch", so
             # the operator never sees this message. Drain first (bounded), then answer. Found by

@@ -73,7 +73,7 @@ forty-eight: thirty-five, refused. The wavelength changed, not the resolution.
 
 ### 10 · trust-iirs — 6 s
 
-The same honesty applies to IIRS. Ten of eleven windows refused, none registers. We report that as
+The same honesty applies to IIRS. Ten of eleven windows refused, none accepted. We report that as
 a limit of the method, not as a number we massaged into looking like success.
 
 ### 11 · tiling — 7 s

@@ -338,7 +338,7 @@ footer{padding-block:48px 70px;border-top:1.5px solid var(--ink)}
       </div>
 
       <div class="mode" id="mKnown" role="tabpanel" aria-labelledby="tabKnown" hidden>
-        <p class="fine" style="font-size:15px;color:var(--ink2)">Give it any Moon picture. The server warps it by the amounts below, registers the warped copy back onto the original and measures how far off it lands. Because the right answer is known, this is a real error, not an estimate. Images over 900 px are shrunk to 900 first, and the shifts are in those pixels.</p>
+        <p class="fine" style="font-size:15px;color:var(--ink2)">Give it any Moon picture. The server warps it by the amounts below, registers the warped copy back onto the original and measures how far off it lands. Because the right answer is known, this is a real error, not an estimate. It is the same picture against itself, so no Sun or sensor changes: it tests geometry, blur and noise. Images over 900 px are shrunk to 900 first, and the shifts are in those pixels.</p>
         <label class="drop one" id="dropK"><b>Any Moon image</b><span>a photo, a screenshot, a PDS product</span><input type="file" id="fileK" accept=".tif,.tiff,.img,.xml,.lbl,.png,.jpg,.jpeg"></label>
         <div class="prev" id="kprev" hidden>
           <figure><canvas id="kc0" width="220" height="220"></canvas><figcaption>Your image, the reference</figcaption></figure>
@@ -428,7 +428,7 @@ footer{padding-block:48px 70px;border-top:1.5px solid var(--ink)}
         </div>
         <label class="note" for="dz">Angle between the two Suns: <span id="dzv" class="num">0°</span></label>
         <input id="dz" type="range" min="0" max="180" step="1" value="0">
-        <p class="src">Sun A is the OHRC frame's own, 7° above the horizon. Drag Sun B round the compass. Relief and shadows from the LOLA 60 m elevation model; contours every 250 m.</p>
+        <p class="src">Sun A is the OHRC frame's own, 7° above the horizon (from its PDS label). Drag Sun B round the compass. Relief and shadows from the LOLA 60 m elevation model; contours every 250 m.</p>
       </div>
       <div class="col">
         <p class="body">We registered one OHRC frame against <strong>25 LRO NAC frames</strong> whose Suns differ from it by 3° to 153° in azimuth: 69 real windows. Wherever you put Sun B, the last line below is the one that matters.</p>
@@ -459,7 +459,7 @@ footer{padding-block:48px 70px;border-top:1.5px solid var(--ink)}
       <div class="col">
         <div class="pair">
           <p class="big num">0 of 44<small>false alarms with the Suns within 10°, and 0 of 16 with them 132° to 174° apart</small></p>
-          <p class="big num">5 m<small>and up: every planted error is flagged on the near-Sun windows. Below 2 m almost nothing is, and that is the floor.</small></p>
+          <p class="big num">5 m<small>and up: every planted shift is flagged on the near-Sun windows. At 2 m or less almost nothing is, and that is the floor.</small></p>
         </div>
         <hr class="rule" style="background:var(--white)">
         <p class="note">A rotation or scale change about the centre leaves the centre still and moves the corners, so a verdict for the whole frame watches the wrong place: at 3 m of corner movement it refuses 0 of 120 trials, at 5 m only 15. The squares carry it instead.</p>
@@ -490,13 +490,13 @@ footer{padding-block:48px 70px;border-top:1.5px solid var(--ink)}
     <ul class="ledger">
       <li><span><em>OHRC onto LRO NAC, 74°S</em><small>whole lit overlap, tiled; cross-sensor</small></span><p>Every window in the shared ground, 13.1 km², none chosen by hand. Held-out median on the 0.93 m grid.</p><b class="num">37 of 37, 0.57 m</b></li>
       <li><span><em>OHRC onto LRO NAC, SAC's equatorial pair</em><small>cross-sensor</small></span><p>SAC's own published pair (arXiv:2509.04775). Suns 174° apart, every shadow reversed. Held-out median 0.69–1.68 px on the 1.62 m grid.</p><b class="num">6 of 6, 1.1–2.7 m</b></li>
-      <li><span><em>OHRC onto LRO NAC, SAC's polar pair</em><small>cross-sensor</small></span><p>Suns 132° apart. Two windows flagged rather than delivered.</p><b class="num">4 of 6</b></li>
+      <li><span><em>OHRC onto LRO NAC, SAC's polar pair</em><small>cross-sensor</small></span><p>Suns 132° apart. Two windows not vouched for: one kept as unconfirmed, one refused with its fallback declared.</p><b class="num">4 of 6</b></li>
       <li><span><em>OHRC onto LRO NAC, the Sun sweep</em><small>cross-sensor</small></span><p>One OHRC frame against 25 NAC frames, Suns 3° to 153° apart, 69 windows. Nothing wrongly accepted in any band.</p><b class="num">51 registered, 0 missed</b></li>
       <li><span><em>Kaguya TC onto Kaguya MI 749 nm</em><small>cross-sensor</small></span><p>Visible against visible, a 2× scale gap. Held-out median 0.23–0.47 px on MI's 14.8 m grid.</p><b class="num">3 of 3, 3.5–6.9 m</b></li>
-      <li><span><em>Kaguya TC onto Kaguya MI 1548 nm</em><small>multi-modal</small></span><p>The matcher is refused; global correlation is delivered instead and declared, landing 0.23–1.09 px from the visible-band fit of the same window.</p><b class="num">3 of 3 delivered</b></li>
+      <li><span><em>Kaguya TC onto Kaguya MI 1548 nm</em><small>multi-modal</small></span><p>The matcher is refused; global correlation is delivered instead and declared, landing a median 0.23–1.09 px (3.4–16.2 m) on MI's 14.8 m grid from the visible-band fit of the same window.</p><b class="num">3 of 3 delivered</b></li>
       <li><span><em>OHRC onto Kaguya TC ortho map</em><small>cross-sensor</small></span><p>A 29.6× scale gap, 0.25 m against 7.4 m.</p><b class="num">3 of 4</b></li>
-      <li><span><em>OHRC to NAC A to NAC B, closed loops</em><small>the A to B leg is the same sensor</small></span><p>Three registrations round a loop must return to the start: consistency, not accuracy. Closure on the 1.245 m grid of NAC B.</p><b class="num">0.107 m</b></li>
-      <li><span><em>MiLOI, LRO NAC with itself</em><small>same sensor</small></span><p>81 published pairs of one ground under many Suns, judged against a truth network built from other pairs.</p><b class="num">33 accepted, 33 correct</b></li>
+      <li><span><em>OHRC to NAC A to NAC B, closed loops</em><small>the A to B leg is the same sensor</small></span><p>Three registrations round a loop must return to the start: consistency, not accuracy. Median closure over 6 loops, on the 1.245 m grid of NAC B.</p><b class="num">0.107 m</b></li>
+      <li><span><em>MiLOI, LRO NAC with itself</em><small>same sensor</small></span><p>81 scored pairs (of 321 matched) from three scenes under many Suns, judged against a truth network built from other pairs.</p><b class="num">33 accepted, 33 within 3 px</b></li>
     </ul>
     <p class="note" style="margin-top:18px">Against exact truth, a synthetic pair rendered from the LOLA model with a known transform, the error is 0.086 px = 5.1 m on the 60 m grid with the Suns 0° and 15° apart. On real imagery there is no ground truth, so the figures above are held-out residuals: the median error over the 20% of matches the fit never saw. The two kinds are never added together.</p>
 
@@ -504,16 +504,16 @@ footer{padding-block:48px 70px;border-top:1.5px solid var(--ink)}
       <p>Each line is a section of REPORT.md, hatched the way the plates above are.</p></div>
     <ul class="ledger refused">
       <li><span><em>Kaguya TC onto MI 1548 nm</em><small>multi-modal</small></span><p>The matcher is refused on every window. The declared fallback lands 3.4 to 16.2 m from the visible-band registration of the same window.</p><b class="num">3 of 3 refused</b></li>
-      <li><span><em>Kaguya TC onto Chandrayaan-2 IIRS</em><small>multi-modal</small></span><p>Near-infrared at 89 m per pixel, 12× coarser than TC. None registers.</p><b class="num">10 of 11 refused</b></li>
+      <li><span><em>Kaguya TC onto Chandrayaan-2 IIRS</em><small>multi-modal</small></span><p>Near-infrared at 89 m per pixel, 12× coarser than TC. None is accepted.</p><b class="num">10 of 11 refused</b></li>
       <li><span><em>OHRC onto TMC-2 at SAC's site</em><small>two cameras, one spacecraft</small></span><p>Suns 120° apart in azimuth and 59° in incidence. The closest-Sun TMC-2 coverage of the frame in PRADAN's footprint catalogue.</p><b class="num">4 of 4 refused</b></li>
       <li><span><em>OHRC onto NAC, Suns 60° to 120° apart</em><small>cross-sensor</small></span><p>The hard band of the real sweep. Nothing accepted, and nothing wrongly accepted.</p><b class="num">0 of 12 accepted</b></li>
       <li><span><em>MiLOI, Sun vectors 90° or more apart</em><small>same sensor</small></span><p>No method registered any of them: ours, SIFT, ORB or AKAZE. All in scene S3.</p><b class="num">0 of 16, any method</b></li>
-      <li><span><em>TMC-2 fore onto aft</em><small>same sensor</small></span><p>Relief parallax is not a homography. Held-out median 2.6 px (15.5 m) on its 5.9 m grid.</p><b class="num">1 of 4 accepted</b></li>
-      <li><span><em>OHRC onto LOLA shaded relief</em><small>multi-modal, optical to elevation</small></span><p>Declared a failure rung before it was run.</p><b class="num">declared failure</b></li>
+      <li><span><em>TMC-2 fore onto aft</em><small>same sensor</small></span><p>Relief parallax is not a homography. The one accepted window's held-out median: 2.6 px (15.5 m) on its 5.9 m grid.</p><b class="num">1 of 4 accepted</b></li>
+      <li><span><em>OHRC onto LOLA shaded relief</em><small>multi-modal, optical to elevation</small></span><p>Kept to show a declared failure: the matcher finds nothing, the system says so, and the verdict stays unconfirmed (REPORT.md, Declared-failure rung).</p><b class="num">declared failure</b></li>
     </ul>
 
     <div class="head" style="margin-top:clamp(56px,8vw,96px)"><h2>How it runs</h2>
-      <p>core/pipeline.py, on a laptop CPU with no discrete GPU and the network off: a median of 8.2 s per 640-pixel window over 89 OHRC to NAC windows.</p></div>
+      <p>core/pipeline.py, on a laptop CPU with no discrete GPU: a median of 8.2 s per 640-pixel window over 89 OHRC to NAC windows.</p></div>
     <p class="body">Both images go to one ground scale. Lighting is reduced to gradient orientation. LoFTR matches them densely, tiled, on the CPU; each match is refined to sub-pixel by correlation; MAGSAC++ rejects outliers and fits the transform; the inliers' spread over the 8×8 grid is measured. Then the independent area check cross-correlates the warped image against the reference, square by square, and never reads a match position. It is the only step allowed to overrule the others. If it agrees, the result ships as a GeoTIFF on the reference grid with control points for GDAL and QGIS, an ISIS match list, the metrics and the trust map. If it is unconfirmed, it is kept and labelled. If it contradicts, the matcher's answer is refused and a phase-correlation fallback is delivered, declared as such, with its uncertainty in metres.</p>
   </div></section>
 </main>

@@ -51,7 +51,21 @@ BLUE, ORANGE, AQUA = "#2a78d6", "#eb6834", "#1baf7a"
 INK, MUTED, GRID = "#1a1a1a", "#5c5c5c", "#d8d8d6"
 SURFACE = "#fcfcfb"
 
+# ONE typeface for the whole deck (SPOC review, 27 Sep: "use common font for all slides").
+# The slides are set in Calibri, so the figures are too; matplotlib's default DejaVu Sans made
+# every chart a third face beside the slide text. Falls back to DejaVu Sans where Windows'
+# Calibri files are absent, and says so, rather than failing the build.
+from matplotlib import font_manager as _fm
+_CALIBRI = [pathlib.Path("C:/Windows/Fonts") / f for f in ("calibri.ttf", "calibrib.ttf", "calibrii.ttf")]
+for _f in _CALIBRI:
+    if _f.exists():
+        _fm.fontManager.addfont(str(_f))
+FIG_FONT = "Calibri" if _CALIBRI[0].exists() else "DejaVu Sans"
+if FIG_FONT != "Calibri":
+    print("  !! Calibri not found - figures fall back to DejaVu Sans and will not match the slides")
+
 plt.rcParams.update({
+    "font.family": FIG_FONT,
     # White, not SURFACE. The slides are white, and a #fcfcfb ground drew a faint grey
     # rectangle around every chart - visible in a real PowerPoint render. SURFACE is kept
     # for marker halos, where it only has to separate a marker from the line under it.
@@ -468,8 +482,8 @@ def fig_trust_map():
     fig = plt.figure(figsize=(5.0, 7.2))
     # top leaves room for a TWO-LINE suptitle plus the first panel's own two-line title;
     # at 0.925 the suptitle printed straight through "Chandrayaan-2 OHRC · 0.23 m/px".
-    gs = fig.add_gridspec(3, 1, height_ratios=(1, 1, 0.30), hspace=0.60,
-                          left=0.02, right=0.98, top=0.872, bottom=0.045)
+    gs = fig.add_gridspec(3, 1, height_ratios=(1, 1, 0.34), hspace=0.66,
+                          left=0.02, right=0.98, top=0.85, bottom=0.05)
     for row, (pair, what, how) in enumerate(panels):
         r = _cached(pair)
         rel = r["reliability"]
@@ -481,7 +495,7 @@ def fig_trust_map():
         ax.set_yticks([])
         for sp in ax.spines.values():
             sp.set_visible(False)
-        ax.set_title(f"{what}\n{how}", fontsize=11, loc="left", pad=4, color=INK)
+        ax.set_title(f"{what}\n{how}", fontsize=13, loc="left", pad=4, color=INK)
         counts, n_cells = rel["counts"], int(rel["n_cells"])
         if r["declared"]["contradicted"]:
             # "0 of 64 verified" is the OUTPUT; the verdict comes from the cells the area
@@ -496,7 +510,7 @@ def fig_trust_map():
             verdict = (f"{counts['verified']} of {n_cells} cells verified, "
                        f"{counts['weak']} weak → accepted")
             colour = "#146b3c"
-        ax.set_xlabel(verdict, fontsize=12, fontweight="bold", color=colour, labelpad=4)
+        ax.set_xlabel(verdict, fontsize=15, fontweight="bold", color=colour, labelpad=4)
 
     # Legend: the same three marks the app draws, on a flat grey swatch, produced by the
     # same overlay function - so the key cannot disagree with the picture. Three ROWS, not
@@ -514,12 +528,12 @@ def fig_trust_map():
         ins.imshow(sw)
         ins.axis("off")
         head, gloss = words[s]
-        leg.text(0.095, 2.5 - i, f"{head} — {gloss}", fontsize=11, va="center",
+        leg.text(0.095, 2.5 - i, f"{head} — {gloss}", fontsize=14.5, va="center",
                  color=INK)                                               # data units
-    fig.text(0.02, 0.008, "8×8 cells on the reference grid · rows in "
-             "evaluation/real_pairs_log.csv", fontsize=9, color=MUTED)
+    fig.text(0.02, 0.008, "8×8 cells on the reference grid · real_pairs_log.csv",
+             fontsize=12, color=MUTED)
     fig.suptitle("The trust map: one the system\naccepts, one it refuses",
-                 x=0.02, ha="left", fontsize=14, fontweight="bold", y=0.995,
+                 x=0.02, ha="left", fontsize=18, fontweight="bold", y=0.995,
                  va="top", linespacing=1.2)
     # JPEG, not PNG: the panels are photographs, and the PNG was 1.5 MB - a third of the
     # deck. The portal wants a PDF under its size cap and a judge's laptop wants it fast.
@@ -751,7 +765,7 @@ def fig_trust_real():
     # judge converting the diamond series with the printed grids got the wrong answer
     # (claim-checker, 22 Sep).
     grids = sorted({float(r["gsd_ref_m"]) for r in all_rows})
-    fig, ax = plt.subplots(figsize=(7.6, 4.4))
+    fig, ax = plt.subplots(figsize=(6.3, 4.2))
     ax.grid(True, which="major", color=GRID, linewidth=0.8, zorder=0)
     ax.set_axisbelow(True)
     xs = np.arange(len(ds))
@@ -771,23 +785,33 @@ def fig_trust_real():
         # the bar's label sits above the bar AND above the hard-Sun marker at that x (20 Sep:
         # the 2 m marker printed over the "1%")
         top = max(100 * v, max([h for hxi, h in zip(hx, hr) if hxi == x], default=0) + 4)
-        ax.text(x, top + 2, f"{100 * v:.0f}%", ha="center", va="bottom", fontsize=12, color=INK)
+        ax.text(x, top + 2, f"{100 * v:.0f}%", ha="center", va="bottom", fontsize=13, color=INK)
     if hard:
         az_hi = sorted({float(r["d_sun_azimuth_deg"]) for r in hard})
         ax.scatter(hx, hr, s=90, marker="D", c=ORANGE, edgecolors=SURFACE, linewidths=1.2, zorder=6,
                    label=f"Suns {az_hi[0]:.0f}–{az_hi[-1]:.0f}° apart\n"
                          f"{len({r['pair_id'] for r in hard})} SAC windows")
         # the 0-2 m columns are empty below ~75 %: the legend sits there, clear of the 3 m bar
-        ax.legend(loc="upper left", bbox_to_anchor=(0.0, 0.72), fontsize=10, frameon=False,
-                  labelspacing=0.9)
+        # Above the plot, in one row: at slide-legible sizes the legend no longer fits the empty
+        # 0-2 m columns without running into the 3 m bar's label.
+        # The bar series' own handle takes the colour of its FIRST bar, the grey 0 m bar, so the
+        # key showed grey for a series drawn in blue. Key it with the colour the bars carry.
+        from matplotlib.patches import Patch
+        handles, labels = ax.get_legend_handles_labels()
+        handles = [Patch(facecolor=BLUE, label=lab) if lab == lo_label else h
+                   for h, lab in zip(handles, labels)]
+        ax.legend(handles=handles, loc="lower left", bbox_to_anchor=(0.0, 1.0), ncol=2,
+                  fontsize=12.5, frameon=False, columnspacing=1.8, handletextpad=0.4,
+                  borderaxespad=0.15)
     ax.set_xticks(xs)
-    ax.set_xticklabels([f"{d:g}" for d in ds], fontsize=13)
+    ax.set_xticklabels([f"{d:g}" for d in ds], fontsize=14)
+    ax.tick_params(axis="y", labelsize=14)
     ax.set_ylim(0, 112)
-    ax.set_xlabel(f"planted error  (metres; reference grids {grids[0]:.2f}–{grids[-1]:.2f} m/px)",
-                  fontsize=14)
-    ax.set_ylabel("flagged as wrong  (%)", fontsize=14)
-    ax.set_title("Planted wrong answers: how many are flagged?",
-                 loc="left", fontweight="bold", fontsize=15, pad=10)
+    ax.set_xlabel(f"planted shift, metres (reference grids {grids[0]:.2f}–{grids[-1]:.2f} m/px)",
+                  fontsize=15)
+    ax.set_ylabel("flagged as wrong (%)", fontsize=15)
+    ax.set_title("Planted shifts: how many are flagged?",
+                 loc="left", fontweight="bold", fontsize=17, pad=48)
     ids = {r["pair_id"] for r in rows}
     # `_distinct_windows` opens each pair's geometry_prior.json, and data/pairs is gitignored, so
     # on a machine that has the logs but not the imagery this would take the whole figure - and
@@ -801,15 +825,14 @@ def fig_trust_real():
     n_hard = len({r["pair_id"] for r in hard})
     # The chart plots BOTH populations, so the caption counts both. It said "22 real windows"
     # under a chart of 30 while slide 2 said 30 (claim-checker, 22 Sep).
-    wins = (f"{n_win + n_hard} real windows — {n_win} OHRC→NAC and NAC→NAC (bars), "
+    wins = (f"{n_win + n_hard} real windows: {n_win} OHRC→NAC and NAC→NAC (bars), "
             f"{n_hard} SAC OHRC→NAC (diamonds)" if hard else
             f"{n_win} real windows" + (f" ({n_ground} distinct)" if n_ground != n_win else "")
             + ", OHRC→NAC and NAC→NAC")
-    fig.text(0.014, 0.008, f"{wins} · 0 m = false-alarm rate\n"
-             f"all planted matches agree with the wrong answer", fontsize=9.5, color=MUTED,
-             linespacing=1.35, va="bottom")
-    fig.set_figheight(4.7)
-    fig.tight_layout(rect=(0, 0.085, 1, 1))
+    fig.text(0.014, 0.008, f"{wins}\n0 m = false-alarm rate · every planted match agrees with the "
+             f"wrong answer", fontsize=12, color=MUTED, linespacing=1.3, va="bottom")
+    fig.set_figheight(4.5)
+    fig.tight_layout(rect=(0, 0.11, 1, 1))
     out = OUT / "fig6_trust_real_calibration.png"
     _audit(fig, out.name)
     fig.savefig(out, dpi=200)

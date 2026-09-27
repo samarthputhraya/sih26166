@@ -30,9 +30,12 @@ def jpg(a, size=448, q=78):
         return None
     if not isinstance(a, np.ndarray):
         import pathlib
-        import tifffile
         if isinstance(a, (str, pathlib.Path)):
-            a = tifffile.imread(str(a))
+            # Through core's loader, not tifffile: an LZW GeoTIFF needs imagecodecs, which the
+            # demo laptop does not have, and a PDS product is not a TIFF at all. Both used to run
+            # the whole pipeline and then fail here, drawing the result (medic, 27 Sep).
+            from core.io_loader import load
+            a = load(a)[0]
     a = np.asarray(a, dtype=np.float64)
     if a.ndim == 3:
         a = a[..., 0]
