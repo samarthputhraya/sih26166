@@ -115,7 +115,7 @@ STATE_GLYPH = {VERIFIED: "V", WEAK: "W", NO_EVIDENCE: "-"}
 STATE_WORD = {VERIFIED: "verified", WEAK: "weak", NO_EVIDENCE: "no evidence"}
 HATCH_PERIOD = 8          # px between hatch lines in the overlay; the CSS swatch matches
 
-# The five metrics, in the order Canonical Facts Sec.7 lists them, with the
+# The five metrics, in the order the project's definitions list them, with the
 # Gate 2 threshold where one exists (`None` = "no threshold - report it"), the
 # threshold written the way Sec.11 writes it, the decimal places shown (four, as
 # the deck prints them), and the unit. Places change how many digits are DRAWN;
@@ -622,6 +622,80 @@ def running_code_commit() -> str:
         return ""
 
 
+def same_code(old_src: str, new_src: str) -> bool:
+    """True when two versions of a Python file differ only in comments and docstrings.
+
+    Comments never reach the syntax tree. Docstrings do, as the first string expression of a
+    module, class or function body, so those are dropped before comparing. Anything that
+    parses differently - a changed constant, a new branch, a renamed argument - is a code
+    change. A file that no longer parses is a change too.
+    """
+    import ast
+
+    def code_only(src: str) -> str:
+        tree = ast.parse(src)
+        for node in ast.walk(tree):
+            if (isinstance(node, (ast.Module, ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef))
+                    and node.body and isinstance(node.body[0], ast.Expr)
+                    and isinstance(node.body[0].value, ast.Constant)
+                    and isinstance(node.body[0].value.value, str)):
+                node.body = node.body[1:] or [ast.Pass()]
+        return ast.dump(tree)
+
+    try:
+        return code_only(old_src) == code_only(new_src)
+    except SyntaxError:
+        return False
+
+
+@st.cache_data(show_spinner=False)
+def code_moved_since(commit: str) -> bool:
+    """Has anything that can change what `run_all` returns moved since `commit`?
+
+    The plate used to compare commit strings, so any later commit - a reworded comment, a
+    docstring, a change to this display file - lit the caution plate over a cached result
+    that was still exactly what the running pipeline returns. This compares the code that
+    produces the result instead: every file under core/ and evaluation/ that differs between
+    `commit` and the working tree, with test files and the evidence logs set aside, and a .py
+    file only when its code differs, not its comments. app/ is left out on purpose: this file
+    draws a result and computes no number of its own (`test_the_ui_computes_no_metric_of_its_own`),
+    so a change here cannot make a cached result differ from a live one. Anything that cannot
+    be checked - no git, a commit this clone does not have, a cache stamped `-dirty`, a
+    changed non-Python file - counts as moved. The plate may still raise a false alarm; it can
+    never give a false all-clear.
+    """
+    import re
+    import subprocess
+
+    if not re.fullmatch(r"[0-9a-f]{7,40}", commit or ""):
+        return True
+    try:
+        from core.export import EVIDENCE_LOGS
+    except Exception:  # noqa: BLE001
+        EVIDENCE_LOGS = ()
+
+    def git(*args):
+        return subprocess.run(["git", *args], cwd=str(ROOT), capture_output=True, text=True,
+                              encoding="utf-8", errors="replace", timeout=30)
+
+    try:
+        diff = git("diff", "--name-only", commit, "--", "core", "evaluation")
+        if diff.returncode:
+            return True
+        for path in diff.stdout.split():
+            if path in EVIDENCE_LOGS or pathlib.PurePosixPath(path).name.startswith("test_"):
+                continue
+            now = ROOT / path
+            if not path.endswith(".py") or not now.is_file():
+                return True
+            then = git("show", f"{commit}:{path}")
+            if then.returncode or not same_code(then.stdout, now.read_text(encoding="utf-8")):
+                return True
+        return False
+    except Exception:  # noqa: BLE001 - never take the demo down over a provenance label
+        return True
+
+
 def cached_sidecar(path: pathlib.Path | None) -> dict:
     """The .json beside a cached result (when, which commit, how long), or {}."""
     if path is None:
@@ -875,7 +949,7 @@ def metrics_table_html(metrics: dict, contradicted: bool = False) -> str:
 
 
 MT_LEAD = ('<div class="mt-lead">Gate 2 is judged on the synthetic sun-angle sweep with exact '
-           'ground truth, logged in evaluation/results_log.csv (Canonical Facts sec. 11). The '
+           'ground truth, logged in evaluation/results_log.csv. The '
            'thresholds below are shown for scale on this pair; passing or failing them here is '
            'not the gate.</div>')
 
@@ -1093,10 +1167,16 @@ elif _info.get("git_commit"):
     # code HAS moved since, say so here rather than leaving two commit strings
     # for the operator to notice: a cache whose code moved is the one way this
     # demo can show a wrong number without anything looking wrong.
+    # A newer commit alone is not a warning: only a change to the code itself is. When the
+    # commits differ but only comments and docstrings do, the plate says that, in the calm
+    # style, so an operator who notices two different hashes has the answer on screen.
     _cached_at, _now = _info["git_commit"], running_code_commit()
-    if _now and _now != _cached_at:
+    if _now and _now != _cached_at and code_moved_since(_cached_at):
         result_tag = (f'CACHED RESULT <span class="tag__w">commit {esc(_cached_at)} '
                       f'&mdash; CODE IS NOW {esc(_now)}</span>')
+    elif _now and _now != _cached_at:
+        result_tag = (f'CACHED RESULT <span class="tag__v">commit {esc(_cached_at)} '
+                      f'&middot; same code at {esc(_now)}</span>')
     else:
         result_tag = f'CACHED RESULT <span class="tag__v">commit {esc(_cached_at)}</span>'
 else:

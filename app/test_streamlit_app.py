@@ -631,3 +631,36 @@ def test_real_pairs_take_tier_and_same_sensor_from_their_geometry_prior(tmp_path
         "A (same sensor, viewpoint, real)", "TMC-2 fore vs TMC-2 aft")
     assert m.pair_meta("no_such_pair") == {}
     m.pair_prior.clear()
+
+
+# --- the staleness plate warns about code, not about commit ids ----------------------
+
+def test_same_code_ignores_comments_and_docstrings_but_not_code():
+    """A reworded comment or docstring used to light the caution plate (Known issue 25)."""
+    m = _app_module()
+    base = 'def f(x):\n    """Old words."""\n    return x + 1  # note\n'
+    assert m.same_code(base, 'def f(x):\n    """New words."""\n    return x + 1  # other note\n')
+    assert m.same_code(base, 'def f(x):\n    return x + 1\n'), "dropping a docstring is not a code change"
+    assert not m.same_code(base, 'def f(x):\n    """Old words."""\n    return x + 2\n')
+    assert not m.same_code(base, 'def f(x, y=0):\n    """Old words."""\n    return x + 1\n')
+    assert not m.same_code(base, "def f(x:\n"), "a file that no longer parses is a change"
+
+
+def test_the_plate_fails_safe_when_the_code_cannot_be_compared():
+    """Only a proven match may calm the plate; anything unprovable counts as moved."""
+    m = _app_module()
+    for commit in ("", "?", "not-a-commit", "abc1234-dirty", "0000000"):
+        assert m.code_moved_since(commit) is True, commit
+
+
+def test_the_plate_is_calm_for_the_commit_the_code_is_at():
+    import subprocess
+    m = _app_module()
+    root = APP.parent.parent
+    head = subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=root,
+                          capture_output=True, text=True)
+    dirty = subprocess.run(["git", "status", "--porcelain", "--", "core", "evaluation"],
+                           cwd=root, capture_output=True, text=True)
+    if head.returncode or dirty.stdout.strip():
+        pytest.skip("no git, or core/ or evaluation/ has uncommitted changes")
+    assert m.code_moved_since(head.stdout.strip()) is False
