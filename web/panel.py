@@ -93,5 +93,6 @@ def panel(r, a_side, b_side, *, pid, label, sub, tag, plain, twin=None):
             "why": r["declared"]["why"], "gsd": rel["gsd_mpp"],
             "n_matches": int(r["n_matches"]), "inliers": int(r["ransac"]["inlier_count"]),
             "seconds": round(float(r["seconds"]), 1),
+            "ref_px": [int(v) for v in np.asarray(r["reference"]).shape[:2]],
             "a": a_side, "b": b_side, "layers": layers, "twin": twin,
             "scale_note": (r.get("scale_factors") or {}).get("note"), "rescued": rescued}

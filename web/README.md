@@ -9,6 +9,30 @@ It lives in `web/`, **outside `core/`, `evaluation/`, `ops/` and `app/`**, so bu
 re-stamp an evidence row or a demo cache. You can rebuild it as often as you like without
 invalidating the freeze.
 
+<p align="center"><img src="preview.jpg" width="720" alt="The console's opening: the headline beside SAC's pair drawn as a chart plate, with a lettered and numbered grid-square collar"></p>
+
+### How it looks, and why
+
+The page is drawn as a lunar chart, because registration is a charting problem: two images of the
+same ground have to be tied to one grid. Each ink carries one meaning and nothing is decoration.
+
+| Ink | Means |
+|---|---|
+| cyan | the chart grid, and a region the area check verified (shown clear, with nothing drawn over it) |
+| magenta hatching | refused: the chart convention for a restricted area; a refused pair's whole plate border is hatched |
+| ochre hatching or dashes | weak, or unconfirmed |
+| stipple | no evidence: nothing was measured there, so nothing is drawn |
+
+The 8 × 8 trust map is referenced like a chart's grid squares, columns A to H and rows 1 to 8, so a
+square is named "D4" wherever it appears. The Sun section is a polar chart of the 74 °S site from
+the LOLA DEM, with cast shadows at the OHRC frame's 7° Sun, contours every 250 m, and a compass you
+drag the second Sun round. The one piece of motion that runs by itself is the opening plate
+drifting into register once; everything else answers the reader.
+
+Type is Archivo (one variable file, widths 62–125 %) and Newsreader italic, kept for names the way
+charts keep italic for named features. Both are SIL OFL 1.1 and live in `web/fonts/` with their
+licences; the build embeds them, so the page needs no network at all.
+
 ---
 
 ## 1. Build it
@@ -94,8 +118,8 @@ python -m ops.freeze --check          # must print FROZEN
 python -m ops.make_report             # re-renders REPORT.md from the logs
 ```
 
-Then pick any number on the page and find it in `REPORT.md`. The bay headers name the section it
-comes from. The build script reads the same CSVs `make_report` reads, so if they disagree, one of
+Then pick any number on the page and find it in `REPORT.md`. The source line under each section
+heading names the section it comes from. The build script reads the same CSVs `make_report` reads, so if they disagree, one of
 them has a bug and that is worth knowing.
 
 The sweep table is a deliberate cross-check: the console **recomputes** the bins from the rows
@@ -105,7 +129,7 @@ rather than copying REPORT's table, and the two agree cell for cell. If they eve
 **Images.** The trap that already bit once: for a refused pair the cache holds *two* results —
 `warped` (the matcher's answer, rejected) and `warped_final` (the fallback that rescued it).
 Showing `warped_final` under a REFUSED banner teaches the opposite of the truth. The page shows
-`warped` and labels the fallback separately. If you add a pair, check its `MATCHER'S ANSWER`
+`warped` and labels the fallback separately. If you add a pair, check its "The matcher's answer"
 layer actually looks like what the verdict claims.
 
 **Quick sanity run:**
@@ -118,17 +142,17 @@ python -m web.build_console           # prints the row counts it found
 The build prints its own tallies (windows, tiles, cell counts, verdicts). If a count changes
 without you changing the evidence, something is wrong.
 
-## 4. What each bay proves
+## 4. What each section proves
 
-| Bay | The question it answers | Where the numbers live |
+| Section | The question it answers | Where the numbers live |
 |---|---|---|
-| **SUN** | Does Sun angle break it, and does it know when it has? | `REPORT.md` → Real sun-angle sweep |
-| **TRUST MAP** | What does a verdict actually mean, per region? | cached `run_all()` + `real_pairs_log.csv` |
-| **TILING** | Did you pick the windows that worked? | `REPORT.md` → The whole lit overlap |
-| **CALIBRATION** | How wrong does an answer have to be before you catch it? | `trust_real_calibration.csv` |
-| **PIPELINE** | What actually runs? | `core/pipeline.py::run_all` |
-| **RESULTS** | What does it register, and how well? | `REPORT.md`, one section per row |
-| **REFUSALS** | What does it decline, and did it say so itself? | `REPORT.md`, one section per row |
+| **Same ground, two Suns** | Does Sun angle break it, and does it know when it has? | `REPORT.md` → Real sun-angle sweep |
+| **Every pairing, and its verdict** | What does a verdict actually mean, square by square? | cached `run_all()` + `real_pairs_log.csv` |
+| **The whole overlap** | Did you pick the windows that worked? | `REPORT.md` → The whole lit overlap |
+| **Wrong answers, planted on purpose** | How wrong does an answer have to be before you catch it? | `trust_real_calibration.csv` |
+| **How it works** | What actually runs? | `core/pipeline.py::run_all` |
+| **What it registers** | What does it register, and how well? | `REPORT.md`, one section per row |
+| **What it declines to register** | What does it decline, and did it say so itself? | `REPORT.md`, one section per row |
 
 ## 5. What runs where
 
@@ -138,7 +162,7 @@ page can run them. So there are two deployments of the one built file:
 | | Published link | `python -m web.server` |
 |---|---|---|
 | Shows the frozen evidence | yes | yes |
-| LIVE upload bay | hidden | **shown** |
+| "Try a pair of your own" section | hidden | **shown** |
 | Needs Python running | no | yes |
 | Shareable | yes | no — loopback only |
 
@@ -158,13 +182,13 @@ python -m web.build_console        # once, if the page is not built
 python -m web.server              # http://127.0.0.1:8000
 ```
 
-The page served this way grows a **LIVE** bay at the top: drop in two images, press
+The page served this way grows a **"Try a pair of your own"** section near the top: drop in two images, press
 *Register the pair*, and `core.pipeline.run_all` runs on this CPU. The result is appended to the
 pair roster and rendered by `web/panel.py` — **the same renderer the frozen pairs use**, so a
 live panel and a frozen panel cannot disagree about what a verdict means.
 
-The bay is hidden unless `GET api/health` answers with this service's marker. Opened as the
-published link that fetch fails, the bay stays hidden, and the shared page stays read-only.
+The section is hidden unless `GET api/health` answers with this service's marker. Opened as the
+published link that fetch fails, the section stays hidden, and the shared page stays read-only.
 One built file, two honest deployments.
 
 | | |

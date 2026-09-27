@@ -135,9 +135,9 @@ file, and the prior art they build on is cited in its docstring [6–9].
 - `report.json` and `report.md`: metrics, timings, input sha256 and library versions.
 
 <p align="center">
-  <img src="presentation/figures/fig8_console.jpg" width="330"
-       alt="The Mission Console: every instrument pairing with its verdict, and the two images it aligned">
-  <br/><sub>The Mission Console (<code>web/</code>): every instrument pairing, its verdict, and the two images aligned.</sub>
+  <img src="web/preview.jpg" width="760"
+       alt="The Mission Console, drawn as a lunar chart: SAC's pair on a grid-square plate beside the headline">
+  <br/><sub>The Mission Console (<code>web/</code>): every instrument pairing and its verdict, drawn as a lunar chart, and a live section that registers a pair you upload.</sub>
 </p>
 
 ---

@@ -3,8 +3,15 @@ Copyright 2026 the LunaXX team (Smart India Hackathon 2026, problem statement SI
 
 Licensed under the Apache License, Version 2.0 - see LICENSE.
 
-This repository contains only the team's own code, documents and evidence logs. It depends on,
-but does not include, the following third-party software (versions pinned in requirements.txt):
+This repository contains the team's own code, documents and evidence logs, and two typefaces used
+by the Mission Console, each under the SIL Open Font License 1.1 with its licence beside it in
+web/fonts/:
+
+  Archivo      Copyright 2020 The Archivo Project Authors (github.com/Omnibus-Type/Archivo)
+  Newsreader   Copyright 2020 The Newsreader Project Authors (github.com/productiontype/Newsreader)
+
+It depends on, but does not include, the following third-party software (versions pinned in
+requirements.txt):
 
   LoFTR model and pretrained outdoor weights   Apache-2.0   Sun et al., CVPR 2021, via kornia.
                                                             Weights are fetched at setup by

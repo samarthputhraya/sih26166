@@ -114,9 +114,9 @@ ROSTER = [
     ("site_tc_morning_mi1548_w01", "Kaguya TC \u2192 Kaguya MI 1548 nm", "Visible light matched against near-infrared. Same source file and grid as the 749 nm pair above.", "MULTI-MODAL",
      "<b>Refused, then delivered anyway.</b> The matcher found 35 matches where its visible-light twin found 334, and the transform it built is visibly wrong \u2014 open MATCHER'S ANSWER. The area check caught it, the system refused it and fell back to global phase correlation, <b>declaring which method it used</b>. That fallback lands 0.283 px = 4.2 m from the visible-band registration of this same window. The window IS registered. What the system refuses to do is pretend the feature matcher is what did it."),
     ("site_tc_ortho_iirs1000_w04", "Kaguya TC \u2192 Chandrayaan-2 IIRS", "Visible onto an imaging spectrometer band: 12\u00d7 coarser, at 89 m per pixel.", "MULTI-MODAL",
-     "The hardest multi-modal rung we attempt, and the honest result is that it does not register. Ten of the eleven IIRS windows are refused and none registers. We report that as a limit, not as a number \u2014 IIRS band selection is named on the deck as the next step, not as a solved problem."),
+     "The hardest multi-modal rung we attempt, and the honest result is that it does not register. Ten of the eleven IIRS windows are refused and none registers. We report that as a limit, not as a number. The deck names the next step: match IIRS through TMC-2 at an intermediate scale rather than straight onto TC."),
     ("sac_ohrc_tmc_w01", "Chandrayaan-2 OHRC \u2192 TMC-2", "Two cameras on the same spacecraft. Sun azimuths 120\u00b0 and incidence 59\u00b0 apart.", "SAME MISSION",
-     "Same mission, and still refused: all four windows at SAC's site. The Sun geometry is the reason, not the sensors. There is one TMC-2 pass over this frame with the Sun about 9\u00b0 from the OHRC's, and testing it is the one measurable improvement left open."),
+     "Same mission, and still refused on all four windows at SAC's site, with the Suns 120\u00b0 apart in azimuth and 59\u00b0 in incidence. This is the closest-Sun TMC-2 coverage of the frame in PRADAN's footprint catalogue: the next candidate pass, checked on 23 Sep, does not cover the frame at all. So no better TMC-2 test of this ground exists yet, and the refusal stands."),
     ("sac_tmcfore_tmcaft_w04", "TMC-2 fore \u2192 TMC-2 aft", "One instrument, one pass, seconds apart. Only the viewing direction differs, by about 50\u00b0.", "SAME SENSOR",
      "Identical camera, identical Sun, and only one of the four windows is accepted \u2014 because relief parallax is not a homography. When two views differ by 50\u00b0 the terrain itself shifts differently at different heights, and no single flat transform can describe it. The system does not pretend otherwise."),
     ("site_ohrc_lola_w01", "Chandrayaan-2 OHRC \u2192 LOLA relief", "Optical imagery onto elevation rendered as shaded relief, 240\u00d7 coarser.", "MULTI-MODAL",
@@ -179,6 +179,23 @@ tpl = (HERE / "console.template.html").read_text(encoding="utf-8")
 MARK = "/*__DATA__*/null"
 if tpl.count(MARK) != 1:
     raise SystemExit(f"template must contain {MARK!r} exactly once, found {tpl.count(MARK)}")
+
+# The page must work with the network off (Gate 4), so its two typefaces travel inside it rather
+# than coming from a font service: Archivo (one variable file, widths 62-125 %) and Newsreader
+# italic, latin subset, both SIL OFL 1.1 - see web/fonts/. A missing file fails the build loudly;
+# a page that silently fell back to Arial would still "work" and look like nothing we designed.
+FONTS_MARK = "/*__FONTS__*/"
+if tpl.count(FONTS_MARK) != 1:
+    raise SystemExit(f"template must contain {FONTS_MARK!r} exactly once")
+_faces = []
+for _name, (_fam, _style, _wght, _stretch, _range) in json.loads(
+        (HERE / "fonts" / "fonts.json").read_text(encoding="utf-8")).items():
+    _b = base64.b64encode((HERE / "fonts" / _name).read_bytes()).decode()
+    _faces.append(f'@font-face{{font-family:"{_fam}";font-style:{_style};font-weight:{_wght};'
+                  + (f"font-stretch:{_stretch};" if _stretch else "")
+                  + f'font-display:swap;src:url(data:font/woff2;base64,{_b}) format("woff2");'
+                  + f"unicode-range:{_range}}}")
+tpl = tpl.replace(FONTS_MARK, "\n".join(_faces))
 (HERE / "dist").mkdir(exist_ok=True)
 page = tpl.replace(MARK, blob)
 
