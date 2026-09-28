@@ -87,9 +87,22 @@ verified state from 94 % (*Errors that are not translations*).
 | Optical onto elevation, OHRC → LOLA shaded relief | a declared failure | *Declared-failure rung* |
 
 The OHRC → TMC-2 pass above is the closest-Sun TMC-2 coverage of SAC's frame that we found in
-PRADAN's footprint catalogue. Each refusal has a planned answer: re-pairing with the closest-Sun
-reference in the archive, tile-level transforms with LOLA orthorectification for relief, and
-IIRS matched through TMC-2 at an intermediate scale rather than straight onto TC.
+PRADAN's footprint catalogue. Each refusal had a planned answer: re-pairing with a closer-Sun
+reference, tile-level transforms with orthorectification for relief, and IIRS matched through
+TMC-2 rather than straight onto TC. The first and last have now been run.
+
+### After the submission: TMC-2 and IIRS register
+
+Measured on 28 Sep 2026, after the idea was submitted, so **not part of the evidence freeze**
+above; REPORT.md keeps them in their own section (*After the submission: IIRS and TMC-2, and the
+route between them*).
+
+| Test | Result |
+|---|---|
+| **IIRS → TMC-2 on one orbit.** PRADAN's catalogue shows the two instruments imaging the same ground seconds apart, so the Sun is the same. 8 windows chosen before any matching; TMC-2 at 4.56 m against IIRS at 73.9 m (16×) | **8 of 8** accepted in each of five IIRS bands, 746 to 3223 nm. At 1555 nm (visible against near-infrared: multi-modal): held-out median 0.21–0.32 px = 16–24 m on the IIRS grid |
+| **LRO NAC → TMC-2**, the NAC chosen for a Sun within 3° of the TMC-2 pass's | **6 of 6** accepted; held-out median 0.36–0.48 px = 1.6–2.2 m on TMC-2's 4.56 m grid |
+| The same NAC → the 2025 TMC-2 pass, Suns 45° apart | 3 accepted on thin evidence (4–6 verified cells), 2 unconfirmed, 1 refused |
+| **OHRC → TMC-2 re-cut** after removing a 1.9 km offset between the two archives at SAC's frame | still **refused 4 of 4**: with the geometry fixed, a Sun 120° apart is what stops it |
 
 ---
 
@@ -184,7 +197,9 @@ across cores or machines, but we have not measured that. The time scales with th
 windows on the reference grid, so 30 minutes holds for a reference of about 1 m, like a NAC. A
 finer reference costs more.
 
-### Why are TMC-2 and IIRS refused, and what comes next?
+### Why were TMC-2 and IIRS refused, and what changed?
+
+In the submitted evidence:
 
 - **OHRC → TMC-2**, on the only TMC-2 pass that covers all of SAC's frame (PRADAN's footprint
   catalogue): the Sun moved 120° in azimuth *and* from 9.9° to 69.4° above the horizon. That puts
@@ -192,7 +207,10 @@ finer reference costs more.
   LoFTR finds 90–148 matches, and MAGSAC++ keeps 6–7 and fits them to 0.13–0.96 px on TMC-2's
   5.576 m grid (0.7–5.4 m). Yet none of the held-out matches lands within 3 px, and not one of the
   64 cells verifies. That is what a refused registration looks like from the inside, and the check
-  refuses all 4 windows.
+  refuses all 4 windows. After the submission we found a second cause: at SAC's frame the OHRC
+  archive grid sits 1.9 km from LRO's and TMC-2's, which agree with each other to within 231 m, so
+  those windows (2.1 km) barely shared ground. Re-cut with the OHRC first placed in LRO's geometry
+  (no TMC-2 pixel used), the pair is still refused 4 of 4. The Sun is the obstacle.
 - **TMC-2 fore → aft**, one pass, seconds apart, seen 50° apart: relief shifts by about
   0.93 × its height between the two views, which no single homography can model. 1 of 4 is
   accepted, consistent with the synthetic parallax rows (*Viewpoint*).
@@ -200,13 +218,21 @@ finer reference costs more.
   TC source 12× finer. The IIRS bands (1.0 and 1.55 µm) differ from TC's visible light. It gets
   4–7 inliers per window, and 0 of 11 are accepted (6 windows, two bands).
 
-What comes next removes the Sun from the problem instead of fighting it. PRADAN's footprint
-catalogue shows IIRS and TMC-2 imaging the same ground **on the same orbit, seconds apart**. One
-such orbit (3 February 2020, 18:45 UTC) passes over part of SAC's benchmark frame. A shared orbit
-means a shared Sun, so an IIRS → TMC-2 pair tests only the change of band and the ~16× scale.
-TMC-2 then carries IIRS onto NAC and OHRC through a TMC-2 → NAC pair chosen for a matching Sun.
-For relief, TMC-2's own DTM allows orthorectification before matching. **These experiments are
-in progress. None of them is a result until it is in REPORT.md.**
+What changed was taking the Sun out of the problem instead of fighting it (table above, measured
+after the submission):
+
+- **IIRS and TMC-2 fly together.** PRADAN's footprint catalogue shows them imaging the same ground
+  on the same orbit, seconds apart. The pass we used (3 February 2020, 18:45 UTC) started its two
+  strips 0.3 s apart, so the Sun is the same and only the band and the 16× scale change. All 8
+  windows register in every band from 746 to 3223 nm. We expect this to be the easy case, and say
+  so: under one Sun, shading and albedo should dominate the Moon at 1.5 µm much as they do in
+  visible light. The weakest band, 3223 nm, drops to 51–241 inliers and 7–38 verified cells.
+- **TMC-2 registers once the Sun matches.** A NAC chosen for a Sun within 3° of a TMC-2 pass gives
+  6 of 6. The same NAC against a TMC-2 pass with the Sun 45° away gives thin or refused results.
+- **OHRC still reaches TMC-2 only through LRO.** OHRC → NAC is 6 of 6 at SAC's frame and NAC →
+  TMC-2 is 6 of 6, but they use two different NAC images, so this is two legs, not a measured loop.
+  For relief (fore → aft), TMC-2's own DTM allows orthorectification before matching; that has not
+  been run.
 
 ---
 
