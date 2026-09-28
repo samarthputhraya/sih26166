@@ -1,6 +1,6 @@
 # SIH26166 - evaluation report
 
-Generated 2026-09-28T20:37 from commit `c047295` by `python -m ops.make_report`. **Do not edit by hand** - every number below is read from the evidence files named in each section. The latest real-pair rows were measured at commit `7dd4e5b` (183 rows), `b57d38e` (56 rows).
+Generated 2026-09-28T20:40 from commit `fb4e8fe` by `python -m ops.make_report`. **Do not edit by hand** - every number below is read from the evidence files named in each section. The latest real-pair rows were measured at commit `7dd4e5b` (183 rows), `b57d38e` (56 rows).
 
 All pixel figures are on the REFERENCE image's grid, with its metres stated. Real pairs have no exact ground truth: accuracy on them is reported as held-out residuals (the 20 % of matches the fit never saw) and as loop closure. `residual_px` in results_log.csv is the RMSE over ALL held-out matches including outliers and is not quoted for real pairs.
 
@@ -177,6 +177,43 @@ TMC-2 nadir `ch2_tmc_ncn_20200203T1845562233_d_img_m65` against IIRS `ch2_iir_nc
 | 3223 nm | near-infrared: multi-modal | 8/8 | 71 to 260 | 51 to 241 | 0.436 to 1.188 (32.2 to 87.7 m) | 7 to 38 | 55.4 to 88.0 |
 
 The archive offset (how far each registration moved TMC-2 from where the two archives' own grids put it) is 0.75-1.33 IIRS pixels in every band and every window: a steady disagreement between the two instruments' geolocation, which is what a registration is for.
+
+**Band against band, same window.** Each IIRS band's declared transform against the 1555 nm one, on the same TMC-2 window and the same IIRS grid (`ops/multimodal_check.py`). Every band was registered on its own - its own LoFTR matches, its own fit - so this compares two independent registrations of one piece of ground. Agreement is consistency, not accuracy; disagreement would prove one of them wrong.
+
+| pair | against | declared (pair / against) | against inliers | disagreement median px (m) | p90 px | max px | fallback NCC | archive offset m (pair / against) |
+|---|---|---|---|---|---|---|---|---|
+| `chain_tmc20200203_iirs2381_w01` | `chain_tmc20200203_iirs1555_w01` | loftr+magsac++ / loftr+magsac++ | 399 | 0.098 (7.3) | 0.158 | 0.243 | n/a | 76.1 / 78.6 |
+| `chain_tmc20200203_iirs2381_w02` | `chain_tmc20200203_iirs1555_w02` | loftr+magsac++ / loftr+magsac++ | 397 | 0.134 (9.9) | 0.207 | 0.273 | n/a | 69.0 / 73.3 |
+| `chain_tmc20200203_iirs2381_w03` | `chain_tmc20200203_iirs1555_w03` | loftr+magsac++ / loftr+magsac++ | 394 | 0.110 (8.1) | 0.273 | 0.498 | n/a | 67.8 / 65.4 |
+| `chain_tmc20200203_iirs2381_w04` | `chain_tmc20200203_iirs1555_w04` | loftr+magsac++ / loftr+magsac++ | 400 | 0.091 (6.7) | 0.159 | 0.363 | n/a | 70.3 / 73.0 |
+| `chain_tmc20200203_iirs2381_w05` | `chain_tmc20200203_iirs1555_w05` | loftr+magsac++ / loftr+magsac++ | 400 | 0.154 (11.4) | 0.314 | 0.474 | n/a | 67.8 / 67.5 |
+| `chain_tmc20200203_iirs2381_w06` | `chain_tmc20200203_iirs1555_w06` | loftr+magsac++ / loftr+magsac++ | 391 | 0.146 (10.8) | 0.216 | 0.404 | n/a | 70.8 / 72.9 |
+| `chain_tmc20200203_iirs2381_w07` | `chain_tmc20200203_iirs1555_w07` | loftr+magsac++ / loftr+magsac++ | 395 | 0.092 (6.8) | 0.187 | 0.321 | n/a | 76.1 / 82.0 |
+| `chain_tmc20200203_iirs2381_w08` | `chain_tmc20200203_iirs1555_w08` | loftr+magsac++ / loftr+magsac++ | 391 | 0.149 (11.0) | 0.229 | 0.384 | n/a | 78.0 / 78.8 |
+| `chain_tmc20200203_iirs3223_w01` | `chain_tmc20200203_iirs1555_w01` | loftr+magsac++ / loftr+magsac++ | 399 | 0.526 (38.8) | 0.948 | 1.436 | n/a | 65.0 / 78.6 |
+| `chain_tmc20200203_iirs3223_w02` | `chain_tmc20200203_iirs1555_w02` | loftr+magsac++ / loftr+magsac++ | 397 | 0.251 (18.5) | 0.552 | 0.669 | n/a | 61.7 / 73.3 |
+| `chain_tmc20200203_iirs3223_w03` | `chain_tmc20200203_iirs1555_w03` | loftr+magsac++ / loftr+magsac++ | 394 | 0.444 (32.8) | 1.671 | 2.394 | n/a | 55.4 / 65.4 |
+| `chain_tmc20200203_iirs3223_w04` | `chain_tmc20200203_iirs1555_w04` | loftr+magsac++ / loftr+magsac++ | 400 | 0.551 (40.7) | 1.621 | 3.410 | n/a | 88.0 / 73.0 |
+| `chain_tmc20200203_iirs3223_w05` | `chain_tmc20200203_iirs1555_w05` | loftr+magsac++ / loftr+magsac++ | 400 | 0.724 (53.4) | 2.242 | 3.924 | n/a | 70.2 / 67.5 |
+| `chain_tmc20200203_iirs3223_w06` | `chain_tmc20200203_iirs1555_w06` | loftr+magsac++ / loftr+magsac++ | 391 | 0.396 (29.3) | 0.952 | 2.250 | n/a | 76.6 / 72.9 |
+| `chain_tmc20200203_iirs3223_w07` | `chain_tmc20200203_iirs1555_w07` | loftr+magsac++ / loftr+magsac++ | 395 | 0.226 (16.8) | 0.340 | 0.724 | n/a | 70.1 / 82.0 |
+| `chain_tmc20200203_iirs3223_w08` | `chain_tmc20200203_iirs1555_w08` | loftr+magsac++ / loftr+magsac++ | 391 | 0.376 (27.9) | 0.682 | 1.117 | n/a | 72.3 / 78.8 |
+| `chain_tmc20200203_iirs746_w01` | `chain_tmc20200203_iirs1555_w01` | loftr+magsac++ / loftr+magsac++ | 399 | 0.573 (42.3) | 1.238 | 2.667 | n/a | 95.4 / 78.6 |
+| `chain_tmc20200203_iirs746_w02` | `chain_tmc20200203_iirs1555_w02` | loftr+magsac++ / loftr+magsac++ | 397 | 0.249 (18.4) | 0.494 | 0.949 | n/a | 62.1 / 73.3 |
+| `chain_tmc20200203_iirs746_w03` | `chain_tmc20200203_iirs1555_w03` | loftr+magsac++ / loftr+magsac++ | 394 | 0.278 (20.5) | 0.611 | 0.851 | n/a | 65.1 / 65.4 |
+| `chain_tmc20200203_iirs746_w04` | `chain_tmc20200203_iirs1555_w04` | loftr+magsac++ / loftr+magsac++ | 400 | 0.388 (28.6) | 0.950 | 1.738 | n/a | 62.1 / 73.0 |
+| `chain_tmc20200203_iirs746_w05` | `chain_tmc20200203_iirs1555_w05` | loftr+magsac++ / loftr+magsac++ | 400 | 0.441 (32.6) | 1.149 | 1.413 | n/a | 60.2 / 67.5 |
+| `chain_tmc20200203_iirs746_w06` | `chain_tmc20200203_iirs1555_w06` | loftr+magsac++ / loftr+magsac++ | 391 | 0.754 (55.8) | 2.249 | 5.057 | n/a | 98.7 / 72.9 |
+| `chain_tmc20200203_iirs746_w07` | `chain_tmc20200203_iirs1555_w07` | loftr+magsac++ / loftr+magsac++ | 395 | 0.450 (33.4) | 0.745 | 0.976 | n/a | 59.4 / 82.0 |
+| `chain_tmc20200203_iirs746_w08` | `chain_tmc20200203_iirs1555_w08` | loftr+magsac++ / loftr+magsac++ | 391 | 0.456 (33.8) | 0.846 | 1.099 | n/a | 58.2 / 78.8 |
+| `chain_tmc20200203_iirs999_w01` | `chain_tmc20200203_iirs1555_w01` | loftr+magsac++ / loftr+magsac++ | 399 | 0.059 (4.4) | 0.141 | 0.208 | n/a | 74.5 / 78.6 |
+| `chain_tmc20200203_iirs999_w02` | `chain_tmc20200203_iirs1555_w02` | loftr+magsac++ / loftr+magsac++ | 397 | 0.052 (3.8) | 0.136 | 0.217 | n/a | 69.8 / 73.3 |
+| `chain_tmc20200203_iirs999_w03` | `chain_tmc20200203_iirs1555_w03` | loftr+magsac++ / loftr+magsac++ | 394 | 0.065 (4.8) | 0.110 | 0.286 | n/a | 71.2 / 65.4 |
+| `chain_tmc20200203_iirs999_w04` | `chain_tmc20200203_iirs1555_w04` | loftr+magsac++ / loftr+magsac++ | 400 | 0.047 (3.4) | 0.120 | 0.208 | n/a | 69.5 / 73.0 |
+| `chain_tmc20200203_iirs999_w05` | `chain_tmc20200203_iirs1555_w05` | loftr+magsac++ / loftr+magsac++ | 400 | 0.068 (5.0) | 0.134 | 0.200 | n/a | 67.8 / 67.5 |
+| `chain_tmc20200203_iirs999_w06` | `chain_tmc20200203_iirs1555_w06` | loftr+magsac++ / loftr+magsac++ | 391 | 0.051 (3.8) | 0.146 | 0.254 | n/a | 74.3 / 72.9 |
+| `chain_tmc20200203_iirs999_w07` | `chain_tmc20200203_iirs1555_w07` | loftr+magsac++ / loftr+magsac++ | 395 | 0.067 (5.0) | 0.134 | 0.173 | n/a | 84.8 / 82.0 |
+| `chain_tmc20200203_iirs999_w08` | `chain_tmc20200203_iirs1555_w08` | loftr+magsac++ / loftr+magsac++ | 391 | 0.044 (3.3) | 0.074 | 0.114 | n/a | 82.6 / 78.8 |
 
 #### TMC-2 → IIRS 746 nm, window by window
 
