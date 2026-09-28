@@ -77,6 +77,11 @@ def _data() -> pathlib.Path:
     return pathlib.Path((ROOT / "data_path.txt").read_text(encoding="utf-8-sig").strip())
 
 
+def _trust_prev() -> pathlib.Path:
+    """Where the trust step keeps the calibration it replaces (outside the repo)."""
+    return _data() / "freeze" / "trust_real_calibration.prev.csv"
+
+
 def _rows(p):
     p = pathlib.Path(p)
     return list(csv.DictReader(open(p, encoding="utf-8-sig"))) if p.exists() else []
@@ -275,12 +280,17 @@ class Freeze:
 
     def trust(self, logf):
         wins = self.state.get("trust_windows")
-        if not wins:                                    # read BEFORE the CSV is deleted
+        if not wins:                                    # read BEFORE the CSV is replaced
             import glob
             from ops.trust_real_calibration import EXTRA_WINDOWS
-            wins = {r["pair_id"] for r in _rows(TRUST_CSV)}
+            # F18: the list used to come only from the CSV this step then deletes, so a freeze
+            # that died after the delete left the next one nothing to read (20 Sep: a lost
+            # freeze and a zero-byte log). The last calibration is now kept as a copy outside
+            # the repo, and read when the CSV itself is gone.
+            src = TRUST_CSV if TRUST_CSV.exists() else _trust_prev()
+            wins = {r["pair_id"] for r in _rows(src)}
             if not wins:
-                print("   no trust_real_calibration.csv to take the windows from")
+                print(f"   neither {TRUST_CSV.name} nor its kept copy {_trust_prev()} to take the windows from")
                 return None
             # The hard-Sun windows (20 Sep 2026): the script itself skips any that fail its rule.
             for pat in EXTRA_WINDOWS:
@@ -295,7 +305,8 @@ class Freeze:
             self.state["trust_windows"] = wins
             self.save()
         if TRUST_CSV.exists():
-            TRUST_CSV.unlink()
+            _trust_prev().parent.mkdir(parents=True, exist_ok=True)
+            TRUST_CSV.replace(_trust_prev())
         return _run(["-m", "ops.trust_real_calibration", *wins, "--log"], logf) == 0
 
     def miloi(self, logf):
@@ -383,7 +394,7 @@ def plan() -> None:
     wins = sorted({r['pair_id'] for r in _rows(TRUST_CSV)})
     from ops.trust_real_calibration import EXTRA_WINDOWS
     print(f"trust  {len(wins)} windows (the current calibration's) + the hard-Sun patterns "
-          f"{' '.join(EXTRA_WINDOWS)}, CSV deleted first")
+          f"{' '.join(EXTRA_WINDOWS)}, CSV moved aside first (kept outside the repo)")
     from ops.multimodal_check import pairings
     print(f"mmcheck {len(pairings(latest_real(rows)))} window pairings from the bundles")
     changed = miloi_matching_changed()
@@ -426,7 +437,8 @@ def main(argv=None) -> int:
         results = {s: fz.step(s, getattr(fz, s)) for s in steps}
     finally:
         _awake(False)
-    print(f"\n== freeze at {commit}: {sum(results.values())}/{len(results)} steps ok in "
+    # F19: a step whose precondition failed returns None, and sum() over True/None raised
+    print(f"\n== freeze at {commit}: {sum(1 for v in results.values() if v)}/{len(results)} steps ok in "
           f"{(time.time() - t0) / 60:.0f} min ==")
     for s, ok in results.items():
         print(f"   {s:10} {'ok' if ok else 'FAILED - see ' + str(fz.dir / (s + '.log'))}")
