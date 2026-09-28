@@ -99,7 +99,7 @@ route between them*).
 
 | Test | Result |
 |---|---|
-| **IIRS → TMC-2 on one orbit.** PRADAN's catalogue shows the two instruments imaging the same ground seconds apart, so the Sun is the same. 8 windows chosen before any matching; TMC-2 at 4.56 m against IIRS at 73.9 m (16×) | **8 of 8** accepted in each of five IIRS bands, 746 to 3223 nm. At 1555 nm (visible against near-infrared: multi-modal): held-out median 0.21–0.32 px = 16–24 m on the IIRS grid |
+| **IIRS → TMC-2 on one orbit.** PRADAN's catalogue shows the two instruments imaging the same ground seconds apart, so the Sun is the same. 8 windows chosen before any matching; TMC-2 at 4.56 m against IIRS at 73.9 m (16×) | **8 of 8** accepted in each of five IIRS bands, 746 to 3223 nm. At 1555 nm (visible against near-infrared: multi-modal): held-out median 0.21–0.32 px = 16–24 m on the IIRS grid. Each band is registered on its own, and the 999 nm result lands within 0.04–0.07 px (3–5 m) of the 1555 nm one on every window; the weakest bands within 0.75 px |
 | **LRO NAC → TMC-2**, the NAC chosen for a Sun within 3° of the TMC-2 pass's | **6 of 6** accepted; held-out median 0.36–0.48 px = 1.6–2.2 m on TMC-2's 4.56 m grid |
 | The same NAC → the 2025 TMC-2 pass, Suns 45° apart | 3 accepted on thin evidence (4–6 verified cells), 2 unconfirmed, 1 refused |
 | **OHRC → TMC-2 re-cut** after removing a 1.9 km offset between the two archives at SAC's frame | still **refused 4 of 4**: with the geometry fixed, a Sun 120° apart is what stops it |
