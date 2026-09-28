@@ -103,6 +103,7 @@ def tmc_nadir(product_id: str):
 SAC_NAC = {"ohrc-nac": ("ohrc", "M1350459544RE", "sac_ohrc_nac"),
            "ohrc-nac-polar": ("ohrc_polar", "M165491149RE", "sac_polar_ohrc_nac")}
 SAC_PAGES = DATA / "nac" / "nac_sac_pages.json"
+CHAIN_PAGES = DATA / "nac" / "nac_chain_pages.json"
 
 
 # --- the local map ------------------------------------------------------------------------
@@ -304,9 +305,12 @@ def nac_product(pid, proj):
     """(frame, reader, info) for an LRO NAC EDR on `proj`, from its product-page corners."""
     from core import geometry as G
     from core.io_loader import load
-    page = next((d for d in json.loads(SAC_PAGES.read_text(encoding="utf-8")) if d["pid"] == pid), None)
+    pages = json.loads(SAC_PAGES.read_text(encoding="utf-8"))
+    if CHAIN_PAGES.exists():      # NACs added for the chained route (ops/cut_chain_pairs.py), 28 Sep
+        pages += json.loads(CHAIN_PAGES.read_text(encoding="utf-8"))
+    page = next((d for d in pages if d["pid"] == pid), None)
     if page is None:
-        raise SystemExit(f"{pid} is not in {SAC_PAGES}")
+        raise SystemExit(f"{pid} is not in {SAC_PAGES} or {CHAIN_PAGES}")
     path = DATA / "nac" / f"{pid}.IMG"
     if not path.exists():
         raise SystemExit(f"{path} not downloaded yet ({page['edr_url']})")
