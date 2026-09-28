@@ -99,10 +99,10 @@ route between them*).
 
 | Test | Result |
 |---|---|
-| **IIRS → TMC-2 on one orbit.** PRADAN's catalogue shows the two instruments imaging the same ground seconds apart, so the Sun is the same. 8 windows chosen before any matching; TMC-2 at 4.56 m against IIRS at 73.9 m (16×) | **8 of 8** accepted in each of five IIRS bands, 746 to 3223 nm. At 1555 nm (visible against near-infrared: multi-modal): held-out median 0.21–0.32 px = 16–24 m on the IIRS grid. Each band is registered on its own, and the 999 nm result lands within 0.04–0.07 px (3–5 m) of the 1555 nm one on every window; the weakest bands within 0.75 px |
-| **LRO NAC → TMC-2**, the NAC chosen for a Sun within 3° of the TMC-2 pass's | **6 of 6** accepted; held-out median 0.36–0.48 px = 1.6–2.2 m on TMC-2's 4.56 m grid |
-| The same NAC → the 2025 TMC-2 pass, Suns 45° apart | 3 accepted on thin evidence (4–6 verified cells), 2 unconfirmed, 1 refused |
-| **OHRC → TMC-2 re-cut** after removing a 1.9 km offset between the two archives at SAC's frame | still **refused 4 of 4**: with the geometry fixed, a Sun 120° apart is what stops it |
+| **TMC-2 → IIRS on one orbit.** PRADAN's catalogue shows the two instruments imaging the same ground seconds apart, so the Sun is the same. One pass, 8 windows chosen before any matching; TMC-2 at 4.56 m against IIRS at 73.9 m (16×) | **8 of 8** accepted in each of five IIRS bands, 746 to 3223 nm: the same 8 places in every band, 40 registrations. The four bands beyond TMC-2's 400–850 nm passband are multi-modal; 746 nm is the control. At 1555 nm: held-out median 0.21–0.32 px = 16–24 m on the IIRS grid. Each band is registered on its own; against the 1555 nm result, the median disagreement per window is 0.04–0.07 px (3–5 m) at 999 nm, worst point 0.29 px, and up to 0.75 px at 746 and 3223 nm, single points up to 5.1 px. That is consistency, not accuracy |
+| **LRO NAC → TMC-2**, the NAC chosen for a Sun 2.6–3.2° from the TMC-2 pass's in azimuth and 4.3–4.5° in incidence | **6 of 6** accepted; held-out median 0.36–0.48 px = 1.6–2.2 m on TMC-2's 4.56 m grid |
+| The same NAC → the 2025 TMC-2 pass, Suns 45° apart | 3 accepted on thin evidence (4–6 verified cells; no accuracy quoted), 2 unconfirmed, 1 refused |
+| **OHRC → TMC-2 re-cut** after moving SAC's OHRC frame 1.9 km into LRO's geometry | still **refused 4 of 4**. What is left is the Sun (120° apart in azimuth, 9.9° against 69.4° in elevation) and the 5× scale, which this test cannot separate |
 
 ---
 
@@ -208,9 +208,12 @@ In the submitted evidence:
   5.576 m grid (0.7–5.4 m). Yet none of the held-out matches lands within 3 px, and not one of the
   64 cells verifies. That is what a refused registration looks like from the inside, and the check
   refuses all 4 windows. After the submission we found a second cause: at SAC's frame the OHRC
-  archive grid sits 1.9 km from LRO's and TMC-2's, which agree with each other to within 231 m, so
-  those windows (2.1 km) barely shared ground. Re-cut with the OHRC first placed in LRO's geometry
-  (no TMC-2 pixel used), the pair is still refused 4 of 4. The Sun is the obstacle.
+  archive grid sits 1.9 km from LROC's published corners for SAC's NAC. A second NAC's corners sit
+  about 230 m from the first, and TMC-2 lands 121–175 m from the second NAC's corners, inside the
+  ~300 m precision LROC publishes corners to. So those windows (2.1 km) barely shared ground. Re-cut
+  with the OHRC first placed in LRO's geometry (no TMC-2 pixel used), the pair is still refused 4 of
+  4. That points at the Sun, most likely its elevation: the submitted evidence accepts Suns 174°
+  apart in azimuth when both are low. OHRC → TMC-2 under a matched Sun has not been tested.
 - **TMC-2 fore → aft**, one pass, seconds apart, seen 50° apart: relief shifts by about
   0.93 × its height between the two views, which no single homography can model. 1 of 4 is
   accepted, consistent with the synthetic parallax rows (*Viewpoint*).
@@ -224,11 +227,13 @@ after the submission):
 - **IIRS and TMC-2 fly together.** PRADAN's footprint catalogue shows them imaging the same ground
   on the same orbit, seconds apart. The pass we used (3 February 2020, 18:45 UTC) started its two
   strips 0.3 s apart, so the Sun is the same and only the band and the 16× scale change. All 8
-  windows register in every band from 746 to 3223 nm. We expect this to be the easy case, and say
+  windows register in every band from 746 to 3223 nm - one pass, one Sun, the same 8 places; a
+  second orbit is the next thing to add. We expect this to be the easy case, and say
   so: under one Sun, shading and albedo should dominate the Moon at 1.5 µm much as they do in
   visible light. The weakest band, 3223 nm, drops to 51–241 inliers and 7–38 verified cells.
-- **TMC-2 registers once the Sun matches.** A NAC chosen for a Sun within 3° of a TMC-2 pass gives
-  6 of 6. The same NAC against a TMC-2 pass with the Sun 45° away gives thin or refused results.
+- **TMC-2 registers once the Sun matches.** A NAC chosen for a Sun 2.6–3.2° from a TMC-2 pass's in
+  azimuth (4.3–4.5° in incidence) gives 6 of 6. The same NAC against a TMC-2 pass with the Sun
+  45° away gives thin or refused results.
 - **OHRC still reaches TMC-2 only through LRO.** OHRC → NAC is 6 of 6 at SAC's frame and NAC →
   TMC-2 is 6 of 6, but they use two different NAC images, so this is two legs, not a measured loop.
   For relief (fore → aft), TMC-2's own DTM allows orthorectification before matching; that has not
