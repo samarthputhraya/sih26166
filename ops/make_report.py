@@ -126,10 +126,14 @@ def _distinct_note(reg) -> str:
     Needs the pairs' geometry_prior.json on this machine; says nothing when they are absent."""
     try:
         from presentation.make_figures import _distinct_windows
-        n = len(_distinct_windows([r["pair_id"] for r in reg]))
+        keys = _distinct_windows([r["pair_id"] for r in reg])
+        # One window registered in several IIRS bands is one piece of ground. The window count is
+        # kept as it always was (the deck and README quote it); the ground count is printed beside it.
+        n_ground = len({(k[0], re.sub(r" band \d+ \(.*\)$", "", k[1]), *k[2:]) for k in keys})
     except Exception:  # noqa: BLE001 - data/pairs is gitignored; the report must still be written
         return ""
-    return f" ({n} distinct ground windows; Known issue 2: some were cut twice under two ids)"
+    return (f" ({len(keys)} distinct ground windows, {n_ground} if the IIRS bands of one window count once; "
+            f"Known issue 2: some were cut twice under two ids)")
 
 
 def _residual_caveat(acc, g) -> str:
@@ -197,8 +201,160 @@ def section_full_overlap(full):
     return section_pairs("The whole lit overlap of one OHRC frame with one NAC (dense tiling)", full, note)
 
 
-def section_pairs(title, rows, note):
-    L = [f"## {title}", "", note, "",
+def section_chain(reg, d):
+    """The chained route, measured after the submission (28 Sep 2026): TMC-2 -> IIRS on one orbit,
+    LRO NAC -> TMC-2 with and without a matching Sun, and OHRC -> TMC-2 re-cut in LRO's geometry
+    (`ops/cut_chain_pairs.py`). Its own section, never merged into the frozen tables above."""
+    chain = [r for r in reg if r["pair_id"].startswith("chain_")]
+    if not chain:
+        return []
+    commits = sorted({r.get("git_commit") or "?" for r in chain})
+    L = ["## After the submission: IIRS and TMC-2, and the route between them", "",
+         f"Measured on 28 Sep 2026 at commit {', '.join(f'`{c}`' for c in commits)}, after the idea was "
+         f"submitted - **not part of the `7dd4e5b` evidence freeze**. Cut by `ops/cut_chain_pairs.py`; products "
+         f"fetched by `ops/fetch_pradan.py` (members and IIRS bands read out of each PRADAN zip by HTTP range). "
+         f"Three questions the frozen evidence left open: does IIRS register onto TMC-2 once the Sun is taken "
+         f"out of the problem; does TMC-2 register onto anything at all; and was OHRC -> TMC-2 refused for the "
+         f"Sun or for something else.", ""]
+
+    def verdicts(rows):
+        c = Counter(r["verdict"] for r in rows)
+        return ", ".join(f"{v} {c[v]}" for v in ("agrees", "unconfirmed", "contradicted") if c[v])
+
+    def rng(rows, key, nd=2, scale=None):
+        v = [float(r[key]) for r in rows if r.get(key) not in (None, "")]
+        if not v:
+            return "n/a"
+        one = lambda a, b: f"{a:.{nd}f}" if f"{a:.{nd}f}" == f"{b:.{nd}f}" else f"{a:.{nd}f} to {b:.{nd}f}"  # noqa: E731
+        s = one(min(v), max(v))
+        if not scale:
+            return s
+        lo, hi = min(v) * scale, max(v) * scale
+        return s + (f" ({lo:.1f} m)" if f"{lo:.1f}" == f"{hi:.1f}" else f" ({lo:.1f} to {hi:.1f} m)")
+
+    # (a) TMC-2 -> IIRS, one orbit
+    ti = sorted([r for r in chain if _kind(r) == "tmc2-iirs"], key=lambda r: r["pair_id"])
+    if ti:
+        gp = _jsonfile(ROOT / "data" / "pairs" / ti[0]["pair_id"] / "geometry_prior.json") or {}
+        bands = defaultdict(list)
+        for r in ti:
+            g = _jsonfile(ROOT / "data" / "pairs" / r["pair_id"] / "geometry_prior.json") or {}
+            nm = (g.get("reference") or {}).get("center_wavelength_nm")
+            bands[nm].append(r)
+        tmc_id = ti[0]["source_product"]
+        iirs_id = re.sub(r" band .*$", "", ti[0]["reference_product"])
+        prov = None
+        try:
+            prov = _jsonfile(next((d / "pradan" / "iirs").rglob(f"{iirs_id}_bands_PROVENANCE.json"))) if d else None
+        except StopIteration:
+            pass
+        prov_note = (prov or {}).get("note", "")
+        n_win = len({(r["window_lat"], r["window_lon"]) for r in ti})
+        L += ["### TMC-2 → IIRS on one orbit (cross-sensor, same mission; multi-modal from 1000 nm)", "",
+              f"TMC-2 nadir `{tmc_id}` against IIRS `{iirs_id}`. {gp.get('sun_note', '')}. {n_win} windows, chosen "
+              f"before any matching by the texture of the IIRS 1555 nm band alone ({gp.get('window_rule', '')}); the "
+              f"same {n_win} ground windows for every band. TMC-2 ~{ti[0]['src_gsd_m']} m against IIRS "
+              f"~{ti[0]['ref_gsd_m']} m ({ti[0]['scale_ratio']}×), 192-px IIRS windows, so every trust cell is 24 px and "
+              f"the per-cell area check runs. By the terminology this project holds itself to, an IIRS band under "
+              f"1000 nm against a visible camera is NOT multi-modal; from 1000 nm it is."
+              + (f" From the band provenance: {prov_note}." if prov_note else ""), "",
+              "| IIRS band | modality | windows accepted | matches | inliers | held-out median px (m) on the IIRS grid | "
+              "verified cells /64 | archive offset m |",
+              "|---|---|---|---|---|---|---|---|"]
+        for nm in sorted(bands):
+            rows = bands[nm]
+            g = float(rows[0]["ref_gsd_m"])
+            L.append(f"| {nm:.0f} nm | {'near-infrared: multi-modal' if nm >= 1000 else 'near-visible: NOT multi-modal'} | "
+                     f"{sum(r['verdict'] == 'agrees' for r in rows)}/{len(rows)} | {rng(rows, 'n_matches', 0)} | "
+                     f"{rng(rows, 'inliers', 0)} | {rng(rows, 'residual_median_px', 3, g)} | {rng(rows, 'verified', 0)} | "
+                     f"{rng(rows, 'archive_offset_m', 1)} |")
+        off_px = [float(r["archive_offset_m"]) / float(r["ref_gsd_m"]) for r in ti if r.get("archive_offset_m")]
+        L += ["", f"The archive offset (how far each registration moved TMC-2 from where the two archives' own "
+              f"grids put it) is {min(off_px):.2f}-{max(off_px):.2f} IIRS pixels in every band and every window: a "
+              f"steady disagreement between the two instruments' geolocation, which is what a registration is for.", ""]
+        for nm in sorted(bands):
+            L += section_pairs(f"TMC-2 → IIRS {nm:.0f} nm, window by window", bands[nm], "", level="####")
+
+    # (b) NAC -> TMC-2, with and without a matching Sun
+    nt = sorted([r for r in chain if _kind(r) == "nac-tmc2"], key=lambda r: r["pair_id"])
+    if nt:
+        by = defaultdict(list)
+        for r in nt:
+            by[r["reference_product"]].append(r)
+        L += ["### LRO NAC → TMC-2 at SAC's site: the same NAC, two TMC-2 passes", "",
+              f"NAC `{nt[0]['source_product']}` (~{nt[0]['src_gsd_m']} m), chosen for a Sun close to TMC-2's "
+              f"3 Feb 2020 pass, against that pass and against the 7 Jul 2025 pass the frozen OHRC -> TMC-2 rows used. "
+              "Cross-sensor and cross-mission; both panchromatic - NOT multi-modal. The NAC is placed by LROC's own "
+              "published corners, uncorrected: never fitted to the TMC-2 it is registered to, and not to the OHRC "
+              "either (next section). Windows by `ops.cut_site_pairs.pick_windows` on 4 m overviews (shared, lit, "
+              "textured), no matching involved. NAC Sun computed at each window from LROC's sub-solar point; "
+              "TMC-2 Sun from its label.", "",
+              "| TMC-2 pass | Δsun az | Δincidence | windows | verdicts | inliers | held-out median px (m) on the TMC-2 grid | "
+              "verified cells /64 | archive offset m (LROC corners vs TMC-2 grid) |",
+              "|---|---|---|---|---|---|---|---|---|"]
+        for ref, rows in sorted(by.items()):
+            g = float(rows[0]["ref_gsd_m"])
+            acc = [r for r in rows if r["verdict"] == "agrees"]
+            m = re.search(r"_(\d{8})T", ref)
+            L.append(f"| {m.group(1) if m else ref} | {rng(rows, 'd_sun_azimuth_deg', 1)}° | {rng(rows, 'd_incidence_deg', 1)}° | "
+                     f"{len(rows)} | {verdicts(rows)} | {rng(rows, 'inliers', 0)} | "
+                     f"{rng(acc, 'residual_median_px', 3, g) if acc else 'n/a'} (accepted) | {rng(rows, 'verified', 0)} | "
+                     f"{rng(acc, 'archive_offset_m', 1) if acc else 'n/a'} (accepted) |")
+        passes = sorted(by.items(), key=lambda kv: max(abs(float(r["d_sun_azimuth_deg"] or 0)) for r in kv[1]))
+        near, far = passes[0][1], passes[-1][1]
+        far_acc = [r for r in far if r["verdict"] == "agrees"]
+        if len(passes) > 1 and far is not near:
+            L += ["", f"With the Sun matched ({rng(near, 'd_sun_azimuth_deg', 1)}° in azimuth), TMC-2 registers: "
+                  f"{verdicts(near)}. With it {rng(far, 'd_sun_azimuth_deg', 1)}° apart in azimuth and "
+                  f"{rng(far, 'd_incidence_deg', 1)}° in incidence, the same NAC gives {verdicts(far)}"
+                  + (f"; the accepted ones rest on {rng(far_acc, 'verified', 0)} verified cells at inlier ratios of "
+                     f"{rng(far_acc, 'inlier_ratio', 2)}, where the held-out median is not robust (see the dense-tiling "
+                     f"section)" if far_acc else "") + ".", ""]
+        for ref, rows in sorted(by.items()):
+            m = re.search(r"_(\d{8})T", ref)
+            L += section_pairs(f"NAC → TMC-2 pass {m.group(1) if m else ref}, window by window", rows, "", level="####")
+
+    # (c) OHRC -> TMC-2 in LRO's geometry
+    ot = sorted([r for r in chain if r["pair_id"].startswith("chain_ohrclroc_")], key=lambda r: r["pair_id"])
+    if ot:
+        gp = _jsonfile(ROOT / "data" / "pairs" / ot[0]["pair_id"] / "geometry_prior.json") or {}
+        sh = gp.get("ohrc_shift_into_lroc_m") or [None, None]
+        sac = (_jsonfile(d / "site_geometry" / "M1350459544RE.json") if d else None) or {}
+        second = (_jsonfile(d / "site_geometry" / "M1258792259LE.json") if d else None) or {}
+        w1, w2 = sac.get("wide_offset") or {}, second.get("wide_offset") or {}
+        nt20 = [r for r in nt if "20200203" in r["reference_product"] and r["verdict"] == "agrees"]
+        import math as _m
+        d1 = _m.hypot(*w1["offset_m"]) if w1.get("offset_m") else None
+        nn = (_m.hypot(w1["offset_m"][0] - w2["offset_m"][0], w1["offset_m"][1] - w2["offset_m"][1])
+              if w1.get("offset_m") and w2.get("offset_m") else None)
+        tmc_off = max((float(r["archive_offset_m"]) for r in nt20), default=None)
+        agree = max(v for v in (nn, tmc_off) if v is not None) if (nn or tmc_off) else None
+        refused = all(r["verdict"] == "contradicted" for r in ot)
+        L += ["### OHRC → TMC-2 again, with the OHRC placed in LRO's geometry", "",
+              "The frozen OHRC -> TMC-2 pairs above were cut on the two archives' own grids. "
+              + (f"At this site those grids disagree by {d1 / 1000:.1f} km, against a TMC-2 window of "
+                 f"{gp.get('window_m', 0) / 1000:.1f} km: " if d1 else "")
+              + (f"LROC's corners for SAC's NAC sit ({w1['offset_m'][0]:+.0f}, {w1['offset_m'][1]:+.0f}) m from the OHRC grid "
+                 f"(`site_geometry/M1350459544RE.json`); " if w1.get("offset_m") else "")
+              + (f"a second NAC's corners sit ({w2['offset_m'][0]:+.0f}, {w2['offset_m'][1]:+.0f}) m from that OHRC-aligned "
+                 f"NAC ({w2.get('n_agree')}/{w2.get('n_templates')} wide-search templates, `site_geometry/M1258792259LE.json`), "
+                 f"so the two NACs' own corners agree to {nn:.0f} m; " if nn is not None else "")
+              + (f"and that second NAC's corners register onto TMC-2's 2020 grid with archive offsets of "
+                 f"{rng(nt20, 'archive_offset_m', 0)} m (above). " if nt20 else "")
+              + (f"Two NACs and TMC-2 agree to within {agree:.0f} m; SAC's OHRC frame is the one {d1 / 1000:.1f} km away. "
+                 if agree and d1 else "")
+              + "So the frozen refusal was right - those answers were wrong - but it cannot be laid on the Sun alone. "
+              + (f"Here the OHRC frame is first moved by ({sh[0]:+.0f}, {sh[1]:+.0f}) m into LRO's geometry, using only "
+                 f"SAC's NAC's saved correction (no TMC-2 pixel), and cut exactly as the frozen pairs were. " if sh[0] is not None else "")
+              + f"Result: {verdicts(ot)}, with the Sun {rng(ot, 'd_sun_azimuth_deg', 1)}° apart in azimuth and "
+              f"{rng(ot, 'd_incidence_deg', 1)}° in incidence"
+              + (" - with the geometry taken out, OHRC -> TMC-2 at this Sun is still refused." if refused else "."), ""]
+        L += section_pairs("OHRC (in LRO geometry) → TMC-2 pass 20250707, window by window", ot, "", level="####")
+    return L
+
+
+def section_pairs(title, rows, note, level="##"):
+    L = [f"{level} {title}", ""] + ([note, ""] if note else []) + [
          "| pair | window (lat, lon) | Δsun az | scale | matches | inliers | ratio | coverage | "
          "held-out median px (m) | held-out RMSE ≤3 px | verified / no-evid | verdict | declared | archive offset m |",
          "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
@@ -310,7 +466,9 @@ def main(argv=None):
                          f"{_f(y)} ({float(y) * g:.3f}) | {r['verdict']} |")
             L.append("")
     other = sorted([r for r in reg if _kind(r) not in ("ohrc-nac", "nac-nac")], key=lambda r: r["pair_id"])
-    sac = sorted([r for r in reg if _kind(r) == "ohrc-tmc2"], key=lambda r: r["pair_id"])
+    # the frozen cut only; the 28 Sep re-cut in LRO geometry (chain_ohrclroc_*) has its own section
+    sac = sorted([r for r in reg if _kind(r) == "ohrc-tmc2" and r["pair_id"].startswith("sac_")],
+                 key=lambda r: r["pair_id"])
     by_pass = {}
     for r in sac:
         by_pass.setdefault(r["reference_product"], []).append(r)
@@ -352,6 +510,7 @@ def main(argv=None):
                          f"{_f(y)} ({float(y) * g:.3f}) | "
                          f"{'n/a' if hf in (None, '') else f'{float(hf):.0%}'} | {r['verdict']} |")
             L.append("")
+    L += section_chain(reg, d)
     fa = sorted([r for r in reg if _kind(r) == "tmc2-tmc2"], key=lambda r: r["pair_id"])
     if fa:
         L += section_pairs("Real viewpoint: TMC-2 fore (+25°) → aft (−25°), one pass (same sensor)", fa,
