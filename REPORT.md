@@ -1,6 +1,6 @@
 # SIH26166 - evaluation report
 
-Generated 2026-09-28T20:40 from commit `fb4e8fe` by `python -m ops.make_report`. **Do not edit by hand** - every number below is read from the evidence files named in each section. The latest real-pair rows were measured at commit `7dd4e5b` (183 rows), `b57d38e` (56 rows).
+Generated 2026-09-28T21:02 from commit `b33e333` by `python -m ops.make_report`. **Do not edit by hand** - every number below is read from the evidence files named in each section. The latest real-pair rows were measured at commit `7dd4e5b` (183 rows), `556b995` (56 rows).
 
 All pixel figures are on the REFERENCE image's grid, with its metres stated. Real pairs have no exact ground truth: accuracy on them is reported as held-out residuals (the 20 % of matches the fit never saw) and as loop closure. `residual_px` in results_log.csv is the RMSE over ALL held-out matches including outliers and is not quoted for real pairs.
 
@@ -162,21 +162,30 @@ In-sample, per axis, on the inliers the matcher's H was fitted to - and the shar
 
 ## After the submission: IIRS and TMC-2, and the route between them
 
-Measured on 28 Sep 2026 at commit `b57d38e`, after the idea was submitted - **not part of the `7dd4e5b` evidence freeze**. Cut by `ops/cut_chain_pairs.py`; products fetched by `ops/fetch_pradan.py` (members and IIRS bands read out of each PRADAN zip by HTTP range). Three questions the frozen evidence left open: does IIRS register onto TMC-2 once the Sun is taken out of the problem; does TMC-2 register onto anything at all; and was OHRC -> TMC-2 refused for the Sun or for something else.
+Measured on 2026-09-28 at commit `556b995`, after the idea was submitted - **not part of the `7dd4e5b` evidence freeze**. Cut by `ops/cut_chain_pairs.py`; products fetched by `ops/fetch_pradan.py` (members and IIRS bands read out of each PRADAN zip by HTTP range). Three questions the frozen evidence left open: does IIRS register onto TMC-2 once the Sun is taken out of the problem; does TMC-2 register onto anything at all; and was OHRC -> TMC-2 refused for the Sun or for something else.
 
-### TMC-2 → IIRS on one orbit (cross-sensor, same mission; multi-modal from 1000 nm)
+### TMC-2 → IIRS on one orbit (cross-sensor, same mission; multi-modal beyond 850 nm)
 
-TMC-2 nadir `ch2_tmc_ncn_20200203T1845562233_d_img_m65` against IIRS `ch2_iir_nci_20200203T1845559180_d_img_m65`. IIRS label has no Sun fields; both nadir strips start 0.3 s apart (18:45:56.223300 TMC-2, 18:45:55.918000 IIRS UTC), so the Sun is the same to well under 0.1 deg: difference set to 0 by construction. TMC-2 label: azimuth 73.610046, elevation 48.276148 (strip centre). 8 windows, chosen before any matching by the texture of the IIRS 1555 nm band alone (pre-registered: candidates every 15.0 km along the IIRS centre line within latitude (-60.0, 60.0), fully covered by both, ranked by the IIRS window's texture, best-first at least one window apart (ops/cut_chain_pairs.py docstring)); the same 8 ground windows for every band. TMC-2 ~4.556 m against IIRS ~73.85 m (16.209×), 192-px IIRS windows, so every trust cell is 24 px and the per-cell area check runs. By the terminology this project holds itself to, an IIRS band under 1000 nm against a visible camera is NOT multi-modal; from 1000 nm it is. From the band provenance: bands 200 (4066 nm) and 240 (4740 nm) are all zeros in this calibrated cube (checked 28 Sep: 100 % of pixels == 0, identical sha256); nothing is registered on them.
+TMC-2 nadir `ch2_tmc_ncn_20200203T1845562233_d_img_m65` against IIRS `ch2_iir_nci_20200203T1845559180_d_img_m65`, ONE orbit. IIRS label has no Sun fields; both nadir strips start 0.3 s apart (18:45:56.223300 TMC-2, 18:45:55.918000 IIRS UTC), so the Sun is the same to well under 0.1 deg: difference set to 0 by construction. TMC-2 label: azimuth 73.610046, elevation 48.276148 (strip centre). 8 windows, chosen before any matching by the texture of the IIRS 1555 nm band alone (pre-registered: candidates every 15.0 km along the IIRS centre line within latitude (-60.0, 60.0), fully covered by both, ranked by the IIRS window's texture, best-first at least one window apart (ops/cut_chain_pairs.py docstring)); the same 8 ground windows for every band, so each band row below is 8 registrations of the same 8 places. TMC-2 ~4.556 m against IIRS ~73.85 m (16.209×), 192-px IIRS windows, so every trust cell is 24 px and the per-cell area check runs. TMC-2 records 400-850 nm (its PRADAN payload description); an IIRS band beyond 850 nm is outside anything TMC-2 sees and counts as multi-modal, a band inside it does not. Bands 200, 240 of this cube hold only zeros and were not used.
 
 | IIRS band | modality | windows accepted | matches | inliers | held-out median px (m) on the IIRS grid | verified cells /64 | archive offset m |
 |---|---|---|---|---|---|---|---|
-| 746 nm | near-visible: NOT multi-modal | 8/8 | 144 to 288 | 122 to 278 | 0.547 to 0.934 (40.4 to 69.0 m) | 19 to 41 | 58.2 to 98.7 |
-| 999 nm | near-visible: NOT multi-modal | 8/8 | 386 to 400 | 382 to 400 | 0.199 to 0.309 (14.7 to 22.8 m) | 50 to 57 | 67.8 to 84.8 |
-| 1555 nm | near-infrared: multi-modal | 8/8 | 393 to 400 | 391 to 400 | 0.212 to 0.319 (15.6 to 23.6 m) | 50 to 57 | 65.4 to 82.0 |
-| 2381 nm | near-infrared: multi-modal | 8/8 | 341 to 396 | 334 to 396 | 0.307 to 0.416 (22.7 to 30.7 m) | 47 to 55 | 67.8 to 78.0 |
-| 3223 nm | near-infrared: multi-modal | 8/8 | 71 to 260 | 51 to 241 | 0.436 to 1.188 (32.2 to 87.7 m) | 7 to 38 | 55.4 to 88.0 |
+| 746 nm | inside TMC-2 passband: NOT multi-modal | 8/8 | 144 to 288 | 122 to 278 | 0.547 to 0.934 (40.4 to 69.0 m) | 19 to 41 | 58.2 to 98.7 |
+| 999 nm | infrared: multi-modal | 8/8 | 386 to 400 | 382 to 400 | 0.199 to 0.309 (14.7 to 22.8 m) | 50 to 57 | 67.8 to 84.8 |
+| 1555 nm | infrared: multi-modal | 8/8 | 393 to 400 | 391 to 400 | 0.212 to 0.319 (15.6 to 23.6 m) | 50 to 57 | 65.4 to 82.0 |
+| 2381 nm | infrared: multi-modal | 8/8 | 341 to 396 | 334 to 396 | 0.307 to 0.416 (22.7 to 30.7 m) | 47 to 55 | 67.8 to 78.0 |
+| 3223 nm | infrared: multi-modal | 8/8 | 71 to 260 | 51 to 241 | 0.436 to 1.188 (32.2 to 87.7 m) | 7 to 38 | 55.4 to 88.0 |
 
 The archive offset (how far each registration moved TMC-2 from where the two archives' own grids put it) is 0.75-1.33 IIRS pixels in every band and every window: a steady disagreement between the two instruments' geolocation, which is what a registration is for.
+
+Band against band, summarised (full table below): the MEDIAN disagreement per window, and the worst single point of the 20 × 20 lattice. These are medians and a maximum, not bounds, and they measure consistency between independent registrations, not accuracy.
+
+| band against 1555 nm | windows | median disagreement px (m) | p90 px | worst point px |
+|---|---|---|---|---|
+| 746 nm | 8 | 0.249 to 0.754 (18.4 to 55.7 m) | 0.49 to 2.25 | 5.06 |
+| 999 nm | 8 | 0.044 to 0.068 (3.2 to 5.0 m) | 0.07 to 0.15 | 0.29 |
+| 2381 nm | 8 | 0.091 to 0.154 (6.7 to 11.4 m) | 0.16 to 0.31 | 0.50 |
+| 3223 nm | 8 | 0.226 to 0.724 (16.7 to 53.5 m) | 0.34 to 2.24 | 3.92 |
 
 **Band against band, same window.** Each IIRS band's declared transform against the 1555 nm one, on the same TMC-2 window and the same IIRS grid (`ops/multimodal_check.py`). Every band was registered on its own - its own LoFTR matches, its own fit - so this compares two independent registrations of one piece of ground. Agreement is consistency, not accuracy; disagreement would prove one of them wrong.
 
@@ -282,16 +291,16 @@ The archive offset (how far each registration moved TMC-2 from where the two arc
 
 ### LRO NAC → TMC-2 at SAC's site: the same NAC, two TMC-2 passes
 
-NAC `M1258792259LE` (~0.784 m), chosen for a Sun close to TMC-2's 3 Feb 2020 pass, against that pass and against the 7 Jul 2025 pass the frozen OHRC -> TMC-2 rows used. Cross-sensor and cross-mission; both panchromatic - NOT multi-modal. The NAC is placed by LROC's own published corners, uncorrected: never fitted to the TMC-2 it is registered to, and not to the OHRC either (next section). Windows by `ops.cut_site_pairs.pick_windows` on 4 m overviews (shared, lit, textured), no matching involved. NAC Sun computed at each window from LROC's sub-solar point; TMC-2 Sun from its label.
+NAC `M1258792259LE` (~0.784 m), chosen for a Sun close to TMC-2's 2020-02-03 pass, against that pass and against the 2025-07-07 pass. Cross-sensor and cross-mission; both panchromatic - NOT multi-modal. NAC geometry prior: none: LROC's published corners, uncorrected (see docstring) - never fitted to the TMC-2 it is registered to, nor to the OHRC. Windows by `ops.cut_site_pairs.pick_windows` on 4 m overviews (shared, lit, textured), no matching involved. NAC Sun computed at each window from LROC's sub-solar point; TMC-2 Sun from its label.
 
-| TMC-2 pass | Δsun az | Δincidence | windows | verdicts | inliers | held-out median px (m) on the TMC-2 grid | verified cells /64 | archive offset m (LROC corners vs TMC-2 grid) |
-|---|---|---|---|---|---|---|---|---|
-| 20200203 | 2.6 to 3.2° | -4.5 to -4.3° | 6 | agrees 6 | 1128 to 1588 | 0.361 to 0.481 (1.6 to 2.2 m) (accepted) | 49 to 58 | 121.4 to 175.3 (accepted) |
-| 20250707 | 44.7 to 45.7° | -25.6 to -25.4° | 6 | agrees 3, unconfirmed 2, contradicted 1 | 21 to 74 | 54.859 to 87.353 (305.9 to 487.1 m) (accepted) | 0 to 6 | 127.4 to 197.6 (accepted) |
+| TMC-2 pass | Δsun az | Δincidence | windows | verdicts | inliers | inlier ratio | held-out median px (m) on the TMC-2 grid, accepted windows | verified cells /64 | archive offset m, accepted windows |
+|---|---|---|---|---|---|---|---|---|---|
+| 2020-02-03 | 2.6 to 3.2° | -4.5 to -4.3° | 6 | agrees 6 | 1128 to 1588 | 0.96 to 0.99 | 0.361 to 0.481 (1.6 to 2.2 m) | 49 to 58 | 121.4 to 175.3 |
+| 2025-07-07 | 44.7 to 45.7° | -25.6 to -25.4° | 6 | agrees 3, unconfirmed 2, contradicted 1 | 21 to 74 | 0.15 to 0.35 | not quoted: at these inlier ratios the held-out median is not robust | 0 to 6 | 127.4 to 197.6 |
 
-With the Sun matched (2.6 to 3.2° in azimuth), TMC-2 registers: agrees 6. With it 44.7 to 45.7° apart in azimuth and -25.6 to -25.4° in incidence, the same NAC gives agrees 3, unconfirmed 2, contradicted 1; the accepted ones rest on 4 to 6 verified cells at inlier ratios of 0.16 to 0.35, where the held-out median is not robust (see the dense-tiling section).
+With the Sun 2.6 to 3.2° apart in azimuth and -4.5 to -4.3° in incidence, TMC-2 registers: agrees 6. With it 44.7 to 45.7° apart in azimuth and -25.6 to -25.4° in incidence, the same NAC gives agrees 3, unconfirmed 2, contradicted 1; the accepted ones rest on 4 to 6 verified cells at inlier ratios of 0.16 to 0.35, and no accuracy is quoted for them.
 
-#### NAC → TMC-2 pass 20200203, window by window
+#### NAC → TMC-2 pass 2020-02-03, window by window
 
 | pair | window (lat, lon) | Δsun az | scale | matches | inliers | ratio | coverage | held-out median px (m) | held-out RMSE ≤3 px | verified / no-evid | verdict | declared | archive offset m |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -302,7 +311,7 @@ With the Sun matched (2.6 to 3.2° in azimuth), TMC-2 registers: agrees 6. With 
 | `chain_nacm1258792259le_tmc20200203_w05` | -13.1558, 25.1261 | 2.9 | 5.81 | 1165 | 1128 | 0.968 | 0.98 | 0.424 (1.929) | 0.681 | 50 / 1 | agrees | loftr+magsac++ | 128.8 |
 | `chain_nacm1258792259le_tmc20200203_w06` | -13.2283, 25.1261 | 2.8 | 5.81 | 1601 | 1588 | 0.992 | 1.00 | 0.398 (1.811) | 0.642 | 57 / 0 | agrees | loftr+magsac++ | 121.4 |
 
-#### NAC → TMC-2 pass 20250707, window by window
+#### NAC → TMC-2 pass 2025-07-07, window by window
 
 | pair | window (lat, lon) | Δsun az | scale | matches | inliers | ratio | coverage | held-out median px (m) | held-out RMSE ≤3 px | verified / no-evid | verdict | declared | archive offset m |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -315,9 +324,9 @@ With the Sun matched (2.6 to 3.2° in azimuth), TMC-2 registers: agrees 6. With 
 
 ### OHRC → TMC-2 again, with the OHRC placed in LRO's geometry
 
-The frozen OHRC -> TMC-2 pairs above were cut on the two archives' own grids. At this site those grids disagree by 1.9 km, against a TMC-2 window of 2.1 km: LROC's corners for SAC's NAC sit (+488, +1790) m from the OHRC grid (`site_geometry/M1350459544RE.json`); a second NAC's corners sit (+356, +1980) m from that OHRC-aligned NAC (9/11 wide-search templates, `site_geometry/M1258792259LE.json`), so the two NACs' own corners agree to 231 m; and that second NAC's corners register onto TMC-2's 2020 grid with archive offsets of 121 to 175 m (above). Two NACs and TMC-2 agree to within 231 m; SAC's OHRC frame is the one 1.9 km away. So the frozen refusal was right - those answers were wrong - but it cannot be laid on the Sun alone. Here the OHRC frame is first moved by (+519, +1821) m into LRO's geometry, using only SAC's NAC's saved correction (no TMC-2 pixel), and cut exactly as the frozen pairs were. Result: contradicted 4, with the Sun 120.2° apart in azimuth and -59.4° in incidence - with the geometry taken out, OHRC -> TMC-2 at this Sun is still refused.
+The frozen OHRC -> TMC-2 pairs above were cut on the two archives' own grids. LROC's published corners for SAC's NAC `M1350459544RE` sit (+488, +1790) m (1.9 km) from SAC's OHRC archive grid (`site_geometry/M1350459544RE.json`), against a TMC-2 window of 2.1 km. A second NAC's corners (`M1258792259LE`) sit (+356, +1980) m from the OHRC-aligned first NAC (9/11 wide-search templates, an offset that drifts along the strip; `site_geometry/M1258792259LE.json`), i.e. about 231 m from the first NAC's own corners. TMC-2's 2020-02-03 grid lands 121 to 175 m from the second NAC's corners (the accepted windows above) - consistent to within the ~0.01° precision LROC publishes its corners to, not a geolocation accuracy. The first NAC was never measured against TMC-2. So SAC's OHRC frame is the one far from the others, and the frozen windows barely shared ground: that refusal was right - those answers were wrong - but it cannot be laid on the Sun alone. Here the OHRC frame is first moved by (+519, +1821) m into LRO's geometry (the NAC's saved wide offset plus its 4 m field evaluated at the OHRC frame's centre, 44 m apart; no TMC-2 pixel), and cut exactly as the frozen pairs were: same window rule, same 4×4 OHRC averaging, same scale. Result: contradicted 4. What is left between the two images is the Sun (120.2° apart in azimuth; label elevations 9.9° and 69.4°) and the 5.0× scale, which this test cannot separate. The frozen evidence accepts much larger azimuth differences at lower, similar elevations (SAC's equatorial pair above), so the elevation difference is the likelier cause; OHRC -> TMC-2 under a matched Sun has not been tested.
 
-#### OHRC (in LRO geometry) → TMC-2 pass 20250707, window by window
+#### OHRC (in LRO geometry) → TMC-2 pass 2025-07-07, window by window
 
 | pair | window (lat, lon) | Δsun az | scale | matches | inliers | ratio | coverage | held-out median px (m) | held-out RMSE ≤3 px | verified / no-evid | verdict | declared | archive offset m |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -577,7 +586,7 @@ Rendered pairs (LOLA DEM, 60 m grid), Sun elevation fixed at 30°, Sun azimuth m
 
 ## Runtime and match distribution
 
-Wall time of `run_all` per window (the `seconds` column; LoFTR on CPU, tiled; no GPU), latest rows: median 8.2 s over the 89 OHRC → NAC windows at 74 °S (the loop legs and the sun sweep; 640-px NAC references), 7.1 s over all 233 registered windows (Intel64 Family 6 Model 170 Stepping 4, GenuineIntel; Windows-11-10.0.26200-SP0).
+Wall time of `run_all` per window (the `seconds` column; LoFTR on CPU, tiled; no GPU), latest rows: median 8.2 s over the 89 OHRC → NAC windows at 74 °S (the loop legs and the sun sweep; 640-px NAC references), 7.2 s over all 233 registered windows (Intel64 Family 6 Model 170 Stepping 4, GenuineIntel; Windows-11-10.0.26200-SP0).
 
 Uniform distribution (PS demand): `grid_coverage_fraction` is the share of the 8 × 8 reference cells holding at least one inlier. On the 20 OHRC → NAC windows at 74 °S it is 0.19-1.00, median 1.00; 17 of 20 windows are at 0.95 or above (the lowest: `site_ohrc_m1153871873le_w01` 0.19, `site_ohrc_m1153871873le_w05` 0.44).
 
@@ -593,4 +602,4 @@ python -m ops.trust_real_calibration "site_ohrc_m1153871873le_w*_t" ... --log
 python -m ops.make_report
 ```
 
-Rows in real_pairs_log.csv: 985: 243 distinct pair ids (latest row wins) = 233 registered pairs (216 distinct ground windows, 179 if the IIRS bands of one window count once; Known issue 2: some were cut twice under two ids) + 6 loops + 4 withdrawn (INVALIDATED). Rows in results_log.csv: 3355.
+Rows in real_pairs_log.csv: 1041: 243 distinct pair ids (latest row wins) = 233 registered pairs (216 distinct ground windows, 179 if the IIRS bands of one window count once; Known issue 2: some were cut twice under two ids) + 6 loops + 4 withdrawn (INVALIDATED). Rows in results_log.csv: 3411.
