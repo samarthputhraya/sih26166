@@ -591,6 +591,34 @@ def main(argv=None):
             L.append(f"| {t} | {'on' if par else 'off'} | {len(v)} | {st.median(v):.3f} | {max(v):.3f} |")
         L.append("")
 
+    # --- the whole synthetic Sun sweep, 0-180 deg (28 Sep 2026: rendering only; these rows were
+    # always in results_log.csv and drawn in fig1, but the table below used to stop at 45 deg, so
+    # the 90 and 180 deg medians the README explains had no REPORT.md line to point at) ---------
+    try:
+        from presentation.make_figures import _delta, load_curves
+        deltas, ours_med, best, nscored, ntried = load_curves()
+        n_ours = Counter(_delta(r) for r in log if r.get("method") == "ours_loftr+subpixel"
+                         and _delta(r) is not None and r.get("rmse_gt_px") not in (None, "", "None"))
+        L += ["## Synthetic Sun-azimuth sweep, 0-180° (exact truth; fig1)", "",
+              "Rendered pairs (LOLA DEM, 60 m grid), Sun elevation fixed at 30°, Sun azimuth moved; the "
+              "same five off-grid shifts at every angle. Medians over every scored run in results_log.csv "
+              "(`presentation/make_figures.load_curves`, the data of fig1). A classical run that fails "
+              "produces no rmse_gt_px and cannot enter its median, so the classical column is a median of "
+              "the survivors and the next column says how many there were. The renderer is a local "
+              "cosine law with no cast shadows: at 180° it produces a near-exact contrast inversion, "
+              "which real terrain under a low Sun does not.", "",
+              "| Sun azimuths apart | ours: runs | ours: median rmse_gt_px (m) | best of SIFT / ORB / AKAZE: "
+              "median of the runs that scored | classical runs that scored |",
+              "|---|---|---|---|---|"]
+        # not `d`: main() holds the data folder in `d`, and the runtime section below reads it
+        for da, o, b, ns, nt in zip(deltas, ours_med, best, nscored, ntried):
+            L.append(f"| {da:g}° | {n_ours[da]} | {o:.3f} ({o * 60:.1f}) | "
+                     + (f"{b:.3f}" if b == b else "none scored") + f" | {ns}/{nt} |")
+        L.append("")
+    except Exception as e:  # noqa: BLE001 - the report must still be written
+        L += ["## Synthetic Sun-azimuth sweep, 0-180° (exact truth; fig1)", "",
+              f"Not available ({type(e).__name__}).", ""]
+
     # --- sub-pixel, by grid; runtime; coverage (20 Sep 2026: gathered here so the deck can name
     # the grid beside every sub-pixel figure - nothing below is a new measurement) ---------------
     L += ["## Sub-pixel accuracy, with the pixel grid named", "",

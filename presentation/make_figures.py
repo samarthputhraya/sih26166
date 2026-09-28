@@ -248,8 +248,11 @@ def fig_sun_angle(deltas, ours, best, nscored, ntried):
     ax.set_ylim(0.007, 60000)
     # Two footer lines at 10.5 pt in a 4.4 in canvas need 0.146 in of height each; at
     # y=0.032 and y=0.008 they only had 0.106 in between them and printed into each other.
-    fig.text(0.014, 0.044, "dashed line = Gate 2 threshold 0.5 px · n/15 = classical runs "
-             "that scored", fontsize=10, color=MUTED)
+    # The footer used to say "n/15" after the classical arm grew to 60 runs per angle, beside
+    # labels that read "4/60"; it now takes the denominator from the data it annotates.
+    tried = sorted(set(ntried))
+    fig.text(0.014, 0.044, "dashed line = 0.5 px · n/" + "/".join(str(t) for t in tried)
+             + " = classical runs that scored", fontsize=10, color=MUTED)
     fig.text(0.014, 0.006, "40 pairs, exact ground truth · 60 m/px · "
              "evaluation/results_log.csv", fontsize=10, color=MUTED)
     fig.tight_layout(rect=(0, 0.070, 1, 1))
