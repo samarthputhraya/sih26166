@@ -16,8 +16,9 @@ such a pair the Sun is the same by construction, so what is left is the change o
 WHAT EACH PAIR IS (Invariant 2):
   tmc-iirs  TMC-2 nadir (visible panchromatic, ~5.6 m) -> IIRS band (~80-90 m), one orbit.
             Cross-sensor (different instruments), SAME mission - NOT cross-mission.
-            IIRS band >= 1000 nm: MULTI-MODAL (visible vs near-infrared).
-            IIRS band < 1000 nm (e.g. band 3, 746 nm): NOT multi-modal - the control.
+            IIRS band beyond TMC-2's passband (above 850 nm): MULTI-MODAL (visible vs infrared).
+            IIRS band inside it (band 3, 746 nm): NOT multi-modal - the control.
+            (TMC2_PASSBAND_NM below; one rule, so 999 nm is not left sitting on a 1000 nm line.)
             Same orbit, same minute: the Sun difference is ~0 by construction, and the labels say so.
 
 THE WINDOWS are chosen BEFORE any matching, from the reference band alone: candidate squares
@@ -47,6 +48,9 @@ import numpy as np
 from ops.cut_pradan_pairs import DATA, PAIRS, LocalEqc, _sha, frame_from_grid, tmc_nadir
 
 IIRS_DIR = DATA / "pradan" / "iirs"
+# TMC-2 is panchromatic 0.4-0.85 um (PRADAN's TMC-2 payload description). An IIRS band beyond that
+# passband is a different part of the spectrum from anything TMC-2 records: multi-modal.
+TMC2_PASSBAND_NM = (400, 850)
 
 
 def _start_utc(xml):
@@ -83,9 +87,10 @@ def iirs_product(pid, band):
     sun = {k: (re.search(r"<isda:" + k + r"[^>]*>(-?[\d.]+)<", label) or [None, None])[1]
            for k in ("sun_azimuth", "sun_elevation")}
     info = {"instrument": "Chandrayaan-2 IIRS", "product_id": f"{pid} band {band} ({nm:.1f} nm)",
-            "path": str(f32), "band": f"{nm:.1f} nm ({'near-infrared' if nm >= 1000 else 'visible/near-visible'})",
+            "path": str(f32), "band": f"{nm:.1f} nm ({'infrared' if nm > TMC2_PASSBAND_NM[1] else 'visible red'})",
             "band_index": band, "center_wavelength_nm": nm,
-            "modality": "near-infrared" if nm >= 1000 else "visible/near-visible",
+            "modality": ("infrared, beyond TMC-2's passband" if nm > TMC2_PASSBAND_NM[1]
+                         else "visible red, inside TMC-2's passband"),
             "sun": {"azimuth_deg_label": None if sun["sun_azimuth"] is None else float(sun["sun_azimuth"]),
                     "elevation_deg_label": None if sun["sun_elevation"] is None else float(sun["sun_elevation"])}}
     return xml, grid, read, shape, info
@@ -211,12 +216,13 @@ def cut_tmc_iirs(tmc_pid, iirs_pid, band, n_windows=8, ref_px=192, lat_range=(-6
         rule = (f"pre-registered: candidates every {step_km} km along the IIRS centre line within latitude "
                 f"{lat_range}, fully covered by both, ranked by the IIRS window's texture, best-first at least "
                 f"one window apart (ops/cut_chain_pairs.py docstring)")
-    multimodal = info_i["center_wavelength_nm"] >= 1000
+    multimodal = info_i["center_wavelength_nm"] > TMC2_PASSBAND_NM[1]
     tier = ("C (visible-infrared real, multi-modal; Chandrayaan-2 TMC-2 vs IIRS, same orbit)" if multimodal
-            else "B (cross-sensor real, TMC-2 vs IIRS near-visible band, same orbit)")
+            else "B (cross-sensor real, TMC-2 vs an IIRS band inside TMC-2 passband, same orbit)")
     term = ("cross-sensor (Chandrayaan-2 TMC-2 vs IIRS), same mission - NOT cross-mission; "
             + ("MULTI-MODAL: visible panchromatic vs near-infrared" if multimodal
-               else "NOT multi-modal: IIRS band under 1000 nm against a visible camera - the control")
+               else f"NOT multi-modal: IIRS band inside TMC-2's {TMC2_PASSBAND_NM[0]}-{TMC2_PASSBAND_NM[1]} nm "
+                    "passband - the control")
             + "; same orbit, so the same Sun")
     s_sun, r_sun = info_t["sun"], info_i["sun"]
     d_az = d_inc = None
@@ -504,7 +510,8 @@ def cut_nac_tmc(tmc_pid, nac_pid, edr_url, n_windows=6, ref_px=384, refit=False,
             "prior_H_source_to_reference": [[src_gsd / ref_gsd, 0, 0], [0, src_gsd / ref_gsd, 0], [0, 0, 1]],
             "prior_note": "both files are on the same north-up local map grid over the same ground, so the "
                           "archive-geometry prior is a pure scale; any rotation or offset the pipeline finds "
-                          "is disagreement between the TMC-2 archive grid and the OHRC-corrected NAC",
+                          "is disagreement between the TMC-2 archive grid and the NAC's geometry prior "
+                          "(see source.coarse_prior: LROC's published corners unless --anchor says otherwise)",
             "edge_pixels_filled": {"source": s_fill, "reference": r_fill},
             "files": {q.name: _sha(q) for q in (src_p, ref_p)},
             "command": "python -m ops.cut_chain_pairs " + " ".join(sys.argv[1:]),
