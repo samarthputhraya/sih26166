@@ -1,6 +1,6 @@
 # SIH26166 - evaluation report
 
-Generated 2026-09-22T23:47 from commit `3fa526b` by `python -m ops.make_report`. **Do not edit by hand** - every number below is read from the evidence files named in each section. The latest real-pair rows were measured at commit `7dd4e5b` (183 rows).
+Generated 2026-09-28T19:24 from commit `b7f1d9d` by `python -m ops.make_report`. **Do not edit by hand** - every number below is read from the evidence files named in each section. The latest real-pair rows were measured at commit `7dd4e5b` (183 rows).
 
 All pixel figures are on the REFERENCE image's grid, with its metres stated. Real pairs have no exact ground truth: accuracy on them is reported as held-out residuals (the 20 % of matches the fit never saw) and as loop closure. `residual_px` in results_log.csv is the RMSE over ALL held-out matches including outliers and is not quoted for real pairs.
 
@@ -381,6 +381,21 @@ Off-nadir tilt applied to one image of a rendered pair (sun 15° apart), latest 
 | 30 | on | 3 | 8.411 | 8.658 |
 | 40 | on | 3 | 13.327 | 13.694 |
 | 50 | on | 3 | 16.063 | 22.174 |
+
+## Synthetic Sun-azimuth sweep, 0-180° (exact truth; fig1)
+
+Rendered pairs (LOLA DEM, 60 m grid), Sun elevation fixed at 30°, Sun azimuth moved; the same five off-grid shifts at every angle. Medians over every scored run in results_log.csv (`presentation/make_figures.load_curves`, the data of fig1). A classical run that fails produces no rmse_gt_px and cannot enter its median, so the classical column is a median of the survivors and the next column says how many there were. The renderer is a local cosine law with no cast shadows: at 180° it produces a near-exact contrast inversion, which real terrain under a low Sun does not.
+
+| Sun azimuths apart | ours: runs | ours: median rmse_gt_px (m) | best of SIFT / ORB / AKAZE: median of the runs that scored | classical runs that scored |
+|---|---|---|---|---|
+| 0° | 41 | 0.086 (5.1) | 0.044 | 60/60 |
+| 15° | 64 | 0.086 (5.1) | 0.247 | 60/60 |
+| 30° | 40 | 0.314 (18.8) | 1.833 | 44/60 |
+| 45° | 40 | 1.096 (65.8) | 443.240 | 8/60 |
+| 60° | 35 | 2.379 (142.7) | 320.832 | 4/60 |
+| 90° | 35 | 5.805 (348.3) | 2464.972 | 4/60 |
+| 120° | 35 | 4.025 (241.5) | 718.935 | 4/60 |
+| 180° | 35 | 0.080 (4.8) | 4971.677 | 4/60 |
 
 ## Sub-pixel accuracy, with the pixel grid named
 

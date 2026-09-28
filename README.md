@@ -93,6 +93,106 @@ IIRS matched through TMC-2 at an intermediate scale rather than straight onto TC
 
 ---
 
+## The questions a judge will ask
+
+Measured figures below come from REPORT.md, with the section named. Two kinds of arithmetic on
+them are marked as such: confidence bounds, and one projection.
+
+### Why does a Sun 174° away pass, when 90° fails?
+
+A Sun on the opposite side of the sky reverses the shading: lit slopes go dark and dark slopes
+light up, close to a contrast inversion of the whole image. The matcher never sees brightness. It
+sees gradient orientation taken modulo 180° (`core/illumination.py`), where a bright-to-dark edge
+and a dark-to-bright edge have the same value, so an inversion cancels. A Sun moved 90° changes
+*which* slopes are lit: edges facing it appear, edges along it fade. The edges themselves differ
+between the two images, not only their sign, and no re-encoding of one image recovers edges that
+are missing from the other.
+
+<p align="center">
+  <img src="presentation/figures/fig1_sun_angle_vs_error.png" width="620"
+       alt="Median registration error against known truth versus Sun-azimuth difference on synthetic pairs: ours rises from 0.09 px at 0 degrees to 5.8 px at 90 degrees and falls to 0.08 px at 180 degrees; the best classical detector scores in only 4 of 60 runs past 45 degrees">
+</p>
+
+| Sun azimuths apart | 0° | 45° | 90° | 120° | 180° |
+|---|---|---|---|---|---|
+| ours, median error on the 60 m grid | 0.086 px (5.1 m) | 1.096 px (65.8 m) | 5.805 px (348 m) | 4.025 px (242 m) | 0.080 px (4.8 m) |
+| SIFT / ORB / AKAZE runs that return any answer | 60 of 60 | 8 of 60 | 4 of 60 | 4 of 60 | 4 of 60 |
+
+*Synthetic Sun-azimuth sweep* in REPORT.md. The 180° point flatters us: the renderer has no cast
+shadows, so its flip is an almost exact inversion. Real terrain behaves that way only while both
+Suns are high enough for shading, not shadow, to dominate:
+
+- SAC's equatorial pair, Suns 174° apart and 10° and 18° above the horizon: 6 of 6 windows
+  accepted (*SAC's own benchmark pair (equatorial)*).
+- The real sweep: 10 of 15 windows accepted at 120–153° apart, and 0 of 12 at 60–120°, where
+  every window was refused or left unconfirmed and none was accepted wrongly (*Real sun-angle
+  sweep*).
+- MiLOI's 16 pairs 90° or more apart have the Sun within 3° of the horizon (incidence 87–92°,
+  `evaluation/miloi_illumination.csv`), so cast shadow covers most of the ground. No method we
+  ran registers any of them (*MiLOI*).
+- The detection floor pays for the flip. With the Suns within 10° every planted 5 m error is
+  flagged; 132–174° apart, it takes 10 m (*Trust layer on real imagery*).
+
+### What do the zero counts actually bound?
+
+Zero events in *n* trials is not a zero rate. With none observed, the rate is below about 3/*n*
+at 95 % confidence (the rule of three; arithmetic, not a measurement). Our trials are only as
+independent as the windows they were drawn from, so the bound is given both ways:
+
+| Nothing observed | Trials | Windows | 95 % bound, per trial | per window |
+|---|---|---|---|---|
+| False alarm, Suns within 10° | 0 of 44 | 22 | 7 % | 14 % |
+| False alarm, Suns 132–174° apart | 0 of 16 | 8 | 19 % | 38 % |
+| Planted 5 m error missed, Suns within 10° | 0 of 176 | 22 | 1.7 % | 14 % |
+| Planted 10 m error missed, Suns 132–174° apart | 0 of 64 | 8 | 4.7 % | 38 % |
+| Real sweep: failure not caught | 0 of 54 windows the image evidence could judge | 54 | | 6 % |
+| MiLOI: accepted, but more than 3 px from truth | 0 of 33 accepted pairs | 33 | | 9 % |
+
+What these do not cover. The planted errors are translations; rotations and scale changes are
+caught cell by cell, not by the frame verdict (above). The real sweep is judged by image evidence
+(|NCC| ≥ 0.30), not ground truth, and 15 of its 69 windows could not be judged. None of those 15
+was accepted, so nothing accepted escaped the check. But in the 60–120° band only 3 of 12 windows
+could be judged at all, so there the evidence is that the system refuses, not that it is right.
+
+### How long would a full OHRC strip take?
+
+**Measured.** The whole lit overlap of the 74 °S frame with one NAC, 37 windows of 596 m
+(13.1 km²), took 5.0 minutes of `run_all`, a median of 7.9 s per window, on a laptop CPU with no
+GPU (*The whole lit overlap of one OHRC frame with one NAC*). Over 89 OHRC → NAC windows the median
+is 8.2 s (*Runtime and match distribution*).
+
+**Projected, not measured.** That OHRC product is 93,693 × 12,000 pixels at 0.23 m, about
+21.5 × 2.8 km, or 59 km². Tiled at the same 596 m it needs about 185 windows (37 along, 5 across),
+roughly 25 minutes at 8.2 s each. That is registration only: reading and cutting the 1.1 GB
+product was not timed. Windows are independent, so the work splits across cores or machines, but
+we have not measured that. The time scales with the number of windows on the reference grid, so
+25 minutes holds for a reference of about 1 m, like a NAC. A finer reference costs more.
+
+### Why are TMC-2 and IIRS refused, and what comes next?
+
+- **OHRC → TMC-2**, on the only TMC-2 pass that covers all of SAC's frame: the Sun moved 120° in
+  azimuth *and* from 9.9° to 69.4° above the horizon. That puts a low-Sun shadow image against a
+  near-noon brightness image, with a 5× scale change on top. LoFTR finds 90–148 matches, and
+  MAGSAC++ keeps 6–7 and fits them to under a pixel. Yet none of the held-out matches lands within
+  3 px, and not one of the 64 cells verifies. That is what a confident wrong answer looks like
+  from the inside, and the check refuses all 4 windows.
+- **TMC-2 fore → aft**, the same instant seen 50° apart: relief shifts by about 0.93 × its height
+  between the two views, which no single homography can model. 1 of 4 is accepted, as the
+  synthetic parallax rows predict (*Viewpoint*).
+- **IIRS → Kaguya TC**: IIRS pixels are 89 m, so a window is 112 px against a 12× finer
+  reference. The bands (1.0 and 1.55 µm) differ from TC's visible light, and the TC mosaic was lit
+  by other Suns. It gets 4–7 inliers per window, and 0 of 11 are accepted.
+
+What comes next removes the Sun from the problem instead of fighting it. PRADAN's footprint
+catalogue shows IIRS and TMC-2 imaging the same ground **on the same orbit, seconds apart**. One
+such orbit (3 February 2020, 18:45 UTC) passes over part of SAC's benchmark frame. A shared orbit
+means a shared Sun, so an IIRS → TMC-2 pair tests only the change of band and the ~16× scale.
+TMC-2 then carries IIRS onto NAC and OHRC through a TMC-2 → NAC pair chosen for a matching Sun.
+For relief, TMC-2's own DTM allows orthorectification before matching. **These experiments are
+in progress. None of them is a result until it is in REPORT.md.**
+
+---
+
 ## How it works
 
 ```mermaid
