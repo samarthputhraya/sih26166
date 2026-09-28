@@ -105,6 +105,12 @@ def mm_table(kind):
                 "fallback's error relative to the visible-band registration - the nearest thing to a "
                 "truth the infrared band has. A fallback that had merely kept the archive alignment "
                 "would sit as far from the visible-band answer as the archive offset (last column).")
+    elif kind == "tmc2-iirs":
+        note = ("**Band against band, same window.** Each IIRS band's declared transform against the "
+                "1555 nm one, on the same TMC-2 window and the same IIRS grid (`ops/multimodal_check.py`). "
+                "Every band was registered on its own - its own LoFTR matches, its own fit - so this compares "
+                "two independent registrations of one piece of ground. Agreement is consistency, not accuracy; "
+                "disagreement would prove one of them wrong.")
     else:
         note = ("**Band against band, same window.** The two IIRS bands' declared transforms against "
                 "each other (same TC source, same IIRS grid). Two fallbacks that agree are only "
@@ -272,6 +278,7 @@ def section_chain(reg, d):
         L += ["", f"The archive offset (how far each registration moved TMC-2 from where the two archives' own "
               f"grids put it) is {min(off_px):.2f}-{max(off_px):.2f} IIRS pixels in every band and every window: a "
               f"steady disagreement between the two instruments' geolocation, which is what a registration is for.", ""]
+        L += mm_table("tmc2-iirs")
         for nm in sorted(bands):
             L += section_pairs(f"TMC-2 → IIRS {nm:.0f} nm, window by window", bands[nm], "", level="####")
 

@@ -53,6 +53,12 @@ PAIRINGS = [
     (re.compile(r"^(?P<stem>.+)_iirs1000_(?P<w>w\d+)$"), "{stem}_iirs1555_{w}", "tc-iirs",
      "declared transform on IIRS 999 nm vs on IIRS 1555 nm, same TC window - self-consistency "
      "of two fallbacks, not accuracy"),
+    # 28 Sep 2026: TMC-2 -> IIRS on one orbit (ops/cut_chain_pairs.py). Every band is registered on
+    # its own - separate LoFTR matches, separate fit - so agreement between bands of the same
+    # window is a consistency check with independent evidence on each side; still not accuracy.
+    (re.compile(r"^(?P<stem>chain_tmc\d{8})_iirs(?P<nm>746|999|2381|3223)_(?P<w>w\d+)$"), "{stem}_iirs1555_{w}",
+     "tmc2-iirs", "declared transform on this IIRS band vs on IIRS 1555 nm, same TMC-2 window, same orbit - "
+     "two independent registrations of one ground; consistency, not accuracy"),
 ]
 
 
@@ -164,10 +170,11 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--log", action="store_true")
     ap.add_argument("--out", help="bundle root (default <data_path>/out)")
+    ap.add_argument("--kind", nargs="*", help="only these pairing kinds (tc-mi, tc-iirs, tmc2-iirs); default all")
     a = ap.parse_args(argv)
     out_root = pathlib.Path(a.out) if a.out else _data() / "out"
     latest = latest_real()
-    prs = pairings(latest)
+    prs = [p for p in pairings(latest) if not a.kind or p["kind"] in a.kind]
     if not prs:
         print("no multi-modal window pairings in real_pairs_log.csv")
         return 2
