@@ -83,7 +83,8 @@ def iirs_product(pid, band):
     sun = {k: (re.search(r"<isda:" + k + r"[^>]*>(-?[\d.]+)<", label) or [None, None])[1]
            for k in ("sun_azimuth", "sun_elevation")}
     info = {"instrument": "Chandrayaan-2 IIRS", "product_id": f"{pid} band {band} ({nm:.1f} nm)",
-            "path": str(f32), "band": band, "center_wavelength_nm": nm,
+            "path": str(f32), "band": f"{nm:.1f} nm ({'near-infrared' if nm >= 1000 else 'visible/near-visible'})",
+            "band_index": band, "center_wavelength_nm": nm,
             "modality": "near-infrared" if nm >= 1000 else "visible/near-visible",
             "sun": {"azimuth_deg_label": None if sun["sun_azimuth"] is None else float(sun["sun_azimuth"]),
                     "elevation_deg_label": None if sun["sun_elevation"] is None else float(sun["sun_elevation"])}}
