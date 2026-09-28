@@ -219,7 +219,7 @@ def section_chain(reg, d):
     chain = [r for r in reg if r["pair_id"].startswith("chain_")]
     if not chain:
         return []
-    mm_rows = [r for r in _rows(MM) if r.get("kind") == "tmc2-iirs"]
+    mm_rows = list({r["pair_id"]: r for r in _rows(MM) if r.get("kind") == "tmc2-iirs"}.values())  # latest per pair
     commits = sorted({r.get("git_commit") or "?" for r in chain} | {r.get("git_commit") or "?" for r in mm_rows})
     days = sorted({(r.get("timestamp") or "")[:10] for r in chain} - {""})
     frozen = Counter(r.get("git_commit") for r in reg if not r["pair_id"].startswith("chain_")).most_common(1)
