@@ -49,6 +49,11 @@ from ops.cut_pradan_pairs import DATA, PAIRS, LocalEqc, _sha, frame_from_grid, t
 IIRS_DIR = DATA / "pradan" / "iirs"
 
 
+def _start_utc(xml):
+    m = re.search(r"<start_date_time>([^<]+)<", pathlib.Path(xml).read_text(encoding="latin1"))
+    return _dt.datetime.fromisoformat(m.group(1).replace("Z", "+00:00")) if m else None
+
+
 def _hdr_shape(hdr_path):
     t = hdr_path.read_text(encoding="latin1")
     get = lambda k: int(re.search(rf"^\s*{k}\s*=\s*(\d+)", t, re.M | re.I).group(1))  # noqa: E731
@@ -98,17 +103,24 @@ def tmc_product(pid):
 
 
 def _centre_line(grid_csv):
-    """(lat, lon) of the lattice nodes on the column nearest the strip's centre, top to bottom."""
+    """(lat, lon) along the strip's centre sample, top to bottom: interpolated between the two
+    lattice columns either side of it. An IIRS strip is only ~16 km wide and a 192-px window is
+    ~14 km, so the nearest lattice column (sample 100 of 250) is not centre enough."""
     g = np.loadtxt(grid_csv, delimiter=",", skiprows=1)
     lon, lat, px, sc = g.T
     cols = np.unique(px)
-    mid = cols[np.argmin(np.abs(cols - cols.mean()))]
-    k = px == mid
-    order = np.argsort(sc[k])
-    return lat[k][order], lon[k][order]
+    mid = (cols.min() + cols.max()) / 2.0
+    lo_c, hi_c = cols[cols <= mid].max(), cols[cols >= mid].min()
+    w = 0.0 if hi_c == lo_c else (mid - lo_c) / (hi_c - lo_c)
+    out = []
+    for c in (lo_c, hi_c):
+        k = px == c
+        order = np.argsort(sc[k])
+        out.append((lat[k][order], lon[k][order]))
+    return (1 - w) * out[0][0] + w * out[1][0], (1 - w) * out[0][1] + w * out[1][1]
 
 
-def _cut_one(lat, lon, t, i, ref_px):
+def _cut_one(lat, lon, t, i, ref_px, with_source=True):
     """Project both images onto a local grid centred at (lat, lon). Returns None if not covered."""
     from core import geometry as G
     proj = LocalEqc(lat, lon)
@@ -117,18 +129,28 @@ def _cut_one(lat, lon, t, i, ref_px):
     ref_gsd = round(float(np.mean(ref_f.gsd())), 2)
     src_gsd = round(float(np.mean(src_f.gsd())), 3)
     window_m = ref_px * ref_gsd
-    x0, y1 = -window_m / 2, window_m / 2
+    # LocalEqc's y is R x latitude (0 at the equator, not at lat_ts), so the window centre is
+    # proj.fwd(lat, lon) = (0, R lat), not the origin
+    cx, cy = (float(v) for v in proj.fwd(lat, lon))
+    x0, y1 = cx - window_m / 2, cy + window_m / 2
     tr_r, sh_r = G.map_grid(x0, y1, window_m, window_m, ref_gsd)
     r_img, r_ok = G.project(ref_f, i["read"], tr_r, sh_r, coarse=8, order="cubic")
     if r_ok.mean() < 0.998:
         return None
     s_px = int(round(window_m / src_gsd))
     tr_s, sh_s = G.map_grid(x0, y1, s_px * src_gsd, s_px * src_gsd, src_gsd)
+    if not with_source:
+        # candidates only: is the TMC-2 there at all? (a grid of 9 points, not a 3000-px resample)
+        gx, gy = np.meshgrid(x0 + window_m * np.array([0.01, 0.5, 0.99]), y1 - window_m * np.array([0.01, 0.5, 0.99]))
+        sx, sy = src_f.from_map(gx.ravel(), gy.ravel())
+        rows, cols = t["shape"]
+        inside = np.isfinite(sx) & np.isfinite(sy) & (sx >= 0) & (sy >= 0) & (sx <= cols - 1) & (sy <= rows - 1)
+        return None if not inside.all() else dict(proj=proj, window_m=window_m, r=(r_img, r_ok, tr_r, sh_r))
     s_img, s_ok = G.project(src_f, t["read"], tr_s, sh_s, coarse=32, order="cubic")
     if s_ok.mean() < 0.998:
         return None
     return dict(proj=proj, ref_f=ref_f, src_f=src_f, ref_gsd=ref_gsd, src_gsd=src_gsd, window_m=window_m,
-                r=(r_img, r_ok, tr_r, sh_r), s=(s_img, s_ok, tr_s, sh_s))
+                centre_map=(cx, cy), r=(r_img, r_ok, tr_r, sh_r), s=(s_img, s_ok, tr_s, sh_s))
 
 
 def _texture(img):
@@ -149,16 +171,18 @@ def choose_windows(t, i, n, ref_px, lat_range, step_km):
     cands = []
     for target in np.arange(0, d[-1], step_km):
         j = int(np.argmin(np.abs(d - target)))
-        c = _cut_one(float(lats[j]), float(lons[j]), t, i, ref_px)
+        c = _cut_one(float(lats[j]), float(lons[j]), t, i, ref_px, with_source=False)
         if c is None:
             continue
         r_img, r_ok = c["r"][0], c["r"][1]
+        win_m = c["window_m"]
         cands.append((_texture(np.where(r_ok, r_img, np.nanmedian(r_img))), float(lats[j]), float(lons[j]), float(d[j])))
         print(f"  candidate {lats[j]:+.3f}, {lons[j]:.3f}: texture {cands[-1][0]:.4f}", flush=True)
     cands.sort(reverse=True)
     chosen = []
+    win_km = win_m / 1000.0 if cands else 0.0
     for tex, la, lo, dk in cands:
-        if all(abs(dk - c[3]) >= 1.05 * ref_px * 0.09 for c in chosen):   # ~one window apart (IIRS ~90 m)
+        if all(abs(dk - c[3]) >= 1.05 * win_km for c in chosen):   # centres at least one window apart
             chosen.append((tex, la, lo, dk))
         if len(chosen) == n:
             break
@@ -195,9 +219,21 @@ def cut_tmc_iirs(tmc_pid, iirs_pid, band, n_windows=8, ref_px=192, lat_range=(-6
             + "; same orbit, so the same Sun")
     s_sun, r_sun = info_t["sun"], info_i["sun"]
     d_az = d_inc = None
+    sun_note = "scene-level label values (isda:sun_azimuth / sun_elevation); same orbit, seconds apart"
+    starts = [_start_utc(xml_t), _start_utc(xml_i)]
+    gap = abs((starts[0] - starts[1]).total_seconds()) if all(starts) else None
     if s_sun["azimuth_deg_label"] is not None and r_sun["azimuth_deg_label"] is not None:
         d_az = round(abs((r_sun["azimuth_deg_label"] - s_sun["azimuth_deg_label"] + 180) % 360 - 180), 1)
         d_inc = round((90 - r_sun["elevation_deg_label"]) - (90 - s_sun["elevation_deg_label"]), 2)
+    elif gap is not None and gap < 60:
+        # The IIRS calibrated label carries no Sun fields (checked 28 Sep on 20200203T1845). Both
+        # instruments look at nadir and started their strips `gap` seconds apart, so each piece of
+        # ground is imaged by both within seconds; the Sun moves ~0.5 deg per hour over the Moon.
+        d_az, d_inc = 0.0, 0.0
+        sun_note = (f"IIRS label has no Sun fields; both nadir strips start {gap:.1f} s apart "
+                    f"({starts[0]:%H:%M:%S.%f} TMC-2, {starts[1]:%H:%M:%S.%f} IIRS UTC), so the Sun is the same "
+                    f"to well under 0.1 deg: difference set to 0 by construction. TMC-2 label: azimuth "
+                    f"{s_sun['azimuth_deg_label']}, elevation {s_sun['elevation_deg_label']} (strip centre)")
     out = []
     import tifffile
     from core import geometry as G
@@ -222,7 +258,7 @@ def cut_tmc_iirs(tmc_pid, iirs_pid, band, n_windows=8, ref_px=192, lat_range=(-6
             "pair_id": pair_id,
             "created_utc": _dt.datetime.now(_dt.timezone.utc).isoformat(timespec="seconds"),
             "tier": tier, "terminology": term, "crs": c["proj"].name,
-            "window_centre_map_m": [0.0, 0.0], "window_centre_latlon": [la, lo],
+            "window_centre_map_m": list(c["centre_map"]), "window_centre_latlon": [la, lo],
             "window_m": c["window_m"], "window_rule": rule,
             "texture_score": tex,
             "source": {**info_t, "geometry": c["src_f"].source, "resampled_gsd_mpp": c["src_gsd"],
@@ -230,7 +266,7 @@ def cut_tmc_iirs(tmc_pid, iirs_pid, band, n_windows=8, ref_px=192, lat_range=(-6
             "reference": {**info_i, "geometry": c["ref_f"].source, "resampled_gsd_mpp": c["ref_gsd"],
                           "shape": list(sh_r), "transform": list(tr_r)},
             "d_sun_azimuth_deg": d_az, "d_incidence_deg": d_inc,
-            "sun_note": "scene-level label values (isda:sun_azimuth / sun_elevation); same orbit, seconds apart",
+            "sun_note": sun_note,
             "scale_ratio": round(c["ref_gsd"] / c["src_gsd"], 3),
             "prior_H_source_to_reference": [[c["src_gsd"] / c["ref_gsd"], 0, 0], [0, c["src_gsd"] / c["ref_gsd"], 0],
                                             [0, 0, 1]],
@@ -371,9 +407,16 @@ def cut_nac_tmc(tmc_pid, nac_pid, edr_url, n_windows=6, ref_px=384, refit=False,
     """LRO NAC (source, native ~0.8 m) -> TMC-2 nadir (reference, ~5.6 m) at SAC's benchmark frame.
 
     The NAC is chosen for a Sun that matches the TMC-2 pass (Sun vectors a few degrees apart at the
-    site), so this is the TMC-2 leg with the illumination variable taken out. Its geometry is
-    LROC's 0.01 deg corners corrected by the same 4 m field ops.cut_pradan_pairs fits for SAC's own
-    NAC - against the OHRC grid, never against the TMC-2 it is about to be registered to."""
+    site), so this is the TMC-2 leg with the illumination variable taken out.
+
+    WHICH GEOMETRY PRIOR. `anchor="corners"` (the default for this kind) uses LROC's published
+    corners as they are: an independent georeference from another mission, never fitted to the
+    TMC-2. The alternative - the 4 m field against the OHRC grid (directly or through an anchor NAC)
+    - puts the NAC in the OHRC's frame, and on 28 Sep that frame turned out to sit ~2 km from
+    BOTH TMC-2 passes over it (2020-02-03 and 2025-07-07, independently: offsets (-516, -1948) and
+    (-504, -1932) m against the OHRC-aligned NAC), while LROC's own corners sit within ~160 m of
+    them. So SAC's OHRC frame, not the NACs, carries the ~2 km archive offset at this site, and an
+    OHRC-aligned prior would put every window 2 km off its TMC-2 ground."""
     from core import geometry as G
     from core.io_loader import load
     from ops import cut_pradan_pairs as CP
@@ -382,16 +425,19 @@ def cut_nac_tmc(tmc_pid, nac_pid, edr_url, n_windows=6, ref_px=384, refit=False,
     if not (DATA / "nac" / f"{nac_pid}.IMG").exists():
         raise SystemExit(f"{nac_pid}.IMG not in {DATA / 'nac'} - download {edr_url}")
     proj = LocalEqc(*CP._frame_centre_latlon(CP.PRODUCTS["ohrc"][1]))
-    ohrc_f, o_read, _ = CP.product("ohrc", proj, block=1)
-    if anchor and (refit or not (S.GEOM_DIR / f"{nac_pid}.json").exists()
-                   or json.loads((S.GEOM_DIR / f"{nac_pid}.json").read_text(encoding="utf-8")).get("anchor") != anchor):
-        correct_against_anchor(nac_pid, anchor, proj, ohrc_f, o_read)
-        refit = False
-    nac_f, n_read, n_info, prior = CP.nac_corrected(nac_pid, "ohrc", proj, ohrc_f, o_read, refit=refit)
-    if not prior.get("apply"):
-        raise SystemExit(f"{nac_pid}: no trustworthy correction against the OHRC grid - not cutting on a "
-                         "0.01 deg corner prior")
-    n_info["coarse_prior"] = {k: v for k, v in prior.items() if k != "boxes"}
+    if anchor in (None, "corners"):
+        nac_f, n_read, n_info = CP.nac_product(nac_pid, proj)
+        n_info["coarse_prior"] = {"model": "none: LROC's published corners, uncorrected (see docstring)"}
+    else:
+        ohrc_f, o_read, _ = CP.product("ohrc", proj, block=1)
+        if anchor != "ohrc" and (refit or not (S.GEOM_DIR / f"{nac_pid}.json").exists() or json.loads(
+                (S.GEOM_DIR / f"{nac_pid}.json").read_text(encoding="utf-8")).get("anchor") != anchor):
+            correct_against_anchor(nac_pid, anchor, proj, ohrc_f, o_read)
+            refit = False
+        nac_f, n_read, n_info, prior = CP.nac_corrected(nac_pid, "ohrc", proj, ohrc_f, o_read, refit=refit)
+        if not prior.get("apply"):
+            raise SystemExit(f"{nac_pid}: no trustworthy correction against the OHRC grid")
+        n_info["coarse_prior"] = {k: v for k, v in prior.items() if k != "boxes"}
     n_info["geometry"] = nac_f.source
     xml_t, grid_t, read_t, shape_t, info_t = tmc_product(tmc_pid)
     tmc_f = frame_from_grid(grid_t, shape_t, proj, "TMC-2 nadir")
@@ -469,9 +515,115 @@ def cut_nac_tmc(tmc_pid, nac_pid, edr_url, n_windows=6, ref_px=384, refit=False,
     return out
 
 
+# --- OHRC -> TMC-2 again, with the OHRC placed by LRO's geometry ---------------------------------
+
+SAC_NAC = "M1350459544RE"
+
+
+def ohrc_to_lroc_shift(proj, ohrc_f):
+    """The map shift that puts SAC's OHRC frame into LROC's geometry, from the correction SAC's own
+    NAC already carries (<data>/site_geometry/M1350459544RE.json, fitted 19 Sep against the OHRC
+    at 4 m, frozen evidence): the NAC was moved by `correction_m` plus an affine field to sit on the
+    OHRC, so the OHRC moves by minus that displacement, evaluated at the OHRC frame's centre. Uses
+    no TMC-2 pixel."""
+    from ops import cut_site_pairs as S
+    p = json.loads((S.GEOM_DIR / f"{SAC_NAC}.json").read_text(encoding="utf-8"))
+    dx, dy = p["wide_offset"]["correction_m"] if (p.get("wide_offset") or {}).get("apply") else (0.0, 0.0)
+    rows, cols = ohrc_f.shape
+    ox, oy = (float(v[0]) for v in ohrc_f.to_map(np.array([cols / 2.0]), np.array([rows / 2.0])))
+    if p.get("apply"):
+        A = np.asarray(p["model"]["A"], float)
+        cx, cy = p["model"]["centre"]
+        dx += A[0, 0] * (ox - cx) + A[0, 1] * (oy - cy) + A[0, 2]
+        dy += A[1, 0] * (ox - cx) + A[1, 1] * (oy - cy) + A[1, 2]
+    return -dx, -dy
+
+
+def cut_ohrc_tmc(tmc_pid, n_windows=4, ref_px=384):
+    """OHRC (source, area-averaged 4x4, ~1.1 m) -> TMC-2 nadir (reference) on SAC's frame, the frozen
+    `ops.cut_pradan_pairs ohrc-tmc` cut in every respect but one: the OHRC frame is first moved into
+    LRO's geometry (`ohrc_to_lroc_shift`).
+
+    WHY. The frozen OHRC -> TMC-2 pairs (4/4 refused) were cut on the two archives' own grids. On
+    28 Sep the OHRC grid at this site turned out to sit ~2 km from BOTH TMC-2 passes (via SAC's NAC,
+    whose LROC corners agree with TMC-2 to ~160 m), and a 384-px TMC-2 window is only ~2.1 km: those
+    windows barely shared ground. Their refusal was right - the answers were wrong - but it cannot be
+    blamed on the Sun alone. This cut asks the Sun question with the geometry taken out."""
+    from core import geometry as G
+    from ops import cut_pradan_pairs as CP
+    import tifffile
+    proj = LocalEqc(*CP._frame_centre_latlon(CP.PRODUCTS["ohrc"][1]))
+    ohrc_f, o_read, o_info = CP.product("ohrc", proj)          # area-averaged 4x4, as frozen
+    sx, sy = ohrc_to_lroc_shift(proj, ohrc_f)
+    ohrc_f = ohrc_f.shifted(sx, sy, note=f"(into LROC's geometry via {SAC_NAC}'s saved correction)")
+    o_info["geometry"] = ohrc_f.source
+    xml_t, grid_t, read_t, shape_t, info_t = tmc_product(tmc_pid)
+    tmc_f = frame_from_grid(grid_t, shape_t, proj, "TMC-2 nadir")
+    info_t["geometry"] = tmc_f.source
+    ref_gsd = round(float(np.mean(tmc_f.gsd())), 3)
+    src_gsd = round(float(np.mean(ohrc_f.gsd())), 3)
+    window_m = ref_px * ref_gsd
+    rows, cols = ohrc_f.shape
+    ys = np.linspace(0.12, 0.88, n_windows) * rows              # the frozen cut's window rule
+    cx, cy = ohrc_f.to_map(np.full(n_windows, cols / 2.0), ys)
+    o_sun, t_sun = o_info["sun"], info_t["sun"]
+    d_az = round(abs((t_sun["azimuth_deg_label"] - o_sun["azimuth_deg_label"] + 180) % 360 - 180), 1)
+    d_inc = round((90 - t_sun["elevation_deg_label"]) - (90 - o_sun["elevation_deg_label"]), 2)
+    stem = f"chain_ohrclroc_tmc{tmc_pid[12:20]}"
+    out = []
+    for k, (x, y) in enumerate(zip(cx, cy), 1):
+        pair_id = f"{stem}_w{k:02d}"
+        x0, y1 = x - window_m / 2, y + window_m / 2
+        tr_r, sh_r = G.map_grid(x0, y1, window_m, window_m, ref_gsd)
+        r_img, r_ok = G.project(tmc_f, read_t, tr_r, sh_r, coarse=16, order="cubic")
+        s_px = int(round(window_m / src_gsd))
+        tr_s, sh_s = G.map_grid(x0, y1, s_px * src_gsd, s_px * src_gsd, src_gsd)
+        s_img, s_ok = G.project(ohrc_f, o_read, tr_s, sh_s, coarse=16, order="cubic")
+        if r_ok.mean() < 0.998 or s_ok.mean() < 0.998:
+            print(f"  {pair_id}: window not covered (ref {r_ok.mean():.4f}, src {s_ok.mean():.4f}) - skipped")
+            continue
+        r_img, r_fill = G.fill_invalid(r_img, r_ok)
+        s_img, s_fill = G.fill_invalid(s_img, s_ok)
+        d = PAIRS / pair_id
+        d.mkdir(parents=True, exist_ok=True)
+        src_p, ref_p = d / f"{pair_id}_source.tif", d / f"{pair_id}_ref.tif"
+        tifffile.imwrite(str(src_p), s_img.astype(np.float32), photometric="minisblack",
+                         extratags=proj.geotiff_tags(tr_s))
+        tifffile.imwrite(str(ref_p), r_img.astype(np.float32), photometric="minisblack",
+                         extratags=proj.geotiff_tags(tr_r))
+        lat, lon = proj.inv(x, y)
+        meta = {
+            "pair_id": pair_id,
+            "created_utc": _dt.datetime.now(_dt.timezone.utc).isoformat(timespec="seconds"),
+            "tier": "B (cross-sensor real, ohrc-tmc2)",
+            "terminology": "cross-sensor (Chandrayaan-2 OHRC vs TMC-2), same mission - NOT cross-mission; both "
+                           "panchromatic, so NOT multi-modal",
+            "crs": proj.name,
+            "window_centre_map_m": [float(x), float(y)], "window_centre_latlon": [float(lat), float(lon)],
+            "window_m": window_m, "window_rule": "as the frozen ohrc-tmc cut: evenly along the OHRC centre line",
+            "ohrc_shift_into_lroc_m": [round(sx, 1), round(sy, 1)],
+            "source": {**o_info, "resampled_gsd_mpp": src_gsd, "shape": list(sh_s), "transform": list(tr_s)},
+            "reference": {**info_t, "resampled_gsd_mpp": ref_gsd, "shape": list(sh_r), "transform": list(tr_r)},
+            "d_sun_azimuth_deg": d_az, "d_incidence_deg": d_inc,
+            "sun_note": "scene-level label values (isda:sun_azimuth / sun_elevation), not at the window",
+            "scale_ratio": round(ref_gsd / src_gsd, 3),
+            "prior_H_source_to_reference": [[src_gsd / ref_gsd, 0, 0], [0, src_gsd / ref_gsd, 0], [0, 0, 1]],
+            "prior_note": "OHRC moved into LROC's geometry first (ohrc_shift_into_lroc_m); any offset the pipeline "
+                          "finds is the disagreement between that and the TMC-2 archive grid",
+            "edge_pixels_filled": {"source": s_fill, "reference": r_fill},
+            "files": {q.name: _sha(q) for q in (src_p, ref_p)},
+            "command": "python -m ops.cut_chain_pairs " + " ".join(sys.argv[1:]),
+        }
+        (d / "geometry_prior.json").write_text(json.dumps(meta, indent=2), encoding="utf-8")
+        out.append(d)
+        print(f"  {pair_id}: centre ({lat:.4f}, {lon:.4f}); OHRC shifted ({sx:+.0f}, {sy:+.0f}) m; src {sh_s} "
+              f"@ {src_gsd} m, ref {sh_r} @ {ref_gsd} m; d_az {d_az} deg, d_inc {d_inc} deg")
+    return out
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("kind", choices=("tmc-iirs", "nac-tmc"))
+    ap.add_argument("kind", choices=("tmc-iirs", "nac-tmc", "ohrc-tmc"))
     ap.add_argument("--tmc", required=True, help="calibrated TMC-2 nadir product id")
     ap.add_argument("--iirs", help="tmc-iirs: calibrated IIRS product id (same orbit)")
     ap.add_argument("--band", type=int, help="tmc-iirs: IIRS band, 1-based as in its label")
@@ -483,14 +635,18 @@ def main(argv=None):
     ap.add_argument("--step-km", type=float, default=15.0)
     ap.add_argument("--same-as", type=int, help="reuse the windows of this band's pairs (nm, as in their ids)")
     ap.add_argument("--refit", action="store_true", help="nac-tmc: recompute the NAC's saved correction field")
-    ap.add_argument("--anchor", help="nac-tmc: correct the NAC against this already-corrected NAC (e.g. SAC's "
-                                     "M1350459544RE) instead of the OHRC, when its Sun is too far from the OHRC's")
+    ap.add_argument("--anchor", default="corners",
+                    help="nac-tmc: the NAC's geometry prior - 'corners' (default: LROC's published corners, "
+                         "uncorrected), 'ohrc' (the 4 m field against SAC's OHRC), or an already-corrected NAC "
+                         "id to fit against (e.g. M1350459544RE). See cut_nac_tmc's docstring for why corners.")
     a = ap.parse_args(argv)
     if a.kind == "tmc-iirs":
         if not (a.iirs and a.band):
             raise SystemExit("tmc-iirs needs --iirs and --band")
         dirs = cut_tmc_iirs(a.tmc, a.iirs, a.band, a.windows or 8, a.ref_px or 192, tuple(a.lat), a.step_km,
                             a.same_as)
+    elif a.kind == "ohrc-tmc":
+        dirs = cut_ohrc_tmc(a.tmc, a.windows or 4, a.ref_px or 384)
     else:
         if not (a.nac and a.edr_url):
             raise SystemExit("nac-tmc needs --nac and --edr-url")

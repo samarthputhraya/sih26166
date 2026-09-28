@@ -176,6 +176,9 @@ def fetch(pid, cookie, bands=None, list_only=False):
         if i.is_dir() or (i is cube and bands):
             continue
         dst = dest_root / i.filename
+        if dst.exists() and dst.stat().st_size == i.file_size:
+            print(f"  {dst.name}: already on disk ({i.file_size:,} bytes) - kept, not re-listed")
+            continue
         dst.parent.mkdir(parents=True, exist_ok=True)
         with zf.open(i) as src:
             _copy(src, dst, i.file_size, pathlib.Path(i.filename).name)
@@ -220,14 +223,17 @@ def _bands(zf, cube, url, pid, dest_root, bands, group, utc):
                 print(f"  band {b}: wrote {dst.name} ({time.time() - t0:.0f}s)", flush=True)
             else:
                 print(f"  band {b}: passed ({time.time() - t0:.0f}s)", flush=True)
+    prov_p = base.parent / f"{pid}_bands_PROVENANCE.json"
+    old = json.loads(prov_p.read_text(encoding="utf-8")) if prov_p.exists() else {}
     prov = {"product": pid, "source_zip": url,
             "qub_member": {"name": cube.filename, "start": cube.header_offset, "csize": cube.compress_size,
                            "usize": cube.file_size},
             "method": f"ops.fetch_pradan: HTTP Range reads of the zip ({CHUNK >> 20} MB requests, retried), the "
                       f"deflated cube inflated by zipfile and read band by band; BSQ float32 little-endian "
-                      f"{B} x {L} x {S}; stopped after band {max(bands)}; only bands {bands} kept.",
-            "bands": shas}
-    (base.parent / f"{pid}_bands_PROVENANCE.json").write_text(json.dumps(prov, indent=1), encoding="utf-8")
+                      f"{B} x {L} x {S}; each run stops after its last band wanted and keeps only those.",
+            "runs": old.get("runs", []) + [{"utc": utc, "bands": bands}],
+            "bands": {**old.get("bands", {}), **shas}}      # a later run adds bands, never drops them
+    prov_p.write_text(json.dumps(prov, indent=1), encoding="utf-8")
     return rows
 
 
