@@ -619,18 +619,18 @@ SCORECARD = [
     # "SAC's own benchmark pair (equatorial ...)" 6 agrees; "Sun azimuth and elevation ..." opposite table.
     ("Sun azimuth", "SAC's own pair [1]: 6/6 accepted, Sun azimuths 174° apart", GREEN),
     # "Sun azimuth and elevation, on SAC's own frame": the near-azimuth table, its totals line.
-    ("Sun elevation", "Same frame, azimuth within 20°: Sun up to 41.7° higher, 61 of 71 accepted", GREEN),
+    ("Sun elevation", "Same frame, azimuth within 20°: Sun up to 41.7° higher, 61/71 accepted", GREEN),
     # "Scale rung" 3 agrees of 4; "TMC-2 -> IIRS" scale column 16.2x, every window on both orbits.
     ("Scale", "29.6× OHRC → Kaguya TC: 3 of 4, 1 dense · 16× TMC-2 → IIRS: every window", GREEN),
     # "TMC-2 -> IIRS", both orbits: bands beyond 850 nm, windows accepted.
-    ("Multi-modal", "TMC-2 → IIRS infrared, 999–3223 nm: 62 of 62, 16 places on two orbits", GREEN),
+    ("Multi-modal", "TMC-2 → IIRS infrared, 999–3223 nm: 62/62, 16 places on two orbits", GREEN),
     # "One site, every camera ... (Site N)": the legs table and the loop paragraph.
     ("OHRC, TMC, IIRS", "One site, Suns matched: OHRC → TMC-2 10/10, OHRC → LRO NAC 5/5, NAC → TMC-2 4/4; "
                         "loop consistency 2.0 m", GREEN),
     # "In the Chandrayaan-2 image's own pixels": NAC <-> TMC-2 and TMC-2 <-> IIRS 1555 nm (held-out medians).
     # ... and the Site N OHRC -> TMC-2 row, which is not sub-pixel in every window (claim-check 2 Oct).
     ("Sub-pixel", "Own pixels, held out: TMC-2 0.36–0.48 = 1.6–2.2 m; IIRS 0.16–0.32 = 14–27 m; "
-                  "OHRC → TMC-2 0.61–1.57", GREEN),
+                  "OHRC → TMC-2 0.61–1.57 = 3.2–8.1 m", GREEN),
     # "Runtime and match distribution": grid coverage, and the delivered uniform set.
     ("Uniform spread", "Inliers in ≥95% of 8×8 cells on 17 of 20 windows; uniform control-point set ships", GREEN),
     ("Deliverables", "GeoTIFF, GDAL and QGIS control points, ISIS match list, trust map, report", GREEN),
