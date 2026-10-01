@@ -1015,7 +1015,7 @@ def fig_site_n():
     ax.axis("off")
     g = lambda rows, k: float(rows[0][k])  # noqa: E731
     nodes = {
-        "O": (1.7, 4.6, f"Chandrayaan-2 OHRC\n0.25 m, matched at {g(legs['ot'], 'src_gsd_m'):.1f} m"),
+        "O": (1.7, 4.6, f"Chandrayaan-2 OHRC\nmatched at {g(legs['ot'], 'src_gsd_m'):.2f} m"),
         "N": (8.3, 4.6, f"LRO NAC\n{g(legs['on'], 'ref_gsd_m'):.2f} m" if legs["on"] else "LRO NAC"),
         "T": (1.7, 1.4, f"Chandrayaan-2 TMC-2\n{g(legs['ot'], 'ref_gsd_m'):.1f} m"),
         "I": (8.3, 1.4, f"Chandrayaan-2 IIRS\n{float(ti[0]['ref_gsd_m']):.0f} m, 999-3223 nm" if ti else "IIRS"),
@@ -1038,14 +1038,18 @@ def fig_site_n():
 
     edge("O", "T", legs["ot"], (1.85, 3.0), ha="left")
     if legs["on"]:
-        edge("O", "N", legs["on"], (5.3, 5.2))
+        edge("O", "N", legs["on"], (5.0, 5.2))
     if legs["nt"]:
         edge("N", "T", legs["nt"], (5.75, 2.75), ha="left")
     if ti:
         bands = sorted({re.search(r"_iirs(\d+)_", r["pair_id"]).group(1) for r in ti}, key=int)
         acc = sum(r["verdict"] == "agrees" for r in ti)
-        edge("T", "I", ti, (5.0, 0.75))
-        ax.texts[-1].set_text(f"{acc}/{len(ti)} accepted, {len(bands)} infrared bands\n(multi-modal; same orbit, same Sun)")
+        edge("T", "I", ti, (5.0, 0.42))
+        # The IIRS windows lie along the TMC-2 strip, not on the site's windows (claim-check, 2 Oct): say where.
+        lats = [float(r["window_lat"]) for r in ti]
+        ax.texts[-1].set_text(f"{acc}/{len(ti)}, {len(bands)} infrared bands (multi-modal)\n"
+                              f"along this TMC-2 pass, {min(lats):.1f}-{max(lats):.1f}°N")
+        ax.texts[-1].set_fontsize(10.5)
     view = [r for p, r in latest.items() if re.match(r"siten_ohrc\d+_ohrc\d+_c\d+$", p)]
     if view:
         import json
@@ -1056,21 +1060,22 @@ def fig_site_n():
             if p.exists():
                 v = (json.loads(p.read_text(encoding="utf-8")).get("view_at_window") or {}).get("angle_between_deg")
                 sep += [float(v)] if v is not None else []
-        apart = f", viewed {np.median(sep):.0f}° apart" if sep else ""
-        ax.text(0.15, 5.62, f"+ OHRC → OHRC of the next orbit{apart}:\n{a1}, {m1}",
+        apart = f"viewed {np.median(sep):.0f}° apart: " if sep else ""
+        ax.text(0.15, 5.74, f"+ OHRC → OHRC of the next orbit,\n{apart}{a1},\n{m1}",
                 ha="left", va="center", fontsize=10.5, color=INK)
     if loops:
         rms = [float(r["loop_rms_m"]) for r in loops]
-        ax.text(0.15, 0.12, f"Loop OHRC → NAC → TMC-2 against OHRC → TMC-2: {np.median(rms):.1f} m median "
-                f"over {len(loops)} windows", ha="left", va="center", fontsize=10.5, color=ORANGE)
+        # a caption, not a label: no free space in the triangle at the slide size
+        fig.text(0.014, 0.085, f"Loop OHRC → NAC → TMC-2 against OHRC → TMC-2: {np.median(rms):.1f} m median over "
+                 f"{len(loops)} windows (consistency, not accuracy)", fontsize=9.5, color=ORANGE)
     every = legs["ot"] + legs["on"] + legs["nt"]                       # the middle of the windows, as REPORT
     lat = float(np.median([float(r["window_lat"]) for r in every]))
     lon = float(np.median([float(r["window_lon"]) for r in every]))
-    ax.set_title(f"One site ({lat:.1f}°N, {abs(lon if lon < 180 else lon - 360):.1f}°W), every camera: "
+    ax.set_title(f"One site ({lat:.1f}°N, {abs(lon if lon < 180 else lon - 360):.1f}°W) and its TMC-2 pass: "
                  "Suns matched, each leg checked", loc="left", fontweight="bold", fontsize=13, pad=6)
     fig.text(0.014, 0.01, "windows accepted / windows · held-out median on the reference grid, accepted windows\n"
              "with inlier ratio above 0.5 · REPORT.md, Site N", fontsize=8.5, color=MUTED)
-    fig.tight_layout(rect=(0, 0.07, 1, 1))
+    fig.tight_layout(rect=(0, 0.12, 1, 1))
     out = OUT / "fig10_site_n.png"
     _audit(fig, out.name)
     fig.savefig(out, dpi=200)

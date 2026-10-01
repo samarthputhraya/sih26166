@@ -434,7 +434,7 @@ HOW_ROWS = [
     # windows) and its highest Sun (+41.7° in elevation).
     ("ELEVATION", GREEN, "61/71 accepted", " Sun raised up to 41.7° on SAC's frame"),
     # "Scale rung: ... TC ortho map": scale column, `agrees` / rows.
-    ("SCALE", GREEN, "3/4 accepted", " across a 29.6× scale gap"),
+    ("SCALE", GREEN, "3/4 accepted", " across a 29.6× gap, 1 on dense evidence"),
     # "TMC-2 -> IIRS, orbit of ..." (both orbits): windows accepted in the bands beyond 850 nm
     # (multi-modal), 8 x 4 on the first orbit + 8 + 8 + 8 + 6 on the second.
     ("SENSOR", GREEN, "62/62 accepted", " TMC-2 → IIRS infrared, two orbits"),
@@ -617,29 +617,30 @@ EVIDENCE_SCALE = ("400 windows", "11 instrument pairings")
 
 SCORECARD = [
     # "SAC's own benchmark pair (equatorial ...)" 6 agrees; "Sun azimuth and elevation ..." opposite table.
-    ("Sun azimuth", "SAC's own pair [1]: 6/6 accepted with the Sun's azimuth 174° away", GREEN),
+    ("Sun azimuth", "SAC's own pair [1]: 6/6 accepted, Sun azimuths 174° apart", GREEN),
     # "Sun azimuth and elevation, on SAC's own frame": the near-azimuth table, its totals line.
     ("Sun elevation", "Same frame, azimuth within 20°: Sun up to 41.7° higher, 61 of 71 accepted", GREEN),
     # "Scale rung" 3 agrees of 4; "TMC-2 -> IIRS" scale column 16.2x, every window on both orbits.
-    ("Scale", "29.6× OHRC → Kaguya TC: 3 of 4 · 16× TMC-2 → IIRS: every window, two orbits", GREEN),
+    ("Scale", "29.6× OHRC → Kaguya TC: 3 of 4, 1 dense · 16× TMC-2 → IIRS: every window", GREEN),
     # "TMC-2 -> IIRS", both orbits: bands beyond 850 nm, windows accepted.
-    ("Multi-modal", "IIRS infrared, 999–3223 nm, onto TMC-2: 62 of 62 windows over two orbits", GREEN),
+    ("Multi-modal", "TMC-2 → IIRS infrared, 999–3223 nm: 62 of 62, 16 places on two orbits", GREEN),
     # "One site, every camera ... (Site N)": the legs table and the loop paragraph.
     ("OHRC, TMC, IIRS", "One site, Suns matched: OHRC → TMC-2 10/10, OHRC → LRO NAC 5/5, NAC → TMC-2 4/4; "
-                        "loop closes to 2.0 m", GREEN),
+                        "loop consistency 2.0 m", GREEN),
     # "In the Chandrayaan-2 image's own pixels": NAC <-> TMC-2 and TMC-2 <-> IIRS 1555 nm (held-out medians).
-    ("Sub-pixel", "In the Chandrayaan-2 image's own pixels: TMC-2 0.36–0.48 (vs NAC), IIRS 0.16–0.32 (held out)",
-     GREEN),
+    # ... and the Site N OHRC -> TMC-2 row, which is not sub-pixel in every window (claim-check 2 Oct).
+    ("Sub-pixel", "Own pixels, held out: TMC-2 0.36–0.48 = 1.6–2.2 m; IIRS 0.16–0.32 = 14–27 m; "
+                  "OHRC → TMC-2 0.61–1.57", GREEN),
     # "Runtime and match distribution": grid coverage, and the delivered uniform set.
-    ("Uniform spread", "Matches in 95% or more of 8×8 cells on 17 of 20 windows; a uniform control-point set ships", GREEN),
-    ("Deliverables", "GeoTIFF on the reference grid, GDAL and QGIS control points, ISIS match list, report", GREEN),
+    ("Uniform spread", "Inliers in ≥95% of 8×8 cells on 17 of 20 windows; uniform control-point set ships", GREEN),
+    ("Deliverables", "GeoTIFF, GDAL and QGIS control points, ISIS match list, trust map, report", GREEN),
     # "A real viewpoint test at Site N": agrees / windows, angle apart, held-out median.
-    ("Viewpoint", "OHRC → OHRC, next orbit, views 40° apart: 8 of 8 accepted, held-out 0.91 px", GREEN),
+    ("Viewpoint", "OHRC → OHRC, next orbit, views 40° apart: 8 of 8, held-out 0.91 px = 1.12 m", GREEN),
 ]
 RISKS = [
     # "Real sun-angle sweep" bins 60-90 and 90-120: 0 accepted of 7 + 5, none wrongly accepted.
-    (("Sun 60–120° away", "74°S sweep: 0 of 12 accepted, none wrongly"),
-     ("Choose the pass by its Sun", "How this slide's site was found: four cameras, Suns matched")),
+    (("Sun 60–120° away", "74°S sweep: 0 of 12 accepted; 1 failure caught, 2 right ones refused"),
+     ("Choose the pass by its Sun", "How this slide's site was found")),
     (("Relief parallax", "TMC-2 fore → aft, 50° apart: 1 of 4 accepted"),
      ("Local transforms", "Tile-level transforms after DTM orthorectification")),
 ]
