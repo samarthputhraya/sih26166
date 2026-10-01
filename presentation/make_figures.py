@@ -983,6 +983,87 @@ def fig_sun_map():
     return out
 
 
+def fig_site_n():
+    """Site N (ops/cut_chain_pairs.py site, 1 Oct 2026): one place where OHRC, TMC-2, IIRS and an
+    LRO NAC were all registered under matched Suns. Four instruments as nodes, every leg as an edge
+    labelled with windows accepted / windows and its held-out median on its reference grid (accepted
+    windows with an inlier ratio above 0.5, as REPORT.md quotes them), and the loop closure of
+    OHRC -> NAC -> TMC-2 against OHRC -> TMC-2. Every value from real_pairs_log.csv."""
+    latest = {}
+    for r in _rows(REAL_LOG):
+        latest[r["pair_id"]] = r
+    legs = {"ot": [r for p, r in latest.items() if p.startswith("siten_ohrc") and "_tmc" in p],
+            "on": [r for p, r in latest.items() if p.startswith("siten_ohrc") and "_nac" in p],
+            "nt": [r for p, r in latest.items() if p.startswith("siten_nac")]}
+    if not legs["ot"]:
+        return None
+    tmc = legs["ot"][0]["reference_product"]
+    ti = [r for p, r in latest.items() if p.startswith(f"chain_tmc{tmc[12:20]}_iirs") and "_iirs746_" not in p]
+    loops = [r for p, r in latest.items() if p.startswith("loop_siten")]
+
+    def summ(rows):
+        acc = [r for r in rows if r["verdict"] == "agrees"]
+        rob = [float(r["residual_median_px"]) for r in acc
+               if r.get("residual_median_px") and float(r.get("inlier_ratio") or 0) > 0.5]
+        g = float(rows[0]["ref_gsd_m"])
+        med = f"held-out {np.median(rob):.2f} px = {np.median(rob) * g:.1f} m" if rob else "no accuracy quoted"
+        return f"{len(acc)}/{len(rows)} accepted", med
+
+    fig, ax = plt.subplots(figsize=(7.6, 4.6))
+    ax.set_xlim(0, 10)
+    ax.set_ylim(0, 6.2)
+    ax.axis("off")
+    g = lambda rows, k: float(rows[0][k])  # noqa: E731
+    nodes = {
+        "O": (1.7, 4.6, f"Chandrayaan-2 OHRC\n0.25 m, matched at {g(legs['ot'], 'src_gsd_m'):.1f} m"),
+        "N": (8.3, 4.6, f"LRO NAC\n{g(legs['on'], 'ref_gsd_m'):.2f} m" if legs["on"] else "LRO NAC"),
+        "T": (1.7, 1.4, f"Chandrayaan-2 TMC-2\n{g(legs['ot'], 'ref_gsd_m'):.1f} m"),
+        "I": (8.3, 1.4, f"Chandrayaan-2 IIRS\n{float(ti[0]['ref_gsd_m']):.0f} m, 999-3223 nm" if ti else "IIRS"),
+    }
+    for k, (x, y, label) in nodes.items():
+        col = BLUE if k in ("O", "T", "I") else MUTED
+        from matplotlib.patches import FancyBboxPatch
+        ax.add_patch(FancyBboxPatch((x - 1.55, y - 0.55), 3.1, 1.1,
+                     boxstyle="round,pad=0.05,rounding_size=0.15", fc="#eef4fb" if col == BLUE else "#f1f1ef",
+                     ec=col, lw=1.4))
+        ax.text(x, y, label, ha="center", va="center", fontsize=11.5, color=INK, fontweight="bold")
+
+    def edge(a, b, rows, label_xy, ha="center"):
+        (x0, y0, _), (x1, y1, _) = nodes[a], nodes[b]
+        ax.annotate("", xy=(x1 - (1.5 if x1 > x0 else -1.5 if x1 < x0 else 0), y1 + (0.6 if y1 < y0 else -0.6 if y1 > y0 else 0)),
+                    xytext=(x0 + (1.5 if x1 > x0 else -1.5 if x1 < x0 else 0), y0 - (0.6 if y1 < y0 else -0.6 if y1 > y0 else 0)),
+                    arrowprops=dict(arrowstyle="-|>", color=AQUA, lw=2.2))
+        a1, m1 = summ(rows)
+        ax.text(*label_xy, f"{a1}\n{m1}", ha=ha, va="center", fontsize=11, color=INK)
+
+    edge("O", "T", legs["ot"], (1.85, 3.0), ha="left")
+    if legs["on"]:
+        edge("O", "N", legs["on"], (5.0, 5.15))
+    if legs["nt"]:
+        edge("N", "T", legs["nt"], (5.75, 2.75), ha="left")
+    if ti:
+        bands = sorted({re.search(r"_iirs(\d+)_", r["pair_id"]).group(1) for r in ti}, key=int)
+        acc = sum(r["verdict"] == "agrees" for r in ti)
+        edge("T", "I", ti, (5.0, 0.75))
+        ax.texts[-1].set_text(f"{acc}/{len(ti)} accepted, {len(bands)} infrared bands\n(multi-modal; same orbit, same Sun)")
+    if loops:
+        rms = [float(r["loop_rms_m"]) for r in loops]
+        ax.text(1.95, 3.72, f"loop OHRC → NAC → TMC-2 vs OHRC → TMC-2:\n{np.median(rms):.1f} m median "
+                f"({len(loops)} windows)", ha="left", va="center", fontsize=10.5, color=ORANGE)
+    lat = float(legs["ot"][0]["window_lat"])
+    lon = float(legs["ot"][0]["window_lon"])
+    ax.set_title(f"One site ({lat:.1f}°N, {abs(lon if lon < 180 else lon - 360):.1f}°W), every camera: "
+                 "Suns matched, each leg checked", loc="left", fontweight="bold", fontsize=14.5, pad=6)
+    fig.text(0.014, 0.01, "windows accepted / windows · held-out median on the reference grid, accepted windows "
+             "with inlier ratio above 0.5 · REPORT.md, Site N", fontsize=9.5, color=MUTED)
+    fig.tight_layout(rect=(0, 0.04, 1, 1))
+    out = OUT / "fig10_site_n.png"
+    _audit(fig, out.name)
+    fig.savefig(out, dpi=200)
+    plt.close(fig)
+    return out
+
+
 def main() -> int:
     OUT.mkdir(parents=True, exist_ok=True)
     deltas, ours, best, nscored, ntried = load_curves()
@@ -995,7 +1076,7 @@ def main() -> int:
     print(f"  wrote {fig_trust_calibration().name}")
     print(f"  wrote {fig_trust_map().name}")
     print(f"  wrote {fig_pipeline().name}")
-    for f in (fig_real_sun_sweep, fig_trust_real, fig_miloi, fig_sun_map):
+    for f in (fig_real_sun_sweep, fig_trust_real, fig_miloi, fig_sun_map, fig_site_n):
         out = f()
         print(f"  wrote {out.name}" if out else f"  skipped {f.__name__} (no evidence file yet)")
     _report_slide_legibility()

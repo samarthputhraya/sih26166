@@ -856,6 +856,40 @@ def site_frame(ohrc_pid, anchor_nac, refit=False):
     return key, proj, ohrc_f, o_read, o_info, (sx, sy), prior
 
 
+def spm_sun(xml, line):
+    """(Sun azimuth, Sun elevation) in degrees at one image LINE of a Chandrayaan-2 OHRC or TMC-2
+    product, from its own Sun-parameter file (miscellaneous/calibrated/<day>/<pid>.spm, shipped in
+    the PRADAN zip): ORBTATTD records of time, spacecraft position and velocity, then solar
+    incidence, -, Sun azimuth, Sun elevation at the sub-spacecraft point. The line's time is placed
+    between the label's start and stop times; the nearest record is used.
+
+    WHY. A TMC-2 label carries ONE Sun, at the strip centre (Known issue 33): on Site N's pass the
+    strip runs from 61.6 N to 29.4 N and the label says 41.8 deg up, while at 60.7 N, where the OHRC
+    frame is, the Sun is ~27 deg up. Quoting the label there would call a matched Sun 13 deg off."""
+    import datetime as dt
+    xml = pathlib.Path(xml)
+    spm = pathlib.Path(str(xml).replace("\\data\\", "\\miscellaneous\\")
+                       .replace("/data/", "/miscellaneous/")).with_suffix(".spm")
+    if not spm.exists():
+        return None
+    text = xml.read_text(encoding="latin1")
+    t0, t1 = (dt.datetime.fromisoformat(re.search(rf"<{k}_date_time>([^<]+)<", text).group(1).replace("Z", ""))
+              for k in ("start", "stop"))
+    n = int(re.findall(r"<elements>(\d+)<", text)[0])
+    t = t0 + (t1 - t0) * (max(0.0, min(float(line), n - 1.0)) / max(n - 1, 1))
+    best = None
+    for ln in spm.read_text(encoding="latin1").splitlines():
+        f = ln.split()
+        if len(f) < 19 or f[0] != "ORBTATTD":
+            continue
+        tr = (dt.datetime(int(f[2][-4:]), int(f[3]), int(f[4]), int(f[5]), int(f[6]), int(f[7]))
+              + dt.timedelta(milliseconds=int(f[8])))
+        d = abs((tr - t).total_seconds())
+        if best is None or d < best[0]:
+            best = (d, float(f[17]), float(f[18]))
+    return None if best is None else (best[1], best[2])
+
+
 def _site_write(pair_id, proj, x, y, window_m, r, s, meta):
     """Write one pair (both GeoTIFFs and geometry_prior.json) and return its folder."""
     from core import geometry as G
@@ -962,20 +996,25 @@ def cut_site(ohrc_pid, tmc_pid, nac_pid, legs=("ohrc-tmc", "ohrc-nac", "nac-tmc"
             if pr is None:
                 continue
             lat, lon = proj.inv(x, y)
-            d_az = d_inc = None
-            if leg == "ohrc-tmc":
-                d_az = round(abs((t_sun["azimuth_deg_label"] - o_sun["azimuth_deg_label"] + 180) % 360 - 180), 1)
-                d_inc = round(o_sun["elevation_deg_label"] - t_sun["elevation_deg_label"], 2)
-                sun_note = "both scene-level labels (isda:sun_azimuth / sun_elevation)"
-            else:
-                # d_incidence = reference incidence - source incidence, as in every other cut
+            # The Sun AT THE WINDOW for every image: OHRC and TMC-2 from their own .spm at the window's
+            # line (spm_sun), the NAC from LROC's sub-solar point. Labels only as a fallback.
+            suns = {}
+            for name, fr, xml_, lab in (("ohrc", ohrc_f, CP.PRODUCTS[key][0], o_sun), ("tmc2", tmc_f, xml_t, t_sun)):
+                _, ln = fr.from_map(np.array([x]), np.array([y]))
+                scale = 4 if name == "ohrc" else 1            # the OHRC frame is area-averaged 4x4
+                v = spm_sun(xml_, float(ln[0]) * scale) if np.isfinite(ln[0]) else None
+                suns[name] = (v, ".spm at the window's line") if v else (
+                    (lab["azimuth_deg_label"], lab["elevation_deg_label"]), "scene-level label")
+            if nac_f is not None:
                 n_inc, n_az = G.sun_direction(float(lat), float(lon), *n_info["subsolar"])
-                other = o_sun if leg == "ohrc-nac" else t_sun
-                o_inc = 90.0 - other["elevation_deg_label"]
-                d_az = round(abs((n_az - other["azimuth_deg_label"] + 180) % 360 - 180), 1)
-                d_inc = round(n_inc - o_inc if leg == "ohrc-nac" else o_inc - n_inc, 2)
-                sun_note = ("NAC at the window from LROC's sub-solar point; "
-                            + ("OHRC" if leg == "ohrc-nac" else "TMC-2") + ": scene-level label")
+                suns["nac"] = ((n_az, 90.0 - n_inc), "LROC sub-solar point at the window")
+            s_name, r_name = {"ohrc-tmc": ("ohrc", "tmc2"), "ohrc-nac": ("ohrc", "nac"), "nac-tmc": ("nac", "tmc2")}[leg]
+            (s_az, s_el), s_how = suns[s_name]
+            (r_az, r_el), r_how = suns[r_name]
+            # d_incidence = reference incidence - source incidence, as in every other cut
+            d_az = round(abs((r_az - s_az + 180) % 360 - 180), 1)
+            d_inc = round((90.0 - r_el) - (90.0 - s_el), 2)
+            sun_note = f"Sun at the window: {s_name} from its {s_how}, {r_name} from its {r_how}"
             meta = {"tier": tier, "terminology": term, "candidate_index": int(k), "site": "N (60.7 N, 4.6 W)",
                     "window_rule": "pre-registered: centres every 1.25 TMC-2 windows along the OHRC frame's centre "
                                    "line (ladder_candidates), the same for all three legs - no matching involved",
@@ -984,7 +1023,8 @@ def cut_site(ohrc_pid, tmc_pid, nac_pid, legs=("ohrc-tmc", "ohrc-nac", "nac-tmc"
                     "d_sun_azimuth_deg": d_az, "d_incidence_deg": d_inc, "sun_note": sun_note,
                     "scale_ratio": round(ref[2] / src[2], 3),
                     "prior_H_source_to_reference": [[src[2] / ref[2], 0, 0], [0, src[2] / ref[2], 0], [0, 0, 1]],
-                    "prior_note": prior_note, "ohrc_shift_into_lroc_m": [round(sx, 1), round(sy, 1)]}
+                    "prior_note": prior_note, "ohrc_shift_into_lroc_m": [round(sx, 1), round(sy, 1)],
+                    "sun_at_window_az_el": {k: [round(v[0][0], 2), round(v[0][1], 2), v[1]] for k, v in suns.items()}}
             made.append(_site_write(f"{stem}_c{k:02d}", proj, x, y, window_m, pr[0], pr[1], meta))
             if len(made) >= n_windows:
                 break
