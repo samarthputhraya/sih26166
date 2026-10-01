@@ -535,6 +535,8 @@ def section_site_n(reg, site_loops):
     windows and the loop OHRC -> NAC -> TMC-2 against OHRC -> TMC-2. Values read from the rows,
     the pairs' geometry_prior.json and the anchor NAC's saved correction."""
     rows = [r for r in reg if r["pair_id"].startswith("siten_")]
+    view = sorted([r for r in rows if _kind(r) == "ohrc-ohrc"], key=lambda r: r["pair_id"])
+    rows = [r for r in rows if _kind(r) != "ohrc-ohrc"]
     if not rows:
         return []
     gps = {r["pair_id"]: _jsonfile(ROOT / "data" / "pairs" / r["pair_id"] / "geometry_prior.json") or {} for r in rows}
@@ -550,9 +552,12 @@ def section_site_n(reg, site_loops):
     tmc = next((r["reference_product"] for r in rows if _kind(r).endswith("tmc2")), "?")
     nac = next((r["reference_product"] for r in rows if _kind(r) == "ohrc-nac"),
                next((r["source_product"] for r in rows if _kind(r) == "nac-tmc2"), "?"))
-    lat, lon = (g0.get("window_centre_latlon") or [None, None])
+    # the middle of the windows, as fig10's title (east longitudes in the log; the site is west of 0)
+    lat = st.median(float(r["window_lat"]) for r in rows)
+    lon = (st.median(float(r["window_lon"]) for r in rows) + 180.0) % 360.0 - 180.0
     L = ["## One site, every camera: OHRC, TMC-2, IIRS and an LRO NAC under matched Suns (Site N)", "",
-         f"OHRC `{ohrc}`, TMC-2 nadir `{tmc}`, LRO NAC `{nac}` near {_f(lat, 2)}°, {_f(lon, 2)}° "
+         f"OHRC `{ohrc}`, TMC-2 nadir `{tmc}`, LRO NAC `{nac}`, windows centred near {abs(lat):.1f}°"
+         f"{'N' if lat >= 0 else 'S'}, {abs(lon):.1f}°{'E' if lon >= 0 else 'W'} "
          f"(`ops/cut_chain_pairs.py site`; found in PRADAN's footprint catalogue and WUSTL ODE by matching the Suns). "
          f"The OHRC archive grid is first moved ({sh[0]:+.0f}, {sh[1]:+.0f}) m into LRO's geometry by the NAC's 4 m "
          f"correction against it; the NAC is placed by LROC's corners and the TMC-2 by its archive grid, so no TMC-2 "
@@ -600,10 +605,56 @@ def section_site_n(reg, site_loops):
     L += ["The IIRS strip of the TMC-2's own orbit is registered onto the TMC-2 in the section above "
           f"(*TMC-2 → IIRS*, the orbit of `{tmc}`).", ""] if any(
         r["pair_id"].startswith(f"chain_tmc{tmc[12:20]}_iirs") for r in reg) else []
+    L += section_view_n(view)
     for k, name, _ in order:
         if legs.get(k):
             L += section_pairs(f"Site N, {name}, window by window", sorted(legs[k], key=lambda r: r["pair_id"]), "",
                                level="####")
+    return L
+
+
+def section_view_n(view):
+    """Site N's real viewpoint test (ops/cut_chain_pairs.py viewpoint): two OHRC frames of consecutive
+    orbits, forward- and backward-looking, the viewing directions and Suns read per window from the
+    pairs' geometry_prior.json (each frame's own .oat and .spm)."""
+    if not view:
+        return []
+    gps = {r["pair_id"]: _jsonfile(ROOT / "data" / "pairs" / r["pair_id"] / "geometry_prior.json") or {} for r in view}
+    vw = [gps[r["pair_id"]].get("view_at_window") or {} for r in view]
+    sep = [v["angle_between_deg"] for v in vw if v.get("angle_between_deg") is not None]
+    g = float(view[0]["ref_gsd_m"])
+    acc = [r for r in view if r["verdict"] == "agrees"]
+    rob = _robust(acc)
+    med = [float(r["residual_median_px"]) for r in rob]
+    c = Counter(r["verdict"] for r in view)
+    d_inc = [float(r["d_incidence_deg"]) for r in view]
+    d_az = [float(r["d_sun_azimuth_deg"]) for r in view]
+    L = ["### A real viewpoint test at Site N: OHRC looking forward → OHRC looking back, the next orbit", "",
+         f"`{view[0]['source_product']}` (source) → `{view[0]['reference_product']}` (reference), two hours apart. "
+         f"Same instrument - a viewpoint test, NOT cross-sensor. At the windows the two viewing directions are "
+         + (f"**{min(sep):.1f}-{max(sep):.1f}° apart**, from opposite sides of the site" if sep else "n/a")
+         + f"; the Sun moved {min(d_az):.2f}-{max(d_az):.2f}° in azimuth and "
+         + (f"{min(d_inc):+.1f}°" if f"{min(d_inc):+.1f}" == f"{max(d_inc):+.1f}" else f"{min(d_inc):+.1f} to {max(d_inc):+.1f}°")
+         + f" in incidence. Both frames were put in LRO's geometry by the same NAC's 4 m correction against each, "
+         f"never fitted to one another, and resampled to one {g:g} m grid; windows are every third centre on the "
+         f"source frame's centre line, fixed before matching. Each image is placed by its own pointing on a sphere, "
+         f"so what a window's homography cannot absorb is relief parallax between the two views. "
+         f"**{c['agrees']}/{len(view)} accepted**"
+         + (f"; held-out median {st.median(med):.2f} px ({st.median(med) * g:.2f} m) on the {g:g} m grid "
+            f"(range {min(med):.2f}-{max(med):.2f} px, accepted windows with inlier ratio above 0.5)" if med else "")
+         + ". Viewing directions from each frame's `.oat` (sub-spacecraft point and altitude), Suns from its `.spm`, "
+         "both at the window's image line.", "",
+         "| pair | source view: off vertical, from az | reference view | apart | Δincidence | inliers | ratio | "
+         "held-out median px (m) | verified / no-evid | verdict |", "|---|---|---|---|---|---|---|---|---|---|"]
+    for r, v in zip(view, vw):
+        a, b = v.get("a") or {}, v.get("b") or {}
+        mp = r.get("residual_median_px")
+        L.append(f"| `{r['pair_id']}` | {_f(a.get('emission_deg'), 1)}°, {_f(a.get('spacecraft_azimuth_deg'), 0)}° | "
+                 f"{_f(b.get('emission_deg'), 1)}°, {_f(b.get('spacecraft_azimuth_deg'), 0)}° | "
+                 f"{_f(v.get('angle_between_deg'), 1)}° | {_f(r['d_incidence_deg'], 2)}° | {r['inliers']} | "
+                 f"{_f(r['inlier_ratio'])} | {_f(mp)}" + (f" ({float(mp) * g:.2f})" if mp else "")
+                 + f" | {r['verified']} / {r['no_evidence']} | {r['verdict']} |")
+    L.append("")
     return L
 
 

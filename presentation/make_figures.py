@@ -1011,7 +1011,7 @@ def fig_site_n():
 
     fig, ax = plt.subplots(figsize=(7.6, 4.6))
     ax.set_xlim(0, 10)
-    ax.set_ylim(0, 6.2)
+    ax.set_ylim(0, 6.25)
     ax.axis("off")
     g = lambda rows, k: float(rows[0][k])  # noqa: E731
     nodes = {
@@ -1046,12 +1046,26 @@ def fig_site_n():
         acc = sum(r["verdict"] == "agrees" for r in ti)
         edge("T", "I", ti, (5.0, 0.75))
         ax.texts[-1].set_text(f"{acc}/{len(ti)} accepted, {len(bands)} infrared bands\n(multi-modal; same orbit, same Sun)")
+    view = [r for p, r in latest.items() if re.match(r"siten_ohrc\d+_ohrc\d+_c\d+$", p)]
+    if view:
+        import json
+        a1, m1 = summ(view)
+        sep = []
+        for r in view:                     # the angle between the two viewing directions, per window
+            p = ROOT / "data" / "pairs" / r["pair_id"] / "geometry_prior.json"
+            if p.exists():
+                v = (json.loads(p.read_text(encoding="utf-8")).get("view_at_window") or {}).get("angle_between_deg")
+                sep += [float(v)] if v is not None else []
+        apart = f", viewed {np.median(sep):.0f}° apart" if sep else ""
+        ax.text(0.15, 5.62, f"+ OHRC → OHRC of the next orbit{apart}:\n{a1}, {m1}",
+                ha="left", va="center", fontsize=10.5, color=INK)
     if loops:
         rms = [float(r["loop_rms_m"]) for r in loops]
         ax.text(1.95, 3.72, f"loop OHRC → NAC → TMC-2 vs OHRC → TMC-2:\n{np.median(rms):.1f} m median "
                 f"({len(loops)} windows)", ha="left", va="center", fontsize=10.5, color=ORANGE)
-    lat = float(legs["ot"][0]["window_lat"])
-    lon = float(legs["ot"][0]["window_lon"])
+    every = legs["ot"] + legs["on"] + legs["nt"]                       # the middle of the windows, as REPORT
+    lat = float(np.median([float(r["window_lat"]) for r in every]))
+    lon = float(np.median([float(r["window_lon"]) for r in every]))
     ax.set_title(f"One site ({lat:.1f}°N, {abs(lon if lon < 180 else lon - 360):.1f}°W), every camera: "
                  "Suns matched, each leg checked", loc="left", fontweight="bold", fontsize=14.5, pad=6)
     fig.text(0.014, 0.01, "windows accepted / windows · held-out median on the reference grid, accepted windows "
