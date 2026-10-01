@@ -36,6 +36,7 @@ anything else the pipeline finds is the two archives' disagreement.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import datetime as _dt
 import json
 import math
@@ -822,10 +823,11 @@ def ohrc_key(pid):
     return key
 
 
-def site_frame(ohrc_pid, anchor_nac, refit=False):
+def site_frame(ohrc_pid, anchor_nac, refit=False, proj=None):
     """(key, proj, OHRC 4x4 frame in LRO's geometry, reader, info, shift, anchor prior).
 
-    The map is a local equirectangular grid centred on the OHRC frame. The OHRC archive grid can sit
+    The map is a local equirectangular grid centred on the OHRC frame (or `proj`, to put a second
+    OHRC frame of the same site on the first one's map). The OHRC archive grid can sit
     kilometres from LRO's (1.9 km at SAC's frame, 28 Sep), so it is moved into LRO's geometry by the
     correction `anchor_nac` carries against it - fitted here once if absent (ops.cut_pradan_pairs.
     nac_corrected: wide template search, then the 4 m box field; both intensity polarities) and saved
@@ -834,7 +836,7 @@ def site_frame(ohrc_pid, anchor_nac, refit=False):
     from ops import cut_pradan_pairs as CP
     from ops import cut_site_pairs as S
     key = ohrc_key(ohrc_pid)
-    proj = LocalEqc(*CP._frame_centre_latlon(CP.PRODUCTS[key][1]))
+    proj = proj or LocalEqc(*CP._frame_centre_latlon(CP.PRODUCTS[key][1]))
     gp = S.GEOM_DIR / f"{anchor_nac}.json"
     stale = (not gp.exists() or json.loads(gp.read_text(encoding="utf-8")).get("against")
              != CP.PRODUCTS[key][0].stem)
@@ -866,11 +868,19 @@ def spm_sun(xml, line):
     WHY. A TMC-2 label carries ONE Sun, at the strip centre (Known issue 33): on Site N's pass the
     strip runs from 61.6 N to 29.4 N and the label says 41.8 deg up, while at 60.7 N, where the OHRC
     frame is, the Sun is ~27 deg up. Quoting the label there would call a matched Sun 13 deg off."""
+    f = _nearest_record(xml, line, ".spm", 19)
+    return None if f is None else (float(f[17]), float(f[18]))
+
+
+def _nearest_record(xml, line, suffix, min_fields):
+    """The ORBTATTD record of <pid><suffix> (miscellaneous/calibrated/<day>/, beside the label's
+    data/calibrated/<day>/) nearest in time to one image LINE, as a list of fields; None if absent.
+    The line's time is placed linearly between the label's start and stop times."""
     import datetime as dt
     xml = pathlib.Path(xml)
-    spm = pathlib.Path(str(xml).replace("\\data\\", "\\miscellaneous\\")
-                       .replace("/data/", "/miscellaneous/")).with_suffix(".spm")
-    if not spm.exists():
+    p = pathlib.Path(str(xml).replace("\\data\\", "\\miscellaneous\\")
+                     .replace("/data/", "/miscellaneous/")).with_suffix(suffix)
+    if not p.exists():
         return None
     text = xml.read_text(encoding="latin1")
     t0, t1 = (dt.datetime.fromisoformat(re.search(rf"<{k}_date_time>([^<]+)<", text).group(1).replace("Z", ""))
@@ -878,16 +888,47 @@ def spm_sun(xml, line):
     n = int(re.findall(r"<elements>(\d+)<", text)[0])
     t = t0 + (t1 - t0) * (max(0.0, min(float(line), n - 1.0)) / max(n - 1, 1))
     best = None
-    for ln in spm.read_text(encoding="latin1").splitlines():
+    for ln in p.read_text(encoding="latin1").splitlines():
         f = ln.split()
-        if len(f) < 19 or f[0] != "ORBTATTD":
+        if len(f) < min_fields or f[0] != "ORBTATTD":
             continue
         tr = (dt.datetime(int(f[2][-4:]), int(f[3]), int(f[4]), int(f[5]), int(f[6]), int(f[7]))
               + dt.timedelta(milliseconds=int(f[8])))
         d = abs((tr - t).total_seconds())
         if best is None or d < best[0]:
-            best = (d, float(f[17]), float(f[18]))
-    return None if best is None else (best[1], best[2])
+            best = (d, f)
+    return None if best is None else best[1]
+
+
+MOON_R_KM = 1737.4
+
+
+def _unit(lat, lon):
+    la, lo = np.radians(lat), np.radians(lon)
+    return np.array([np.cos(la) * np.cos(lo), np.cos(la) * np.sin(lo), np.sin(la)])
+
+
+def oat_view(xml, line, lat, lon):
+    """The direction from ground point (lat, lon) to the spacecraft when it imaged one LINE of a
+    Chandrayaan-2 OHRC or TMC-2 product: (emission angle from the local vertical, azimuth of the
+    spacecraft from north, unit vector in Moon-fixed axes), from its orbit-attitude file <pid>.oat.
+    Each ORBTATTD record ends with: sub-spacecraft latitude and longitude, Sun azimuth and elevation,
+    boresight latitude and longitude, eight scalars of which the 6th is the altitude in km, then
+    yaw, roll, pitch. The spacecraft is put at that altitude over that point on a sphere of the
+    Moon's mean radius. Geometry only - no attitude field is used."""
+    f = _nearest_record(xml, line, ".oat", 40)
+    if f is None:
+        return None
+    s_lat, s_lon, alt = float(f[-17]), float(f[-16]), float(f[-6])
+    g = MOON_R_KM * _unit(lat, lon)
+    v = (MOON_R_KM + alt) * _unit(s_lat, s_lon) - g
+    v /= np.linalg.norm(v)
+    up = _unit(lat, lon)
+    east = np.array([-np.sin(np.radians(lon)), np.cos(np.radians(lon)), 0.0])
+    north = np.cross(up, east)
+    emission = float(np.degrees(np.arccos(np.clip(v @ up, -1, 1))))
+    az = float(np.degrees(np.arctan2(v @ east, v @ north)) % 360)
+    return emission, az, v
 
 
 def _site_write(pair_id, proj, x, y, window_m, r, s, meta):
@@ -1033,6 +1074,89 @@ def cut_site(ohrc_pid, tmc_pid, nac_pid, legs=("ohrc-tmc", "ohrc-nac", "nac-tmc"
     return out
 
 
+VIEW_PX = 640       # OHRC windows (4x4 frame, ~1.2 m) for the viewpoint pair: ~790 m on the ground
+VIEW_EVERY = 3      # every third candidate centre along the frame, so 8 windows span its length
+
+
+@contextlib.contextmanager
+def _geometry_dir(sub):
+    """Put NAC corrections in <data>/site_geometry/<sub>/ for the duration. A NAC's correction is
+    saved per NAC and names the OHRC it was fitted against; fitting the same NAC against a SECOND
+    OHRC frame must not overwrite the one the first frame's pairs were cut with."""
+    from ops import cut_site_pairs as S
+    base = S.GEOM_DIR
+    S.GEOM_DIR = base / sub
+    try:
+        yield S.GEOM_DIR
+    finally:
+        S.GEOM_DIR = base
+
+
+def cut_viewpoint(a_pid, b_pid, anchor_nac, n_windows=8, every=VIEW_EVERY, refit=False):
+    """A REAL viewpoint test: two OHRC frames of one site, taken two hours apart on consecutive
+    orbits, one looking forward and one looking back. Same instrument (Tier A, NOT cross-sensor),
+    the Sun within ~2 deg, the viewing direction ~39 deg apart and from opposite sides of the site.
+
+    Both frames are put in LRO's geometry the same way, each by `anchor_nac`'s 4 m correction against
+    it (site_frame; b's correction kept in its own folder), so neither image of the pair is fitted
+    against the other and no pixel of the pair is matched to build the prior. Both are resampled to
+    one map grid at the coarser frame's spacing. Windows: every `every`-th centre along frame a's
+    centre line (ladder_candidates), fixed before matching. Each image is placed by its own pointing
+    on a sphere, so what is left between the two is relief parallax and how slopes look from each side.
+    Reference = b, source = a. Per window the pair records both Suns (spm_sun) and both viewing
+    directions (oat_view) at the window's line, and the angle between the two viewing directions."""
+    from ops import cut_pradan_pairs as CP
+    ka, proj, fa, ra, ia, (sxa, sya), _ = site_frame(a_pid, anchor_nac)
+    kb = ohrc_key(b_pid)
+    with _geometry_dir(f"against_{kb}"):
+        _, _, fb, rb, ib, (sxb, syb), _ = site_frame(b_pid, anchor_nac, refit, proj=proj)
+    gsd = round(float(max(np.mean(fa.gsd()), np.mean(fb.gsd()))), 3)
+    window_m = VIEW_PX * gsd
+    cands = ladder_candidates(fa, window_m)
+    stem = f"siten_ohrc{a_pid[21:25]}_ohrc{b_pid[21:25]}"
+    term = ("same instrument (Chandrayaan-2 OHRC vs OHRC, consecutive orbits, Sun within ~2 deg): a VIEWPOINT "
+            "test, NOT cross-sensor")
+    made = []
+    for k, (x, y) in enumerate(cands):
+        if k % every:
+            continue
+        pr = _project_pair(fb, rb, gsd, fa, ra, gsd, x, y, window_m)
+        if pr is None:
+            continue
+        lat, lon = proj.inv(x, y)
+        at = {}
+        for name, fr, xml_ in (("a", fa, CP.PRODUCTS[ka][0]), ("b", fb, CP.PRODUCTS[kb][0])):
+            _, ln = fr.from_map(np.array([x]), np.array([y]))
+            line = float(ln[0]) * 4                              # the frames are area-averaged 4x4
+            at[name] = (spm_sun(xml_, line), oat_view(xml_, line, float(lat), float(lon)))
+        (sa, va), (sb, vb) = at["a"], at["b"]
+        sep = float(np.degrees(np.arccos(np.clip(va[2] @ vb[2], -1, 1))))
+        meta = {"tier": "A (same sensor, viewpoint, real)", "terminology": term, "candidate_index": int(k),
+                "site": "N (60.7 N, 4.6 W)",
+                "window_rule": f"pre-registered: one in every {every} centres of ladder_candidates along frame a's "
+                               "centre line - no matching involved",
+                "source": {**ia, "resampled_gsd_mpp": gsd}, "reference": {**ib, "resampled_gsd_mpp": gsd},
+                "d_sun_azimuth_deg": round(abs((sb[0] - sa[0] + 180) % 360 - 180), 2),
+                "d_incidence_deg": round((90.0 - sb[1]) - (90.0 - sa[1]), 2),
+                "sun_note": "Sun at the window from each frame's own .spm at the window's line",
+                "view_at_window": {"a": {"emission_deg": round(va[0], 2), "spacecraft_azimuth_deg": round(va[1], 1)},
+                                   "b": {"emission_deg": round(vb[0], 2), "spacecraft_azimuth_deg": round(vb[1], 1)},
+                                   "angle_between_deg": round(sep, 2),
+                                   "how": "oat_view: sub-spacecraft point and altitude from each frame's .oat"},
+                "scale_ratio": 1.0, "prior_H_source_to_reference": [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
+                "prior_note": (f"both frames moved into LRO's geometry by {anchor_nac}'s 4 m correction against "
+                               f"each (a: ({sxa:+.0f}, {sya:+.0f}) m, b: ({sxb:+.0f}, {syb:+.0f}) m); neither "
+                               "frame fitted against the other"),
+                "ohrc_shift_into_lroc_m": {"a": [round(sxa, 1), round(sya, 1)], "b": [round(sxb, 1), round(syb, 1)]}}
+        made.append(_site_write(f"{stem}_c{k:02d}", proj, x, y, window_m, pr[0], pr[1], meta))
+        print(f"  {stem}_c{k:02d}: views {va[0]:.1f} deg from az {va[1]:.0f} and {vb[0]:.1f} deg from az "
+              f"{vb[1]:.0f}, {sep:.1f} deg apart; Sun {sa[1]:.1f} / {sb[1]:.1f} deg up")
+        if len(made) >= n_windows:
+            break
+    print(f"  viewpoint: {len(made)} pair(s) ({stem}_c..), {len(cands)} candidate centres")
+    return made
+
+
 def _tier_chain(leg):
     return {"ohrc-tmc": ("B (cross-sensor real, ohrc-tmc2, Sun matched)",
                          "cross-sensor (Chandrayaan-2 OHRC vs TMC-2), same mission - NOT cross-mission; both "
@@ -1047,11 +1171,12 @@ def _tier_chain(leg):
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("kind", choices=("tmc-iirs", "nac-tmc", "ohrc-tmc", "ohrc-nac-lro", "site"))
-    ap.add_argument("--ohrc", help="site: the OHRC product id")
+    ap.add_argument("kind", choices=("tmc-iirs", "nac-tmc", "ohrc-tmc", "ohrc-nac-lro", "site", "viewpoint"))
+    ap.add_argument("--ohrc", help="site, viewpoint: the OHRC product id (viewpoint: the source frame, a)")
+    ap.add_argument("--ohrc-b", help="viewpoint: the second OHRC frame of the same site (the reference, b)")
     ap.add_argument("--legs", nargs="*", default=["ohrc-tmc", "ohrc-nac", "nac-tmc"],
                     help="site: which legs to cut (ohrc-tmc, ohrc-nac, nac-tmc)")
-    ap.add_argument("--anchor-nac", help="site: the NAC whose correction against the OHRC places the OHRC in "
+    ap.add_argument("--anchor-nac", help="site, viewpoint: the NAC whose correction against the OHRC places the OHRC in "
                                          "LRO's geometry (default: --nac)")
     ap.add_argument("--tmc", help="calibrated TMC-2 nadir product id (all kinds but ohrc-nac-lro)")
     ap.add_argument("--iirs", help="tmc-iirs: calibrated IIRS product id (same orbit)")
@@ -1069,6 +1194,12 @@ def main(argv=None):
                          "uncorrected), 'ohrc' (the 4 m field against SAC's OHRC), or an already-corrected NAC "
                          "id to fit against (e.g. M1350459544RE). See cut_nac_tmc's docstring for why corners.")
     a = ap.parse_args(argv)
+    if a.kind == "viewpoint":
+        if not (a.ohrc and a.ohrc_b and a.anchor_nac):
+            raise SystemExit("viewpoint needs --ohrc, --ohrc-b and --anchor-nac")
+        dirs = cut_viewpoint(a.ohrc, a.ohrc_b, a.anchor_nac, a.windows or 8, refit=a.refit)
+        print(f"{len(dirs)} pair(s) written under {PAIRS}")
+        return 0
     if a.kind == "site":
         if not (a.ohrc and a.tmc and a.nac):
             raise SystemExit("site needs --ohrc, --tmc and --nac")

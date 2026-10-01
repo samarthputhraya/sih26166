@@ -89,3 +89,37 @@ def test_three_legs_report_a_planted_one_metre_inconsistency(tmp_path, monkeypat
     _pair(tmp_path, out, "ob_tmc2020_c01", shifted, tr, tr, 1.0)
     good = [r for r in L.run(legs=("oa", "ab", "ob_tmc2020"), out_root=out) if r.get("ok")]
     assert abs(good[0]["rms_m"] - 1.0) < 1e-9
+
+
+def _orbit_files(tmp_path, records):
+    """A label and its .spm / .oat in PRADAN's layout: data/calibrated/<day>/ and miscellaneous/..."""
+    d = tmp_path / "data" / "calibrated" / "20250612"
+    m = tmp_path / "miscellaneous" / "calibrated" / "20250612"
+    d.mkdir(parents=True)
+    m.mkdir(parents=True)
+    xml = d / "p.xml"
+    xml.write_text("<start_date_time>2025-06-12T22:29:00.000Z</start_date_time>"
+                   "<stop_date_time>2025-06-12T22:29:10.000Z</stop_date_time><elements>101</elements>",
+                   encoding="latin1")
+    spm, oat = [], []
+    for k, (sec, az, el, s_lat, s_lon, alt) in enumerate(records):
+        t = f"ORBTATTD {k + 1:5d} 2492025 6 12 22 29 {sec} 0"
+        spm.append(f"{t} 1 2 3 0.1 0.2 0.3 60.0 105.6 {az} {el}")
+        oat.append(f"{t} " + " ".join(["0"] * 18) + f" {s_lat} {s_lon} {az} {el} 0 0 0 0 0 0 0 {alt} 0 0 0 0 0")
+    (m / "p.spm").write_text("\n".join(spm), encoding="latin1")
+    (m / "p.oat").write_text("\n".join(oat), encoding="latin1")
+    return xml
+
+
+def test_spm_sun_and_oat_view_take_the_record_nearest_the_line(tmp_path):
+    from ops.cut_chain_pairs import oat_view, spm_sun
+    # t=0 s: Sun (200, 20); t=10 s: Sun (210, 40). Spacecraft 100 km straight above (10 N, 20 E).
+    xml = _orbit_files(tmp_path, [(0, 200.0, 20.0, 10.0, 20.0, 100.0), (10, 210.0, 40.0, 10.0, 20.0, 100.0)])
+    assert spm_sun(xml, 0) == (200.0, 20.0)
+    assert spm_sun(xml, 100) == (210.0, 40.0)            # the last line is the stop time
+    assert spm_sun(xml, 80) == (210.0, 40.0)             # 8 s: nearer the second record
+    e, _, v = oat_view(xml, 0, 10.0, 20.0)
+    assert e < 1e-6 and abs(np.linalg.norm(v) - 1) < 1e-12           # nadir
+    # 1 deg of latitude south of the sub-spacecraft point: seen from the north, ~16 deg off vertical
+    e, az, _ = oat_view(xml, 0, 9.0, 20.0)
+    assert 15.0 < e < 18.0 and (az < 1.0 or az > 359.0)
