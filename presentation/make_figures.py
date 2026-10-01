@@ -1009,7 +1009,7 @@ def fig_site_n():
         med = f"held-out {np.median(rob):.2f} px = {np.median(rob) * g:.1f} m" if rob else "no accuracy quoted"
         return f"{len(acc)}/{len(rows)} accepted", med
 
-    fig, ax = plt.subplots(figsize=(7.6, 4.6))
+    fig, ax = plt.subplots(figsize=(6.6, 4.1))
     ax.set_xlim(0, 10)
     ax.set_ylim(0, 6.25)
     ax.axis("off")
@@ -1038,7 +1038,7 @@ def fig_site_n():
 
     edge("O", "T", legs["ot"], (1.85, 3.0), ha="left")
     if legs["on"]:
-        edge("O", "N", legs["on"], (5.0, 5.15))
+        edge("O", "N", legs["on"], (5.3, 5.2))
     if legs["nt"]:
         edge("N", "T", legs["nt"], (5.75, 2.75), ha="left")
     if ti:
@@ -1061,16 +1061,16 @@ def fig_site_n():
                 ha="left", va="center", fontsize=10.5, color=INK)
     if loops:
         rms = [float(r["loop_rms_m"]) for r in loops]
-        ax.text(1.95, 3.72, f"loop OHRC → NAC → TMC-2 vs OHRC → TMC-2:\n{np.median(rms):.1f} m median "
-                f"({len(loops)} windows)", ha="left", va="center", fontsize=10.5, color=ORANGE)
+        ax.text(0.15, 0.12, f"Loop OHRC → NAC → TMC-2 against OHRC → TMC-2: {np.median(rms):.1f} m median "
+                f"over {len(loops)} windows", ha="left", va="center", fontsize=10.5, color=ORANGE)
     every = legs["ot"] + legs["on"] + legs["nt"]                       # the middle of the windows, as REPORT
     lat = float(np.median([float(r["window_lat"]) for r in every]))
     lon = float(np.median([float(r["window_lon"]) for r in every]))
     ax.set_title(f"One site ({lat:.1f}°N, {abs(lon if lon < 180 else lon - 360):.1f}°W), every camera: "
-                 "Suns matched, each leg checked", loc="left", fontweight="bold", fontsize=14.5, pad=6)
-    fig.text(0.014, 0.01, "windows accepted / windows · held-out median on the reference grid, accepted windows "
-             "with inlier ratio above 0.5 · REPORT.md, Site N", fontsize=9.5, color=MUTED)
-    fig.tight_layout(rect=(0, 0.04, 1, 1))
+                 "Suns matched, each leg checked", loc="left", fontweight="bold", fontsize=13, pad=6)
+    fig.text(0.014, 0.01, "windows accepted / windows · held-out median on the reference grid, accepted windows\n"
+             "with inlier ratio above 0.5 · REPORT.md, Site N", fontsize=8.5, color=MUTED)
+    fig.tight_layout(rect=(0, 0.07, 1, 1))
     out = OUT / "fig10_site_n.png"
     _audit(fig, out.name)
     fig.savefig(out, dpi=200)
