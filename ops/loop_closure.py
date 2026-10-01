@@ -46,16 +46,31 @@ def _inlier_src_points(pair_id, out_root):
     return np.array([[float(r["src_x"]), float(r["src_y"])] for r in rows if r["is_inlier"] == "1"])
 
 
-def run(a, b, log=False, out_root=None, tag=""):
+def run(a=None, b=None, log=False, out_root=None, tag="", legs=None):
+    """`legs` = (OA stem, AB stem, OB stem) for pairs cut by ops.cut_chain_pairs site, whose ids end in
+    _c<candidate index> (e.g. OHRC -> NAC, NAC -> TMC-2, OHRC -> TMC-2 at Site N); otherwise the
+    74 S triples site_ohrc_<a>_wNN / site_<a>_<b>_wNN / site_ohrc_<b>_wNN."""
     from evaluation.real_eval import _apply, log_real, loop_closure, map_transform, pixel_to_map
     from core.export import _commit
     out_root = pathlib.Path(out_root or (_data() / "out"))
-    a, b = a.lower(), b.lower()
+    if legs:
+        oa, ab, ob = (s.lower() for s in legs)
+        a, b = oa, ob
+        name = f"loop_{oa}_tmc{ob.rsplit('_tmc', 1)[-1]}" if "_tmc" in ob else f"loop_{oa}_{ob}"
+        ks, kind = range(0, 40), "loop OHRC->A->B vs OHRC->B (A, B: the AB leg's source and reference)"
+    else:
+        a, b = a.lower(), b.lower()
+        ks, kind = range(1, 20), "loop OHRC->A->B vs OHRC->B"
     results = []
-    for k in range(1, 20):
+    for k in ks:
         sfx = f"_{tag}" if tag else ""
-        ids = {"OA": f"site_ohrc_{a}_w{k:02d}{sfx}", "AB": f"site_{a}_{b}_w{k:02d}{sfx}",
-               "OB": f"site_ohrc_{b}_w{k:02d}{sfx}"}
+        if legs:
+            ids = {"OA": f"{oa}_c{k:02d}", "AB": f"{ab}_c{k:02d}", "OB": f"{ob}_c{k:02d}"}
+            wtag, loop_pid, loop_id = f"c{k:02d}", f"{name}_c{k:02d}", f"{oa} -> {ab} vs {ob} c{k:02d}"
+        else:
+            ids = {"OA": f"site_ohrc_{a}_w{k:02d}{sfx}", "AB": f"site_{a}_{b}_w{k:02d}{sfx}",
+                   "OB": f"site_ohrc_{b}_w{k:02d}{sfx}"}
+            wtag, loop_pid, loop_id = f"w{k:02d}", f"loop_{a}_{b}_w{k:02d}{sfx}", f"{a}->{b} w{k:02d}"
         if not all((out_root / i / "report.json").exists() for i in ids.values()):
             continue
         legs = {n: _leg(i, out_root) for n, i in ids.items()}
@@ -85,19 +100,19 @@ def run(a, b, log=False, out_root=None, tag=""):
                "rms_px_A": lc["rms_m"] / gsd_a, "per_leg_est_m": lc["rms_m"] / np.sqrt(3),
                "methods": methods, "verdicts": verdicts, "ids": ids, "gsd_a": gsd_a, "gsd_b": gsd_b}
         results.append(res)
-        print(f"w{k:02d}: loop RMS {lc['rms_m']:.3f} m = {lc['rms_px']:.3f} px on B's {gsd_b} m grid "
+        print(f"{wtag}: loop RMS {lc['rms_m']:.3f} m = {lc['rms_px']:.3f} px on B's {gsd_b} m grid "
               f"({res['rms_px_A']:.3f} px on A's {gsd_a} m grid); p90 {lc['p90_m']:.3f} m; "
               f"per-registration estimate {res['per_leg_est_m']:.3f} m; "
               f"{lc['n_points']} ground points; methods {set(methods.values())}; verdicts {set(verdicts.values())}")
         if log:
-            log_real({"pair_id": f"loop_{a}_{b}_w{k:02d}{sfx}", "tier": "loop closure (real, 3 legs)",
-                      "kind": "loop OHRC->A->B vs OHRC->B",
+            log_real({"pair_id": loop_pid, "tier": "loop closure (real, 3 legs)",
+                      "kind": kind,
                       "source_product": legs["OA"][1]["source"]["product_id"],
                       "reference_product": f"{legs['OA'][1]['reference']['product_id']} + "
                                            f"{legs['OB'][1]['reference']['product_id']}",
                       "window_lat": round(legs["OA"][1]["window_centre_latlon"][0], 5),
                       "window_lon": round(legs["OA"][1]["window_centre_latlon"][1], 5),
-                      "loop_id": f"{a}->{b} w{k:02d}", "loop_rms_px": round(lc["rms_px"], 4),
+                      "loop_id": loop_id, "loop_rms_px": round(lc["rms_px"], 4),
                       "loop_p90_px": round(lc["p90_px"], 4), "loop_rms_m": round(lc["rms_m"], 4),
                       "ref_gsd_m": gsd_b, "method_declared": ",".join(sorted(set(methods.values()))),
                       "verdict": ",".join(sorted(set(str(v) for v in verdicts.values()))),
@@ -118,13 +133,19 @@ def run(a, b, log=False, out_root=None, tag=""):
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--a", required=True)
-    ap.add_argument("--b", required=True)
+    ap.add_argument("--a", help="74 S triples: NAC A")
+    ap.add_argument("--b", help="74 S triples: NAC B")
+    ap.add_argument("--legs", nargs=3, metavar=("OA", "AB", "OB"),
+                    help="pair-id stems of three legs cut on shared candidate windows (ids end in _cNN), "
+                         "e.g. siten_ohrc2031_nacm1282456834re siten_nacm1282456834re_tmc20200607 "
+                         "siten_ohrc2031_tmc20200607")
     ap.add_argument("--log", action="store_true")
     ap.add_argument("--out")
     ap.add_argument("--tag", default="")
     x = ap.parse_args(argv)
-    run(x.a, x.b, x.log, x.out, x.tag)
+    if not (x.legs or (x.a and x.b)):
+        ap.error("give --a and --b, or --legs")
+    run(x.a, x.b, x.log, x.out, x.tag, legs=x.legs)
     return 0
 
 

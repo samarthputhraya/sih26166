@@ -528,14 +528,14 @@ def cut_nac_tmc(tmc_pid, nac_pid, edr_url, n_windows=6, ref_px=384, refit=False,
 SAC_NAC = "M1350459544RE"
 
 
-def ohrc_to_lroc_shift(proj, ohrc_f):
-    """The map shift that puts SAC's OHRC frame into LROC's geometry, from the correction SAC's own
-    NAC already carries (<data>/site_geometry/M1350459544RE.json, fitted 19 Sep against the OHRC
-    at 4 m, frozen evidence): the NAC was moved by `correction_m` plus an affine field to sit on the
-    OHRC, so the OHRC moves by minus that displacement, evaluated at the OHRC frame's centre. Uses
-    no TMC-2 pixel."""
+def ohrc_to_lroc_shift(proj, ohrc_f, nac_pid=SAC_NAC):
+    """The map shift that puts an OHRC frame into LROC's geometry, from the correction a NAC
+    carries against it (<data>/site_geometry/<nac_pid>.json; for SAC's frame, M1350459544RE,
+    fitted 19 Sep against the OHRC at 4 m, frozen evidence): the NAC was moved by `correction_m`
+    plus an affine field to sit on the OHRC, so the OHRC moves by minus that displacement,
+    evaluated at the OHRC frame's centre. Uses no TMC-2 pixel."""
     from ops import cut_site_pairs as S
-    p = json.loads((S.GEOM_DIR / f"{SAC_NAC}.json").read_text(encoding="utf-8"))
+    p = json.loads((S.GEOM_DIR / f"{nac_pid}.json").read_text(encoding="utf-8"))
     dx, dy = p["wide_offset"]["correction_m"] if (p.get("wide_offset") or {}).get("apply") else (0.0, 0.0)
     rows, cols = ohrc_f.shape
     ox, oy = (float(v[0]) for v in ohrc_f.to_map(np.array([cols / 2.0]), np.array([rows / 2.0])))
@@ -629,10 +629,389 @@ def cut_ohrc_tmc(tmc_pid, n_windows=4, ref_px=384):
     return out
 
 
+# --- OHRC -> LRO NAC on SAC's frame with the Sun's ELEVATION moved: the elevation ladder ----------
+
+LADDER_GSD = 1.75   # m: the coarsest NAC on the ladder (M1382142111LE), so no NAC is ever upsampled
+LADDER_STEP = 1.25  # candidate window centres every 1.25 windows along the OHRC frame's centre line
+
+
+def _block_reader(read, f):
+    """`read` area-averaged f x f, as cut_pradan_pairs.product does for the OHRC (f = 1: unchanged)."""
+    if f == 1:
+        return read
+
+    def r(x, y, w, h):
+        a = read(x * f, y * f, w * f, h * f)
+        hh, ww = a.shape[0] // f, a.shape[1] // f
+        return a[:hh * f, :ww * f].reshape(hh, f, ww, f).mean(axis=(1, 3))
+    return r
+
+
+def _edr_url_from_manifest(pid):
+    """The NAC's PDS URL as recorded in <data>/nac_sac_manifest.csv (the downloader's own list)."""
+    import csv
+    p = DATA / "nac_sac_manifest.csv"
+    if p.exists():
+        for row in csv.DictReader(open(p, encoding="utf-8")):
+            if row["id"].upper() == pid.upper():
+                return row["url"]
+    return None
+
+
+def ladder_candidates(ohrc_f, window_m, step=LADDER_STEP):
+    """Window centres (map x, y) on the OHRC frame's centre line, `step` windows apart, clear of its
+    ends. Fixed by the OHRC frame alone, so every rung of the ladder is offered the same ground."""
+    rows, cols = ohrc_f.shape
+    ends = ohrc_f.to_map(np.array([cols / 2.0, cols / 2.0]), np.array([0.0, rows - 1.0]))
+    length = float(np.hypot(ends[0][1] - ends[0][0], ends[1][1] - ends[1][0]))
+    margin = (window_m / 2 + 50.0) / length
+    n = max(1, int((length * (1 - 2 * margin)) // (step * window_m)) + 1)
+    fr = np.linspace(margin, 1 - margin, n)
+    return np.array(ohrc_f.to_map(np.full(n, cols / 2.0), fr * (rows - 1))).T
+
+
+def cut_ohrc_nac_lro(nac_pid, edr_url=None, n_windows=8, ref_px=640):
+    """SAC's OHRC frame (source) -> one LRO NAC (reference), BOTH placed in LRO's geometry, on one
+    common reference grid: a rung of the Sun-elevation ladder.
+
+    WHY. The PS names Sun azimuth AND elevation. The frozen evidence moves the azimuth (SAC's pair,
+    174 deg) but the real sweep at 74 S spans only 0-10 deg of incidence difference. On SAC's own
+    equatorial frame, LROC NACs exist whose Sun azimuth is within 2-19 deg of the OHRC's (271 deg,
+    10 deg up) while the elevation runs from 8 to 52 deg (WUSTL ODE footprints; Sun from DE421 at
+    the frame centre, 1 Oct 2026 scout). Each NAC is one rung: same OHRC, same candidate windows,
+    same reference grid, only the Sun's elevation (and, on the top rungs, up to 19 deg of azimuth)
+    changes.
+
+    THE PRIOR USES NO IMAGE CONTENT OF THE PAIR. The OHRC is moved into LRO's geometry by
+    `ohrc_to_lroc_shift` (SAC's NAC correction, frozen 19 Sep); each rung's NAC is placed by LROC's
+    published corners alone (precise to ~0.01 deg, so a few hundred metres - inside a 1.1 km
+    window). A wide search against the OHRC would fail exactly where the ladder is meant to measure
+    failure (M1447829089LE, 28 Sep), so it is not used.
+
+    ONE GRID. Every rung's reference is resampled to LADDER_GSD (1.75 m) after an integer f x f
+    area average (f = round(1.75 / NAC resolution)), so a 0.74 m NAC is not compared at a finer
+    scale than a 1.75 m one. The OHRC is area-averaged 4x4 (~1.1 m), as in the OHRC -> TMC-2 cut.
+
+    WINDOWS. `ladder_candidates`: centres every LADDER_STEP windows along the OHRC centre line;
+    each rung uses those its NAC covers (>= 99.8 % of the window in both images), up to `n_windows`
+    spread evenly. No matching is involved in placing them."""
+    from core import geometry as G
+    from ops import cut_pradan_pairs as CP
+    from ops import cut_site_pairs as S
+    import tifffile
+    edr_url = edr_url or _edr_url_from_manifest(nac_pid)
+    if not edr_url:
+        raise SystemExit(f"{nac_pid}: no --edr-url and not in {DATA / 'nac_sac_manifest.csv'}")
+    nac_page(nac_pid, edr_url)
+    if not (DATA / "nac" / f"{nac_pid}.IMG").exists():
+        raise SystemExit(f"{nac_pid}.IMG not in {DATA / 'nac'} - download {edr_url}")
+    proj = LocalEqc(*CP._frame_centre_latlon(CP.PRODUCTS["ohrc"][1]))
+    ohrc_f, o_read, o_info = CP.product("ohrc", proj)          # area-averaged 4x4
+    sx, sy = ohrc_to_lroc_shift(proj, ohrc_f)
+    ohrc_f = ohrc_f.shifted(sx, sy, note=f"(into LROC's geometry via {SAC_NAC}'s saved correction)")
+    o_info["geometry"] = ohrc_f.source
+    nac_f, n_read, n_info = CP.nac_product(nac_pid, proj)
+    f = max(1, int(round(LADDER_GSD / float(n_info["resolution_mpp"]))))
+    nac_f, n_read = (S._decimated(nac_f, f), _block_reader(n_read, f)) if f > 1 else (nac_f, n_read)
+    n_info["coarse_prior"] = {"model": "none: LROC's published corners, uncorrected (see docstring)"}
+    n_info["geometry"] = nac_f.source + (f"; area-averaged {f}x{f} before projection" if f > 1 else "")
+    n_info["block_factor"] = f
+    ref_gsd, src_gsd = LADDER_GSD, round(float(np.mean(ohrc_f.gsd())), 3)
+    window_m = ref_px * ref_gsd
+    cands = ladder_candidates(ohrc_f, window_m)
+    covered = []
+    for k, (x, y) in enumerate(cands):
+        x0, y1 = x - window_m / 2, y + window_m / 2
+        tr_r, sh_r = G.map_grid(x0, y1, window_m, window_m, ref_gsd)
+        r_img, r_ok = G.project(nac_f, n_read, tr_r, sh_r, coarse=16, order="cubic")
+        if r_ok.mean() < 0.998:
+            continue
+        s_px = int(round(window_m / src_gsd))
+        tr_s, sh_s = G.map_grid(x0, y1, s_px * src_gsd, s_px * src_gsd, src_gsd)
+        s_img, s_ok = G.project(ohrc_f, o_read, tr_s, sh_s, coarse=32, order="cubic")
+        if s_ok.mean() < 0.998:
+            continue
+        covered.append((k, x, y, (r_img, r_ok, tr_r, sh_r), (s_img, s_ok, tr_s, sh_s)))
+    print(f"  {nac_pid}: {len(covered)} of {len(cands)} candidate windows covered by both images")
+    if not covered:
+        raise SystemExit(f"{nac_pid}: no candidate window is covered by both images")
+    keep = sorted({int(round(v)) for v in np.linspace(0, len(covered) - 1, min(n_windows, len(covered)))})
+    o_sun = o_info["sun"]
+    ss_lat, ss_lon = n_info["subsolar"]
+    stem = f"sac_ohrclroc_nac{nac_pid.lower()}"
+    out = []
+    for j in keep:
+        k, x, y, (r_img, r_ok, tr_r, sh_r), (s_img, s_ok, tr_s, sh_s) = covered[j]
+        pair_id = f"{stem}_c{k:02d}"      # the candidate's own index: rungs share window ids
+        r_img, r_fill = G.fill_invalid(r_img, r_ok)
+        s_img, s_fill = G.fill_invalid(s_img, s_ok)
+        lat, lon = proj.inv(x, y)
+        n_inc, n_az = G.sun_direction(float(lat), float(lon), ss_lat, ss_lon)
+        o_inc, o_az = 90.0 - o_sun["elevation_deg_label"], o_sun["azimuth_deg_label"]
+        d_az = round(abs((n_az - o_az + 180) % 360 - 180), 1)
+        d_inc = round(n_inc - o_inc, 2)
+        d = PAIRS / pair_id
+        d.mkdir(parents=True, exist_ok=True)
+        src_p, ref_p = d / f"{pair_id}_source.tif", d / f"{pair_id}_ref.tif"
+        tifffile.imwrite(str(src_p), s_img.astype(np.float32), photometric="minisblack",
+                         extratags=proj.geotiff_tags(tr_s))
+        tifffile.imwrite(str(ref_p), r_img.astype(np.float32), photometric="minisblack",
+                         extratags=proj.geotiff_tags(tr_r))
+        meta = {
+            "pair_id": pair_id,
+            "created_utc": _dt.datetime.now(_dt.timezone.utc).isoformat(timespec="seconds"),
+            "tier": "B (cross-sensor real, ohrc-nac, Sun-elevation ladder)",
+            "terminology": "cross-sensor, cross-mission (Chandrayaan-2 OHRC vs LRO LROC NAC); both panchromatic "
+                           "visible, so NOT multi-modal; a Sun-ELEVATION rung: NAC chosen for a Sun azimuth near "
+                           "the OHRC's",
+            "crs": proj.name,
+            "window_centre_map_m": [float(x), float(y)], "window_centre_latlon": [float(lat), float(lon)],
+            "window_m": window_m, "candidate_index": int(k),
+            "window_rule": f"pre-registered: candidate centres every {LADDER_STEP} windows along SAC's OHRC frame "
+                           "centre line (ladder_candidates); each rung uses those its NAC covers, up to "
+                           f"{n_windows} evenly spread - no image content and no matching involved",
+            "ohrc_shift_into_lroc_m": [round(sx, 1), round(sy, 1)],
+            "source": {**o_info, "resampled_gsd_mpp": src_gsd, "shape": list(sh_s), "transform": list(tr_s)},
+            "reference": {**n_info, "resampled_gsd_mpp": ref_gsd, "shape": list(sh_r), "transform": list(tr_r),
+                          "incidence_deg_at_site": round(n_inc, 2), "sun_azimuth_deg_from_north": round(n_az, 1),
+                          "sun_elevation_deg_at_site": round(90.0 - n_inc, 2)},
+            "d_sun_azimuth_deg": d_az, "d_incidence_deg": d_inc,
+            "sun_note": "OHRC: scene-level label (isda:sun_azimuth / sun_elevation); NAC: computed at the window "
+                        "from LROC's published sub-solar point (core.geometry.sun_direction)",
+            "scale_ratio": round(ref_gsd / src_gsd, 3),
+            "prior_H_source_to_reference": [[src_gsd / ref_gsd, 0, 0], [0, src_gsd / ref_gsd, 0], [0, 0, 1]],
+            "prior_note": "both images placed in LRO's geometry with no image content of this pair: the OHRC by "
+                          "SAC's NAC correction (ohrc_shift_into_lroc_m), the NAC by LROC's published corners; any "
+                          "offset the pipeline finds is the disagreement between those two placements",
+            "benchmark": "SAC's own OHRC frame, arXiv:2509.04775 Table 1",
+            "edge_pixels_filled": {"source": s_fill, "reference": r_fill},
+            "files": {q.name: _sha(q) for q in (src_p, ref_p)},
+            "command": "python -m ops.cut_chain_pairs " + " ".join(sys.argv[1:]),
+        }
+        (d / "geometry_prior.json").write_text(json.dumps(meta, indent=2), encoding="utf-8")
+        out.append(d)
+        print(f"  {pair_id}: centre ({lat:.4f}, {lon:.4f}); NAC Sun el {90 - n_inc:.1f} az {n_az:.1f}; "
+              f"d_az {d_az} deg, d_inc {d_inc} deg; src {sh_s} @ {src_gsd} m, ref {sh_r} @ {ref_gsd} m (f={f})")
+    return out
+
+
+# --- Site N (60.7 N, 4.6 W): OHRC, TMC-2, IIRS and an LRO NAC under matched Suns --------------
+#
+# Found 1 Oct 2026 in PRADAN's footprint catalogue and WUSTL ODE (Sun from DE421 at the OHRC frame
+# centre): OHRC ch2_ohr_ncp_20250612T2031048828 (Sun 29 deg up, azimuth 200 deg); TMC-2
+# ch2_tmc_ncn_20200607T2239162106 covering all of it with the Sun 1.9 deg away; the IIRS strip of
+# that same orbit (0.8 s apart); LROC NAC M1282456834RE over 64 % of it with the Sun 5.2 deg away.
+# Three legs share one set of window centres, so OHRC -> NAC -> TMC-2 can be closed against
+# OHRC -> TMC-2 (ops.loop_closure --legs).
+
+def ohrc_key(pid):
+    """Register any calibrated OHRC product with cut_pradan_pairs.PRODUCTS (ops.fetch_pradan unpacks
+    the zip to <data>/pradan/ohrc/{data,geometry}/calibrated/<yyyymmdd>/) and return its key."""
+    from ops import cut_pradan_pairs as CP
+    if pid == CP.OHRC_ID:
+        return "ohrc"
+    day = pid[12:20]
+    key = f"ohrc_{pid[12:27]}"
+    xml = CP.P / "ohrc/data/calibrated" / day / f"{pid}.xml"
+    grid = CP.P / "ohrc/geometry/calibrated" / day / f"{pid.replace('_d_img_', '_g_grd_')}.csv"
+    if not (xml.exists() and grid.exists()):
+        raise SystemExit(f"{pid}: {xml.name} or its _g_grd_ csv not on disk - python -m ops.fetch_pradan {pid}")
+    CP.PRODUCTS[key] = (xml, grid, "Chandrayaan-2 OHRC")
+    return key
+
+
+def site_frame(ohrc_pid, anchor_nac, refit=False):
+    """(key, proj, OHRC 4x4 frame in LRO's geometry, reader, info, shift, anchor prior).
+
+    The map is a local equirectangular grid centred on the OHRC frame. The OHRC archive grid can sit
+    kilometres from LRO's (1.9 km at SAC's frame, 28 Sep), so it is moved into LRO's geometry by the
+    correction `anchor_nac` carries against it - fitted here once if absent (ops.cut_pradan_pairs.
+    nac_corrected: wide template search, then the 4 m box field; both intensity polarities) and saved
+    to <data>/site_geometry/<anchor_nac>.json. That uses the OHRC and the NAC, never a TMC-2 pixel,
+    so the OHRC -> TMC-2 prior holds no image content of the pair it serves."""
+    from ops import cut_pradan_pairs as CP
+    from ops import cut_site_pairs as S
+    key = ohrc_key(ohrc_pid)
+    proj = LocalEqc(*CP._frame_centre_latlon(CP.PRODUCTS[key][1]))
+    gp = S.GEOM_DIR / f"{anchor_nac}.json"
+    stale = (not gp.exists() or json.loads(gp.read_text(encoding="utf-8")).get("against")
+             != CP.PRODUCTS[key][0].stem)
+    if refit or stale:
+        url = _edr_url_from_manifest(anchor_nac)
+        if not url:
+            raise SystemExit(f"{anchor_nac} is not in {DATA / 'nac_sac_manifest.csv'}")
+        nac_page(anchor_nac, url)
+        native, n_read, _ = CP.product(key, proj, block=1)
+        CP.nac_corrected(anchor_nac, key, proj, native, n_read, refit=True)
+    prior = json.loads(gp.read_text(encoding="utf-8"))
+    if not (prior.get("apply") or (prior.get("wide_offset") or {}).get("apply")):
+        raise SystemExit(f"{anchor_nac}: no trustworthy correction against {ohrc_pid} - the OHRC cannot be "
+                         "placed in LRO's geometry this way")
+    ohrc_f, o_read, o_info = CP.product(key, proj)                # area-averaged 4x4
+    sx, sy = ohrc_to_lroc_shift(proj, ohrc_f, anchor_nac)
+    ohrc_f = ohrc_f.shifted(sx, sy, note=f"(into LROC's geometry via {anchor_nac}'s correction against it)")
+    o_info["geometry"] = ohrc_f.source
+    return key, proj, ohrc_f, o_read, o_info, (sx, sy), prior
+
+
+def _site_write(pair_id, proj, x, y, window_m, r, s, meta):
+    """Write one pair (both GeoTIFFs and geometry_prior.json) and return its folder."""
+    from core import geometry as G
+    import tifffile
+    r_img, r_ok, tr_r, sh_r = r
+    s_img, s_ok, tr_s, sh_s = s
+    r_img, r_fill = G.fill_invalid(r_img, r_ok)
+    s_img, s_fill = G.fill_invalid(s_img, s_ok)
+    d = PAIRS / pair_id
+    d.mkdir(parents=True, exist_ok=True)
+    src_p, ref_p = d / f"{pair_id}_source.tif", d / f"{pair_id}_ref.tif"
+    tifffile.imwrite(str(src_p), s_img.astype(np.float32), photometric="minisblack", extratags=proj.geotiff_tags(tr_s))
+    tifffile.imwrite(str(ref_p), r_img.astype(np.float32), photometric="minisblack", extratags=proj.geotiff_tags(tr_r))
+    lat, lon = proj.inv(x, y)
+    meta = {"pair_id": pair_id,
+            "created_utc": _dt.datetime.now(_dt.timezone.utc).isoformat(timespec="seconds"),
+            "crs": proj.name, "window_centre_map_m": [float(x), float(y)],
+            "window_centre_latlon": [float(lat), float(lon)], "window_m": window_m, **meta}
+    meta["source"] = {**meta["source"], "shape": list(sh_s), "transform": list(tr_s)}
+    meta["reference"] = {**meta["reference"], "shape": list(sh_r), "transform": list(tr_r)}
+    meta.update(edge_pixels_filled={"source": s_fill, "reference": r_fill},
+                files={q.name: _sha(q) for q in (src_p, ref_p)},
+                command="python -m ops.cut_chain_pairs " + " ".join(sys.argv[1:]))
+    (d / "geometry_prior.json").write_text(json.dumps(meta, indent=2), encoding="utf-8")
+    return d
+
+
+def _project_pair(ref_f, ref_read, ref_gsd, src_f, src_read, src_gsd, x, y, window_m):
+    """Both images onto the window's map grid; None unless >= 99.8 % of each is covered."""
+    from core import geometry as G
+    x0, y1 = x - window_m / 2, y + window_m / 2
+    tr_r, sh_r = G.map_grid(x0, y1, window_m, window_m, ref_gsd)
+    r_img, r_ok = G.project(ref_f, ref_read, tr_r, sh_r, coarse=16, order="cubic")
+    if r_ok.mean() < 0.998:
+        return None
+    s_px = int(round(window_m / src_gsd))
+    tr_s, sh_s = G.map_grid(x0, y1, s_px * src_gsd, s_px * src_gsd, src_gsd)
+    s_img, s_ok = G.project(src_f, src_read, tr_s, sh_s, coarse=32, order="cubic")
+    if s_ok.mean() < 0.998:
+        return None
+    return (r_img, r_ok, tr_r, sh_r), (s_img, s_ok, tr_s, sh_s)
+
+
+SITE_TMC_PX = 384   # TMC-2 reference windows (~1.7-2.2 km); candidates are spaced on this window
+
+
+def cut_site(ohrc_pid, tmc_pid, nac_pid, legs=("ohrc-tmc", "ohrc-nac", "nac-tmc"), anchor_nac=None,
+             n_windows=8, refit=False):
+    """Site N's three legs on ONE set of window centres (ladder_candidates on the OHRC frame's centre
+    line, spaced on the TMC-2 window), each leg keeping the centres its two images both cover:
+      ohrc-tmc  OHRC (4x4, in LRO's geometry) -> TMC-2 nadir: cross-sensor, same mission
+      ohrc-nac  OHRC (4x4, in LRO's geometry) -> LRO NAC by its LROC corners: cross-sensor, cross-mission
+      nac-tmc   LRO NAC by its LROC corners -> TMC-2 nadir: cross-sensor, cross-mission
+    Pair ids end in _c<candidate index>, so the legs of one ground window share it (the loop needs
+    that). The OHRC's move into LRO's geometry comes from `anchor_nac` (default: `nac_pid`) against
+    the OHRC; on the ohrc-nac leg of that same NAC the prior is therefore partly from the pair itself
+    (a 4 m fit), which the pair's prior_note says."""
+    from core import geometry as G
+    from ops import cut_pradan_pairs as CP
+    anchor_nac = anchor_nac or nac_pid
+    key, proj, ohrc_f, o_read, o_info, (sx, sy), aprior = site_frame(ohrc_pid, anchor_nac, refit)
+    xml_t, grid_t, read_t, shape_t, info_t = tmc_product(tmc_pid)
+    tmc_f = frame_from_grid(grid_t, shape_t, proj, "TMC-2 nadir")
+    info_t["geometry"] = tmc_f.source
+    tmc_gsd = round(float(np.mean(tmc_f.gsd())), 3)
+    o_gsd = round(float(np.mean(ohrc_f.gsd())), 3)
+    cands = ladder_candidates(ohrc_f, SITE_TMC_PX * tmc_gsd)
+    nac_f = n_read = n_info = None
+    if any(lg in legs for lg in ("ohrc-nac", "nac-tmc")):
+        url = _edr_url_from_manifest(nac_pid)
+        nac_page(nac_pid, url)
+        nac_f, n_read, n_info = CP.nac_product(nac_pid, proj)
+        n_info["coarse_prior"] = {"model": "none: LROC's published corners, uncorrected"}
+        n_info["geometry"] = nac_f.source
+        nac_gsd = round(float(np.mean(nac_f.gsd())), 3)
+    o_sun, t_sun = o_info["sun"], info_t["sun"]
+    hhmm = ohrc_pid[21:25]
+    shift_note = (f"OHRC moved ({sx:+.0f}, {sy:+.0f}) m into LRO's geometry by {anchor_nac}'s 4 m correction "
+                  "against it (site_frame)")
+    out = []
+    for leg in legs:
+        if leg == "ohrc-tmc":
+            stem, ref, src = f"siten_ohrc{hhmm}_tmc{tmc_pid[12:20]}", (tmc_f, read_t, tmc_gsd), (ohrc_f, o_read, o_gsd)
+            window_m = SITE_TMC_PX * tmc_gsd
+            tier, term = _tier_chain("ohrc-tmc")
+            prior_note = shift_note + "; TMC-2 on its archive grid - no TMC-2 pixel in the prior"
+        elif leg == "ohrc-nac":
+            stem, ref, src = f"siten_ohrc{hhmm}_nac{nac_pid.lower()}", (nac_f, n_read, nac_gsd), (ohrc_f, o_read, o_gsd)
+            window_m = 640 * nac_gsd
+            tier, term = _tier_chain("ohrc-nac")
+            prior_note = shift_note + f"; NAC by LROC's corners" + (
+                f" - the OHRC's move was fitted against THIS NAC at 4 m, so this leg's prior is partly from the "
+                "pair itself" if nac_pid == anchor_nac else "")
+        elif leg == "nac-tmc":
+            stem, ref, src = f"siten_nac{nac_pid.lower()}_tmc{tmc_pid[12:20]}", (tmc_f, read_t, tmc_gsd), (nac_f, n_read, nac_gsd)
+            window_m = SITE_TMC_PX * tmc_gsd
+            tier, term = _tier_chain("nac-tmc")
+            prior_note = "NAC by LROC's corners, TMC-2 on its archive grid: no image content in the prior"
+        else:
+            raise SystemExit(f"unknown leg {leg}")
+        made = []
+        for k, (x, y) in enumerate(cands):
+            pr = _project_pair(*ref, *src, x, y, window_m)
+            if pr is None:
+                continue
+            lat, lon = proj.inv(x, y)
+            d_az = d_inc = None
+            if leg == "ohrc-tmc":
+                d_az = round(abs((t_sun["azimuth_deg_label"] - o_sun["azimuth_deg_label"] + 180) % 360 - 180), 1)
+                d_inc = round(o_sun["elevation_deg_label"] - t_sun["elevation_deg_label"], 2)
+                sun_note = "both scene-level labels (isda:sun_azimuth / sun_elevation)"
+            else:
+                # d_incidence = reference incidence - source incidence, as in every other cut
+                n_inc, n_az = G.sun_direction(float(lat), float(lon), *n_info["subsolar"])
+                other = o_sun if leg == "ohrc-nac" else t_sun
+                o_inc = 90.0 - other["elevation_deg_label"]
+                d_az = round(abs((n_az - other["azimuth_deg_label"] + 180) % 360 - 180), 1)
+                d_inc = round(n_inc - o_inc if leg == "ohrc-nac" else o_inc - n_inc, 2)
+                sun_note = ("NAC at the window from LROC's sub-solar point; "
+                            + ("OHRC" if leg == "ohrc-nac" else "TMC-2") + ": scene-level label")
+            meta = {"tier": tier, "terminology": term, "candidate_index": int(k), "site": "N (60.7 N, 4.6 W)",
+                    "window_rule": "pre-registered: centres every 1.25 TMC-2 windows along the OHRC frame's centre "
+                                   "line (ladder_candidates), the same for all three legs - no matching involved",
+                    "source": {**(o_info if leg != "nac-tmc" else n_info), "resampled_gsd_mpp": src[2]},
+                    "reference": {**(info_t if leg != "ohrc-nac" else n_info), "resampled_gsd_mpp": ref[2]},
+                    "d_sun_azimuth_deg": d_az, "d_incidence_deg": d_inc, "sun_note": sun_note,
+                    "scale_ratio": round(ref[2] / src[2], 3),
+                    "prior_H_source_to_reference": [[src[2] / ref[2], 0, 0], [0, src[2] / ref[2], 0], [0, 0, 1]],
+                    "prior_note": prior_note, "ohrc_shift_into_lroc_m": [round(sx, 1), round(sy, 1)]}
+            made.append(_site_write(f"{stem}_c{k:02d}", proj, x, y, window_m, pr[0], pr[1], meta))
+            if len(made) >= n_windows:
+                break
+        print(f"  {leg}: {len(made)} pair(s) ({stem}_c..), {len(cands)} candidate centres")
+        out += made
+    return out
+
+
+def _tier_chain(leg):
+    return {"ohrc-tmc": ("B (cross-sensor real, ohrc-tmc2, Sun matched)",
+                         "cross-sensor (Chandrayaan-2 OHRC vs TMC-2), same mission - NOT cross-mission; both "
+                         "panchromatic, so NOT multi-modal; the Sun matched (a different orbit and year)"),
+            "ohrc-nac": ("B (cross-sensor real, ohrc-nac, Sun matched)",
+                         "cross-sensor, cross-mission (Chandrayaan-2 OHRC vs LRO LROC NAC); both panchromatic, "
+                         "so NOT multi-modal"),
+            "nac-tmc": ("B (cross-sensor real, nac-tmc2, Sun matched)",
+                        "cross-sensor, cross-mission (LRO LROC NAC vs Chandrayaan-2 TMC-2 nadir); both "
+                        "panchromatic, so NOT multi-modal")}[leg]
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("kind", choices=("tmc-iirs", "nac-tmc", "ohrc-tmc"))
-    ap.add_argument("--tmc", required=True, help="calibrated TMC-2 nadir product id")
+    ap.add_argument("kind", choices=("tmc-iirs", "nac-tmc", "ohrc-tmc", "ohrc-nac-lro", "site"))
+    ap.add_argument("--ohrc", help="site: the OHRC product id")
+    ap.add_argument("--legs", nargs="*", default=["ohrc-tmc", "ohrc-nac", "nac-tmc"],
+                    help="site: which legs to cut (ohrc-tmc, ohrc-nac, nac-tmc)")
+    ap.add_argument("--anchor-nac", help="site: the NAC whose correction against the OHRC places the OHRC in "
+                                         "LRO's geometry (default: --nac)")
+    ap.add_argument("--tmc", help="calibrated TMC-2 nadir product id (all kinds but ohrc-nac-lro)")
     ap.add_argument("--iirs", help="tmc-iirs: calibrated IIRS product id (same orbit)")
     ap.add_argument("--band", type=int, help="tmc-iirs: IIRS band, 1-based as in its label")
     ap.add_argument("--nac", help="nac-tmc: LRO NAC product id, e.g. M1258792259LE")
@@ -648,6 +1027,20 @@ def main(argv=None):
                          "uncorrected), 'ohrc' (the 4 m field against SAC's OHRC), or an already-corrected NAC "
                          "id to fit against (e.g. M1350459544RE). See cut_nac_tmc's docstring for why corners.")
     a = ap.parse_args(argv)
+    if a.kind == "site":
+        if not (a.ohrc and a.tmc and a.nac):
+            raise SystemExit("site needs --ohrc, --tmc and --nac")
+        dirs = cut_site(a.ohrc, a.tmc, a.nac, tuple(a.legs), a.anchor_nac, a.windows or 8, refit=a.refit)
+        print(f"{len(dirs)} pair(s) written under {PAIRS}")
+        return 0
+    if a.kind == "ohrc-nac-lro":
+        if not a.nac:
+            raise SystemExit("ohrc-nac-lro needs --nac (and --edr-url unless it is in <data>/nac_sac_manifest.csv)")
+        dirs = cut_ohrc_nac_lro(a.nac, a.edr_url, a.windows or 8, a.ref_px or 640)
+        print(f"{len(dirs)} pair(s) written under {PAIRS}")
+        return 0
+    if not a.tmc:
+        raise SystemExit(f"{a.kind} needs --tmc")
     if a.kind == "tmc-iirs":
         if not (a.iirs and a.band):
             raise SystemExit("tmc-iirs needs --iirs and --band")
