@@ -214,3 +214,28 @@ def test_report_md_leads_with_the_held_out_median_and_names_the_tier(tmp_path):
     for line in md.splitlines():
         if re.search(r"\d px", line):
             assert "grid" in line, line
+
+
+def test_uniform_gcps_cap_each_cell_and_keep_the_lowest_residuals(tmp_path):
+    rows = []
+    for k in range(10):                    # ten inliers crowded into the top-left cell
+        rows.append({"src_x": k, "src_y": k, "ref_x": 1.0 + k * 0.1, "ref_y": 1.0, "is_inlier": 1,
+                     "residual_px": float(10 - k)})
+    rows.append({"src_x": 90, "src_y": 90, "ref_x": 90.0, "ref_y": 90.0, "is_inlier": 1, "residual_px": 0.5})
+    rows.append({"src_x": 50, "src_y": 50, "ref_x": 50.0, "ref_y": 50.0, "is_inlier": 0, "residual_px": 0.1})
+    u = export.uniform_inliers(rows, (96, 96), grid=8, per_cell=4)
+    assert len(u) == 5                     # 4 from the crowded cell + 1 elsewhere; never an outlier
+    assert sorted(r["residual_px"] for r in u[:4]) == [1.0, 2.0, 3.0, 4.0]
+    s = export.uniform_summary(rows, (96, 96), grid=8, per_cell=4)
+    assert s["n_points"] == 5 and s["cells_with_points"] == 2 and s["cells"] == 64
+
+
+def test_bundle_writes_the_uniform_gcp_set_and_reports_it(tmp_path):
+    r, sp, rp = _result(tmp_path)
+    files = export.export_bundle(r, tmp_path / "out", "p", sp, rp)
+    assert "gcps_uniform.txt" in files and "gcps_uniform.points" in files
+    n_full = sum(1 for ln in files["gcps.txt"].read_text().splitlines() if ln.startswith("-gcp"))
+    n_uni = sum(1 for ln in files["gcps_uniform.txt"].read_text().splitlines() if ln.startswith("-gcp"))
+    assert 0 < n_uni <= n_full
+    rep = json.loads((tmp_path / "out" / "report.json").read_text(encoding="utf-8"))
+    assert rep["uniform_gcps"]["n_points"] == n_uni and rep["uniform_gcps"]["per_cell_max"] == 4

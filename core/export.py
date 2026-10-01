@@ -18,6 +18,9 @@ and, until this module, wrote none of it to disk. One call now produces:
     gcps.txt                 inliers as GDAL `-gcp pixel line X Y` (only when the
                              reference is georeferenced)
     gcps.points              the same inliers in QGIS Georeferencer format
+    gcps_uniform.txt/.points the same, thinned to at most UNIFORM_PER_CELL inliers per cell of an
+                             8x8 grid on the reference (lowest residual first), so the control
+                             points a user takes away are spread over the image by construction
     matches_isis.csv         inliers in ISIS's 1-based sample/line convention
     trust_map.csv            the 8x8 verified / weak / no_evidence map
     report.json, report.md   metrics, declared method, trust summary, timings,
@@ -215,7 +218,39 @@ def _map_xy(transform, x, y):
     return x0 + gx * sx + gy * rx, y0 + gx * ry + gy * sy
 
 
-def write_gcps(out_dir, rows, ref_meta) -> list[pathlib.Path]:
+UNIFORM_GRID = 8          # the trust map's grid
+UNIFORM_PER_CELL = 4      # control points kept per cell in the uniform set
+
+
+def uniform_inliers(rows, ref_shape, grid=UNIFORM_GRID, per_cell=UNIFORM_PER_CELL) -> list[dict]:
+    """The inliers thinned to at most `per_cell` per cell of a `grid` x `grid` lattice on the
+    reference, lowest residual under the matcher's H first. The PS asks for correspondence
+    "maintaining uniform distribution across the images": the full set can crowd one textured
+    corner, so the deliverable also carries a set that cannot. Rows keep their order otherwise."""
+    if not ref_shape or len(ref_shape) < 2:
+        return []
+    h, w = float(ref_shape[0]), float(ref_shape[1])
+    cells: dict = {}
+    for i, r in enumerate(rows):
+        if not r["is_inlier"]:
+            continue
+        cx = min(grid - 1, max(0, int(r["ref_x"] * grid / w)))
+        cy = min(grid - 1, max(0, int(r["ref_y"] * grid / h)))
+        res = r.get("residual_px")
+        cells.setdefault((cy, cx), []).append((float("inf") if res is None else float(res), i))
+    keep = sorted(i for v in cells.values() for _, i in sorted(v)[:per_cell])
+    return [rows[i] for i in keep]
+
+
+def uniform_summary(rows, ref_shape, grid=UNIFORM_GRID, per_cell=UNIFORM_PER_CELL) -> dict:
+    u = uniform_inliers(rows, ref_shape, grid, per_cell)
+    h, w = (float(ref_shape[0]), float(ref_shape[1])) if ref_shape and len(ref_shape) >= 2 else (1.0, 1.0)
+    occ = {(min(grid - 1, int(r["ref_y"] * grid / h)), min(grid - 1, int(r["ref_x"] * grid / w))) for r in u}
+    return {"grid": grid, "per_cell_max": per_cell, "n_points": len(u), "cells_with_points": len(occ),
+            "cells": grid * grid}
+
+
+def write_gcps(out_dir, rows, ref_meta, stem="gcps") -> list[pathlib.Path]:
     """Inliers as ground control points. Only meaningful with a georeferenced reference."""
     out_dir = pathlib.Path(out_dir)
     t = (ref_meta or {}).get("transform")
@@ -223,7 +258,7 @@ def write_gcps(out_dir, rows, ref_meta) -> list[pathlib.Path]:
     if not t or not inl:
         return []
     crs = (ref_meta or {}).get("crs") or "unknown CRS"
-    g = out_dir / "gcps.txt"
+    g = out_dir / f"{stem}.txt"
     with open(g, "w", encoding="utf-8") as f:
         f.write(f"# {len(inl)} GCPs for gdal_translate: -gcp <pixel> <line> <X> <Y>\n"
                 f"# pixel/line are SOURCE coordinates in GDAL's convention (top-left corner "
@@ -232,7 +267,7 @@ def write_gcps(out_dir, rows, ref_meta) -> list[pathlib.Path]:
         for r in inl:
             X, Y = _map_xy(t, r["ref_x"], r["ref_y"])
             f.write(f"-gcp {r['src_x'] + 0.5:.4f} {r['src_y'] + 0.5:.4f} {X:.4f} {Y:.4f}\n")
-    q = out_dir / "gcps.points"
+    q = out_dir / f"{stem}.points"
     with open(q, "w", encoding="utf-8") as f:
         # QGIS Georeferencer: source pixel Y is negative (image rows grow downward).
         f.write(f"#CRS: {crs}\nmapX,mapY,sourceX,sourceY,enable,dX,dY,residual\n")
@@ -547,6 +582,9 @@ def export_bundle(result: dict, out_dir, pair_id: str, src_path=None, ref_path=N
             written["registered_product.json"] = pathlib.Path(info["sidecar"])
     for p in write_gcps(out_dir, rows, mr):
         written[p.name] = p
+    ref_shape = tuple(result.get("shape_reference") or ())[:2]
+    for p in write_gcps(out_dir, uniform_inliers(rows, ref_shape), mr, stem="gcps_uniform"):
+        written[p.name] = p
     src_id = ms.get("product_id") or pathlib.Path(str(src_path)).stem
     ref_id = mr.get("product_id") or pathlib.Path(str(ref_path)).stem
     written["matches_isis.csv"] = write_isis_csv(out_dir / "matches_isis.csv", rows, src_id, ref_id)
@@ -554,6 +592,7 @@ def export_bundle(result: dict, out_dir, pair_id: str, src_path=None, ref_path=N
     if tm:
         written["trust_map.csv"] = tm
     rep = report(result, pair_id, src_path, ref_path, rows=rows, prior=prior)
+    rep["uniform_gcps"] = uniform_summary(rows, tuple(result.get("shape_reference") or ())[:2])
     rep["files"] = sorted(written)
     for p in write_report(out_dir, rep):
         written[p.name] = p

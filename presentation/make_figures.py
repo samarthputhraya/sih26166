@@ -911,6 +911,59 @@ def fig_miloi():
     return out
 
 
+def fig_sun_map():
+    """Sun change on SAC's own OHRC frame, in BOTH axes the PS names: azimuth and elevation.
+    One point per LRO NAC registered against that one OHRC frame - SAC's benchmark pair
+    (sac_ohrc_nac_*) and the elevation ladder (sac_ohrclroc_nac*, 1 Oct 2026) - at the median
+    Sun difference of its windows, labelled windows accepted / windows. Every value from
+    real_pairs_log.csv (latest row per pair); d_incidence = NAC incidence - OHRC incidence, so the
+    elevation change is its negative."""
+    latest = {}
+    for r in _rows(REAL_LOG):
+        latest[r["pair_id"]] = r
+    rows = [r for p, r in latest.items() if (p.startswith("sac_ohrc_nac_") or p.startswith("sac_ohrclroc_nac"))
+            and r.get("d_sun_azimuth_deg") and r.get("d_incidence_deg") and r.get("verdict") != "INVALIDATED"]
+    if not rows:
+        return None
+    by = {}
+    for r in rows:
+        by.setdefault(r["reference_product"], []).append(r)
+    fig, ax = plt.subplots(figsize=(7.6, 4.6))
+    ax.grid(True, color=GRID, linewidth=0.8, zorder=0)
+    ax.set_axisbelow(True)
+    style = [(0.75, AQUA, "o", "most windows accepted"), (0.25, YELLOW, "D", "some accepted"),
+             (-1.0, ORANGE, "X", "few or none accepted")]
+    seen, placed = set(), []
+    for nac, rs in sorted(by.items()):
+        az = float(np.median([float(r["d_sun_azimuth_deg"]) for r in rs]))
+        el = float(np.median([-float(r["d_incidence_deg"]) for r in rs]))
+        acc = sum(r["verdict"] == "agrees" for r in rs)
+        frac = acc / len(rs)
+        cut, col, mk, lab = next(s for s in style if frac >= s[0])
+        ax.scatter([az], [el], s=60 + 22 * len(rs), c=col, marker=mk, edgecolors=INK, linewidths=0.8, zorder=4,
+                   label=lab if lab not in seen else None)
+        seen.add(lab)
+        near = any(abs(az - a) < 14 and abs(el - e) < 4 for a, e in placed)
+        ax.annotate(f"{acc}/{len(rs)}", (az, el), xytext=(-36, -5) if near else (10, -5), textcoords="offset points",
+                    fontsize=12, color=INK, zorder=5)
+        placed.append((az, el))
+    ax.set_xlim(-8, 188)
+    ax.set_xticks([0, 30, 60, 90, 120, 150, 180])
+    ax.set_xlabel("Sun azimuth difference, OHRC vs NAC  (degrees)", fontsize=14)
+    ax.set_ylabel("Sun elevation change, NAC − OHRC  (degrees)", fontsize=14)
+    ax.set_title("Sun change on SAC's own OHRC frame: azimuth and elevation", loc="left", fontweight="bold",
+                 fontsize=15, pad=10)
+    ax.legend(loc="upper center", fontsize=11, frameon=False, ncol=3, bbox_to_anchor=(0.5, -0.17))
+    fig.text(0.014, 0.006, f"{len(by)} LRO NACs, {len(rows)} windows · label: windows accepted / windows · "
+             f"OHRC → NAC, both panchromatic (cross-sensor)", fontsize=10, color=MUTED)
+    fig.tight_layout(rect=(0, 0.05, 1, 1))
+    out = OUT / "fig9_sun_map.png"
+    _audit(fig, out.name)
+    fig.savefig(out, dpi=200)
+    plt.close(fig)
+    return out
+
+
 def main() -> int:
     OUT.mkdir(parents=True, exist_ok=True)
     deltas, ours, best, nscored, ntried = load_curves()
@@ -923,7 +976,7 @@ def main() -> int:
     print(f"  wrote {fig_trust_calibration().name}")
     print(f"  wrote {fig_trust_map().name}")
     print(f"  wrote {fig_pipeline().name}")
-    for f in (fig_real_sun_sweep, fig_trust_real, fig_miloi):
+    for f in (fig_real_sun_sweep, fig_trust_real, fig_miloi, fig_sun_map):
         out = f()
         print(f"  wrote {out.name}" if out else f"  skipped {f.__name__} (no evidence file yet)")
     _report_slide_legibility()

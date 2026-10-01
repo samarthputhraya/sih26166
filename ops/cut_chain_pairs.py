@@ -760,10 +760,12 @@ def cut_ohrc_nac_lro(nac_pid, edr_url=None, n_windows=8, ref_px=640):
         meta = {
             "pair_id": pair_id,
             "created_utc": _dt.datetime.now(_dt.timezone.utc).isoformat(timespec="seconds"),
-            "tier": "B (cross-sensor real, ohrc-nac, Sun-elevation ladder)",
+            "tier": "B (cross-sensor real, ohrc-nac, Sun ladder on SAC's frame)",
             "terminology": "cross-sensor, cross-mission (Chandrayaan-2 OHRC vs LRO LROC NAC); both panchromatic "
-                           "visible, so NOT multi-modal; a Sun-ELEVATION rung: NAC chosen for a Sun azimuth near "
-                           "the OHRC's",
+                           "visible, so NOT multi-modal; "
+                           + ("an OPPOSITE-Sun rung: NAC chosen for a Sun azimuth opposite the OHRC's, at a chosen "
+                              "elevation" if d_az > 90 else
+                              "a Sun-ELEVATION rung: NAC chosen for a Sun azimuth near the OHRC's"),
             "crs": proj.name,
             "window_centre_map_m": [float(x), float(y)], "window_centre_latlon": [float(lat), float(lon)],
             "window_m": window_m, "candidate_index": int(k),
