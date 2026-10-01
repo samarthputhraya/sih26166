@@ -425,16 +425,32 @@ def slide1(s):
 # OHRC<->NAC / OHRC<->TC are cross-sensor AND cross-mission; NAC<->NAC and TMC-2 fore<->aft are
 # SAME sensor; only visible<->infrared (MI, IIRS) and optical<->elevation (LOLA) are multi-modal.
 # ---------------------------------------------------------------------------------------------
+# How it addresses the problem: the PS's named challenges, one measured line each (v11).
+HOW_ROWS = [
+    # REPORT.md "SAC's own benchmark pair (equatorial ...)": `agrees` / rows; Δsun az 173.5-173.7,
+    # said as 174°. A did-it-register fact, NOT an accuracy comparison.
+    ("AZIMUTH", GREEN, "6/6 accepted", " on SAC's own pair [1], Sun azimuths 174° apart"),
+    # "Sun azimuth and elevation, on SAC's own frame": the near-azimuth table - [TBD at the freeze].
+    ("ELEVATION", GREEN, "[TBD — REPORT.md]", " Sun raised up to 41° on the same frame"),
+    # "Scale rung: ... TC ortho map": scale column, `agrees` / rows.
+    ("SCALE", GREEN, "3/4 accepted", " across a 29.6× scale gap"),
+    # "TMC-2 -> IIRS, orbit of ...": windows accepted per band beyond 850 nm (multi-modal).
+    ("SENSOR", GREEN, "8/8 per band", " TMC-2 → IIRS infrared, 999–3223 nm"),
+]
+
+
 def slide2(s):
     H = HEADINGS[2]
     L, RIGHT = 0.55, 8.95
 
     _tab(s, L, 1.33, H[0])
     # The thesis, in the first line a judge reads (v9 wording, claim-checked).
+    # v11: "Every lunar registration method returns an answer" is no longer true of the field - several
+    # public SIH26166 entries refuse - so the thesis states what the matches cannot show and what we add.
     _box(s, L, 1.75, RIGHT - L, 0.76,
-         [P(R("Every lunar registration method returns an answer. ", 14, True, INK),
-            R("Ours also returns a verdict on it, region by region", 14, True, ACCENT),
-            R(" — from an independent check that never sees the matches it judges.", 14, True, INK))],
+         [P(R("A registration can fit its own matches and still be wrong. ", 14, True, INK),
+            R("Ours registers Chandrayaan-2 across Sun, scale and sensor, and checks every region", 14, True, ACCENT),
+            R(" with evidence the matcher never used.", 14, True, INK))],
          fill=FILL_BLUE, line=LINE_BLUE, anchor="m", margins=(0.16, 0.04, 0.16, 0.04), name="thesis")
 
     # Detailed explanation: the idea as one flow. The pipeline's own steps are on slide 3.
@@ -462,21 +478,13 @@ def slide2(s):
     _tab(s, L, cy, H[2])
     cw1 = 3.90
     _box(s, L, cy + 0.38, cw1, 6.85 - cy - 0.38, fill=FILL_GREY, line=LINE_GREY, name="card-how")
-    rows = [
-        # REPORT.md "SAC's own benchmark pair (equatorial ...)": `agrees` / rows; Δsun az 173.5-173.7,
-        # said as 174°. A did-it-register fact, NOT an accuracy comparison.
-        ("SUN", GREEN, "6/6 accepted", " on SAC's equatorial pair [1], Sun azimuths 174° apart"),
-        # "Scale rung: ... TC ortho map": scale column, `agrees` / rows.
-        ("SCALE", GREEN, "3/4 accepted", " across a 29.6× scale gap"),
-        # "Kaguya TC -> Kaguya MI": 1548 nm, matcher refused on every row, fallback declared.
-        ("SENSOR", AMBER, "Refused 3/3", " Kaguya visible → infrared, fallback declared"),
-    ]
+    rows = HOW_ROWS
     for k, (label, colour, bold, rest) in enumerate(rows):
-        ry = cy + 0.50 + k * 0.55
-        _box(s, L + 0.12, ry + 0.10, 0.86, 0.32, [P(R(label, 11, True, WHITE), align="c")],
+        ry = cy + 0.44 + k * 0.48
+        _box(s, L + 0.10, ry + 0.08, 1.02, 0.30, [P(R(label, 11, True, WHITE), align="c")],
              fill=colour, radius=0.5, margins=(0.02, 0, 0.02, 0), name="pill")
-        _text(s, L + 1.08, ry, cw1 - 1.16, 0.52,
-              [P(R(bold, 12.5, True, INK), R(rest, 12.5, False, INK))], anchor="m", name="how-row")
+        _text(s, L + 1.20, ry, cw1 - 1.26, 0.46,
+              [P(R(bold, 12, True, INK), R(rest, 12, False, INK))], anchor="m", name="how-row")
 
     # Innovation and uniqueness: the calibration, both Sun populations, never pooled.
     # "Trust layer on real imagery: planted ...": 0 m row = false alarms; >= 5 m rows all flagged on
@@ -497,8 +505,8 @@ def slide2(s):
     # Shifts only: rotations and scale changes of 5 m at the corners are flagged far less often
     # at frame level (4 and 8 of 44 near-Sun trials) - slide 5 says why (claim-check v10, H1).
     _text(s, ix + 0.14, cy + 1.68, RIGHT - ix - 0.28, 0.62,
-          [P(R("Shifts planted in 30 real windows: every one of 5 m or more is caught with the Suns "
-               "within 10°. At 2 m or less almost nothing is — a floor we print.", 12, False, INK))],
+          [P(R("Shifts planted in 30 real windows: every one of 5 m or more caught with the Suns "
+               "within 10°; 2 m or less is the floor we print.", 12, False, INK))],
           name="inn-body")
 
     # The trust map itself: SAC's OHRC -> NAC w06 (accepted) above Kaguya TC -> MI 1548 nm w01
@@ -521,7 +529,7 @@ def slide3(s):
              ("LoFTR [4]", "dense matching"),
              ("Sub-pixel", "NCC refinement"),
              ("MAGSAC++ [5]", "outlier rejection"),
-             ("Coverage", "8×8 spread of matches")]
+             ("Coverage", "8×8 spread, uniform GCPs")]
     gap = 0.20
     cw = (RIGHT - L - gap * (len(steps) - 1)) / len(steps)
     y0, h = 1.74, 0.94
@@ -545,7 +553,7 @@ def slide3(s):
               "a match position · the only step allowed to overrule the rest · prior art [6–9]",
               12, False, WHITE), align="c", sb=1)],
          fill=ACCENT, anchor="m", name="areacheck")
-    outs = [("agrees →", " GeoTIFF, control points, trust map", FILL_GREEN, LINE_GREEN, GREEN),
+    outs = [("agrees →", " GeoTIFF, uniform control points, trust map", FILL_GREEN, LINE_GREEN, GREEN),
             ("unconfirmed →", " kept and labelled, not certified", FILL_AMBER, LINE_AMBER, AMBER),
             ("contradicted →", " refused; declared fallback in metres", FILL_ORANGE, LINE_ORANGE, ACCENT)]
     og = 0.2
@@ -598,111 +606,81 @@ def slide3(s):
 # Slide 4 - feasibility: the headline figures, the PS's own demands as a scorecard, and each
 # measured limit paired with its strategy.
 # ---------------------------------------------------------------------------------------------
-# Filled by the TMC-2 pass 20251107 once it is measured. It cannot be: that strip misses SAC's
-# frame by ~4 km and no closer-Sun TMC-2 coverage exists (checked 23 Sep). None = not measured.
-TMC2_CLOSE_SUN = None
+# v11 (1-3 Oct 2026): the 5 KPI tiles are gone; the PS's own asks are the scorecard, one row each, and
+# the Sun is shown in both axes the PS names (fig9: azimuth x elevation on SAC's own OHRC frame).
+# Every number is from REPORT.md at the v11 freeze; the comment beside each row names its section.
+# REPORT.md "Reproduce" footer: registered pairs and instrument pairings, as printed there (v11
+# replaces v10's "160 distinct ground windows / 8 instrument pairings", which REPORT stopped printing).
+EVIDENCE_SCALE = ("[TBD] registered windows", "[TBD] instrument pairings")
+
+SCORECARD = [
+    # "SAC's own benchmark pair (equatorial ...)" 6 agrees; "Sun azimuth and elevation ..." opposite table.
+    ("Sun azimuth", "SAC's own pair [1]: 6/6 accepted with the Sun's azimuth 174° away", GREEN),
+    # "Sun azimuth and elevation, on SAC's own frame": the near-azimuth table, its totals line.
+    ("Sun elevation", "Same frame, azimuth held within 19°: Sun up to 41° higher, [TBD] windows accepted", GREEN),
+    # "Scale rung" 3 agrees of 4; "TMC-2 -> IIRS" scale column 16.2x, 8/8 per band.
+    ("Scale", "29.6× OHRC → Kaguya TC: 3 of 4 · 16× TMC-2 → IIRS: 8 of 8 per band", GREEN),
+    # "TMC-2 -> IIRS": bands beyond 850 nm, windows accepted.
+    ("Multi-modal", "IIRS infrared, 999–3223 nm, onto TMC-2: 8 of 8 in each band", GREEN),
+    # Site N section, or "LRO NAC -> TMC-2 at SAC's site" when Site N is absent.
+    ("OHRC, TMC, IIRS", "[TBD — Site N]", GREEN),
+    # "In the Chandrayaan-2 image's own pixels": the TMC-2 and IIRS rows (held-out medians).
+    ("Sub-pixel", "In the Chandrayaan-2 image's own pixels: TMC-2 0.36–0.48, IIRS 0.21–0.32 (held out)", GREEN),
+    # "Runtime and match distribution": grid coverage, and the delivered uniform set.
+    ("Uniform spread", "Matches in 95% or more of 8×8 cells on 17 of 20 windows; a uniform control-point set ships", GREEN),
+    ("Deliverables", "GeoTIFF on the reference grid, GDAL and QGIS control points, ISIS match list, report", GREEN),
+    # "Real viewpoint: TMC-2 fore -> aft": 1 agrees of 4.
+    ("Viewpoint", "Relief is not a homography: TMC-2 fore → aft, 1 of 4 accepted — a measured limit", AMBER),
+]
+RISKS = [
+    # "Real sun-angle sweep" bins 60-90 and 90-120: 0 accepted of 7 + 5, none wrongly accepted.
+    (("Sun 60–120° away", "74°S sweep: 0 of 12 accepted, none wrongly"),
+     ("Choose the pass by its Sun", "Matched-Sun passes exist in the archive: this slide's ladder")),
+    (("Relief parallax", "TMC-2 fore → aft: 1 of 4 accepted"),
+     ("Local transforms", "Tile-level transforms after DTM orthorectification")),
+]
 
 
 def slide4(s):
     H = HEADINGS[4]
     L, RIGHT = 0.55, 12.78
-
-    kpis = [
-        # REPORT.md footer, verbatim noun: "160 distinct ground windows".
-        ("160", "distinct ground windows"),
-        ("8", "instrument pairings"),
-        # "The whole lit overlap, tiled". Its scope (v4 M1 / v9 M4): one OHRC frame x one NAC.
-        ("37 / 37", "accepted: every lit window of one OHRC × NAC overlap, Suns 3.3° apart"),
-        # Same section: held-out median of the accepted, on the NAC grid, in metres (Invariant 2).
-        ("0.57 m", "held-out median: 0.61 px on the 0.93 m NAC grid"),
-        # "Real sun-angle sweep": "failed, not caught" is 0 in all six bins.
-        ("0", "undetected failures in 69 windows, Suns 3–153° apart"),
-    ]
-    gap = 0.14
-    kw = (RIGHT - L - gap * (len(kpis) - 1)) / len(kpis)
-    for k, (num, lab) in enumerate(kpis):
-        x = L + k * (kw + gap)
-        _box(s, x, 1.33, kw, 0.98,
-             [P(R(num, 24, True, NAVY), align="c"), P(R(lab, 11.5, False, MUTED), align="c")],
-             fill=FILL_BLUE, line=LINE_BLUE, anchor="m", margins=(0.08, 0.02, 0.08, 0.02), name="kpi")
-
-    # Analysis of the feasibility: the PS title's demands, each with what was measured.
-    ty = 2.45
-    _tab(s, L, ty, H[0])
-    tmc_text, tmc_state = ("Sun azimuths 120° apart: no cell verified and 0% of held-out matches "
-                           "agree; all 4 windows refused", AMBER)
-    if TMC2_CLOSE_SUN:
-        tmc_text, tmc_state = TMC2_CLOSE_SUN
-    reqs = [
-        # "SAC's own benchmark pair (equatorial ...)" and "(polar ...)": `agrees` / rows. Polar:
-        # 4 agrees, 1 unconfirmed, 1 contradicted = 4 of 6 vouched for, 2 flagged.
-        ("Sun angle", "6/6 accepted on SAC's equatorial pair [1], Sun azimuths 174° apart; polar "
-                      "pair (132°): 4 of 6 accepted, 2 flagged", GREEN),
-        # REPORT "Scale rung": w01 0.545 px = 4.0 m; w02 is accepted on 1 verified cell with an
-        # unreliable held-out median (inlier ratio 0.30) - a Q&A answer, not a slide line.
-        ("Scale", "3 of 4 accepted at 29.6×: OHRC 0.25 m onto Kaguya TC 7.4 m", GREEN),
-        ("Multi-modal", "Kaguya MI 1548 nm infrared: matcher refused 3/3; declared fallback a "
-                        "median 3.4–16.2 m from the visible-band fit", AMBER),
-        # "Sub-pixel accuracy, with the pixel grid named": the synthetic row at 0 / 15 deg and the
-        # loop row, each with its grid AND its metres (Invariant 2). Loops are consistency.
-        ("Sub-pixel", "Synthetic, Sun azimuths ≤ 15° apart: 0.086 px = 5.1 m on a 60 m grid · loop "
-                      "closure 0.107 m on a 1.245 m grid (consistency, not accuracy)", GREEN),
-        # "SAC's benchmark site: ... pass 20250707T1853": held-out-within-3-px 0% on all four;
-        # verdict contradicted x4. The held-out MEDIANS are not quoted (Known issue 1).
-        ("OHRC → TMC-2", tmc_text, tmc_state),
-    ]
-    ry0, rh, rg = 2.86, 0.64, 0.06
-    lw, tw = 1.30, 4.40
-    for k, (label, text, colour) in enumerate(reqs):
+    ty = 1.33
+    tw0 = _tab(s, L, ty, H[0])
+    _text(s, L + tw0 + 0.10, ty, 6.72 - L - tw0 - 0.10, 0.36,
+          [P(R("Real data: " + " · ".join(EVIDENCE_SCALE), 11, True, MUTED), align="r")], anchor="m",
+          name="evidence-scale")
+    ry0, rh, rg = 1.76, 0.455, 0.045
+    lw, tw = 1.30, 4.82
+    for k, (label, text, colour) in enumerate(SCORECARD):
         y = ry0 + k * (rh + rg)
-        _box(s, L, y, lw, rh, [P(R(label, 12, True, NAVY), align="c")], fill=FILL_BLUE,
+        _box(s, L, y, lw, rh, [P(R(label, 11.5, True, NAVY), align="c")], fill=FILL_BLUE,
              line=LINE_BLUE, anchor="m", margins=(0.04, 0, 0.04, 0), name="req-label")
-        _box(s, L + lw + 0.06, y, tw, rh, [P(R(text, 12, False, INK))], fill=WHITE, line=LINE_GREY,
-             anchor="m", margins=(0.10, 0.02, 0.34, 0.02), name="req-text")
-        _dot(s, L + lw + 0.06 + tw - 0.27, y + rh / 2 - 0.08, 0.16, colour)
-    ly = ry0 + len(reqs) * (rh + rg) + 0.02
-    _dot(s, L + lw + 0.06, ly + 0.07, 0.14, GREEN)
-    _text(s, L + lw + 0.26, ly, 1.7, 0.28, [P(R("met, as measured", 11, False, MUTED))], name="legend")
-    _dot(s, L + lw + 2.00, ly + 0.07, 0.14, AMBER)
-    _text(s, L + lw + 2.20, ly, 2.5, 0.28, [P(R("measured limit, refused", 11, False, MUTED))],
-          name="legend")
+        _box(s, L + lw + 0.05, y, tw, rh, [P(R(text, 11, False, INK))], fill=WHITE, line=LINE_GREY,
+             anchor="m", margins=(0.08, 0.01, 0.30, 0.01), name="req-text")
+        _dot(s, L + lw + 0.05 + tw - 0.24, y + rh / 2 - 0.07, 0.14, colour)
+    ly = ry0 + len(SCORECARD) * (rh + rg) + 0.01
+    _dot(s, L + lw + 0.05, ly + 0.07, 0.13, GREEN)
+    _text(s, L + lw + 0.24, ly, 1.7, 0.26, [P(R("met, as measured", 11, False, MUTED))], name="legend")
+    _dot(s, L + lw + 1.90, ly + 0.07, 0.13, AMBER)
+    _text(s, L + lw + 2.09, ly, 2.6, 0.26, [P(R("a measured limit", 11, False, MUTED))], name="legend")
 
-    # Challenges -> strategies, paired row by row. The strategies are the finale roadmap; each
-    # answers a measured failure, and the check that refused these grades the fixes.
-    cx0, sx0 = 6.50, 9.80
-    cw0, sw0 = 2.98, RIGHT - sx0
-    _tab(s, cx0, ty, H[1], colour=ACCENT, size=12, w=cw0, h=0.56)
-    _tab(s, sx0, ty, H[2], colour=GREEN, size=12, w=sw0, h=0.56)
-    pairs = [
-        # "Real sun-angle sweep" bins 60-90 and 90-120: 0 accepted of 7 + 5. "MiLOI" rows at Sun
-        # VECTOR angles 90-180 deg: none of ours, SIFT, ORB, AKAZE registers any of 16. Every other
-        # Sun figure on the deck is an azimuth difference, so the vector angle is named (M4, v4).
-        (("Extreme Sun", "Sun azimuths 60–120° apart: 0 of 12 accepted. MiLOI [3], Sun vectors "
-                         "90°+ apart: 0 of 16, by any of 4 methods"),
-         ("Refuse, then re-pair", "None of the 12 passed as good; re-pair with the closest-Sun pass")),
-        # "Real viewpoint: TMC-2 fore -> aft": verdicts, 1 agrees of 4.
-        (("Relief parallax", "Relief is not a homography: TMC-2 fore → aft (±25°), 1 of 4 accepted"),
-         ("Local transforms", "Tile-level transforms after LOLA orthorectification")),
-        # "Kaguya TC -> Chandrayaan-2 IIRS": 0 agrees of 11; IIRS ~89 m, 12x coarser than TC.
-        (("Coarse infrared", "IIRS at 89 m per pixel, 12× coarser than Kaguya TC: 0 of 11 accepted "
-                             "when matched direct"),
-         ("Chain the scales", "Match IIRS through TMC-2 at an intermediate scale")),
-    ]
-    py0, ph, pg = 3.12, 1.02, 0.09
-    for k, ((rt, rb), (st, sb)) in enumerate(pairs):
-        y = py0 + k * (ph + pg)
-        _box(s, cx0, y, cw0, ph,
-             [P(R(rt, 12.5, True, ACCENT)), P(R(rb, 11.5, False, INK), sb=1)],
-             fill=FILL_ORANGE, line=LINE_ORANGE, anchor="m", margins=(0.10, 0.03, 0.08, 0.03),
-             name="risk")
-        _arrow(s, cx0 + cw0 + 0.02, y + ph / 2, sx0 - 0.02, y + ph / 2, colour=MUTED)
-        _box(s, sx0, y, sw0, ph,
-             [P(R(st, 12.5, True, GREEN)), P(R(sb, 11.5, False, INK), sb=1)],
-             fill=FILL_GREEN, line=LINE_GREEN, anchor="m", margins=(0.10, 0.03, 0.08, 0.03),
-             name="strategy")
-    _text(s, cx0, py0 + 3 * (ph + pg), RIGHT - cx0, 0.30,
-          [P(R("Each strategy answers a measured failure.", 11.5, True, NAVY, True), align="c")],
-          anchor="m", name="closing")
+    # The Sun in both axes the PS names, on SAC's own OHRC frame (REPORT "Sun azimuth and elevation").
+    fx = 6.82
+    fw = 5.62
+    _pic(s, "fig9_sun_map.png", fx + (RIGHT - fx - fw) / 2, 1.30, w=fw)
+    cy = 4.74
+    cw0 = (RIGHT - fx - 0.30) / 2
+    sx0 = fx + cw0 + 0.30
+    _tab(s, fx, cy, H[1], colour=ACCENT, size=11.5, w=cw0, h=0.50)
+    _tab(s, sx0, cy, H[2], colour=GREEN, size=11.5, w=cw0, h=0.50)
+    ph, pg = 0.70, 0.05
+    for k, ((rt, rb), (st, sb)) in enumerate(RISKS):
+        y = cy + 0.56 + k * (ph + pg)
+        _box(s, fx, y, cw0, ph, [P(R(rt, 11.5, True, ACCENT)), P(R(rb, 11, False, INK))],
+             fill=FILL_ORANGE, line=LINE_ORANGE, anchor="m", margins=(0.08, 0.02, 0.06, 0.02), name="risk")
+        _arrow(s, fx + cw0 + 0.02, y + ph / 2, sx0 - 0.02, y + ph / 2, colour=MUTED)
+        _box(s, sx0, y, cw0, ph, [P(R(st, 11.5, True, GREEN)), P(R(sb, 11, False, INK))],
+             fill=FILL_GREEN, line=LINE_GREEN, anchor="m", margins=(0.08, 0.02, 0.06, 0.02), name="strategy")
 
 
 # ---------------------------------------------------------------------------------------------
@@ -979,7 +957,7 @@ SAME_SENSOR_WORDS = ("MiLOI", "fore vs aft", "fore/aft", "NAC pairs")
 # v10 (SPOC: "some slides feel over crowded with words"): v9 carried 230 / 195 / 330 / 230.
 # Slide 4 kept the qualifiers the v10 claim-check restored (population, azimuth vs Sun vector,
 # scope, "from the visible-band fit"): 271 words against v9's 324.
-MAX_WORDS = {2: 170, 3: 160, 4: 275, 5: 170}      # a guard, not a target
+MAX_WORDS = {2: 180, 3: 160, 4: 230, 5: 170}      # a guard, not a target (v11: slide 4 cut from 275; slide 2 gained a row)
 TYPE_FLOOR_PT = 11                                 # v9 allowed 9 pt; the SPOC asked for bigger letters
 
 
@@ -1073,8 +1051,7 @@ def _audit_deck(deck) -> list[str]:
     # Whitespace-normalised: a KPI card sets "160" and "distinct ground windows" as two lines.
     all_text = _norm(" ".join(sh.text_frame.text for s in deck.slides for sh in s.shapes
                               if sh.has_text_frame))
-    for need in (TEAM_ID, TEAM_NAME, "SIH26166", "160 distinct ground windows",
-                 "8 instrument pairings"):
+    for need in (TEAM_ID, TEAM_NAME, "SIH26166", *EVIDENCE_SCALE):
         if need not in all_text:
             bad.append(f"{need!r} does not appear anywhere in the deck")
     for s in list(deck.slides)[1:]:

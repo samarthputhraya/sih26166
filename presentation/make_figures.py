@@ -913,15 +913,18 @@ def fig_miloi():
 
 def fig_sun_map():
     """Sun change on SAC's own OHRC frame, in BOTH axes the PS names: azimuth and elevation.
-    One point per LRO NAC registered against that one OHRC frame - SAC's benchmark pair
-    (sac_ohrc_nac_*) and the elevation ladder (sac_ohrclroc_nac*, 1 Oct 2026) - at the median
+    One point per LRO NAC registered against that one OHRC frame by the ladder cut
+    (sac_ohrclroc_nac*, 1 Oct 2026; SAC's own NAC included) - at the median
     Sun difference of its windows, labelled windows accepted / windows. Every value from
     real_pairs_log.csv (latest row per pair); d_incidence = NAC incidence - OHRC incidence, so the
     elevation change is its negative."""
     latest = {}
     for r in _rows(REAL_LOG):
         latest[r["pair_id"]] = r
-    rows = [r for p, r in latest.items() if (p.startswith("sac_ohrc_nac_") or p.startswith("sac_ohrclroc_nac"))
+    # One method for every point: the ladder cut (both images in LRO's geometry, one 1.75 m grid, shared
+    # windows). SAC's own NAC is on it too (re-cut that way); the frozen sac_ohrc_nac_* rows, cut on
+    # the NAC's own grid with a 4 m correction against the OHRC, are not mixed in.
+    rows = [r for p, r in latest.items() if p.startswith("sac_ohrclroc_nac")
             and r.get("d_sun_azimuth_deg") and r.get("d_incidence_deg") and r.get("verdict") != "INVALIDATED"]
     if not rows:
         return None
@@ -943,11 +946,8 @@ def fig_sun_map():
         ax.scatter([az], [el], s=60 + 22 * len(rs), c=col, marker=mk, edgecolors=INK, linewidths=0.8, zorder=4,
                    label=lab if lab not in seen else None)
         seen.add(lab)
-        near = any(abs(az - a) < 14 and abs(el - e) < 4 for a, e in placed)
-        ax.annotate(f"{acc}/{len(rs)}", (az, el), xytext=(-36, -5) if near else (10, -5), textcoords="offset points",
-                    fontsize=12, color=INK, zorder=5)
-        placed.append((az, el))
-    ax.set_xlim(-8, 188)
+        placed.append((az, el, f"{acc}/{len(rs)}"))
+    ax.set_xlim(-16, 190)
     ax.set_xticks([0, 30, 60, 90, 120, 150, 180])
     ax.set_xlabel("Sun azimuth difference, OHRC vs NAC  (degrees)", fontsize=14)
     ax.set_ylabel("Sun elevation change, NAC − OHRC  (degrees)", fontsize=14)
@@ -957,6 +957,25 @@ def fig_sun_map():
     fig.text(0.014, 0.006, f"{len(by)} LRO NACs, {len(rows)} windows · label: windows accepted / windows · "
              f"OHRC → NAC, both panchromatic (cross-sensor)", fontsize=10, color=MUTED)
     fig.tight_layout(rect=(0, 0.05, 1, 1))
+    # Labels placed one by one, each at the first offset whose box touches no earlier label and no
+    # marker - measured on the rendered canvas, as _audit measures overlaps.
+    fig.canvas.draw()
+    r = fig.canvas.get_renderer()
+    pts_px = [ax.transData.transform((a, e)) for a, e, _ in placed]
+    boxes = []
+    for a, e, txt in placed:
+        for off in ((10, -6), (-38, -6), (8, 7), (8, -19), (-38, 7), (-38, -19), (14, 14), (-44, 14)):
+            t = ax.annotate(txt, (a, e), xytext=off, textcoords="offset points", fontsize=12, color=INK, zorder=5)
+            bb = t.get_window_extent(renderer=r).expanded(1.05, 1.1)
+            hit = any(bb.overlaps(b) for b in boxes) or any(
+                bb.x0 - 6 < x < bb.x1 + 6 and bb.y0 - 6 < y < bb.y1 + 6 for x, y in pts_px)
+            if not hit:
+                boxes.append(bb)
+                break
+            t.remove()
+        else:
+            boxes.append(ax.annotate(txt, (a, e), xytext=(10, -6), textcoords="offset points", fontsize=12,
+                                     color=INK, zorder=5).get_window_extent(renderer=r))
     out = OUT / "fig9_sun_map.png"
     _audit(fig, out.name)
     fig.savefig(out, dpi=200)
