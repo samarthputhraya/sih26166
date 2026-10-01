@@ -32,10 +32,37 @@ section it comes from.
 
 ---
 
+## The problem statement, ask by ask
+
+All rows are real data. "Accepted" means the independent check agreed with the matcher's
+transform; held-out errors are on the 20 % of matches the fit never saw.
+
+| The problem statement asks for | Measured | REPORT.md section |
+|---|---|---|
+| **Sun azimuth** | SAC's own equatorial pair [1], OHRC → LRO NAC, Sun azimuths 174° apart: **6 of 6** windows accepted. The same OHRC frame against 7 NACs with the Sun 154–177° away in azimuth: 48 of 56 | *SAC's own benchmark pair (equatorial)*; *Sun azimuth and elevation, on SAC's own frame* |
+| **Sun elevation** | The same frame against 9 NACs, Sun azimuth within 20° of the OHRC's, the Sun raised by up to 41.7°: **61 of 71** accepted; 7 of 8 at the highest Sun | *Sun azimuth and elevation, on SAC's own frame* |
+| **Scale** | OHRC → Kaguya TC, 29.6×: 3 of 4. TMC-2 → IIRS, about 16×: every window on two orbits | *Scale rung*; *TMC-2 → IIRS* |
+| **Multi-modal** (visible → infrared) | TMC-2 → IIRS at 999–3223 nm: **62 of 62** windows over two orbits; at 1555 nm, held-out median 0.16–0.32 IIRS pixels per window | *TMC-2 → IIRS* |
+| **OHRC, TMC and IIRS** | One site at 60.7°N with the Suns matched: OHRC → TMC-2 **10 of 10**, OHRC → LRO NAC 5 of 5, NAC → TMC-2 4 of 4. The chain OHRC → NAC → TMC-2 meets the direct OHRC → TMC-2 within 1.99 m (median of 4 windows). IIRS onto that TMC-2 pass: 30 of 30 | *One site, every camera (Site N)* |
+| **Viewpoint** | OHRC → OHRC of the next orbit, viewing directions 40° apart, same Sun: **8 of 8**, held-out median 0.91 px = 1.12 m on the 1.232 m grid. TMC-2 fore → aft, 50° apart: 1 of 4 (relief parallax, a measured limit) | *A real viewpoint test at Site N*; *Real viewpoint: TMC-2 fore → aft* |
+| **Sub-pixel, "of source image"** | Where the Chandrayaan-2 image is the coarser grid, in its own pixels: TMC-2 0.36–0.48 px against a NAC; IIRS 0.16–0.32 px. OHRC → TMC-2 at the site above is 0.61–1.57 TMC-2 px, so not every window is sub-pixel. Where OHRC is finer than its reference, the reference grid bounds it: 0.41–1.01 NAC px = 0.51–0.94 m | *Sub-pixel accuracy, with the pixel grid named* |
+| **Uniform distribution** | Inliers in 95 % or more of the 8 × 8 reference cells on 17 of 20 windows at 74 °S. Every accepted registration also ships `gcps_uniform`: at most 4 control points per cell | *Runtime and match distribution* |
+| Usable outputs | GeoTIFF on the reference grid, GDAL and QGIS control points, an ISIS match list, the per-cell trust map, a report | *How it works*, below |
+
+<p align="center">
+  <img src="presentation/figures/fig10_site_n.png" width="640"
+       alt="Site N at 60.7 N: Chandrayaan-2 OHRC, TMC-2 and IIRS and an LRO NAC, every leg accepted under matched Suns, with held-out medians and the loop closure">
+</p>
+
+The TMC-2 → IIRS pairs, the Sun-elevation ladder and the site above were measured after the
+28 Sep submission and re-run with every other piece of evidence in the current freeze.
+
+---
+
 ## Results
 
-Tested on 160 distinct ground windows and 8 instrument pairings of real Chandrayaan-2, LRO,
-Kaguya and LOLA data, plus synthetic pairs with exact truth.
+Tested on 400 distinct windows and 11 instrument pairings (3 of them one instrument against
+itself) of real Chandrayaan-2, LRO, Kaguya and LOLA data, plus synthetic pairs with exact truth.
 
 | Test | Result | REPORT.md section |
 |---|---|---|
@@ -46,7 +73,7 @@ Kaguya and LOLA data, plus synthetic pairs with exact truth.
 | **Scale:** OHRC at 0.25 m onto Kaguya TC at 7.4 m (29.6×) | 3 of 4 accepted | *Scale rung* |
 | **Sub-pixel, exact truth:** synthetic pairs rendered from LOLA, 60 m grid | 0.086 px = 5.1 m with the Suns 0–15° apart; 1.096 px = 65.8 m at 45° | *Sub-pixel accuracy, with the pixel grid named* |
 | **Loop closure:** six three-image loops OHRC → NAC A → NAC B | close to 0.107 m on the 1.245 m NAC grid (consistency, not accuracy) | *Loop closure* |
-| **Runtime** | median 8.2 s per 640-px window on a laptop CPU (89 OHRC → NAC windows) | *Runtime and match distribution* |
+| **Runtime** | median 7.7 s per 640-px window on a laptop CPU (89 OHRC → NAC windows) | *Runtime and match distribution* |
 
 ### Is the check itself any good?
 
@@ -80,29 +107,24 @@ verified state from 94 % (*Errors that are not translations*).
 | Case | What happens | REPORT.md section |
 |---|---|---|
 | Visible → near-infrared, Kaguya TC → MI 1548 nm | matcher refused on 3 of 3 windows; the declared fallback lands 3.4–16.2 m (0.23–1.09 px on MI's 14.8 m grid) from the visible-band registration of the same window | *Kaguya TC → Kaguya MI* |
-| OHRC → TMC-2, Sun azimuths 120° apart | 6–7 inliers fitted to 0.13–0.96 px per axis in-sample on the 5.58 m TMC-2 grid, yet 0 % of held-out matches agree: refused on 4 of 4 | *SAC's benchmark site: OHRC → TMC-2 nadir* |
-| IIRS near-infrared (89 m per pixel, 12× coarser) against Kaguya TC | 0 of 11 accepted when matched direct | *Kaguya TC → Chandrayaan-2 IIRS* |
+| OHRC → TMC-2 at SAC's frame, Sun azimuths 120° apart and elevations 9.9° against 69.4° | 6–7 inliers fitted to 0.13–0.96 px per axis in-sample on the 5.58 m TMC-2 grid, yet 0 % of held-out matches agree: refused on 4 of 4, and again 4 of 4 with the OHRC first placed in LRO's geometry. With the Suns matched (Site N, above) the same two instruments register 10 of 10 | *SAC's benchmark site: OHRC → TMC-2 nadir*; *OHRC → TMC-2 again* |
+| IIRS near-infrared (89 m per pixel, 12× coarser) against Kaguya TC | 0 of 11 accepted when matched direct; through TMC-2 of the same orbit, 62 of 62 | *Kaguya TC → Chandrayaan-2 IIRS* |
 | TMC-2 fore → aft (±25°): terrain relief is not a homography | 1 of 4 accepted | *Real viewpoint: TMC-2 fore → aft* |
 | Sun vectors 90° or more apart (MiLOI [3]) | no method we ran registers any of the 16 pairs: ours, SIFT, ORB or AKAZE | *MiLOI* |
 | Optical onto elevation, OHRC → LOLA shaded relief | a declared failure | *Declared-failure rung* |
 
-The OHRC → TMC-2 pass above is the closest-Sun TMC-2 coverage of SAC's frame that we found in
-PRADAN's footprint catalogue. Each refusal had a planned answer: re-pairing with a closer-Sun
-reference, tile-level transforms with orthorectification for relief, and IIRS matched through
-TMC-2 rather than straight onto TC. The first and last have now been run.
+Each refusal in the 28 Sep submission had a planned answer: a reference chosen for its Sun, IIRS
+matched through TMC-2 rather than straight onto TC, and tile-level transforms with
+orthorectification for relief. The first two have been run (next section); the third has not.
 
-### After the submission: TMC-2 and IIRS register
-
-Measured on 28 Sep 2026, after the idea was submitted, so **not part of the evidence freeze**
-above; REPORT.md keeps them in their own section (*After the submission: IIRS and TMC-2, and the
-route between them*).
+### TMC-2 and IIRS, in detail
 
 | Test | Result |
 |---|---|
-| **TMC-2 → IIRS on one orbit.** PRADAN's catalogue shows the two instruments imaging the same ground seconds apart, so the Sun is the same. One pass, 8 windows chosen before any matching; TMC-2 at 4.56 m against IIRS at 73.9 m (16×) | **8 of 8** accepted in each of five IIRS bands, 746 to 3223 nm: the same 8 places in every band, 40 registrations. The four bands beyond TMC-2's 400–850 nm passband are multi-modal; 746 nm is the control. At 1555 nm: held-out median 0.21–0.32 px = 16–24 m on the IIRS grid. Each band is registered on its own; against the 1555 nm result, the median disagreement per window is 0.04–0.07 px (3–5 m) at 999 nm, worst point 0.29 px, and up to 0.75 px at 746 and 3223 nm, single points up to 5.1 px. That is consistency, not accuracy |
-| **LRO NAC → TMC-2**, the NAC chosen for a Sun 2.6–3.2° from the TMC-2 pass's in azimuth and 4.3–4.5° in incidence | **6 of 6** accepted; held-out median 0.36–0.48 px = 1.6–2.2 m on TMC-2's 4.56 m grid |
+| **TMC-2 → IIRS, two orbits.** PRADAN's catalogue shows the two instruments imaging the same ground seconds apart, so the Sun is the same. 8 windows per orbit chosen before any matching, the same places in every band; TMC-2 at 4.6 and 5.2 m against IIRS at 74 and 84 m (16×) | **62 of 62** accepted in the bands beyond TMC-2's 400–850 nm passband (999, 1555, 2381 and 3223 nm: multi-modal), plus 8 of 8 at 746 nm, the control. At 1555 nm the held-out median is 0.21–0.32 px (first orbit) and 0.16–0.32 px (second) on the IIRS grid. Each band is registered on its own; how far each band's transform lands from the 1555 nm one is in REPORT.md, and is consistency, not accuracy |
+| **LRO NAC → TMC-2** at SAC's site, the NAC chosen for a Sun 2.6–3.2° from the TMC-2 pass's in azimuth and 4.3–4.5° in incidence | **6 of 6** accepted; held-out median 0.36–0.48 px = 1.6–2.2 m on TMC-2's 4.56 m grid |
 | The same NAC → the 2025 TMC-2 pass, Suns 45° apart | 3 accepted on thin evidence (4–6 verified cells; no accuracy quoted), 2 unconfirmed, 1 refused |
-| **OHRC → TMC-2 re-cut** after moving SAC's OHRC frame 1.9 km into LRO's geometry | still **refused 4 of 4**. What is left is the Sun (120° apart in azimuth, 9.9° against 69.4° in elevation) and the 5× scale, which this test cannot separate |
+| **Site N**, OHRC → TMC-2 with the Suns 2.2–2.3° apart in azimuth and 0.5° in incidence | **10 of 10** accepted; held-out median 0.61–1.57 px = 3.2–8.1 m on TMC-2's 5.17 m grid (OHRC area-averaged to 1.23 m first) |
 
 ---
 
@@ -124,13 +146,13 @@ are missing from the other.
 
 <p align="center">
   <img src="presentation/figures/fig1_sun_angle_vs_error.png" width="620"
-       alt="Median registration error against known truth versus Sun-azimuth difference on synthetic pairs: ours rises from 0.09 px at 0 degrees to 5.8 px at 90 degrees and falls to 0.08 px at 180 degrees; SIFT, ORB and AKAZE together return an answer in only 4 of 60 runs from 60 degrees on">
+       alt="Median registration error against known truth versus Sun-azimuth difference on synthetic pairs: ours rises from 0.09 px at 0 degrees to 5.8 px at 90 degrees and falls to 0.08 px at 180 degrees; SIFT, ORB and AKAZE together return an answer in only 5 of 75 runs from 60 degrees on">
 </p>
 
 | Sun azimuths apart | 0° | 45° | 90° | 120° | 180° |
 |---|---|---|---|---|---|
 | ours, median error on the 60 m grid | 0.086 px (5.1 m) | 1.096 px (65.8 m) | 5.805 px (348 m) | 4.025 px (242 m) | 0.080 px (4.8 m) |
-| SIFT / ORB / AKAZE runs that return any answer | 60 of 60 | 8 of 60 | 4 of 60 | 4 of 60 | 4 of 60 |
+| SIFT / ORB / AKAZE runs that return any answer | 75 of 75 | 10 of 75 | 5 of 75 | 5 of 75 | 5 of 75 |
 
 *Synthetic Sun-azimuth sweep* in REPORT.md. The classical runs that do answer past 45° are off by
 hundreds to thousands of pixels; at 0° they beat us (0.044 px against 0.086). The 180° point
@@ -185,59 +207,75 @@ What these do not cover:
 ### How long would a full OHRC strip take?
 
 **Measured.** The whole lit overlap of the 74 °S frame with one NAC, 37 windows of 596 m
-(13.1 km²), took 5.0 minutes of `run_all`, a median of 7.9 s per window, on a laptop CPU only, no
+(13.1 km²), took 7.0 minutes of `run_all`, a median of 11.6 s per window, on a laptop CPU only, no
 discrete GPU (*The whole lit overlap of one OHRC frame with one NAC*). Over 89 OHRC → NAC windows
-the median is 8.2 s (*Runtime and match distribution*).
+the median is 7.7 s (*Runtime and match distribution*).
 
 **Projected, not measured.** That OHRC product is 93,693 lines × 12,000 samples, and its label's
 corner coordinates put it at about 25.6 × 2.9 km, or 73 km². Tiled at the same 596 m it needs about
-215 windows (43 along, 5 across), roughly 30 minutes at 8.2 s each. That is registration only:
+215 windows (43 along, 5 across), roughly 28–42 minutes at 7.7–11.6 s each. That is registration only:
 reading and cutting the 1.1 GB product was not timed. Windows are independent, so the work splits
 across cores or machines, but we have not measured that. The time scales with the number of
-windows on the reference grid, so 30 minutes holds for a reference of about 1 m, like a NAC. A
+windows on the reference grid, so that range holds for a reference of about 1 m, like a NAC. A
 finer reference costs more.
 
-### Why were TMC-2 and IIRS refused, and what changed?
+### Why were TMC-2 and IIRS refused on 28 Sep, and what changed?
 
 In the submitted evidence:
 
 - **OHRC → TMC-2**, on the only TMC-2 pass that covers all of SAC's frame (PRADAN's footprint
-  catalogue): the Sun moved 120° in azimuth *and* from 9.9° to 69.4° above the horizon. That puts
-  a low-Sun shadow image against a near-noon brightness image, with a 5× scale change on top.
-  LoFTR finds 90–148 matches, and MAGSAC++ keeps 6–7 and fits them to 0.13–0.96 px on TMC-2's
-  5.576 m grid (0.7–5.4 m). Yet none of the held-out matches lands within 3 px, and not one of the
-  64 cells verifies. That is what a refused registration looks like from the inside, and the check
-  refuses all 4 windows. After the submission we found a second cause: at SAC's frame the OHRC
-  archive grid sits 1.9 km from LROC's published corners for SAC's NAC. A second NAC's corners sit
-  about 230 m from the first, and TMC-2 lands 121–175 m from the second NAC's corners, inside the
-  ~300 m precision LROC publishes corners to. So those windows (2.1 km) barely shared ground. Re-cut
-  with the OHRC first placed in LRO's geometry (no TMC-2 pixel used), the pair is still refused 4 of
-  4. That points at the Sun, most likely its elevation: the submitted evidence accepts Suns 174°
-  apart in azimuth when both are low. OHRC → TMC-2 under a matched Sun has not been tested.
-- **TMC-2 fore → aft**, one pass, seconds apart, seen 50° apart: relief shifts by about
-  0.93 × its height between the two views, which no single homography can model. 1 of 4 is
-  accepted, consistent with the synthetic parallax rows (*Viewpoint*).
-- **Kaguya TC → IIRS**: IIRS pixels are 89 m, so the reference window is only 112 px, against a
-  TC source 12× finer. The IIRS bands (1.0 and 1.55 µm) differ from TC's visible light. It gets
-  4–7 inliers per window, and 0 of 11 are accepted (6 windows, two bands).
+  catalogue): the Sun moved 120° in azimuth *and* from 9.9° to 69.4° above the horizon, with a
+  5× scale change on top. MAGSAC++ kept 6–7 of 90–148 matches and fitted them to 0.13–0.96 px on
+  TMC-2's 5.576 m grid, yet none of the held-out matches landed within 3 px and not one of the 64
+  cells verified, so the check refused all 4 windows. Separately, the OHRC archive grid there sits
+  1.9 km from LRO's; re-cut with the OHRC first placed in LRO's geometry, the pair is still refused
+  4 of 4.
+- **Kaguya TC → IIRS**: IIRS pixels are 89 m, so the reference window is only 112 px against a TC
+  source 12× finer, in a different band. 4–7 inliers per window; 0 of 11 accepted.
 
-What changed was taking the Sun out of the problem instead of fighting it (table above, measured
-after the submission):
+What changed was taking the Sun out of the problem instead of fighting it:
 
 - **IIRS and TMC-2 fly together.** PRADAN's footprint catalogue shows them imaging the same ground
-  on the same orbit, seconds apart. The pass we used (3 February 2020, 18:45 UTC) started its two
-  strips 0.3 s apart, so the Sun is the same and only the band and the 16× scale change. All 8
-  windows register in every band from 746 to 3223 nm - one pass, one Sun, the same 8 places; a
-  second orbit is the next thing to add. We expect this to be the easy case, and say
-  so: under one Sun, shading and albedo should dominate the Moon at 1.5 µm much as they do in
-  visible light. The weakest band, 3223 nm, drops to 51–241 inliers and 7–38 verified cells.
-- **TMC-2 registers once the Sun matches.** A NAC chosen for a Sun 2.6–3.2° from a TMC-2 pass's in
-  azimuth (4.3–4.5° in incidence) gives 6 of 6. The same NAC against a TMC-2 pass with the Sun
-  45° away gives thin or refused results.
-- **OHRC still reaches TMC-2 only through LRO.** OHRC → NAC is 6 of 6 at SAC's frame and NAC →
-  TMC-2 is 6 of 6, but they use two different NAC images, so this is two legs, not a measured loop.
-  For relief (fore → aft), TMC-2's own DTM allows orthorectification before matching; that has not
-  been run.
+  on the same orbit, seconds apart, so the Sun is the same and only the band and the 16×
+  scale change. On two such orbits every window registers in every band (62 of 62 beyond 850 nm).
+  We expect this to be the easy case, and say so: under one Sun, shading and albedo should
+  dominate the Moon at 1.5 µm much as in visible light. The weakest band is 3223 nm.
+- **Choose the pass by its Sun.** Searching PRADAN's catalogue and the LRO footprints for a place
+  where an OHRC frame, a TMC-2 pass with its own IIRS strip, and an LRO NAC all have Suns within a
+  few degrees found Site N, at 60.7°N. There OHRC → TMC-2 registers 10 of 10, and the two-mission
+  loop OHRC → NAC → TMC-2 against OHRC → TMC-2 closes to a median 1.99 m over 4 windows (0.38 px
+  on TMC-2's 5.17 m grid; consistency, not accuracy).
+
+What it does not show: Site N is one site; OHRC → TMC-2 there is 0.61–1.57 TMC-2 px held-out, so
+not sub-pixel in every window; and OHRC → TMC-2 under a Sun far from the OHRC's is still refused.
+
+### Does it hold when the Sun rises, not only when it turns?
+
+SAC's equatorial OHRC frame has the Sun 9.9° above the horizon. We searched the LRO archive for
+NAC images of the same ground whose Sun keeps nearly the same azimuth but stands higher, and
+registered the OHRC onto each with nothing from either image in the prior (OHRC placed by SAC's
+NAC correction, every NAC by LROC's published corners), on one 1.75 m grid and one set of windows
+fixed beforehand (*Sun azimuth and elevation, on SAC's own frame*):
+
+- Sun raised by up to 41.7°, azimuth within 20°: 61 of 71 windows accepted, 8 unconfirmed,
+  2 refused. At the highest Sun, 7 of 8.
+- The same frame with the Sun on the opposite side, 154–177° away in azimuth, at several
+  elevations: 48 of 56 accepted. At the highest of those (+47°) it drops to 4 of 8, with 3 refused.
+
+These are not clean single-variable tests: the NACs also differ in viewing angle (emission
+1–16°), and the azimuth drifts by up to 19.7° on the highest rungs. REPORT.md lists both for
+every NAC.
+
+### Is there a real viewpoint test?
+
+Yes. At Site N the OHRC imaged the same ground on two consecutive orbits, once looking forward
+and once looking back, two hours apart under the same Sun. At the windows the two viewing
+directions are 39.6–39.8° apart. Both frames are placed by the same NAC's correction against each,
+never fitted to one another. All 8 windows register; held-out median 0.91 px = 1.12 m on a
+1.232 m grid, from 0.49 to 2.15 px per window. A single homography per window cannot absorb relief
+parallax between the two views; we have not separated that from matching error. TMC-2's fore and aft
+cameras, 50° apart, register 1 of 4 (*Real viewpoint: TMC-2 fore → aft*): that is the limit we
+report, and orthorectification with TMC-2's own DTM is the planned answer.
 
 ---
 
@@ -281,7 +319,9 @@ file, and the prior art they build on is cited in its docstring [6–9].
 
 - `registered_product.tif`, a GeoTIFF on the reference grid;
 - `matches.csv`, every raw match with its inlier flag, residual and cell state;
-- ground control points for GDAL (`-gcp`) and QGIS (`.points`);
+- ground control points for GDAL (`-gcp`) and QGIS (`.points`): every inlier, and
+  `gcps_uniform.*`, thinned to at most 4 per cell of an 8 × 8 grid on the reference, lowest
+  residual first, so the points are spread over the image by construction;
 - `matches_isis.csv`, an ISIS-style match list;
 - `trust_map.csv`, the 8×8 cell states;
 - `report.json` and `report.md`: metrics, timings, input sha256 and library versions.
@@ -313,6 +353,7 @@ Kaguya from JAXA), put their folder's path in `data_path.txt`, and cut pairs fro
 ```
 python -m ops.cut_pradan_pairs ohrc-nac              # SAC's equatorial OHRC -> LRO NAC pair
 python -m ops.cut_site_pairs --help                  # OHRC -> NAC pairs at the 74 °S site
+python -m ops.cut_chain_pairs --help                 # TMC-2 -> IIRS, the Sun ladder, Site N, viewpoint
 python -m core.pipeline data/pairs/sac_ohrc_nac_w01 --out out/sac_w01
 ```
 
@@ -344,13 +385,16 @@ No number is typed into REPORT.md. It is rendered from these logs:
 | `evaluation/results_log.csv` | every scored synthetic and baseline run |
 
 `python -m ops.freeze` re-runs every piece of evidence on one clean commit, and `--check` reports
-whether each logged row was measured at it. The real-pair rows were measured at freeze commit
-`7dd4e5b`; REPORT.md's first lines name the commits it was generated from.
+whether each logged row was measured at it. The evidence on this page was measured at freeze
+commit `15f8b27` (the 28 Sep submission's was `7dd4e5b`); REPORT.md's first lines name the commits
+it was generated from.
 
 ## Terminology we hold ourselves to
 
-- **Cross-sensor** means different instruments. LRO NAC ↔ LRO NAC and TMC-2 fore ↔ aft are the
-  *same sensor* and are tested as Sun-angle and viewpoint cases, never counted as cross-sensor.
+- **Cross-sensor** means different instruments. LRO NAC ↔ LRO NAC, OHRC ↔ OHRC and TMC-2 fore ↔
+  aft are the *same sensor* and are tested as Sun-angle and viewpoint cases, never counted as
+  cross-sensor. OHRC ↔ TMC-2 is cross-sensor within one mission; OHRC or TMC-2 ↔ LRO NAC is
+  cross-sensor and cross-mission.
 - **Multi-modal** means visible ↔ infrared, radar or elevation. Two panchromatic cameras are not
   multi-modal.
 - **Sub-pixel** always names its pixel grid and gives the metres.

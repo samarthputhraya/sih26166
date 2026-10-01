@@ -588,7 +588,7 @@ def slide3(s):
     # "Runtime and match distribution": median seconds over the 74 deg S OHRC -> NAC windows.
     _box(s, L, 6.30, 8.25, 0.50,
          [P(R("Hardware: ", 12.5, True, ACCENT),
-            R("laptop CPU, no discrete GPU, offline — median 8.2 s per 640-px window "
+            R("laptop CPU, no discrete GPU, offline — median 7.7 s per 640-px window "
               "(89 OHRC → NAC windows)",
               12.5, False, INK))],
          fill=FILL_ORANGE, line=LINE_ORANGE, anchor="m", margins=(0.14, 0.03, 0.12, 0.03),
@@ -797,10 +797,12 @@ REFS = [
 # trust_real_calibration.csv does not exist there at all - so the trust figures on slides 2 and
 # 5 are provably absent from it. A judge with the repo URL can check that in fifteen seconds.
 # Say "measured at". `_audit_deck` verifies any "REPORT.md ... at commit X" claim it finds.
+# v11: the 2 Oct freeze re-ran every row at 51a9ad0 and its report step wrote REPORT.md with that
+# commit's code, so one commit names both (REPORT.md's own header says so).
 PROVENANCE = ("Every figure here comes from REPORT.md and the evidence logs. Real-pair rows "
-              "measured at the freeze commit 7dd4e5b; MiLOI rows scored at 7dd4e5b from matches made "
-              "at earlier commits, each named in miloi_log.csv; REPORT.md regenerated at 3fa526b, no "
-              "logged number changed.")
+              "measured at the freeze commit 51a9ad0, and REPORT.md generated from them by that "
+              "commit's code; MiLOI rows scored at 51a9ad0 from matches made at earlier commits, "
+              "each named in miloi_log.csv.")
 
 
 def slide6(s):
