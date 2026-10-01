@@ -52,6 +52,12 @@ def _f(v, nd=3):
         return "n/a"
 
 
+def _rng(lo, hi, fmt=".1f", sep="-"):
+    """'lo-hi' with both ends in `fmt`, or one value when the two print the same."""
+    a, b = format(lo, fmt), format(hi, fmt)
+    return a if a == b else f"{a}{sep}{b}"
+
+
 def _latest(rows, key="pair_id"):
     out, n = {}, Counter()
     for r in rows:
@@ -241,7 +247,7 @@ def section_chain(reg, d):
     L = ["## After the submission: IIRS and TMC-2, and the route between them", "",
          f"{when}. Cut by "
          f"`ops/cut_chain_pairs.py`; products fetched by `ops/fetch_pradan.py` (members and IIRS bands read out "
-         f"of each PRADAN zip by HTTP range). Three questions the frozen evidence left open: does IIRS register "
+         f"of each PRADAN zip by HTTP range). Three questions the 28 Sep submission left open: does IIRS register "
          f"onto TMC-2 once the Sun is taken out of the problem; does TMC-2 register onto anything at all; and was "
          f"OHRC -> TMC-2 refused for the Sun or for something else.", ""]
 
@@ -504,12 +510,13 @@ def section_ladder(reg):
             rb = _robust(acc)
             c = Counter(r["verdict"] for r in rs)
             med = [float(r["residual_median_px"]) for r in rb]
-            L.append(f"| `{nac}` | {min(els):.1f}-{max(els):.1f}° | {min(map(d_el, rs)):+.1f} to {max(map(d_el, rs)):+.1f}° | "
-                     f"{min(float(r['d_sun_azimuth_deg']) for r in rs):.1f}-{max(float(r['d_sun_azimuth_deg']) for r in rs):.1f}° | "
+            daz = [float(r['d_sun_azimuth_deg']) for r in rs]
+            L.append(f"| `{nac}` | {_rng(min(els), max(els))}° | {_rng(min(map(d_el, rs)), max(map(d_el, rs)), '+.1f', ' to ')}° | "
+                     f"{_rng(min(daz), max(daz))}° | "
                      f"{_f(g.get('emission_deg'), 1)}° | {len(rs)} | "
                      + ", ".join(f"{v} {c[v]}" for v in ("agrees", "unconfirmed", "contradicted") if c[v]) + " | "
                      f"{min(int(r['inliers']) for r in rs)}-{max(int(r['inliers']) for r in rs)} | "
-                     + (f"{min(med):.2f}-{max(med):.2f} ({min(med) * ref_gsd:.1f}-{max(med) * ref_gsd:.1f} m)"
+                     + (f"{_rng(min(med), max(med), '.2f')} ({_rng(min(med) * ref_gsd, max(med) * ref_gsd)} m)"
                         + (f"; {len(acc) - len(rb)} not quoted" if len(acc) > len(rb) else "") if med else "n/a")
                      + f" | {min(int(r['verified']) for r in rs)}-{max(int(r['verified']) for r in rs)} | "
                      f"{min(float(r['archive_offset_m']) for r in rs):.0f}-{max(float(r['archive_offset_m']) for r in rs):.0f} |")
@@ -576,9 +583,9 @@ def section_site_n(reg, site_loops):
         rob = _robust(acc)
         med = [float(r["residual_median_px"]) for r in rob]
         c = Counter(r["verdict"] for r in rs)
-        L.append(f"| {name} | {term} | {min(float(r['d_sun_azimuth_deg']) for r in rs):.1f}-"
-                 f"{max(float(r['d_sun_azimuth_deg']) for r in rs):.1f}° | "
-                 f"{min(float(r['d_incidence_deg']) for r in rs):+.1f} to {max(float(r['d_incidence_deg']) for r in rs):+.1f}° | "
+        daz = [float(r['d_sun_azimuth_deg']) for r in rs]
+        dinc = [float(r['d_incidence_deg']) for r in rs]
+        L.append(f"| {name} | {term} | {_rng(min(daz), max(daz))}° | {_rng(min(dinc), max(dinc), '+.1f', ' to ')}° | "
                  f"{rs[0]['scale_ratio']}× | {len(rs)} | "
                  + ", ".join(f"{v} {c[v]}" for v in ("agrees", "unconfirmed", "contradicted") if c[v]) + " | "
                  f"{min(int(r['inliers']) for r in rs)}-{max(int(r['inliers']) for r in rs)} | "

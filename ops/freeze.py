@@ -253,11 +253,16 @@ class Freeze:
         stale = stale_real(self.commit)
         ok = True
         for cmd in plan_real()["loops"]:
-            a_, b_ = (re.search(rf"--{k} (\S+)", cmd).group(1).lower() for k in ("a", "b"))
-            m = re.search(r"--tag (\S+)", cmd)
-            tag = f"_{m.group(1)}" if m else ""
-            legs = [p for p in stale if re.fullmatch(
-                rf"site_(ohrc_{a_}|{a_}_{b_}|ohrc_{b_})_w\d+{tag}", p)]
+            m = re.search(r"--legs (\S+) (\S+) (\S+)", cmd)
+            if m:                                   # three stems cut on shared windows: <stem>_cNN
+                stems = "|".join(re.escape(s.lower()) for s in m.groups())
+                legs = [p for p in stale if re.fullmatch(rf"({stems})_c\d+", p)]
+            else:                                   # the 74 S triples: --a A --b B [--tag T]
+                a_, b_ = (re.search(rf"--{k} (\S+)", cmd).group(1).lower() for k in ("a", "b"))
+                m = re.search(r"--tag (\S+)", cmd)
+                tag = f"_{m.group(1)}" if m else ""
+                legs = [p for p in stale if re.fullmatch(
+                    rf"site_(ohrc_{a_}|{a_}_{b_}|ohrc_{b_})_w\d+{tag}", p)]
             if legs:
                 print(f"   {len(legs)} leg(s) of this loop are not at {self.commit} "
                       f"({', '.join(legs[:3])}...) - run the `real` step first")

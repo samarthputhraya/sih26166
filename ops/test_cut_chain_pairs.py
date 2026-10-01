@@ -123,3 +123,20 @@ def test_spm_sun_and_oat_view_take_the_record_nearest_the_line(tmp_path):
     # 1 deg of latitude south of the sub-spacecraft point: seen from the north, ~16 deg off vertical
     e, az, _ = oat_view(xml, 0, 9.0, 20.0)
     assert 15.0 < e < 18.0 and (az < 1.0 or az > 359.0)
+
+
+def test_two_named_nacs_loop_runs_past_its_first_window(tmp_path, monkeypatch):
+    # 2 Oct 2026: run() bound each window's bundles to `legs`, its own argument, so an --a/--b run
+    # took the --legs branch from the second window on and died (UnboundLocalError) in the freeze.
+    import ops.loop_closure as L
+    monkeypatch.setattr(L, "ROOT", tmp_path)
+    out = tmp_path / "out"
+    I = np.eye(3).tolist()
+    tr = [0.0, 1.0, 0.0, 0.0, 0.0, -1.0]
+    pts = [(x, y) for x in range(10, 100, 15) for y in range(10, 100, 15)]
+    for k in (1, 2):
+        _pair(tmp_path, out, f"site_ohrc_a1_w{k:02d}", I, tr, tr, 1.0, inliers=pts)
+        _pair(tmp_path, out, f"site_a1_b1_w{k:02d}", I, tr, tr, 1.0)
+        _pair(tmp_path, out, f"site_ohrc_b1_w{k:02d}", I, tr, tr, 1.0)
+    good = [r for r in L.run("A1", "B1", out_root=out) if r.get("ok")]
+    assert [r["k"] for r in good] == [1, 2]

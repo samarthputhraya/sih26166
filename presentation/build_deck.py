@@ -430,12 +430,14 @@ HOW_ROWS = [
     # REPORT.md "SAC's own benchmark pair (equatorial ...)": `agrees` / rows; Δsun az 173.5-173.7,
     # said as 174°. A did-it-register fact, NOT an accuracy comparison.
     ("AZIMUTH", GREEN, "6/6 accepted", " on SAC's own pair [1], Sun azimuths 174° apart"),
-    # "Sun azimuth and elevation, on SAC's own frame": the near-azimuth table - [TBD at the freeze].
-    ("ELEVATION", GREEN, "[TBD — REPORT.md]", " Sun raised up to 41° on the same frame"),
+    # "Sun azimuth and elevation, on SAC's own frame": the near-azimuth table's totals line (agrees /
+    # windows) and its highest Sun (+41.7° in elevation).
+    ("ELEVATION", GREEN, "61/71 accepted", " Sun raised up to 41.7° on SAC's frame"),
     # "Scale rung: ... TC ortho map": scale column, `agrees` / rows.
     ("SCALE", GREEN, "3/4 accepted", " across a 29.6× scale gap"),
-    # "TMC-2 -> IIRS, orbit of ...": windows accepted per band beyond 850 nm (multi-modal).
-    ("SENSOR", GREEN, "8/8 per band", " TMC-2 → IIRS infrared, 999–3223 nm"),
+    # "TMC-2 -> IIRS, orbit of ..." (both orbits): windows accepted in the bands beyond 850 nm
+    # (multi-modal), 8 x 4 on the first orbit + 8 + 8 + 8 + 6 on the second.
+    ("SENSOR", GREEN, "62/62 accepted", " TMC-2 → IIRS infrared, two orbits"),
 ]
 
 
@@ -611,32 +613,34 @@ def slide3(s):
 # Every number is from REPORT.md at the v11 freeze; the comment beside each row names its section.
 # REPORT.md "Reproduce" footer: registered pairs and instrument pairings, as printed there (v11
 # replaces v10's "160 distinct ground windows / 8 instrument pairings", which REPORT stopped printing).
-EVIDENCE_SCALE = ("[TBD] registered windows", "[TBD] instrument pairings")
+EVIDENCE_SCALE = ("400 windows", "11 instrument pairings")
 
 SCORECARD = [
     # "SAC's own benchmark pair (equatorial ...)" 6 agrees; "Sun azimuth and elevation ..." opposite table.
     ("Sun azimuth", "SAC's own pair [1]: 6/6 accepted with the Sun's azimuth 174° away", GREEN),
     # "Sun azimuth and elevation, on SAC's own frame": the near-azimuth table, its totals line.
-    ("Sun elevation", "Same frame, azimuth held within 19°: Sun up to 41° higher, [TBD] windows accepted", GREEN),
-    # "Scale rung" 3 agrees of 4; "TMC-2 -> IIRS" scale column 16.2x, 8/8 per band.
-    ("Scale", "29.6× OHRC → Kaguya TC: 3 of 4 · 16× TMC-2 → IIRS: 8 of 8 per band", GREEN),
-    # "TMC-2 -> IIRS": bands beyond 850 nm, windows accepted.
-    ("Multi-modal", "IIRS infrared, 999–3223 nm, onto TMC-2: 8 of 8 in each band", GREEN),
-    # Site N section, or "LRO NAC -> TMC-2 at SAC's site" when Site N is absent.
-    ("OHRC, TMC, IIRS", "[TBD — Site N]", GREEN),
-    # "In the Chandrayaan-2 image's own pixels": the TMC-2 and IIRS rows (held-out medians).
-    ("Sub-pixel", "In the Chandrayaan-2 image's own pixels: TMC-2 0.36–0.48, IIRS 0.21–0.32 (held out)", GREEN),
+    ("Sun elevation", "Same frame, azimuth within 20°: Sun up to 41.7° higher, 61 of 71 accepted", GREEN),
+    # "Scale rung" 3 agrees of 4; "TMC-2 -> IIRS" scale column 16.2x, every window on both orbits.
+    ("Scale", "29.6× OHRC → Kaguya TC: 3 of 4 · 16× TMC-2 → IIRS: every window, two orbits", GREEN),
+    # "TMC-2 -> IIRS", both orbits: bands beyond 850 nm, windows accepted.
+    ("Multi-modal", "IIRS infrared, 999–3223 nm, onto TMC-2: 62 of 62 windows over two orbits", GREEN),
+    # "One site, every camera ... (Site N)": the legs table and the loop paragraph.
+    ("OHRC, TMC, IIRS", "One site, Suns matched: OHRC → TMC-2 10/10, OHRC → LRO NAC 5/5, NAC → TMC-2 4/4; "
+                        "loop closes to 2.0 m", GREEN),
+    # "In the Chandrayaan-2 image's own pixels": NAC <-> TMC-2 and TMC-2 <-> IIRS 1555 nm (held-out medians).
+    ("Sub-pixel", "In the Chandrayaan-2 image's own pixels: TMC-2 0.36–0.48 (vs NAC), IIRS 0.16–0.32 (held out)",
+     GREEN),
     # "Runtime and match distribution": grid coverage, and the delivered uniform set.
     ("Uniform spread", "Matches in 95% or more of 8×8 cells on 17 of 20 windows; a uniform control-point set ships", GREEN),
     ("Deliverables", "GeoTIFF on the reference grid, GDAL and QGIS control points, ISIS match list, report", GREEN),
-    # "Real viewpoint: TMC-2 fore -> aft": 1 agrees of 4.
-    ("Viewpoint", "Relief is not a homography: TMC-2 fore → aft, 1 of 4 accepted — a measured limit", AMBER),
+    # "A real viewpoint test at Site N": agrees / windows, angle apart, held-out median.
+    ("Viewpoint", "OHRC → OHRC, next orbit, views 40° apart: 8 of 8 accepted, held-out 0.91 px", GREEN),
 ]
 RISKS = [
     # "Real sun-angle sweep" bins 60-90 and 90-120: 0 accepted of 7 + 5, none wrongly accepted.
     (("Sun 60–120° away", "74°S sweep: 0 of 12 accepted, none wrongly"),
-     ("Choose the pass by its Sun", "Matched-Sun passes exist in the archive: this slide's ladder")),
-    (("Relief parallax", "TMC-2 fore → aft: 1 of 4 accepted"),
+     ("Choose the pass by its Sun", "How this slide's site was found: four cameras, Suns matched")),
+    (("Relief parallax", "TMC-2 fore → aft, 50° apart: 1 of 4 accepted"),
      ("Local transforms", "Tile-level transforms after DTM orthorectification")),
 ]
 
@@ -664,10 +668,11 @@ def slide4(s):
     _dot(s, L + lw + 1.90, ly + 0.07, 0.13, AMBER)
     _text(s, L + lw + 2.09, ly, 2.6, 0.26, [P(R("a measured limit", 11, False, MUTED))], name="legend")
 
-    # The Sun in both axes the PS names, on SAC's own OHRC frame (REPORT "Sun azimuth and elevation").
+    # Every Chandrayaan-2 camera the PS names, at one site, each leg checked (REPORT "Site N"). v11 draft
+    # had fig9 (the Sun map on SAC's frame) here; the scorecard's two Sun rows carry those numbers.
     fx = 6.82
     fw = 5.62
-    _pic(s, "fig9_sun_map.png", fx + (RIGHT - fx - fw) / 2, 1.30, w=fw)
+    _pic(s, "fig10_site_n.png", fx + (RIGHT - fx - fw) / 2, 1.30, w=fw)
     cy = 4.74
     cw0 = (RIGHT - fx - 0.30) / 2
     sx0 = fx + cw0 + 0.30

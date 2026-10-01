@@ -73,16 +73,16 @@ def run(a=None, b=None, log=False, out_root=None, tag="", legs=None):
             wtag, loop_pid, loop_id = f"w{k:02d}", f"loop_{a}_{b}_w{k:02d}{sfx}", f"{a}->{b} w{k:02d}"
         if not all((out_root / i / "report.json").exists() for i in ids.values()):
             continue
-        legs = {n: _leg(i, out_root) for n, i in ids.items()}
+        bundles = {n: _leg(i, out_root) for n, i in ids.items()}
         T, ok = {}, True
-        for n, (rep, prior) in legs.items():
+        for n, (rep, prior) in bundles.items():
             H = rep.get("H_final")
             if H is None:
                 ok = False
                 break
             T[n] = map_transform(H, prior["source"]["transform"], prior["reference"]["transform"])
-        methods = {n: (legs[n][0].get("declared") or {}).get("method") for n in legs}
-        verdicts = {n: (legs[n][0].get("trust") or {}).get("verdict") for n in legs}
+        methods = {n: (bundles[n][0].get("declared") or {}).get("method") for n in bundles}
+        verdicts = {n: (bundles[n][0].get("trust") or {}).get("verdict") for n in bundles}
         if not ok:
             results.append({"k": k, "ok": False, "methods": methods})
             continue
@@ -90,10 +90,10 @@ def run(a=None, b=None, log=False, out_root=None, tag="", legs=None):
         if len(src_pts) < 10:
             results.append({"k": k, "ok": False, "why": "too few O->A inliers"})
             continue
-        P = pixel_to_map(legs["OA"][1]["source"]["transform"])
+        P = pixel_to_map(bundles["OA"][1]["source"]["transform"])
         pts_map = _apply(P, src_pts)
-        gsd_b = legs["OB"][1]["reference"]["resampled_gsd_mpp"]
-        gsd_a = legs["OA"][1]["reference"]["resampled_gsd_mpp"]
+        gsd_b = bundles["OB"][1]["reference"]["resampled_gsd_mpp"]
+        gsd_a = bundles["OA"][1]["reference"]["resampled_gsd_mpp"]
         lc = loop_closure([T["OA"], T["AB"]], T["OB"], pts_map, gsd_b)
         res = {"k": k, "ok": True, "n_points": lc["n_points"], "rms_m": lc["rms_m"],
                "p90_m": lc["p90_m"], "max_m": lc["max_m"], "rms_px_B": lc["rms_px"],
@@ -107,11 +107,11 @@ def run(a=None, b=None, log=False, out_root=None, tag="", legs=None):
         if log:
             log_real({"pair_id": loop_pid, "tier": "loop closure (real, 3 legs)",
                       "kind": kind,
-                      "source_product": legs["OA"][1]["source"]["product_id"],
-                      "reference_product": f"{legs['OA'][1]['reference']['product_id']} + "
-                                           f"{legs['OB'][1]['reference']['product_id']}",
-                      "window_lat": round(legs["OA"][1]["window_centre_latlon"][0], 5),
-                      "window_lon": round(legs["OA"][1]["window_centre_latlon"][1], 5),
+                      "source_product": bundles["OA"][1]["source"]["product_id"],
+                      "reference_product": f"{bundles['OA'][1]['reference']['product_id']} + "
+                                           f"{bundles['OB'][1]['reference']['product_id']}",
+                      "window_lat": round(bundles["OA"][1]["window_centre_latlon"][0], 5),
+                      "window_lon": round(bundles["OA"][1]["window_centre_latlon"][1], 5),
                       "loop_id": loop_id, "loop_rms_px": round(lc["rms_px"], 4),
                       "loop_p90_px": round(lc["p90_px"], 4), "loop_rms_m": round(lc["rms_m"], 4),
                       "ref_gsd_m": gsd_b, "method_declared": ",".join(sorted(set(methods.values()))),
@@ -120,7 +120,7 @@ def run(a=None, b=None, log=False, out_root=None, tag="", legs=None):
                       # until 19 Sep loop rows carried no commit, so no freeze could vouch for them
                       "git_commit": _commit(),
                       "notes": f"legs {ids['OA']}, {ids['AB']}, {ids['OB']} (bundles from commits "
-                               f"{sorted({str(legs[k][0].get('git_commit')) for k in legs})}); points = O->A source "
+                               f"{sorted({str(bundles[k][0].get('git_commit')) for k in bundles})}); points = O->A source "
                                f"inliers mapped to map metres; per-registration estimate = loop/sqrt(3) "
                                f"= {res['per_leg_est_m']:.3f} m (assumes independent, similar errors)"})
     good = [r for r in results if r.get("ok")]
