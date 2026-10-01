@@ -671,7 +671,7 @@ def slide4(s):
     # Every Chandrayaan-2 camera the PS names, at one site, each leg checked (REPORT "Site N"). v11 draft
     # had fig9 (the Sun map on SAC's frame) here; the scorecard's two Sun rows carry those numbers.
     fx = 6.82
-    fw = 5.62
+    fw = 5.45                          # fig10 is 6.6 x 4.1 in: 3.39 in tall, clear of the risk tabs at 4.74
     _pic(s, "fig10_site_n.png", fx + (RIGHT - fx - fw) / 2, 1.30, w=fw)
     cy = 4.74
     cw0 = (RIGHT - fx - 0.30) / 2
