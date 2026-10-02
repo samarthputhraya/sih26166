@@ -62,6 +62,9 @@ KNOWN_MAX_SIDE = 900                     # a one-image test is shrunk to this fi
 KEEP_JOBS = 8                            # finished jobs held in memory for the page to fetch
 ALLOWED = {".tif", ".tiff", ".img", ".xml", ".lbl", ".png", ".jpg", ".jpeg"}
 _lock = threading.Lock()                # one registration at a time: LoFTR is memory-hungry
+PUBLIC = False                          # --public: a hosted copy anyone can reach (see main)
+PUBLIC_QUEUE = 3                        # jobs running or waiting, at most, on a public copy
+PUBLIC_MAX_UPLOAD = 24 * 1024 * 1024
 
 
 # The built page is a FRAGMENT: the Artifact runtime wraps it in a document and supplies a small
@@ -100,8 +103,10 @@ def _document(fragment: str) -> str:
 
 
 def _commit():
+    # A hosted copy has no .git: the deploy names its commit in LUNAXX_COMMIT instead.
+    import os
     from core.export import _commit as c
-    return c(("core", "evaluation", "app"))
+    return os.environ.get("LUNAXX_COMMIT") or c(("core", "evaluation", "app"))
 
 
 def _save(upload, into: pathlib.Path, stem: str) -> pathlib.Path:
@@ -467,6 +472,9 @@ def start_job(body: dict, runner=run_job) -> dict:
     job = {"id": uuid.uuid4().hex, "mode": mode, "state": "running", "stage": "queued",
            "done": 0, "total": 0, "created": time.time()}
     with _jobs_lock:
+        if PUBLIC and sum(j["state"] == "running" for j in _jobs.values()) >= PUBLIC_QUEUE:
+            raise ValueError("The shared server is busy with other registrations. Try again in a minute, "
+                             "or run it on your own laptop: python -m web.server")
         finished = sorted((j for j in _jobs.values() if j["state"] != "running"),
                           key=lambda j: j["created"])
         for old in finished[:max(0, len(_jobs) + 1 - KEEP_JOBS)]:
@@ -620,7 +628,13 @@ def main(argv=None):
     ap.add_argument("--port", type=int, default=8000)
     ap.add_argument("--host", default="127.0.0.1",
                     help="loopback by default; this has no auth, do not expose it")
+    ap.add_argument("--public", action="store_true",
+                    help="a hosted copy (e.g. a Hugging Face Space): at most %d jobs at once and a "
+                         "smaller upload cap; still one registration on the CPU at a time" % PUBLIC_QUEUE)
     a = ap.parse_args(argv)
+    if a.public:
+        global PUBLIC, MAX_UPLOAD
+        PUBLIC, MAX_UPLOAD = True, PUBLIC_MAX_UPLOAD
     if not PAGE.exists():
         print("The page is not built yet. Run:  python -m web.build_console")
         return 1
