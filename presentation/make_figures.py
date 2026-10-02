@@ -1073,8 +1073,8 @@ def fig_site_n():
     lon = float(np.median([float(r["window_lon"]) for r in every]))
     ax.set_title(f"One site ({lat:.1f}°N, {abs(lon if lon < 180 else lon - 360):.1f}°W) and its TMC-2 pass: "
                  "Suns matched, each leg checked", loc="left", fontweight="bold", fontsize=13, pad=6)
-    fig.text(0.014, 0.01, "windows accepted / windows · held-out median on the reference grid, accepted windows\n"
-             "with inlier ratio above 0.5 · REPORT.md, Site N", fontsize=8.5, color=MUTED)
+    fig.text(0.014, 0.01, "windows accepted / windows · held-out = median error of matches the fit never saw, on the\n"
+             "reference grid, accepted windows with inlier ratio above 0.5 · REPORT.md, Site N", fontsize=8.5, color=MUTED)
     fig.tight_layout(rect=(0, 0.12, 1, 1))
     out = OUT / "fig10_site_n.png"
     _audit(fig, out.name)

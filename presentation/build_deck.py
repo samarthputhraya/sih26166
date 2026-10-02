@@ -429,15 +429,15 @@ def slide1(s):
 HOW_ROWS = [
     # REPORT.md "SAC's own benchmark pair (equatorial ...)": `agrees` / rows; Δsun az 173.5-173.7,
     # said as 174°. A did-it-register fact, NOT an accuracy comparison.
-    ("AZIMUTH", GREEN, "6/6 accepted", " on SAC's own pair [1], Sun azimuths 174° apart"),
+    ("AZIMUTH", GREEN, "6/6 accepted", " on SAC's pair [1], Suns 174° apart; 0/12 at 60–120°"),
     # "Sun azimuth and elevation, on SAC's own frame": the near-azimuth table's totals line (agrees /
     # windows) and its highest Sun (+41.7° in elevation).
     ("ELEVATION", GREEN, "61/71 accepted", " Sun raised up to 41.7° on SAC's frame"),
     # "Scale rung: ... TC ortho map": scale column, `agrees` / rows.
-    ("SCALE", GREEN, "3/4 accepted", " across a 29.6× gap, 1 on dense evidence"),
+    ("SCALE", GREEN, "10/10 accepted", " OHRC → TMC-2 across 4.2×; 3/4 across 29.6×"),
     # "TMC-2 -> IIRS, orbit of ..." (both orbits): windows accepted in the bands beyond 850 nm
     # (multi-modal), 8 x 4 on the first orbit + 8 + 8 + 8 + 6 on the second.
-    ("SENSOR", GREEN, "62/62 accepted", " TMC-2 → IIRS infrared, two orbits"),
+    ("MULTI-MODAL", GREEN, "62/62 accepted", " TMC-2 → IIRS infrared, two orbits"),
 ]
 
 
@@ -483,9 +483,9 @@ def slide2(s):
     rows = HOW_ROWS
     for k, (label, colour, bold, rest) in enumerate(rows):
         ry = cy + 0.44 + k * 0.48
-        _box(s, L + 0.10, ry + 0.08, 1.02, 0.30, [P(R(label, 11, True, WHITE), align="c")],
+        _box(s, L + 0.10, ry + 0.08, 1.14, 0.30, [P(R(label, 11, True, WHITE), align="c")],
              fill=colour, radius=0.5, margins=(0.02, 0, 0.02, 0), name="pill")
-        _text(s, L + 1.20, ry, cw1 - 1.26, 0.46,
+        _text(s, L + 1.30, ry, cw1 - 1.36, 0.46,
               [P(R(bold, 12, True, INK), R(rest, 12, False, INK))], anchor="m", name="how-row")
 
     # Innovation and uniqueness: the calibration, both Sun populations, never pooled.
@@ -498,8 +498,8 @@ def slide2(s):
          name="card-innovation")
     _text(s, ix + 0.14, cy + 0.46, RIGHT - ix - 0.28, 0.30,
           [P(R("A failure detector, calibrated on real data.", 13, True, INK))], name="inn-lead")
-    for k, (num, lab) in enumerate((("0/44", "false alarms, Sun azimuths within 10° apart"),
-                                    ("0/16", "false alarms, Sun azimuths 132–174° apart"))):
+    for k, (num, lab) in enumerate((("0/44", "false alarms on correct answers, Suns within 10° apart"),
+                                    ("100%", "of planted 5 m shifts caught (176 trials), same Suns"))):
         ry = cy + 0.80 + k * 0.42
         _text(s, ix + 0.14, ry, 0.86, 0.40, [P(R(num, 24, True, ACCENT))], anchor="m", name="inn-num")
         _text(s, ix + 1.02, ry, RIGHT - ix - 1.16, 0.40, [P(R(lab, 12, False, MUTED))], anchor="m",
@@ -507,8 +507,8 @@ def slide2(s):
     # Shifts only: rotations and scale changes of 5 m at the corners are flagged far less often
     # at frame level (4 and 8 of 44 near-Sun trials) - slide 5 says why (claim-check v10, H1).
     _text(s, ix + 0.14, cy + 1.68, RIGHT - ix - 0.28, 0.62,
-          [P(R("Shifts planted in 30 real windows: every one of 5 m or more caught with the Suns "
-               "within 10°; 2 m or less is the floor we print.", 12, False, INK))],
+          [P(R("30 real windows. Suns 132–174° apart: 0/16 false alarms, every 10 m "
+               "shift caught. At 2 m or less almost nothing is caught: the detection floor.", 12, False, INK))],
           name="inn-body")
 
     # The trust map itself: SAC's OHRC -> NAC w06 (accepted) above Kaguya TC -> MI 1548 nm w01
@@ -552,7 +552,7 @@ def slide3(s):
     _box(s, L, band_y, RIGHT - L, band_h,
          [P(R("INDEPENDENT AREA CHECK — ours", 15, True, WHITE), align="c"),
           P(R("cross-correlates the warped image against the reference in 8×8 cells · never reads "
-              "a match position · the only step allowed to overrule the rest · prior art [6–9]",
+              "a match position · the only step allowed to overrule the rest · builds on [6–9]",
               12, False, WHITE), align="c", sb=1)],
          fill=ACCENT, anchor="m", name="areacheck")
     outs = [("agrees →", " GeoTIFF, uniform control points, trust map", FILL_GREEN, LINE_GREEN, GREEN),
@@ -620,26 +620,27 @@ SCORECARD = [
     ("Sun azimuth", "SAC's own pair [1]: 6/6 accepted, Sun azimuths 174° apart", GREEN),
     # "Sun azimuth and elevation, on SAC's own frame": the near-azimuth table, its totals line.
     ("Sun elevation", "Same frame, azimuth within 20°: Sun up to 41.7° higher, 61/71 accepted", GREEN),
+    # "A real viewpoint test at Site N": agrees / windows, angle apart, held-out median.
+    ("Viewpoint", "OHRC → OHRC, next orbit, views 40° apart: 8/8, held-out 0.91 px = 1.12 m", GREEN),
     # "Scale rung" 3 agrees of 4; "TMC-2 -> IIRS" scale column 16.2x, every window on both orbits.
-    ("Scale", "29.6× OHRC → Kaguya TC: 3 of 4, 1 dense · 16× TMC-2 → IIRS: every window", GREEN),
+    ("Scale", "16× TMC-2 → IIRS: 62/62 · 4.2× OHRC → TMC-2: 10/10 · 29.6× to Kaguya TC: 3/4", GREEN),
     # "TMC-2 -> IIRS", both orbits: bands beyond 850 nm, windows accepted.
     ("Multi-modal", "TMC-2 → IIRS infrared, 999–3223 nm: 62/62, 16 places on two orbits", GREEN),
     # "One site, every camera ... (Site N)": the legs table and the loop paragraph.
-    ("OHRC, TMC, IIRS", "One site, Suns matched: OHRC → TMC-2 10/10, OHRC → LRO NAC 5/5, NAC → TMC-2 4/4; "
-                        "loop consistency 2.0 m", GREEN),
+    ("OHRC, TMC, IIRS", "One site, Suns matched: OHRC → TMC-2 10/10, OHRC → NAC 5/5, NAC → TMC-2 4/4; "
+                        "chain via NAC meets direct within 2.0 m", GREEN),
     # "In the Chandrayaan-2 image's own pixels": NAC <-> TMC-2 and TMC-2 <-> IIRS 1555 nm (held-out medians).
     # ... and the Site N OHRC -> TMC-2 row, which is not sub-pixel in every window (claim-check 2 Oct).
-    ("Sub-pixel", "Own pixels, held out: TMC-2 0.36–0.48 = 1.6–2.2 m; IIRS 0.16–0.32 = 14–27 m; "
-                  "OHRC → TMC-2 0.61–1.57 = 3.2–8.1 m", GREEN),
+    # AMBER (fresh-eyes review, 2 Oct): sub-pixel holds on some pairings, not on OHRC -> TMC-2.
+    ("Sub-pixel", "Held-out, reference grid: OHRC → NAC 0.61 px = 0.57 m; IIRS 1555 nm 0.16–0.32 px = "
+                  "14–27 m; OHRC → TMC-2 0.61–1.57 px = 3.2–8.1 m", AMBER),
     # "Runtime and match distribution": grid coverage, and the delivered uniform set.
-    ("Uniform spread", "Inliers in ≥95% of 8×8 cells on 17 of 20 windows; uniform control-point set ships", GREEN),
-    ("Deliverables", "GeoTIFF, GDAL and QGIS control points, ISIS match list, trust map, report", GREEN),
-    # "A real viewpoint test at Site N": agrees / windows, angle apart, held-out median.
-    ("Viewpoint", "OHRC → OHRC, next orbit, views 40° apart: 8 of 8, held-out 0.91 px = 1.12 m", GREEN),
+    ("Uniform spread", "Inliers in ≥95% of 8×8 cells on 17/20 windows; uniform control points ship", GREEN),
+    ("Deliverables", "GeoTIFF, GDAL/QGIS control points, ISIS match list, trust map, report", GREEN),
 ]
 RISKS = [
     # "Real sun-angle sweep" bins 60-90 and 90-120: 0 accepted of 7 + 5, none wrongly accepted.
-    (("Sun 60–120° away", "74°S sweep: 0 of 12 accepted; 1 failure caught, 2 right ones refused"),
+    (("Sun 60–120° away", "0 of 12 accepted: 1 failure caught, 2 right ones refused"),
      ("Choose the pass by its Sun", "How this slide's site was found")),
     (("Relief parallax", "TMC-2 fore → aft, 50° apart: 1 of 4 accepted"),
      ("Local transforms", "Tile-level transforms after DTM orthorectification")),
@@ -740,8 +741,8 @@ def slide5(s):
     _text(s, L + 1.42, py + 0.10, 5.52, 1.32,
           [P(R("Why region by region", 13, True, ACCENT)),
            P(R("A rotation or scale error moves the corners, not the centre: at 3 m of corner "
-               "movement a whole-frame check refuses 0 of 120 trials. The 8×8 map strips verified "
-               "state from 94% of the cells moved past 2 px, on reference grids of 0.93–1.62 m/px.",
+               "movement a whole-frame check refuses 0 of 120 trials. The 8×8 map stops vouching for "
+               "94% of the cells moved past 2 px, on reference grids of 0.93–1.62 m/px.",
                12, False, INK), sb=2)],
           name="per-region-text")
 
@@ -800,10 +801,8 @@ REFS = [
 # Say "measured at". `_audit_deck` verifies any "REPORT.md ... at commit X" claim it finds.
 # v11: the 2 Oct freeze re-ran every row at 51a9ad0 and its report step wrote REPORT.md with that
 # commit's code, so one commit names both (REPORT.md's own header says so).
-PROVENANCE = ("Every figure here comes from REPORT.md and the evidence logs. Real-pair rows "
-              "measured at the freeze commit 51a9ad0, and REPORT.md generated from them by that "
-              "commit's code; MiLOI rows scored at 51a9ad0 from matches made at earlier commits, "
-              "each named in miloi_log.csv.")
+PROVENANCE = ("Every figure comes from REPORT.md, generated from evidence measured at the freeze "
+              "commit 51a9ad0.")
 
 
 def slide6(s):
@@ -832,6 +831,9 @@ def slide6(s):
            P(R("Try it: ", 12, True, NAVY),
              R("python -m web.server opens a workbench that registers your own images.", 12, False, INK),
              sa=5),
+           P(R("Next: ", 12, True, NAVY),
+             R("time a whole OHRC strip; Suns 60–120° apart by choosing the pass; relief by DTM "
+               "orthorectification; more matched-Sun sites.", 12, False, INK), sa=5),
            P(R(PROVENANCE, 11, False, MUTED), sa=5),
            P(R("Every chart and screenshot is made by our own code; methods and data are credited "
                "on the left.", 11, True, NAVY))],
