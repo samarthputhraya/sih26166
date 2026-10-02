@@ -85,6 +85,25 @@ Neither output is committed — `web/dist/` is gitignored. The **source** is wha
 If the build says `template must contain '/*__DATA__*/null' exactly once`, you deleted the marker.
 Put it back.
 
+### Publish it (GitHub Pages)
+
+```
+python -m web.build_console --site --live-url https://<hugging-face-space>.hf.space
+gh release create console-vNN web/dist/console-site.zip --title "Console vNN" --notes "..."
+```
+
+`--site` also writes `dist/site/` (the page, a favicon, and every showcase pair's exported result
+as `bundles/<pair>.zip`, so the static page can offer a real download) and zips it as
+`dist/console-site.zip`. Publishing a `console-*` release runs `.github/workflows/console-pages.yml`,
+which downloads that zip from the release and deploys it to Pages. Nothing built is committed: the
+release carries the binary, git carries the code. `--live-url` points the page's "Open the live
+workbench" button at the hosted server; leave it out and the page offers the local commands only.
+
+The page speaks English and Hindi (the EN | हिंदी switch, or `?lang=hi`). Every element with
+`data-t="key"` has a Hindi version in the `T` dictionary in the template's script, and every
+sentence the script writes goes through `t(key, english)`; the showcase pairs carry their Hindi in
+`ROSTER` (`hi=`). Devanagari is set in Poppins (`web/fonts/`), embedded like Jost.
+
 ## 2. Change which pairs it shows
 
 This is the main thing you will want to do. The roster is one list at the bottom of

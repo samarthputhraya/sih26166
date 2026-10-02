@@ -83,6 +83,9 @@ def panel(r, a_side, b_side, *, pid, label, sub, tag, plain, twin=None):
     if w_img is not None:
         layers.append({"k": "warp", "n": "MATCHER'S ANSWER" + ("" if ok else " · REJECTED"),
                        "img": w_img})
+        # Swipe first: a divider the reader drags across reference and answer is the plainest way
+        # to see an alignment; blink is the same two images alternating on their own.
+        layers.append({"k": "swipe", "n": "SWIPE vs B", "img": None})
         layers.append({"k": "blink", "n": "BLINK vs B", "img": None})
     if rescued:
         fb = jpg(final)

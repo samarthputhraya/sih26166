@@ -10,7 +10,7 @@
   --ground:#bab8b2; --ground2:#afada7; --lit:#d4d2cc; --night:#0e0e0d; --night2:#1a1a19;
   --ink:#000; --ink2:#262624; --ink3:#46463f; --white:#f4f4f1; --dimw:#a9a9a3;
   --rule:rgba(0,0,0,.18); --refuse:#8f0050; --refuse-hatch:#c2127a;
-  --f:"Jost","Futura","Century Gothic","Avenir Next",sans-serif;
+  --f:"Jost","Poppins","Futura","Century Gothic","Avenir Next",sans-serif;
   --gut:clamp(18px,4.2vw,64px); --measure:62ch; --barh:58px;
 }
 *{box-sizing:border-box}
@@ -141,6 +141,9 @@ code{font-family:var(--f);font-weight:500}
 .relapsed{font-size:16px;color:var(--dimw)}
 .result{padding:clamp(20px,3vw,40px)}
 .rtop{display:flex;justify-content:space-between;align-items:baseline;gap:10px 20px;flex-wrap:wrap;margin-bottom:18px;font-size:15px;color:var(--dimw)}
+.rtop .rv{display:block;font-size:clamp(19px,1.6vw,23px);line-height:1.35;color:var(--white);margin-bottom:6px}
+.rtop .rv b{font-weight:650}
+.rtop small{display:block;font-size:14.5px}
 
 /* ---------- sections of the evidence ---------- */
 section.part{padding-block:clamp(56px,8vw,112px)}
@@ -300,64 +303,125 @@ footer{padding-block:48px 70px;border-top:1.5px solid var(--ink)}
 .colo code{color:var(--ink)}
 .imprint{margin-top:36px;font-size:15px;color:var(--ink3);display:flex;flex-wrap:wrap;gap:6px 30px}
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+
+/* ---------- v11: language, the four steps, the gallery, swipe, plain verdicts ---------- */
+html[lang="hi"] body{line-height:1.7}
+.lang{appearance:none;border:1.5px solid var(--ink);background:none;font:inherit;font-size:15px;padding:3px 10px;cursor:pointer;color:var(--ink);display:inline-flex;gap:6px}
+.lang span[aria-current="true"]{font-weight:650;text-decoration:underline;text-underline-offset:3px}
+.lede{font-size:16.5px;line-height:1.5;color:var(--ink2);margin-top:-8px}
+.steps{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;counter-reset:s}
+.steps li{display:flex;flex-direction:column;gap:3px;font-size:13.5px;line-height:1.25;color:var(--ink3);border-top:3px solid rgba(0,0,0,.18);padding-top:7px}
+.steps li b{font-size:15px;font-weight:650;color:var(--ink3)}
+.steps li[data-on="true"]{color:var(--ink);border-top-color:var(--ink)}
+.steps li[data-on="true"] b{color:var(--ink)}
+.steps li[data-done="true"]{border-top-color:var(--ink3);color:var(--ink2)}
+.deck>#gal{order:1}.deck>#own{order:2}.deck>.runs{order:3}
+.deck.live>#own{order:1}.deck.live>#gal{order:2}
+.galh{font-size:16px;font-weight:600;margin:14px 0 8px;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.galh small{font-weight:400;font-size:13.5px;color:var(--ink3)}
+.gal{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 10px}
+.gal button{appearance:none;background:none;border:0;padding:0;font:inherit;text-align:left;cursor:pointer;color:var(--ink);display:flex;flex-direction:column;gap:5px}
+.gal img{display:block;width:100%;aspect-ratio:1/1;object-fit:cover;background:#000;border:3px solid var(--night)}
+.gal button:hover img,.gal button[aria-current="true"] img{outline:2px solid var(--ink);outline-offset:2px}
+.gal button[data-v="contradicted"] img{border:3px solid;border-image:repeating-linear-gradient(-45deg,var(--refuse-hatch) 0 1.5px,var(--night) 1.5px 4px) 3}
+.gal button[data-v="unconfirmed"] img{border-style:dashed;border-color:#77776f}
+.gal em{font-style:normal;font-weight:600;font-size:14.5px;line-height:1.25}
+.gal small{font-size:13px;line-height:1.3;color:var(--ink3)}
+.gal small b{font-weight:600;color:var(--ink)}
+.gal small b.contradicted{color:var(--refuse)}
+#own h2{font-size:21px}
+.cta{display:flex;flex-direction:column;gap:10px;border:1.5px solid var(--ink);padding:14px;background:rgba(255,255,255,.12)}
+.cta .go{text-align:center;text-decoration:none}
+.cmd{font-size:13.5px;line-height:1.45;background:rgba(0,0,0,.08);padding:8px 10px;overflow-x:auto;white-space:pre;color:var(--ink)}
+.vplain{font-size:19px;line-height:1.45;margin-top:12px;max-width:44ch}
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:15px;color:var(--ink2);margin-top:10px}
+.legend span{display:inline-flex;align-items:center;gap:7px}
+.legend svg{width:18px;height:18px;flex:none;background:#000}
+details.more{font-size:15px;color:var(--ink2);border-top:1px solid var(--rule);padding-top:8px}
+details.more summary{cursor:pointer;color:var(--ink);font-weight:500}
+details.more dl{display:grid;grid-template-columns:minmax(0,9.5em) minmax(0,1fr);gap:6px 14px;margin:10px 0 0}
+details.more dt{font-weight:600;color:var(--ink)} details.more dd{margin:0}
+.swipe{position:absolute;top:0;bottom:0;width:2px;background:#fff;box-shadow:0 0 0 1px rgba(0,0,0,.5);pointer-events:none}
+.swipe::after{content:"\2194";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:30px;height:30px;border-radius:50%;background:#fff;color:#000;display:flex;align-items:center;justify-content:center;font-size:17px;line-height:30px;text-align:center}
+.pimg.swiping{cursor:ew-resize;touch-action:none}
+.sitebtns{display:flex;flex-wrap:wrap;gap:8px}
+svg.net{width:100%;height:auto;display:block}
+svg.net text{font-family:var(--f)}
+.ldr{width:100%;height:auto;display:block}
+.ldr text{font-family:var(--f);fill:var(--ink2)}
+.tagline{font-size:15px;color:var(--ink3);margin-top:6px}
 </style>
 
 <header class="bar"><div class="wrap bar__in">
   <a class="mark" href="#bench"><svg viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="11" r="9.5" fill="#f4f4f1" stroke="#000" stroke-width="1.3"/><path d="M11 1.5a9.5 9.5 0 0 0 0 19c-3.2-2.4-4.6-5.8-4.6-9.5S7.8 3.9 11 1.5z" fill="#000"/></svg>LunaXX</a>
   <nav aria-label="Sections">
-    <a href="#bench" class="wb">Workbench</a>
-    <a href="#align">Line it up</a>
-    <a href="#suns">Two Suns</a>
-    <a href="#pairs">Every pairing</a>
-    <a href="#planted">The check, tested</a>
-    <a href="#ledgers">Results</a>
+    <a href="#bench" class="wb" data-t="nav1">Try it</a>
+    <a href="#align" data-t="nav2">Line it up</a>
+    <a href="#siten" data-t="nav3">One site, every camera</a>
+    <a href="#suns" data-t="nav4">Sun angle</a>
+    <a href="#pairs" data-t="nav5">Every pairing</a>
+    <a href="#planted" data-t="nav6">The check, tested</a>
+    <a href="#ledgers" data-t="nav7">Results</a>
   </nav>
-  <div class="barright"><span class="pill" id="pill"><i></i><span>Checking for the pipeline</span></span><span class="frozen">Evidence frozen at <span id="fz"></span></span></div>
+  <div class="barright"><span class="pill" id="pill"><i></i><span>Checking for the pipeline</span></span><span class="frozen"><span data-t="frozen">Evidence frozen at</span> <span id="fz"></span></span>
+    <button type="button" class="lang" id="lang" aria-label="Language: English or Hindi"><span data-l="en">EN</span><span aria-hidden="true">|</span><span data-l="hi">हिंदी</span></button></div>
 </div></header>
 
 <main id="bench" class="view">
   <div class="bench">
-    <aside class="deck" aria-label="Choose what to register">
-      <h1>Register two images of the Moon</h1>
+    <aside class="deck" id="deck" aria-label="Choose what to register">
+      <h1 data-t="h1">Register two images of the Moon</h1>
+      <p class="lede" data-t="lede">Chandrayaan-2 images aligned to lunar maps across Sun angle, scale and sensor, then checked square by square by a test that never sees the matches.</p>
+      <ol class="steps" id="steps" aria-label="Four steps">
+        <li data-s="1" data-on="true"><b>1</b><span data-t="st1">Pick a pair</span></li>
+        <li data-s="2"><b>2</b><span data-t="st2">See it align</span></li>
+        <li data-s="3"><b>3</b><span data-t="st3">Check every square</span></li>
+        <li data-s="4"><b>4</b><span data-t="st4">Download the result</span></li>
+      </ol>
+
+      <div id="gal">
+        <h2 class="galh" id="libTitle" data-t="galh">Real Chandrayaan-2 results</h2>
+        <p class="fine" id="libSay"></p>
+        <div class="chips" id="chips" role="group" aria-label="Filter the pairs"></div>
+        <div class="lib" id="lib"></div>
+      </div>
+
+      <section id="own" class="mode" aria-labelledby="ownh">
+      <h2 id="ownh" data-t="ownh">Your own images</h2>
       <p class="status" id="status">Looking for the registration server on this machine.</p>
+      <div class="cta" id="ownCta" hidden></div>
 
       <div class="modes" role="tablist" aria-label="What to register">
-        <button type="button" role="tab" id="tabPair" aria-selected="true" aria-controls="mPair">Two images</button>
-        <button type="button" role="tab" id="tabKnown" aria-selected="false" aria-controls="mKnown">One image, known answer</button>
+        <button type="button" role="tab" id="tabPair" aria-selected="true" aria-controls="mPair" data-t="tabPair">Two images</button>
+        <button type="button" role="tab" id="tabKnown" aria-selected="false" aria-controls="mKnown" data-t="tabKnown">One image, known answer</button>
       </div>
 
       <div class="mode" id="mPair" role="tabpanel" aria-labelledby="tabPair">
         <div class="drops">
-          <label class="drop" id="dropA"><b>Image to align</b><span>the one that moves</span><input type="file" id="fileA" accept=".tif,.tiff,.img,.xml,.lbl,.png,.jpg,.jpeg"></label>
-          <label class="drop" id="dropB"><b>Reference</b><span>the grid it lands on</span><input type="file" id="fileB" accept=".tif,.tiff,.img,.xml,.lbl,.png,.jpg,.jpeg"></label>
+          <label class="drop" id="dropA"><b data-t="dAb">Image to align</b><span data-t="dAs">the one that moves</span><input type="file" id="fileA" accept=".tif,.tiff,.img,.xml,.lbl,.png,.jpg,.jpeg"></label>
+          <label class="drop" id="dropB"><b data-t="dBb">Reference</b><span data-t="dBs">the grid it lands on</span><input type="file" id="fileB" accept=".tif,.tiff,.img,.xml,.lbl,.png,.jpg,.jpeg"></label>
         </div>
-        <label class="check"><input type="checkbox" id="shrink" checked><span>Shrink photos larger than 1600 px before sending, both by the same factor. Faster, and it keeps their relative scale.</span></label>
-        <button type="button" class="go" id="goPair" disabled>Register the pair</button>
+        <label class="check"><input type="checkbox" id="shrink" checked><span data-t="shrink">Shrink photos larger than 1600 px before sending, both by the same factor. Faster, and it keeps their relative scale.</span></label>
+        <button type="button" class="go" id="goPair" disabled data-t="goPair">Register the pair</button>
         <p class="log" id="logPair" aria-live="polite"></p>
-        <p class="fine">GeoTIFF, PDS (.img, .xml, .lbl), PNG or JPEG. The two must show overlapping ground. A GeoTIFF's map scale is used; a PNG or JPEG has none, so both are taken to be at about the same scale.</p>
+        <p class="fine" data-t="finePair">GeoTIFF, PDS (.img, .xml, .lbl), PNG or JPEG. The two must show overlapping ground. A GeoTIFF's map scale is used; a PNG or JPEG has none, so both are taken to be at about the same scale.</p>
       </div>
 
       <div class="mode" id="mKnown" role="tabpanel" aria-labelledby="tabKnown" hidden>
-        <p class="fine" style="font-size:15px;color:var(--ink2)">Give it any Moon picture. The server warps it by the amounts below, registers the warped copy back onto the original and measures how far off it lands. Because the right answer is known, this is a real error, not an estimate. It is the same picture against itself, so no Sun or sensor changes: it tests geometry, blur and noise. Images over 900 px are shrunk to 900 first, and the shifts are in those pixels.</p>
-        <label class="drop one" id="dropK"><b>Any Moon image</b><span>a photo, a screenshot, a PDS product</span><input type="file" id="fileK" accept=".tif,.tiff,.img,.xml,.lbl,.png,.jpg,.jpeg"></label>
+        <p class="fine" style="font-size:15px;color:var(--ink2)" data-t="knownFine">Give it any Moon picture. The server warps it by the amounts below, registers the warped copy back onto the original and measures how far off it lands. Because the right answer is known, this is a real error, not an estimate. It is the same picture against itself, so no Sun or sensor changes: it tests geometry, blur and noise. Images over 900 px are shrunk to 900 first, and the shifts are in those pixels.</p>
+        <label class="drop one" id="dropK"><b data-t="dKb">Any Moon image</b><span data-t="dKs">a photo, a screenshot, a PDS product</span><input type="file" id="fileK" accept=".tif,.tiff,.img,.xml,.lbl,.png,.jpg,.jpeg"></label>
         <div class="prev" id="kprev" hidden>
           <figure><canvas id="kc0" width="220" height="220"></canvas><figcaption>Your image, the reference</figcaption></figure>
           <figure><canvas id="kc1" width="220" height="220"></canvas><figcaption>What the pipeline is handed</figcaption></figure>
         </div>
         <div class="sliders" id="ksl"></div>
-        <div class="row"><button type="button" class="btn" id="kRand" style="font-size:15px;padding:7px 12px">Random transform</button></div>
-        <button type="button" class="go" id="goKnown" disabled>Warp it and register it back</button>
+        <div class="row"><button type="button" class="btn" id="kRand" style="font-size:15px;padding:7px 12px" data-t="kRand">Random transform</button></div>
+        <button type="button" class="go" id="goKnown" disabled data-t="goKnown">Warp it and register it back</button>
         <p class="log" id="logKnown" aria-live="polite"></p>
       </div>
+      </section>
 
-      <div class="libh">
-        <h2 id="libTitle">Real pairs</h2>
-        <p class="fine" id="libSay"></p>
-        <div class="chips" id="chips" role="group" aria-label="Filter the pairs"></div>
-      </div>
-      <div class="lib" id="lib"></div>
-
-      <div class="runs" id="runs" hidden><h2>This session</h2><ol id="runList"></ol></div>
+      <div class="runs" id="runs" hidden><h2 data-t="runsh">Opened this session</h2><ol id="runList"></ol></div>
     </aside>
 
     <section class="stagep night" id="stagep" aria-label="Result">
@@ -366,8 +430,8 @@ footer{padding-block:48px 70px;border-top:1.5px solid var(--ink)}
         <p class="sr">Shadows move. The ground doesn't.</p>
         <div class="dial" aria-live="polite"><svg id="sundial" viewBox="0 0 54 54" aria-hidden="true"></svg><span id="sunsay"></span></div>
         <div class="efoot">
-          <p>LunaXX aligns Chandrayaan-2 images to lunar references across Sun angle, scale and sensor, then checks the answer square by square with a test that never looks at the matches, and says where it will not vouch for the result.</p>
-          <small>Choose images on the left, or pick a real pair, and the result appears here. This ground is the real 74°S site from the LOLA elevation model, with the letters standing on it; drag across it to move the Sun.</small>
+          <p data-t="efoot1">LunaXX aligns Chandrayaan-2 images to lunar references across Sun angle, scale and sensor, then checks the answer square by square with a test that never looks at the matches, and says where it will not vouch for the result.</p>
+          <small data-t="efoot2">Pick a real pair on the left and its result appears here. This ground is the real 74°S site from the LOLA elevation model, with the letters standing on it; drag across it to move the Sun.</small>
         </div>
       </div>
       <div class="running" id="running" hidden>
@@ -375,7 +439,7 @@ footer{padding-block:48px 70px;border-top:1.5px solid var(--ink)}
         <p class="rstage" id="rstage">Sending</p>
         <div class="rbar" id="rbar"><i></i></div>
         <p class="relapsed num" id="relapsed"></p>
-        <p class="note">This is the real pipeline on this laptop's CPU: both images to one ground scale, lighting reduced to gradient orientation, LoFTR matching, sub-pixel refinement, MAGSAC++, then the area check square by square.</p>
+        <p class="note" data-t="runnote">This is the real pipeline on this machine's CPU: both images to one ground scale, lighting reduced to gradient orientation, LoFTR matching, sub-pixel refinement, MAGSAC++, then the area check square by square.</p>
       </div>
       <div class="result" id="result" hidden>
         <div class="rtop"><span id="rsay"></span></div>
@@ -387,8 +451,8 @@ footer{padding-block:48px 70px;border-top:1.5px solid var(--ink)}
 
 <main id="evidence" class="view" hidden>
   <div class="wrap evhead">
-    <h1>The evidence</h1>
-    <p>Everything on the workbench runs live. Everything below was measured once, at the freeze commit, and every figure is in REPORT.md.</p>
+    <h1 data-t="evh">The evidence</h1>
+    <p data-t="evp">Everything below was measured once, on real lunar images, at the freeze commit, and every figure is in REPORT.md. Pick any pair on the first page to open its saved result and download it.</p>
   </div>
 
   <section class="part night" id="align"><div class="wrap">
@@ -397,24 +461,38 @@ footer{padding-block:48px 70px;border-top:1.5px solid var(--ink)}
         <img id="aref" alt=""><img id="amove" alt="">
         <svg id="agrid" viewBox="0 0 8 8" preserveAspectRatio="none"></svg>
       </div>
-      <div class="ahead"><h2>Line it up yourself</h2><p class="apair" id="apair"></p></div>
+      <div class="ahead"><h2 data-t="alh">Line it up yourself</h2><p class="apair" id="apair"></p></div>
       <div class="col">
         <div class="row" role="group" aria-label="Which pair">
-          <button class="btn" type="button" id="apA" aria-pressed="true">A pair it accepted</button>
-          <button class="btn" type="button" id="apR" aria-pressed="false">A pair it refused</button>
+          <button class="btn" type="button" id="apA" aria-pressed="true" data-t="alA">A pair it accepted</button>
+          <button class="btn" type="button" id="apR" aria-pressed="false" data-t="alR">A pair it refused</button>
         </div>
         <p class="score num" id="ascore">0 <small>of 64 squares agree</small></p>
         <p class="readout num" id="aoff"></p>
         <p class="verdictline" id="asay"></p>
-        <div class="row"><button class="btn" type="button" id="asnap">Let the pipeline align it</button><button class="btn" type="button" id="ascat">Scatter it again</button></div>
-        <p class="note">A simplified version of our check, running in your browser: each square compares pixels at the current shift, nothing else. The real check runs in Python, searches each square for its correlation peak, and never reads a match position.</p>
+        <div class="row"><button class="btn" type="button" id="asnap" data-t="alsnap">Let the pipeline align it</button><button class="btn" type="button" id="ascat" data-t="alscat">Scatter it again</button></div>
+        <p class="note" data-t="alnote">A simplified version of our check, running in your browser: each square compares pixels at the current shift, nothing else. The real check runs in Python, searches each square for its correlation peak, and never reads a match position.</p>
+      </div>
+    </div>
+  </div></section>
+
+  <section class="part" id="siten"><div class="wrap">
+    <div class="head"><h2 data-t="snh">One site, every camera</h2>
+      <p data-t="snp">The problem statement names OHRC, TMC and IIRS. At 60.7°N we found an OHRC frame, a TMC-2 pass with its own IIRS strip, and an LRO image whose Suns all lie within a few degrees, and registered every leg. Choosing images by their Sun is part of the method.</p></div>
+    <div class="two">
+      <figure><svg class="net" id="net" viewBox="0 0 640 400" role="img" aria-label="The four cameras at one site and the registrations between them"></svg>
+        <figcaption class="src" data-t="sncap">From REPORT.md, One site, every camera. Each arrow: windows accepted of windows, and the held-out median on the reference grid (the error on matches the fit never saw).</figcaption></figure>
+      <div class="col">
+        <p class="body" id="snsay"></p>
+        <div class="sitebtns" id="snbtn"></div>
+        <p class="note" data-t="snnote">The loop compares two routes from OHRC to TMC-2, one through the LRO image and one direct. Agreement means the registrations are consistent with each other; it is not a measurement of absolute accuracy. The IIRS windows lie along the same TMC-2 pass, not on the OHRC frame itself.</p>
       </div>
     </div>
   </div></section>
 
   <section class="part" id="suns"><div class="wrap">
-    <div class="head"><h2>Same ground, two Suns</h2>
-      <p>At the lunar south pole the Sun never climbs high, so shadows run long and swing right round the compass. Every shadow edge a matcher could use moves, or turns inside out.</p></div>
+    <div class="head"><h2 data-t="suh">Same ground, two Suns</h2>
+      <p data-t="sup">At the lunar south pole the Sun never climbs high, so shadows run long and swing right round the compass. Every shadow edge a matcher could use moves, or turns inside out.</p></div>
     <div class="two">
       <div class="col">
         <div class="relief" id="relief">
@@ -422,115 +500,129 @@ footer{padding-block:48px 70px;border-top:1.5px solid var(--ink)}
           <svg id="rose" viewBox="0 0 100 100" aria-hidden="true"></svg>
         </div>
         <div class="row" role="group" aria-label="Which Sun lights the relief">
-          <button class="btn" type="button" id="litA" aria-pressed="false">Lit by Sun A</button>
-          <button class="btn" type="button" id="litB" aria-pressed="true">Lit by Sun B</button>
-          <button class="btn" type="button" id="litX" aria-pressed="false">Alternate</button>
+          <button class="btn" type="button" id="litA" aria-pressed="false" data-t="litA">Lit by Sun A</button>
+          <button class="btn" type="button" id="litB" aria-pressed="true" data-t="litB">Lit by Sun B</button>
+          <button class="btn" type="button" id="litX" aria-pressed="false" data-t="litX">Alternate</button>
         </div>
-        <label class="note" for="dz">Angle between the two Suns: <span id="dzv" class="num">0°</span></label>
+        <label class="note" for="dz"><span data-t="dzl">Angle between the two Suns:</span> <span id="dzv" class="num">0°</span></label>
         <input id="dz" type="range" min="0" max="180" step="1" value="0">
-        <p class="src">Sun A is the OHRC frame's own, 7° above the horizon (from its PDS label). Drag Sun B round the compass. Relief and shadows from the LOLA 60 m elevation model; contours every 250 m.</p>
+        <p class="src" data-t="susrc">Sun A is the OHRC frame's own, 7° above the horizon (from its PDS label). Drag Sun B round the compass. Relief and shadows from the LOLA 60 m elevation model; contours every 250 m.</p>
       </div>
       <div class="col">
-        <p class="body">We registered one OHRC frame against <strong>25 LRO NAC frames</strong> whose Suns differ from it by 3° to 153° in azimuth: 69 real windows. Wherever you put Sun B, the last line below is the one that matters.</p>
+        <p class="body" data-t="subody">We registered one OHRC frame against <strong>25 LRO NAC frames</strong> whose Suns differ from it by 3° to 153° in azimuth: 69 real windows. Wherever you put Sun B, the last line below is the one that matters.</p>
         <div class="band" id="band" aria-live="polite"></div>
         <figure>
           <svg class="chart" id="scatter" viewBox="0 0 560 310" role="img" aria-label="Inlier matches per window against Sun azimuth difference, 69 real windows"></svg>
-          <figcaption class="src">From REPORT.md, Real sun-angle sweep. Inlier matches per window against the angle between the Suns; outcome judged by image evidence.</figcaption>
+          <figcaption class="src" data-t="sucap">From REPORT.md, Real sun-angle sweep. Inlier matches per window against the angle between the Suns; outcome judged by image evidence.</figcaption>
         </figure>
+      </div>
+    </div>
+    <div class="two" style="margin-top:clamp(44px,6vw,88px)">
+      <figure>
+        <svg class="ldr" id="ldr" viewBox="0 0 560 330" role="img" aria-label="Windows accepted on SAC's frame, by how far the Sun turned and rose"></svg>
+        <figcaption class="src" data-t="ldcap">From REPORT.md, Sun azimuth and elevation, on SAC's own frame. One mark per LRO image: how far its Sun is turned (across) and raised (up) from the OHRC frame's, and the share of its windows accepted (filled part).</figcaption>
+      </figure>
+      <div class="col">
+        <h3 style="font-size:clamp(26px,2.6vw,36px);line-height:1.1" data-t="ldh">The Sun raised, not only turned</h3>
+        <p class="body" id="ldsay"></p>
+        <p class="note" data-t="ldnote">The problem statement names Sun azimuth and elevation. On SAC's own equatorial OHRC frame the Sun is 9.9° above the horizon; each LRO image here sees the same ground under a different Sun. They also differ a little in viewing angle and azimuth, and REPORT.md lists both for every image.</p>
       </div>
     </div>
   </div></section>
 
   <section class="part" id="pairs"><div class="wrap">
-    <div class="head"><h2>Every pairing, and what the check said</h2>
-      <p>One window from every instrument pairing we tested, and all three verdicts, from the pipeline's saved runs. Pick a plate. Hatching in magenta marks what the system refused.</p></div>
+    <div class="head"><h2 data-t="pah">Every pairing, and what the check said</h2>
+      <p data-t="pap">One window from each test, accepted and refused, from the pipeline's saved runs. Pick a plate. Hatching in magenta marks what the system refused.</p></div>
     <div class="sheet" id="sheet"></div>
     <div id="pview"></div>
   </div></section>
 
   <section class="part night" id="planted"><div class="wrap">
-    <div class="head"><h2>The check, tested on purpose</h2>
-      <p style="color:var(--dimw)">A failure detector is only worth something if its false alarms and its blind spot are measured. So we planted wrong answers of known size in 30 real windows and asked it.</p></div>
+    <div class="head"><h2 data-t="plh">The check, tested on purpose</h2>
+      <p style="color:var(--dimw)" data-t="plp">A failure detector is only worth something if its false alarms and its blind spot are measured. So we planted wrong answers of known size in 30 real windows and asked it.</p></div>
     <div class="two">
       <figure>
         <svg class="chart" id="calchart" viewBox="0 0 560 320" role="img" aria-label="Share of planted registration errors flagged, by size of error in metres, for two Sun populations"></svg>
-        <figcaption class="src">From evaluation/trust_real_calibration.csv. Bars: 22 windows whose Suns are under 10° apart. Diamonds: SAC's 8 windows, Suns 132° to 174° apart. The two are never pooled. At 0 m nothing is wrong, so any flag is a false alarm.</figcaption>
+        <figcaption class="src" data-t="plcap">From evaluation/trust_real_calibration.csv. Bars: 22 windows whose Suns are under 10° apart. Diamonds: SAC's 8 windows, Suns 132° to 174° apart. The two are never pooled. At 0 m nothing is wrong, so any flag is a false alarm.</figcaption>
       </figure>
       <div class="col">
         <div class="pair">
-          <p class="big num">0 of 44<small>false alarms with the Suns within 10°, and 0 of 16 with them 132° to 174° apart</small></p>
-          <p class="big num">5 m<small>and up: every planted shift is flagged on the near-Sun windows. At 2 m or less almost nothing is, and that is the floor.</small></p>
+          <p class="big num" data-t="plb1">0 of 44<small>false alarms on correct answers with the Suns within 10°, and 0 of 16 with them 132° to 174° apart</small></p>
+          <p class="big num" data-t="plb2">100%<small>of planted 5 m shifts caught with the Suns within 10° (176 trials), and of 10 m shifts with them 132° to 174° apart. At 2 m or less almost nothing is caught: that is the floor.</small></p>
         </div>
         <hr class="rule" style="background:var(--white)">
-        <p class="note">A rotation or scale change about the centre leaves the centre still and moves the corners, so a verdict for the whole frame watches the wrong place: at 3 m of corner movement it refuses 0 of 120 trials, at 5 m only 15. The squares carry it instead.</p>
+        <p class="note" data-t="plrot">A rotation or scale change about the centre leaves the centre still and moves the corners, so a verdict for the whole frame watches the wrong place: at 3 m of corner movement it refuses 0 of 120 trials, at 5 m only 15. The squares carry it instead.</p>
         <div class="pair" id="rs"></div>
       </div>
     </div>
   </div></section>
 
   <section class="part" id="overlap"><div class="wrap">
-    <div class="head"><h2>The whole overlap, not chosen windows</h2>
-      <p>Every non-overlapping 640-pixel window in the shared, lit, textured ground of one OHRC frame and NAC <span class="it">M1153871873LE</span>, chosen before any matching ran.</p></div>
+    <div class="head"><h2 data-t="ovh">The whole overlap, not chosen windows</h2>
+      <p data-t="ovp">Every non-overlapping 640-pixel window in the shared, lit, textured ground of one OHRC frame and NAC <span class="it">M1153871873LE</span>, chosen before any matching ran.</p></div>
     <div class="two">
       <figure>
         <svg class="tiles" id="tilemap" role="img" aria-label="Map of 37 tiled windows in south polar stereographic coordinates"></svg>
-        <figcaption class="src">From REPORT.md, The whole lit overlap of one OHRC frame with one NAC. Window footprints in their true positions; brighter means a smaller held-out error.</figcaption>
+        <figcaption class="src" data-t="ovcap">From REPORT.md, The whole lit overlap of one OHRC frame with one NAC. Window footprints in their true positions; brighter means a smaller held-out error.</figcaption>
       </figure>
       <div class="col">
-        <p class="big num">37 of 37<small>windows accepted over 13.1 km²; held-out median 0.61 px, which is 0.57 m on the 0.93 m NAC grid</small></p>
-        <p class="note">36 of the 37 are under 3 px. The one that is not reports 316 px at an inlier ratio of 0.542: the held-out median is only robust while the inlier ratio stays well above one half. The image evidence says that window is registered; it is marked, not averaged away.</p>
+        <p class="big num" data-t="ovbig">37 of 37<small>windows accepted over 13.1 km²; held-out median 0.61 px, which is 0.57 m on the 0.93 m NAC grid</small></p>
+        <p class="note" data-t="ovnote">36 of the 37 are under 3 px. The one that is not reports 316 px at an inlier ratio of 0.542: the held-out median is only robust while the inlier ratio stays well above one half. The image evidence says that window is registered; it is marked, not averaged away.</p>
         <div class="sq" id="tsquare"></div>
       </div>
     </div>
   </div></section>
 
   <section class="part" id="ledgers"><div class="wrap">
-    <div class="head"><h2>What it registers</h2>
-      <p>Each line is a section of REPORT.md, measured at the freeze commit and reproducible with one command.</p></div>
+    <div class="head"><h2 data-t="lgh">What it registers</h2>
+      <p data-t="lgp">Each line is a section of REPORT.md, measured at the freeze commit and reproducible with one command. "Held-out" is the median error on the 20% of matches the fit never saw, on the reference grid.</p></div>
     <ul class="ledger">
-      <li><span><em>OHRC onto LRO NAC, 74°S</em><small>whole lit overlap, tiled; cross-sensor</small></span><p>Every window in the shared ground, 13.1 km², none chosen by hand. Held-out median on the 0.93 m grid.</p><b class="num">37 of 37, 0.57 m</b></li>
-      <li><span><em>OHRC onto LRO NAC, SAC's equatorial pair</em><small>cross-sensor</small></span><p>SAC's own published pair (arXiv:2509.04775). Suns 174° apart, every shadow reversed. Held-out median 0.69–1.68 px on the 1.62 m grid.</p><b class="num">6 of 6, 1.1–2.7 m</b></li>
-      <li><span><em>OHRC onto LRO NAC, SAC's polar pair</em><small>cross-sensor</small></span><p>Suns 132° apart. Two windows not vouched for: one kept as unconfirmed, one refused with its fallback declared.</p><b class="num">4 of 6</b></li>
-      <li><span><em>OHRC onto LRO NAC, the Sun sweep</em><small>cross-sensor</small></span><p>One OHRC frame against 25 NAC frames, Suns 3° to 153° apart, 69 windows. Nothing wrongly accepted in any band.</p><b class="num">51 registered, 0 missed</b></li>
-      <li><span><em>Kaguya TC onto Kaguya MI 749 nm</em><small>cross-sensor</small></span><p>Visible against visible, a 2× scale gap. Held-out median 0.23–0.47 px on MI's 14.8 m grid.</p><b class="num">3 of 3, 3.5–6.9 m</b></li>
-      <li><span><em>Kaguya TC onto Kaguya MI 1548 nm</em><small>multi-modal</small></span><p>The matcher is refused; global correlation is delivered instead and declared, landing a median 0.23–1.09 px (3.4–16.2 m) on MI's 14.8 m grid from the visible-band fit of the same window.</p><b class="num">3 of 3 delivered</b></li>
-      <li><span><em>OHRC onto Kaguya TC ortho map</em><small>cross-sensor</small></span><p>A 29.6× scale gap, 0.25 m against 7.4 m.</p><b class="num">3 of 4</b></li>
-      <li><span><em>OHRC to NAC A to NAC B, closed loops</em><small>the A to B leg is the same sensor</small></span><p>Three registrations round a loop must return to the start: consistency, not accuracy. Median closure over 6 loops, on the 1.245 m grid of NAC B.</p><b class="num">0.107 m</b></li>
-      <li><span><em>MiLOI, LRO NAC with itself</em><small>same sensor</small></span><p>81 scored pairs (of 321 matched) from three scenes under many Suns, judged against a truth network built from other pairs.</p><b class="num">33 accepted, 33 within 3 px</b></li>
+      <li data-t="lg1"><span><em>OHRC onto LRO NAC, SAC's equatorial pair</em><small>cross-sensor</small></span><p>SAC's own published pair (arXiv:2509.04775). Suns 174° apart, every shadow reversed. Held-out median 0.69–1.68 px on the 1.62 m grid.</p><b class="num">6 of 6, 1.1–2.7 m</b></li>
+      <li data-t="lg2"><span><em>OHRC onto LRO NAC, the Sun raised</em><small>cross-sensor, SAC's frame</small></span><p>Nine LRO images with the Sun's azimuth within 20° of the OHRC's and the Sun up to 41.7° higher; 7 of 8 at the highest Sun. Seven more with the Sun 154–177° away: 48 of 56.</p><b class="num">61 of 71</b></li>
+      <li data-t="lg3"><span><em>OHRC onto TMC-2, Suns matched</em><small>cross-sensor, one mission</small></span><p>At 60.7°N, passes chosen for their Sun. Held-out median 0.61–1.57 px on TMC-2's 5.17 m grid over 9 of the 10 windows.</p><b class="num">10 of 10, 3.2–8.1 m</b></li>
+      <li data-t="lg4"><span><em>OHRC onto LRO NAC, and NAC onto TMC-2, same site</em><small>cross-sensor, two missions</small></span><p>The chain through LRO meets the direct OHRC → TMC-2 with a loop RMS of 1.99 m, median of 4 windows (max 4.04 m): consistency, not accuracy.</p><b class="num">5 of 5, 4 of 4</b></li>
+      <li data-t="lg5"><span><em>TMC-2 onto IIRS, two orbits</em><small>multi-modal, beyond 850 nm</small></span><p>Same orbit, same Sun, 16× scale gap, 999–3223 nm. At 1555 nm the held-out median is 0.16–0.32 IIRS px (14–27 m).</p><b class="num">62 of 62</b></li>
+      <li data-t="lg6"><span><em>OHRC onto OHRC, the next orbit</em><small>same sensor, viewpoint</small></span><p>Viewing directions 40° apart, the Sun within 2.2°. Held-out median 0.91 px on the 1.23 m grid.</p><b class="num">8 of 8, 1.12 m</b></li>
+      <li data-t="lg7"><span><em>OHRC onto LRO NAC, 74°S</em><small>whole lit overlap, tiled; cross-sensor</small></span><p>Every window in the shared ground, 13.1 km², none chosen by hand. Held-out median on the 0.93 m grid.</p><b class="num">37 of 37, 0.57 m</b></li>
+      <li data-t="lg8"><span><em>OHRC onto LRO NAC, the Sun sweep</em><small>cross-sensor</small></span><p>One OHRC frame against 25 NAC frames, Suns 3° to 153° apart, 69 windows. Nothing wrongly accepted in any band.</p><b class="num">51 registered, 0 missed</b></li>
+      <li data-t="lg9"><span><em>OHRC onto Kaguya TC ortho map</em><small>cross-sensor</small></span><p>A 29.6× scale gap, 0.25 m against 7.4 m. One window on dense evidence (0.55 px = 4.0 m), two on 1 and 7 verified squares.</p><b class="num">3 of 4</b></li>
+      <li data-t="lg10"><span><em>Kaguya TC onto Kaguya MI 749 nm</em><small>cross-sensor</small></span><p>Visible against visible, a 2× scale gap. Held-out median 0.23–0.47 px on MI's 14.8 m grid.</p><b class="num">3 of 3, 3.5–6.9 m</b></li>
+      <li data-t="lg11"><span><em>OHRC to NAC A to NAC B, closed loops</em><small>the A to B leg is the same sensor</small></span><p>Three registrations round a loop must return to the start: consistency, not accuracy. Median closure over 6 loops, on the 1.245 m grid of NAC B.</p><b class="num">0.107 m</b></li>
+      <li data-t="lg12"><span><em>MiLOI, LRO NAC with itself</em><small>same sensor</small></span><p>81 scored pairs (of 321 matched) from three scenes under many Suns, judged against a truth network built from other pairs.</p><b class="num">33 accepted, 33 within 3 px</b></li>
     </ul>
-    <p class="note" style="margin-top:18px">Against exact truth, a synthetic pair rendered from the LOLA model with a known transform, the error is 0.086 px = 5.1 m on the 60 m grid with the Suns 0° and 15° apart. On real imagery there is no ground truth, so the figures above are held-out residuals: the median error over the 20% of matches the fit never saw. The two kinds are never added together.</p>
+    <p class="note" style="margin-top:18px" data-t="lgexact">Against exact truth, a synthetic pair rendered from the LOLA model with a known transform, the error is 0.086 px = 5.1 m on the 60 m grid with the Suns 0° and 15° apart. On real imagery there is no ground truth, so the figures above are held-out residuals. The two kinds are never added together.</p>
 
-    <div class="head" style="margin-top:clamp(56px,8vw,96px)"><h2>What it refuses</h2>
-      <p>Each line is a section of REPORT.md, hatched the way the plates above are.</p></div>
+    <div class="head" style="margin-top:clamp(56px,8vw,96px)"><h2 data-t="rfh">What it refuses</h2>
+      <p data-t="rfp">Each line is a section of REPORT.md, hatched the way the plates above are.</p></div>
     <ul class="ledger refused">
-      <li><span><em>Kaguya TC onto MI 1548 nm</em><small>multi-modal</small></span><p>The matcher is refused on every window. The declared fallback lands 3.4 to 16.2 m from the visible-band registration of the same window.</p><b class="num">3 of 3 refused</b></li>
-      <li><span><em>Kaguya TC onto Chandrayaan-2 IIRS</em><small>multi-modal</small></span><p>Near-infrared at 89 m per pixel, 12× coarser than TC. None is accepted.</p><b class="num">10 of 11 refused</b></li>
-      <li><span><em>OHRC onto TMC-2 at SAC's site</em><small>two cameras, one spacecraft</small></span><p>Suns 120° apart in azimuth and 59° in incidence. The closest-Sun TMC-2 coverage of the frame in PRADAN's footprint catalogue.</p><b class="num">4 of 4 refused</b></li>
-      <li><span><em>OHRC onto NAC, Suns 60° to 120° apart</em><small>cross-sensor</small></span><p>The hard band of the real sweep. Nothing accepted, and nothing wrongly accepted.</p><b class="num">0 of 12 accepted</b></li>
-      <li><span><em>MiLOI, Sun vectors 90° or more apart</em><small>same sensor</small></span><p>No method registered any of them: ours, SIFT, ORB or AKAZE. All in scene S3.</p><b class="num">0 of 16, any method</b></li>
-      <li><span><em>TMC-2 fore onto aft</em><small>same sensor</small></span><p>Relief parallax is not a homography. The one accepted window's held-out median: 2.6 px (15.5 m) on its 5.9 m grid.</p><b class="num">1 of 4 accepted</b></li>
-      <li><span><em>OHRC onto LOLA shaded relief</em><small>multi-modal, optical to elevation</small></span><p>Kept to show a declared failure: the matcher finds nothing, the system says so, and the verdict stays unconfirmed (REPORT.md, Declared-failure rung).</p><b class="num">declared failure</b></li>
+      <li data-t="rf1"><span><em>OHRC onto NAC, Suns 60° to 120° apart</em><small>cross-sensor</small></span><p>The hard band of the real sweep: one failure caught, two correct registrations refused, nine the images could not judge. Nothing wrongly accepted.</p><b class="num">0 of 12 accepted</b></li>
+      <li data-t="rf2"><span><em>OHRC onto TMC-2 at SAC's frame</em><small>cross-sensor, one mission</small></span><p>Suns 120° apart in azimuth and 59° in incidence. Re-cut in LRO's geometry it is refused again; where the Suns match, it registers 10 of 10.</p><b class="num">4 of 4 refused</b></li>
+      <li data-t="rf3"><span><em>Kaguya TC onto MI 1548 nm</em><small>multi-modal</small></span><p>The matcher is refused on every window. The declared fallback lands 3.4 to 16.2 m from the visible-band registration of the same window.</p><b class="num">3 of 3 refused</b></li>
+      <li data-t="rf4"><span><em>Kaguya TC onto Chandrayaan-2 IIRS, direct</em><small>multi-modal</small></span><p>Near-infrared at 89 m per pixel, 12× coarser than TC. None accepted; through TMC-2 of its own orbit IIRS registers.</p><b class="num">10 of 11 refused</b></li>
+      <li data-t="rf5"><span><em>MiLOI, Sun vectors 90° or more apart</em><small>same sensor</small></span><p>No method registered any of them: ours, SIFT, ORB or AKAZE. All in scene S3.</p><b class="num">0 of 16, any method</b></li>
+      <li data-t="rf6"><span><em>TMC-2 fore onto aft</em><small>same sensor, 50° apart</small></span><p>Relief parallax is not a homography. The one accepted window's held-out median: 2.6 px (15.5 m) on its 5.9 m grid.</p><b class="num">1 of 4 accepted</b></li>
+      <li data-t="rf7"><span><em>OHRC onto LOLA shaded relief</em><small>multi-modal, optical to elevation</small></span><p>Kept to show a declared failure: the matcher finds nothing, the system says so, and the verdict stays unconfirmed (REPORT.md, Declared-failure rung).</p><b class="num">declared failure</b></li>
     </ul>
 
-    <div class="head" style="margin-top:clamp(56px,8vw,96px)"><h2>How it runs</h2>
-      <p>core/pipeline.py, on a laptop CPU with no discrete GPU: a median of 8.2 s per 640-pixel window over 89 OHRC to NAC windows.</p></div>
-    <p class="body">Both images go to one ground scale. Lighting is reduced to gradient orientation. LoFTR matches them densely, tiled, on the CPU; each match is refined to sub-pixel by correlation; MAGSAC++ rejects outliers and fits the transform; the inliers' spread over the 8×8 grid is measured. Then the independent area check cross-correlates the warped image against the reference, square by square, and never reads a match position. It is the only step allowed to overrule the others. If it agrees, the result ships as a GeoTIFF on the reference grid with control points for GDAL and QGIS, an ISIS match list, the metrics and the trust map. If it is unconfirmed, it is kept and labelled. If it contradicts, the matcher's answer is refused and a phase-correlation fallback is delivered, declared as such, with its uncertainty in metres.</p>
+    <div class="head" style="margin-top:clamp(56px,8vw,96px)"><h2 data-t="hrh">How it runs</h2>
+      <p data-t="hrp">core/pipeline.py, on a laptop CPU with no discrete GPU: a median of 7.7 s per 640-pixel window over 89 OHRC to NAC windows.</p></div>
+    <p class="body" data-t="hrbody">Both images go to one ground scale. Lighting is reduced to gradient orientation. LoFTR matches them densely, tiled, on the CPU; each match is refined to sub-pixel by correlation; MAGSAC++ rejects outliers and fits the transform; the inliers' spread over the 8×8 grid is measured. Then the independent area check cross-correlates the warped image against the reference, square by square, and never reads a match position. It is the only step allowed to overrule the others. If it agrees, the result ships as a GeoTIFF on the reference grid with control points for GDAL and QGIS (all of them, and a set thinned to at most 4 per square so they cover the image), an ISIS match list, the metrics and the trust map. If it is unconfirmed, it is kept and labelled. If it contradicts, the matcher's answer is refused and a phase-correlation fallback is delivered, declared as such, with its uncertainty in metres.</p>
   </div></section>
 </main>
 
 <footer><div class="wrap">
   <div class="colo">
-    <div><h3>Words we hold to</h3>
-      <p><b>Cross-sensor</b> means different instruments. NAC with NAC, and TMC-2 fore with aft, are the same sensor and are labelled so.</p>
-      <p><b>Multi-modal</b> means visible with infrared, or optical with elevation. Two panchromatic cameras are not.</p>
-      <p><b>Sub-pixel</b> always names its grid and gives metres.</p></div>
-    <div><h3>Reproduce every number</h3>
-      <p>The evidence pages read the evidence logs, whose rows were measured at the freeze commit <span id="fz2"></span>, the commit the submitted deck quotes. The per-pair plates come from the pipeline's saved run of each pair, which can differ from the logged row by a few inliers because MAGSAC++ samples at random; the verdicts do not. Workbench runs are live and are not part of the frozen evidence.</p>
-      <p><code>python -m ops.freeze</code> re-runs every piece of evidence on one clean commit; <code>python -m ops.make_report</code> renders REPORT.md from the logs.</p></div>
-    <div><h3>Sources</h3>
-      <p>Chandrayaan-2 OHRC, TMC-2 and IIRS from ISRO's PRADAN. LRO NAC and LOLA from the NASA Planetary Data System. Kaguya TC and MI from JAXA's SELENE archive. MiLOI from Xie, Liu, Di et al., <span class="it">Remote Sensing</span> 17(13):2302.</p></div>
+    <div><h3 data-t="ft1h">Words we hold to</h3>
+      <p data-t="ft1a"><b>Cross-sensor</b> means different instruments. NAC with NAC, OHRC with OHRC, and TMC-2 fore with aft are the same sensor and are labelled so.</p>
+      <p data-t="ft1b"><b>Multi-modal</b> means visible with infrared, or optical with elevation. Two panchromatic cameras are not.</p>
+      <p data-t="ft1c"><b>Sub-pixel</b> always names its grid and gives metres.</p></div>
+    <div><h3 data-t="ft2h">Reproduce every number</h3>
+      <p><span data-t="ft2a">The evidence pages read the evidence logs, whose rows were measured at the freeze commit</span> <span id="fz2"></span><span data-t="ft2b">. The saved results come from the pipeline's cached run of each pair, which can differ from the logged row by a few inliers because MAGSAC++ samples at random; the verdicts do not. The downloads are the frozen run's exported files.</span></p>
+      <p data-t="ft2c"><code>python -m ops.freeze</code> re-runs every piece of evidence on one clean commit; <code>python -m ops.make_report</code> renders REPORT.md from the logs.</p></div>
+    <div><h3 data-t="ft3h">Sources</h3>
+      <p data-t="ft3a">Chandrayaan-2 OHRC, TMC-2 and IIRS from ISRO's PRADAN. LRO NAC and LOLA from the NASA Planetary Data System. Kaguya TC and MI from JAXA's SELENE archive. MiLOI from Xie, Liu, Di et al., <span class="it">Remote Sensing</span> 17(13):2302.</p></div>
   </div>
-  <div class="imprint"><span>Team LunaXX, Smart India Hackathon 2026, problem statement SIH26166</span><span>Code and evidence at github.com/samarthputhraya/sih26166</span><span>Set in Jost, a revival of Futura, the typeface of the Apollo 11 lunar plaque</span></div>
+  <div class="imprint"><span data-t="imp1">Team LunaXX, Smart India Hackathon 2026, problem statement SIH26166</span><a id="repoLink" href="https://github.com/samarthputhraya/sih26166">github.com/samarthputhraya/sih26166</a><span data-t="imp3">Set in Jost, a revival of Futura, the typeface of the Apollo 11 lunar plaque, and Poppins for Hindi</span></div>
 </div></footer>
 
 <script>
@@ -544,10 +636,149 @@ const COLS = 'ABCDEFGH', sqName = i => COLS[i % 8] + (Math.floor(i / 8) + 1);
 const HATCH = '#c2127a';
 const whySaid = w => String(w).replace(/\s*->\s*/g, ', so the verdict is ').replace(/measurable cells/g, 'squares the area check could measure')
   .replace(/(\d+) cells\)/, '$1 of them)').replace(/\bH\b/g, "the matcher's transform");
-const countsSaid = c => `${c.verified} of 64 squares verified, ${c.weak} weak, ${c.no_evidence} with no match evidence`;
+const countsSaid = c => LANG === 'hi' ? fill(T.cs, {v:c.verified, w:c.weak, n:c.no_evidence}) : `${c.verified} of 64 squares verified, ${c.weak} weak, ${c.no_evidence} with no match evidence`;
 const layerImg = (m, k) => (m.layers.find(x => x.k === k) || {}).img || null;
-function vword(m){ if (m.ok) return {w:'Accepted', v:'agrees'}; if (m.verdict === 'unconfirmed') return {w:'Unconfirmed', v:'unconfirmed'}; return {w:'Refused', v:'contradicted'}; }
+function vword(m){ if (m.ok) return {w:t('vAcc','Accepted'), v:'agrees'}; if (m.verdict === 'unconfirmed') return {w:t('vUnc','Unconfirmed'), v:'unconfirmed'}; return {w:t('vRef','Refused'), v:'contradicted'}; }
+/* the verdict in one plain sentence: what a judge should take from the plate */
+function vplain(m){ const v = vword(m).v;
+  if (v === 'agrees') return fill(t('pAcc', '<b>Accepted:</b> in {v} of 64 squares the pixels confirm the matcher\'s alignment.'), {v:m.counts.verified});
+  if (v === 'unconfirmed') return t('pUnc', '<b>Unconfirmed:</b> not enough evidence to vouch for it either way. Kept and labelled, not certified.');
+  return t('pRef', '<b>Refused:</b> the pixels contradict the matcher\'s answer, so it was not delivered.') + (m.rescued ? t('pRefFb', ' A fallback was delivered instead, and declared.') : ''); }
 $('#fz').textContent = D.freeze; $('#fz2').textContent = D.freeze;
+
+/* ================= English and Hindi =================
+   The page is written in English; every element with data-t="key" has a Hindi version in T, and
+   every sentence the script writes goes through t(key, english). Instrument names, units and
+   method names stay in English in both, as SAC's own Hindi documents keep them. ?lang=hi opens
+   the page in Hindi; the choice is remembered in this browser when storage is allowed. */
+let LANG = 'en';
+try { const q = new URLSearchParams(location.search).get('lang'); LANG = (q === 'hi' || q === 'en') ? q : (localStorage.getItem('lx-lang') === 'hi' ? 'hi' : 'en'); } catch (_) {}
+const T = {
+  nav1:'आज़माएँ', nav2:'स्वयं संरेखित करें', nav3:'एक स्थल, हर कैमरा', nav4:'सूर्य कोण', nav5:'हर जोड़ी', nav6:'जाँच की जाँच', nav7:'परिणाम',
+  frozen:'साक्ष्य स्थिर (frozen) कमिट', h1:'चंद्रमा की दो छवियों का पंजीकरण (registration)',
+  lede:'चंद्रयान-2 की छवियाँ सूर्य कोण, पैमाने और सेंसर के अंतर के पार चंद्र मानचित्रों पर संरेखित, फिर हर वर्ग की जाँच ऐसे परीक्षण से जो मिलानों (matches) को कभी नहीं देखता।',
+  st1:'एक जोड़ी चुनें', st2:'संरेखण देखें', st3:'हर वर्ग जाँचें', st4:'परिणाम डाउनलोड करें',
+  galh:'चंद्रयान-2 के वास्तविक परिणाम', ownh:'अपनी छवियाँ', runsh:'इस सत्र में खोले गए',
+  efoot1:'LunaXX चंद्रयान-2 की छवियों को सूर्य कोण, पैमाने और सेंसर के पार चंद्र संदर्भ-छवियों पर संरेखित करता है, फिर उत्तर को वर्ग-दर-वर्ग ऐसे परीक्षण से जाँचता है जो मिलानों को नहीं देखता, और बताता है कि वह कहाँ परिणाम की ज़िम्मेदारी नहीं लेगा।',
+  efoot2:'बाईं ओर कोई वास्तविक जोड़ी चुनें, उसका परिणाम यहाँ दिखेगा। यह ज़मीन LOLA उन्नयन मॉडल से 74°S का वास्तविक स्थल है, जिस पर अक्षर खड़े हैं; सूर्य घुमाने के लिए इस पर खींचें।',
+  runnote:'यह इसी मशीन के CPU पर चल रही वास्तविक pipeline है: दोनों छवियाँ एक ज़मीनी पैमाने पर, प्रकाश को ढलान-दिशा (gradient orientation) में बदलना, LoFTR मिलान, sub-pixel परिशोधन, MAGSAC++, फिर वर्ग-दर-वर्ग क्षेत्र-जाँच।',
+  evh:'साक्ष्य', evp:'नीचे का सब कुछ वास्तविक चंद्र छवियों पर, स्थिर (freeze) कमिट पर, एक बार मापा गया है, और हर आँकड़ा REPORT.md में है। पहले पृष्ठ पर कोई भी जोड़ी चुनकर उसका सहेजा परिणाम खोलें और डाउनलोड करें।',
+  alh:'स्वयं संरेखित करें', alA:'एक स्वीकृत जोड़ी', alR:'एक अस्वीकृत जोड़ी', alsnap:'pipeline को संरेखित करने दें', alscat:'फिर से बिखेरें',
+  alnote:'हमारी जाँच का सरल रूप, आपके ब्राउज़र में: हर वर्ग वर्तमान खिसकाव पर पिक्सेल की तुलना करता है, बस इतना। असली जाँच Python में चलती है, हर वर्ग में सहसंबंध (correlation) का शिखर खोजती है, और किसी मिलान की स्थिति कभी नहीं पढ़ती।',
+  snh:'एक स्थल, हर कैमरा',
+  snp:'समस्या-कथन OHRC, TMC और IIRS का नाम लेता है। 60.7°N पर हमें एक OHRC फ्रेम, अपनी IIRS पट्टी सहित एक TMC-2 पास, और एक LRO छवि मिली जिनके सूर्य कुछ ही डिग्री के भीतर हैं, और हर कड़ी पंजीकृत की। सूर्य देखकर छवियाँ चुनना हमारी विधि का हिस्सा है।',
+  sncap:'REPORT.md, “One site, every camera” से। हर तीर: कुल में से स्वीकृत विंडो, और संदर्भ ग्रिड पर held-out माध्यिका (उन मिलानों पर त्रुटि जिन्हें फ़िट ने कभी नहीं देखा)।',
+  snnote:'Loop OHRC से TMC-2 तक के दो रास्तों की तुलना करता है, एक LRO छवि से होकर और एक सीधा। सहमति का अर्थ है कि पंजीकरण आपस में सुसंगत हैं; यह पूर्ण सटीकता का माप नहीं है। IIRS विंडो उसी TMC-2 पास के साथ हैं, OHRC फ्रेम पर नहीं।',
+  suh:'एक ही ज़मीन, दो सूर्य',
+  sup:'चंद्र दक्षिणी ध्रुव पर सूर्य कभी ऊँचा नहीं चढ़ता, इसलिए छायाएँ लंबी होती हैं और पूरे कंपास में घूमती हैं। हर छाया-किनारा जिसका matcher उपयोग कर सकता है, खिसक जाता है या उलट जाता है।',
+  litA:'सूर्य A से प्रकाशित', litB:'सूर्य B से प्रकाशित', litX:'बारी-बारी', dzl:'दोनों सूर्यों के बीच कोण:',
+  susrc:'सूर्य A OHRC फ्रेम का अपना है, क्षितिज से 7° ऊपर (उसके PDS लेबल से)। सूर्य B को कंपास पर घुमाएँ। उच्चावच और छायाएँ LOLA 60 m उन्नयन मॉडल से; समोच्च रेखाएँ हर 250 m।',
+  subody:'हमने एक OHRC फ्रेम को <strong>25 LRO NAC फ्रेमों</strong> के सामने पंजीकृत किया जिनके सूर्य दिगंश में 3° से 153° तक अलग हैं: 69 वास्तविक विंडो। सूर्य B कहीं भी रखें, नीचे की अंतिम पंक्ति ही मायने रखती है।',
+  sucap:'REPORT.md, “Real sun-angle sweep” से। सूर्यों के बीच कोण के सामने प्रति विंडो inlier मिलान; परिणाम छवि-साक्ष्य से आँका गया।',
+  ldcap:'REPORT.md, “Sun azimuth and elevation, on SAC’s own frame” से। हर LRO छवि का एक चिह्न: उसका सूर्य OHRC फ्रेम के सूर्य से कितना घूमा (आड़ा) और कितना ऊँचा (खड़ा) है, और उसकी कितनी विंडो स्वीकार हुईं (भरा भाग)।',
+  ldh:'सूर्य ऊँचा भी, केवल घूमा नहीं',
+  ldnote:'समस्या-कथन सूर्य का दिगंश और ऊँचाई दोनों माँगता है। SAC के अपने भूमध्यरेखीय OHRC फ्रेम पर सूर्य क्षितिज से 9.9° ऊपर है; यहाँ हर LRO छवि वही ज़मीन अलग सूर्य के नीचे देखती है। उनके दृष्टि-कोण और दिगंश में भी थोड़ा अंतर है, और REPORT.md हर छवि के लिए दोनों बताता है।',
+  pah:'हर जोड़ी, और जाँच ने क्या कहा', pap:'हर परीक्षण की एक विंडो, स्वीकृत और अस्वीकृत, pipeline के सहेजे परिणामों से। कोई प्लेट चुनें। मैजेंटा धारियाँ वह दिखाती हैं जिसे सिस्टम ने अस्वीकार किया।',
+  plh:'जाँच की जानबूझकर जाँच', plp:'विफलता पकड़ने वाला तभी उपयोगी है जब उसके झूठे अलार्म और उसका अंधा क्षेत्र मापे गए हों। इसलिए हमने 30 वास्तविक विंडो में ज्ञात आकार के ग़लत उत्तर डाले और उससे पूछा।',
+  plcap:'evaluation/trust_real_calibration.csv से। स्तंभ: 22 विंडो जिनके सूर्य 10° से कम अलग हैं। हीरे: SAC की 8 विंडो, सूर्य 132° से 174° अलग। दोनों को कभी मिलाया नहीं जाता। 0 m पर कुछ ग़लत नहीं, इसलिए कोई भी झंडा झूठा अलार्म है।',
+  plb1:'44 में 0<small>सही उत्तरों पर झूठे अलार्म जब सूर्य 10° के भीतर हों, और 16 में 0 जब वे 132° से 174° अलग हों</small>',
+  plb2:'100%<small>डाले गए 5 m खिसकाव पकड़े गए जब सूर्य 10° के भीतर हों (176 परीक्षण), और 10 m वाले जब वे 132° से 174° अलग हों। 2 m या उससे कम पर लगभग कुछ नहीं पकड़ा जाता: वही निचली सीमा है।</small>',
+  plrot:'केंद्र के चारों ओर घूर्णन या पैमाने का बदलाव केंद्र को स्थिर रखता है और कोनों को हिलाता है, इसलिए पूरे फ्रेम का एक निर्णय ग़लत जगह देखता है: कोनों के 3 m हिलने पर वह 120 में से 0 परीक्षण अस्वीकार करता है, 5 m पर केवल 15। यह काम वर्ग करते हैं।',
+  ovh:'पूरा साझा क्षेत्र, चुनी हुई विंडो नहीं', ovp:'एक OHRC फ्रेम और NAC <span class="it">M1153871873LE</span> की साझा, प्रकाशित, बनावट-युक्त ज़मीन में हर गैर-अतिव्यापी 640-पिक्सेल विंडो, किसी भी मिलान से पहले चुनी गई।',
+  ovcap:'REPORT.md, “The whole lit overlap of one OHRC frame with one NAC” से। विंडो अपनी वास्तविक स्थिति में; जितनी चमकीली, held-out त्रुटि उतनी कम।',
+  ovbig:'37 में 37<small>विंडो 13.1 km² में स्वीकार; held-out माध्यिका 0.61 px, यानी 0.93 m NAC ग्रिड पर 0.57 m</small>',
+  ovnote:'37 में से 36, 3 px से नीचे हैं। जो नहीं है वह 0.542 के inlier अनुपात पर 316 px बताती है: held-out माध्यिका तभी भरोसेमंद है जब inlier अनुपात आधे से काफ़ी ऊपर हो। छवि-साक्ष्य कहता है कि वह विंडो पंजीकृत है; उसे चिह्नित किया गया है, औसत में छिपाया नहीं।',
+  lgh:'यह क्या पंजीकृत करता है', lgp:'हर पंक्ति REPORT.md का एक खंड है, freeze कमिट पर मापा गया और एक कमांड से दोहराने योग्य। “Held-out” संदर्भ ग्रिड पर उन 20% मिलानों की माध्यिका त्रुटि है जिन्हें फ़िट ने कभी नहीं देखा।',
+  lg1:'<span><em>OHRC से LRO NAC, SAC की भूमध्यरेखीय जोड़ी</em><small>cross-sensor</small></span><p>SAC की अपनी प्रकाशित जोड़ी (arXiv:2509.04775)। सूर्य 174° अलग, हर छाया उलटी। 1.62 m ग्रिड पर held-out माध्यिका 0.69–1.68 px।</p><b class="num">6 में 6, 1.1–2.7 m</b>',
+  lg2:'<span><em>OHRC से LRO NAC, सूर्य ऊँचा</em><small>cross-sensor, SAC का फ्रेम</small></span><p>नौ LRO छवियाँ, सूर्य का दिगंश OHRC के 20° के भीतर और सूर्य 41.7° तक ऊँचा; सबसे ऊँचे सूर्य पर 8 में 7। सात और, सूर्य 154–177° दूर: 56 में 48।</p><b class="num">71 में 61</b>',
+  lg3:'<span><em>OHRC से TMC-2, सूर्य मिलाए गए</em><small>cross-sensor, एक मिशन</small></span><p>60.7°N पर, सूर्य देखकर चुने गए पास। 10 में से 9 विंडो पर TMC-2 के 5.17 m ग्रिड पर held-out माध्यिका 0.61–1.57 px।</p><b class="num">10 में 10, 3.2–8.1 m</b>',
+  lg4:'<span><em>OHRC से LRO NAC, और NAC से TMC-2, वही स्थल</em><small>cross-sensor, दो मिशन</small></span><p>LRO से होकर जाने वाली श्रृंखला सीधे OHRC → TMC-2 से 1.99 m के loop RMS पर मिलती है, 4 विंडो की माध्यिका (अधिकतम 4.04 m): सुसंगति, सटीकता नहीं।</p><b class="num">5 में 5, 4 में 4</b>',
+  lg5:'<span><em>TMC-2 से IIRS, दो कक्षाएँ</em><small>multi-modal, 850 nm से आगे</small></span><p>एक ही कक्षा, एक ही सूर्य, 16× पैमाना-अंतर, 999–3223 nm। 1555 nm पर held-out माध्यिका 0.16–0.32 IIRS px (14–27 m)।</p><b class="num">62 में 62</b>',
+  lg6:'<span><em>OHRC से OHRC, अगली कक्षा</em><small>same sensor, दृष्टिकोण</small></span><p>दृष्टि-दिशाएँ 40° अलग, सूर्य 2.2° के भीतर। 1.23 m ग्रिड पर held-out माध्यिका 0.91 px।</p><b class="num">8 में 8, 1.12 m</b>',
+  lg7:'<span><em>OHRC से LRO NAC, 74°S</em><small>पूरा प्रकाशित साझा क्षेत्र, टाइलों में; cross-sensor</small></span><p>साझा ज़मीन की हर विंडो, कुल 13.1 km², कोई हाथ से नहीं चुनी। 0.93 m ग्रिड पर held-out माध्यिका।</p><b class="num">37 में 37, 0.57 m</b>',
+  lg8:'<span><em>OHRC से LRO NAC, सूर्य-परीक्षण श्रृंखला</em><small>cross-sensor</small></span><p>एक OHRC फ्रेम 25 NAC फ्रेमों के सामने, सूर्य 3° से 153° अलग, 69 विंडो। किसी भी पट्टी में कुछ भी ग़लत स्वीकार नहीं।</p><b class="num">51 पंजीकृत, 0 छूटे</b>',
+  lg9:'<span><em>OHRC से Kaguya TC ऑर्थो मानचित्र</em><small>cross-sensor</small></span><p>29.6× पैमाना-अंतर, 0.25 m बनाम 7.4 m। एक विंडो घने प्रमाण पर (0.55 px = 4.0 m), दो केवल 1 और 7 सत्यापित वर्गों पर।</p><b class="num">4 में 3</b>',
+  lg10:'<span><em>Kaguya TC से Kaguya MI 749 nm</em><small>cross-sensor</small></span><p>दृश्य बनाम दृश्य, 2× पैमाना-अंतर। MI के 14.8 m ग्रिड पर held-out माध्यिका 0.23–0.47 px।</p><b class="num">3 में 3, 3.5–6.9 m</b>',
+  lg11:'<span><em>OHRC से NAC A से NAC B, बंद loop</em><small>A से B की कड़ी same sensor है</small></span><p>एक loop के चारों ओर तीन पंजीकरण शुरुआत पर लौटने चाहिए: सुसंगति, सटीकता नहीं। 6 loop पर माध्यिका, NAC B के 1.245 m ग्रिड पर।</p><b class="num">0.107 m</b>',
+  lg12:'<span><em>MiLOI, LRO NAC अपने ही साथ</em><small>same sensor</small></span><p>कई सूर्यों के नीचे तीन दृश्यों से 81 अंकित जोड़ियाँ (321 मिलाई गई में से), दूसरी जोड़ियों से बने सत्य-नेटवर्क के विरुद्ध।</p><b class="num">33 स्वीकृत, सभी 3 px के भीतर</b>',
+  lgexact:'सटीक सत्य के विरुद्ध, LOLA मॉडल से ज्ञात रूपांतरण के साथ बनी कृत्रिम जोड़ी पर, 60 m ग्रिड पर त्रुटि 0.086 px = 5.1 m है जब सूर्य 0° और 15° अलग हों। वास्तविक छवियों पर कोई ज़मीनी सत्य नहीं, इसलिए ऊपर के आँकड़े held-out अवशेष हैं। दोनों तरह के आँकड़े कभी जोड़े नहीं जाते।',
+  rfh:'यह क्या अस्वीकार करता है', rfp:'हर पंक्ति REPORT.md का एक खंड है, ऊपर की प्लेटों की तरह धारीदार।',
+  rf1:'<span><em>OHRC से NAC, सूर्य 60° से 120° अलग</em><small>cross-sensor</small></span><p>सूर्य-श्रृंखला की कठिन पट्टी: एक विफलता पकड़ी, दो सही पंजीकरण अस्वीकार, नौ को छवियाँ आँक नहीं सकीं। कुछ भी ग़लत स्वीकार नहीं।</p><b class="num">12 में 0 स्वीकृत</b>',
+  rf2:'<span><em>SAC फ्रेम पर OHRC से TMC-2</em><small>cross-sensor, एक मिशन</small></span><p>सूर्य दिगंश में 120° और आपतन में 59° अलग। LRO की ज्यामिति में दोबारा काटने पर फिर अस्वीकार; जहाँ सूर्य मिलते हैं, 10 में 10 पंजीकृत।</p><b class="num">4 में 4 अस्वीकार</b>',
+  rf3:'<span><em>Kaguya TC से MI 1548 nm</em><small>multi-modal</small></span><p>हर विंडो पर matcher अस्वीकार। घोषित fallback उसी विंडो के दृश्य-बैंड पंजीकरण से 3.4 से 16.2 m दूर पड़ता है।</p><b class="num">3 में 3 अस्वीकार</b>',
+  rf4:'<span><em>Kaguya TC से चंद्रयान-2 IIRS, सीधे</em><small>multi-modal</small></span><p>89 m प्रति पिक्सेल पर निकट-अवरक्त, TC से 12× मोटा। कोई स्वीकार नहीं; अपनी कक्षा के TMC-2 के माध्यम से IIRS पंजीकृत होता है।</p><b class="num">11 में 10 अस्वीकार</b>',
+  rf5:'<span><em>MiLOI, सूर्य-सदिश 90° या अधिक अलग</em><small>same sensor</small></span><p>किसी भी विधि ने इनमें से कोई पंजीकृत नहीं किया: हमारी, SIFT, ORB या AKAZE। सभी दृश्य S3 में।</p><b class="num">16 में 0, कोई भी विधि</b>',
+  rf6:'<span><em>TMC-2 fore से aft</em><small>same sensor, 50° अलग</small></span><p>उच्चावच का लंबन homography नहीं है। एकमात्र स्वीकृत विंडो की held-out माध्यिका: उसके 5.9 m ग्रिड पर 2.6 px (15.5 m)।</p><b class="num">4 में 1 स्वीकृत</b>',
+  rf7:'<span><em>OHRC से LOLA छायांकित उच्चावच</em><small>multi-modal, प्रकाशीय से उन्नयन</small></span><p>घोषित विफलता दिखाने के लिए रखा गया: matcher को कुछ नहीं मिलता, सिस्टम यह कहता है, और निर्णय अपुष्ट रहता है (REPORT.md, Declared-failure rung)।</p><b class="num">घोषित विफलता</b>',
+  hrh:'यह कैसे चलता है', hrp:'core/pipeline.py, बिना अलग GPU के लैपटॉप CPU पर: 89 OHRC से NAC विंडो पर प्रति 640-पिक्सेल विंडो 7.7 s की माध्यिका।',
+  hrbody:'दोनों छवियाँ एक ज़मीनी पैमाने पर लाई जाती हैं। प्रकाश को ढलान-दिशा में बदला जाता है। LoFTR उन्हें CPU पर, टाइलों में, घने रूप से मिलाता है; हर मिलान को सहसंबंध से sub-pixel तक परिष्कृत किया जाता है; MAGSAC++ बाहरी बिंदु हटाकर रूपांतरण फ़िट करता है; 8×8 ग्रिड पर inliers का फैलाव मापा जाता है। फिर स्वतंत्र क्षेत्र-जाँच संरेखित छवि का संदर्भ से वर्ग-दर-वर्ग सहसंबंध करती है, और किसी मिलान की स्थिति कभी नहीं पढ़ती। केवल इसी चरण को बाकी को पलटने का अधिकार है। सहमति पर परिणाम संदर्भ ग्रिड पर GeoTIFF के रूप में, GDAL और QGIS के नियंत्रण बिंदुओं (सभी, और प्रति वर्ग अधिकतम 4 वाला समान रूप से फैला सेट), ISIS मिलान-सूची, मापों और trust map के साथ दिया जाता है। अपुष्ट होने पर रखा और चिह्नित किया जाता है। खंडन पर matcher का उत्तर अस्वीकार होता है और phase-correlation fallback, घोषित रूप में, मीटर में अनिश्चितता सहित दिया जाता है।',
+  ft1h:'शब्द जिन पर हम टिके हैं', ft1a:'<b>Cross-sensor</b> का अर्थ है अलग उपकरण। NAC से NAC, OHRC से OHRC, और TMC-2 fore से aft एक ही सेंसर हैं और ऐसे ही लिखे जाते हैं।',
+  ft1b:'<b>Multi-modal</b> का अर्थ है दृश्य से अवरक्त, या प्रकाशीय से उन्नयन। दो panchromatic कैमरे multi-modal नहीं।', ft1c:'<b>Sub-pixel</b> हमेशा अपना ग्रिड बताता है और मीटर देता है।',
+  ft2h:'हर आँकड़ा दोहराएँ', ft2a:'साक्ष्य पृष्ठ evidence logs पढ़ते हैं, जिनकी पंक्तियाँ freeze कमिट पर मापी गईं',
+  ft2b:'। सहेजे परिणाम हर जोड़ी के cached run से हैं, जो MAGSAC++ के यादृच्छिक नमूने के कारण logged पंक्ति से कुछ inliers अलग हो सकते हैं; निर्णय नहीं बदलते। डाउनलोड frozen run की निर्यात फ़ाइलें हैं।',
+  ft2c:'<code>python -m ops.freeze</code> हर साक्ष्य को एक साफ़ कमिट पर दोबारा चलाता है; <code>python -m ops.make_report</code> logs से REPORT.md बनाता है।',
+  ft3h:'स्रोत', ft3a:'चंद्रयान-2 OHRC, TMC-2 और IIRS ISRO के PRADAN से। LRO NAC और LOLA NASA Planetary Data System से। Kaguya TC और MI JAXA के SELENE अभिलेखागार से। MiLOI: Xie, Liu, Di et al., <span class="it">Remote Sensing</span> 17(13):2302।',
+  imp1:'टीम LunaXX, स्मार्ट इंडिया हैकाथॉन 2026, समस्या-कथन SIH26166', imp3:'Jost में मुद्रित (Apollo 11 की चंद्र पट्टिका के Futura का पुनरुद्धार), हिंदी के लिए Poppins',
+  tabPair:'दो छवियाँ', tabKnown:'एक छवि, ज्ञात उत्तर', dAb:'संरेखित करने वाली छवि', dAs:'जो खिसकेगी', dBb:'संदर्भ', dBs:'वह ग्रिड जिस पर वह बैठेगी',
+  shrink:'1600 px से बड़ी तस्वीरों को भेजने से पहले छोटा करें, दोनों को एक ही गुणक से। तेज़, और उनका सापेक्ष पैमाना बना रहता है।', goPair:'जोड़ी पंजीकृत करें',
+  finePair:'GeoTIFF, PDS (.img, .xml, .lbl), PNG या JPEG। दोनों में साझा ज़मीन होनी चाहिए। GeoTIFF का मानचित्र-पैमाना उपयोग होता है; PNG या JPEG में नहीं होता, इसलिए दोनों को लगभग समान पैमाने का माना जाता है।',
+  knownFine:'चंद्रमा की कोई भी तस्वीर दें। सर्वर उसे नीचे दी गई मात्राओं से विकृत करता है, विकृत प्रति को मूल पर वापस पंजीकृत करता है और मापता है कि वह कितनी दूर पड़ी। सही उत्तर ज्ञात है, इसलिए यह वास्तविक त्रुटि है, अनुमान नहीं। यह उसी तस्वीर से उसी की तुलना है, इसलिए सूर्य या सेंसर नहीं बदलता: यह ज्यामिति, धुंधलापन और शोर जाँचता है।',
+  dKb:'चंद्रमा की कोई भी छवि', dKs:'तस्वीर, स्क्रीनशॉट, PDS उत्पाद', kRand:'यादृच्छिक रूपांतरण', goKnown:'विकृत करें और वापस पंजीकृत करें',
+  /* script sentences */
+  vAcc:'स्वीकृत', vUnc:'अपुष्ट', vRef:'अस्वीकृत', vFb:'fallback घोषित',
+  cs:'{v} वर्ग सत्यापित (64 में), {w} कमज़ोर, {n} में मिलान-साक्ष्य नहीं',
+  pAcc:'<b>स्वीकृत:</b> 64 में से {v} वर्गों में पिक्सेल matcher के संरेखण की पुष्टि करते हैं।',
+  pUnc:'<b>अपुष्ट:</b> किसी भी ओर ज़िम्मेदारी लेने लायक प्रमाण नहीं। रखा और चिह्नित किया गया, प्रमाणित नहीं।',
+  pRef:'<b>अस्वीकृत:</b> पिक्सेल matcher के उत्तर का खंडन करते हैं, इसलिए वह नहीं दिया गया।', pRefFb:' उसकी जगह एक fallback दिया गया, और घोषित किया गया।',
+  fSq:'वर्ग', fMt:'मिलान', fInl:'{a} inliers, {b} में से', fTime:'समय', fSec:'CPU पर {s} s', fMeth:'विधि', fWhy:'जाँच कहती है',
+  Lsrc:'छवि A, पहले', Lref:'छवि B, संदर्भ', Lwarp:'matcher का उत्तर', Lblink:'B के साथ बारी-बारी', Lswipe:'B से तुलना (खिसकाएँ)', Lfb:'fallback, दिया गया',
+  lnBlink:'अगर संरेखित हैं, तो कुछ नहीं उछलता।', lnSwipe:'रेखा को खींचें: बाईं ओर संदर्भ, दाईं ओर संरेखित छवि।', lnRef:'वह उत्तर जिसे जाँच ने अस्वीकार किया।',
+  gridon:'वर्ग दिखाएँ', lgV:'सत्यापित: मिलान और पिक्सेल सहमत', lgW:'कमज़ोर: मापा गया, टिकता नहीं', lgN:'कोई साक्ष्य नहीं: कुछ दावा नहीं',
+  rule:'नियम ठीक-ठीक', ruleTxt:'कोई वर्ग तभी सत्यापित है जब उसमें कम से कम 3 inliers हों, स्थानीय inlier अनुपात 0.5 या अधिक हो, और सहसंबंध 2 px के भीतर 0.3 या अधिक पर शिखर दे।',
+  gloss:'शब्दों का अर्थ', gHeld:'held-out', gHeldT:'मिलानों का वह 20% जिसे फ़िट ने कभी नहीं देखा; उस पर माध्यिका त्रुटि, संदर्भ ग्रिड के पिक्सेल में।',
+  gInl:'inlier', gInlT:'ऐसा मिलान जो MAGSAC++ के फ़िट किए रूपांतरण से सहमत है।', gChk:'क्षेत्र-जाँच', gChkT:'संरेखित छवि को संदर्भ से हर वर्ग में सहसंबंधित करती है; मिलान कभी नहीं पढ़ती, और केवल यही बाकी को पलट सकती है।',
+  gCs:'cross-sensor', gCsT:'दो अलग उपकरण। एक ही कैमरे की दो छवियाँ same sensor हैं।', gMm:'multi-modal', gMmT:'दृश्य बनाम अवरक्त, या प्रकाशीय बनाम उन्नयन।',
+  dl:'यह परिणाम डाउनलोड करें (.zip)', dlT:'संदर्भ ग्रिड पर पंजीकृत छवि (GeoTIFF), GDAL और QGIS के नियंत्रण बिंदु (सभी, और समान रूप से फैला सेट), ISIS मिलान-सूची, हर मिलान उसके अवशेष और trust स्थिति के साथ, trust map और रिपोर्ट।',
+  sqH:'वर्ग {s}', sqV:'सत्यापित', sqW:'कमज़ोर', sqN:'कोई साक्ष्य नहीं', sqInl:'inliers, यहाँ के कच्चे मिलानों में से', sqLir:'स्थानीय inlier अनुपात', sqNcc:'क्षेत्र-जाँच, शिखर पर सहसंबंध', sqRes:'माध्यिका inlier अवशेष', sqGrid:'संदर्भ ग्रिड',
+  sqNM:'माप योग्य नहीं', sqNoM:'कोई मिलान नहीं', sqNone:'कोई नहीं', sqMpp:'{g} m प्रति पिक्सेल', sqPx:'कोई ज़मीनी पैमाना नहीं, केवल पिक्सेल',
+  moved:'खिसकी', refl:'संदर्भ', mpp:'m प्रति पिक्सेल',
+  galReg:'यह क्या पंजीकृत करता है', galRef:'इसकी सीमाएँ, खुलकर', galSay:'हर कार्ड एक वास्तविक विंडो है, pipeline के सहेजे परिणाम के रूप में। एक चुनें: संरेखण देखें, हर वर्ग जाँचें, परिणाम डाउनलोड करें।',
+  galLine:'64 में से {v} वर्ग सत्यापित',
+  offline:'यह प्रति स्थिर (static) है: यह ऊपर के सहेजे परिणाम खोलती है और डाउनलोड करने देती है, पर Python नहीं चला सकती।',
+  ctaLive:'लाइव workbench खोलें', ctaLiveT:'वही pipeline एक मुफ़्त क्लाउड CPU पर चलती है। अपनी छवियाँ डालें या कोई वास्तविक जोड़ी फिर से चलाएँ। अगर वह सो रहा हो तो जागने में लगभग एक मिनट लगता है।',
+  ctaLocal:'या अपने लैपटॉप पर, ऑफ़लाइन, बिना GPU:',
+  live:'<b>लाइव।</b> हर run इसी मशीन के CPU पर <code>core.pipeline.run_all</code> है, वही फ़ंक्शन जिसके पीछे हर स्थिर आँकड़ा है, कोड कमिट {c} पर। आप जो भेजते हैं वह रखा नहीं जाता।',
+  pillLive:'इस मशीन पर लाइव', pillSaved:'केवल सहेजे परिणाम', galhLive:'वास्तविक जोड़ियाँ, लाइव चलाएँ',
+  libLive:'इस मशीन पर {n} विंडो, चंद्रयान-2, LRO और Kaguya से। किसी को चुनें और उसकी फ़ाइलों से उसे लाइव फिर चलाएँ।',
+  savedLine:'स्थिर साक्ष्य से सहेजा गया परिणाम।', all:'सभी',
+  stSend:'भेजा जा रहा है', stWait:'पिछले run की प्रतीक्षा', stPrep:'CPU पर pipeline चल रही है', stCheck:'MAGSAC++ फ़िट और क्षेत्र-जाँच', stPack:'परिणाम बनाया जा रहा है', stDone:'पूरा', stMatch:'LoFTR मिलान, टाइल {d} में से {t}', stWork:'काम जारी', stNot:'पंजीकृत नहीं',
+  alPair:'<em>{l}</em>। {s} हल्की छवि को तब तक खींचें जब तक वर्ग आपत्ति करना बंद न करें।', alScore:'{n} <small>64 में से वर्ग सहमत</small>',
+  alHere:'<b>जहाँ pipeline ने इसे रखा।</b>', alOff:'pipeline की जगह से <b>{x} px {xd}</b> और <b>{y} px {yd}</b> खिसका।', dR:'दाएँ', dL:'बाएँ', dD:'नीचे', dU:'ऊपर',
+  alOk:'संरेखित। इस जोड़ी पर असली जाँच: <b>64 में {v} वर्ग सत्यापित, स्वीकृत</b>, सूर्य 174° अलग होते हुए भी।', alGo:'चलते रहें। ज़मीन मिलते ही वर्ग सहमत होते हैं, छायाएँ कुछ भी करें।',
+  alRef:'matcher ने इसे यहाँ रखा, और लगभग कुछ सहमत नहीं। असली जाँच ने इसे अस्वीकार किया और phase-correlation fallback दिया, <b>घोषित रूप में</b>।', alNever:'कोई भी खिसकाव आज़माएँ: यह जोड़ी कभी संरेखित नहीं होती। matcher का उत्तर ऐसा ग़लत है जिसे खिसकाकर ठीक नहीं किया जा सकता।',
+  bandH:'सूर्य {a}° से {b}° अलग', bandS:'{f} NAC फ्रेमों से {n} विंडो', oOk:'पंजीकृत और स्वीकृत', oCaught:'विफल, और सिस्टम ने बताया', oFa:'सही, पर अस्वीकृत', oInc:'छवि आँक नहीं सकती', oMed:'प्रति विंडो inlier मिलानों की माध्यिका', oMiss:'विफल, और पकड़ा नहीं गया',
+  exQ:'सटीक सत्य के विरुद्ध, सूर्य {a}° अलग होने पर कृत्रिम LOLA प्रतिरूप पर: 60 m ग्रिड पर {v}।', exNo:'45° से आगे कोई सटीक-सत्य आँकड़ा नहीं दिया गया; REPORT.md का कृत्रिम वक्र वहीं रुकता है।',
+  axAz:'दिगंश में दोनों सूर्यों के बीच कोण', axInl:'प्रति विंडो inlier मिलान', axErr:'डाली गई त्रुटि का आकार, मीटर में', axFlag:'ग़लत चिह्नित',
+  rsA:'{p}%<small>वर्ग जिन्हें डाली गई घूर्णन या पैमाने की त्रुटि ने 2 px से आगे खिसकाया, अपनी सत्यापित स्थिति खो देते हैं ({r} में से {m}, {t} परीक्षणों में)</small>', rsB:'{p}%<small>वर्ग जिन्हें वही त्रुटियाँ 1 px से कम खिसकाती हैं, सत्यापित रहते हैं: यह सब कुछ अस्वीकार नहीं कर रहा</small>',
+  tlW:'विंडो {i}', tlAcc:'स्वीकृत', tlLim:'स्वीकृत, माप की सीमा पर', tlMed:'held-out माध्यिका', tlInl:'inliers, और inlier अनुपात', tlVer:'सत्यापित वर्ग', tlVd:'विंडो का निर्णय', tlSec:'CPU पर समय', tlOf:'64 में {v}',
+  snSay:'OHRC → TMC-2: <b>{a}</b>, OHRC → LRO NAC: <b>{b}</b>, NAC → TMC-2: <b>{c}</b>, और उसी TMC-2 पास पर IIRS: <b>{d}</b>। दोनों रास्ते {lm} m के loop RMS पर मिलते हैं (माध्यिका, अधिकतम {lx} m)। साथ ही, अगली कक्षा का OHRC, 40° अलग से देखा गया: <b>{e}</b>।',
+  snOpen:'खोलें: {l}', of:'{a} में से {b}', ldSay:'दिगंश OHRC के 20° के भीतर: <b>{a} में {b} विंडो स्वीकृत</b>, सूर्य {e}° तक ऊँचा। दिगंश 90° से अधिक दूर: <b>{c} में {d}</b>। हर गोला एक LRO छवि है; भरा भाग उसकी स्वीकृत विंडो का हिस्सा।',
+  axLdX:'सूर्य कितना घूमा (दिगंश में अंतर)', axLdY:'सूर्य कितना ऊँचा (उन्नयन में अंतर)',
+  knownH:'ज्ञात उत्तर के विरुद्ध', twinH:'क्या अवरक्त फ्रेम केवल धुंधला है? एक ही स्रोत, एक ही मानचित्र-उत्पाद के दो बैंडों के सामने।',
+  netO:'चंद्रयान-2 OHRC', netN:'LRO NAC', netT:'चंद्रयान-2 TMC-2', netI:'चंद्रयान-2 IIRS', netLoop:'loop: {m} m माध्यिका', netVp:'+ अगली कक्षा का OHRC, 40° अलग: {e}'
+};
+const t = (k, en) => (LANG === 'hi' && T[k] !== undefined) ? T[k] : en;
+const fill = (s, o) => String(s).replace(/\{(\w+)\}/g, (_, k) => (o[k] !== undefined ? o[k] : ''));
+const L = (m, k) => (LANG === 'hi' && m.hi && m.hi[k]) ? m.hi[k] : m[k];
+const ON_LANG = [];
+function applyLang(){
+  document.documentElement.lang = LANG;
+  $$('[data-t]').forEach(el => { if (el.dataset.en === undefined) el.dataset.en = el.innerHTML; el.innerHTML = (LANG === 'hi' && T[el.dataset.t] !== undefined) ? T[el.dataset.t] : el.dataset.en; });
+  $$('#lang span[data-l]').forEach(s => s.setAttribute('aria-current', String(s.dataset.l === LANG)));
+  ON_LANG.forEach(f => { try { f(); } catch (e) { console.error(e); } });
+}
+$('#lang').addEventListener('click', () => { LANG = LANG === 'hi' ? 'en' : 'hi'; try { localStorage.setItem('lx-lang', LANG); } catch (_) {} applyLang(); });
+
 function u16(b64){ const s = atob(b64), a = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) a[i] = s.charCodeAt(i); return new Uint16Array(a.buffer); }
 const DEM = u16(D.dem.b64), DN = D.dem.n;
 
@@ -670,21 +901,25 @@ const PAT = id => `<defs><pattern id="${id}w" width=".16" height=".16" patternUn
 const cellFill = (id, s) => s === 'verified' ? 'fill="#000" fill-opacity="0"' : s === 'weak' ? `fill="url(#${id}w)"` : `fill="url(#${id}n)"`;
 function collar(el){ el.querySelectorAll('.cols').forEach(e => { e.innerHTML = [...COLS].map(c => `<span>${c}</span>`).join(''); });
   el.querySelectorAll('.rows').forEach(e => { e.innerHTML = [1,2,3,4,5,6,7,8].map(n => `<span>${n}</span>`).join(''); }); }
-const LNAME = {src:'Image A, before', ref:'Image B, reference', warp:"The matcher's answer", blink:'Alternate with B', fb:'The fallback, delivered'};
-const cap = s => `<em>${esc(s.inst)}</em>` + (s.band ? `, ${esc(s.band)}` : '') + (s.gsd === 'unknown' ? '' : `, ${s.gsd} m per pixel`);
-const VIEWER = `<div class="viewer">
+const LNAME_EN = {src:'Image A, before', ref:'Image B, reference', warp:"The matcher's answer", blink:'Alternate with B', swipe:'Compare with B (swipe)', fb:'The fallback, delivered'};
+const lname = k => t('L' + k, LNAME_EN[k]);
+const cap = s => `<em>${esc(s.inst)}</em>` + (s.band ? `, ${esc(s.band)}` : '') + (s.gsd === 'unknown' ? '' : `, ${s.gsd} ${t('mpp', 'm per pixel')}`);
+const SW = (id, k) => `<svg viewBox="0 0 1 1" aria-hidden="true">${PAT(id + k)}<rect width="1" height="1" fill="#000"/>${k === 'v' ? '<rect x=".04" y=".04" width=".92" height=".92" fill="none" stroke="#fff" stroke-width=".06"/>' : `<rect width="1" height="1" ${cellFill(id + k, k === 'w' ? 'weak' : 'no_evidence')}/>`}</svg>`;
+const VIEWER = id => `<div class="viewer">
   <div class="col">
     <div class="plate">
       <div class="cols" aria-hidden="true"></div><div class="rows" aria-hidden="true"></div>
       <div class="pimg" tabindex="0" role="application" aria-label="Trust map. Arrow keys move between grid squares.">
         <img class="imA" alt=""><img class="imB" alt="" hidden>
         <svg class="grid" viewBox="0 0 8 8" preserveAspectRatio="none"></svg>
+        <div class="swipe" hidden></div>
       </div>
       <div class="rows r" aria-hidden="true"></div><div class="cols b" aria-hidden="true"></div>
     </div>
     <div class="tabs" role="group" aria-label="What the plate shows"></div>
-    <div class="row" style="justify-content:space-between"><label class="note"><input type="checkbox" class="gridon" checked> Show the squares</label><span class="note layname"></span></div>
-    <p class="note">Squares shown clear are verified: matches and pixels agree. Hatched squares are weak. Dotted squares had no matches, so nothing is claimed there. A square is verified only with at least 3 inliers, a local inlier ratio of 0.5 or more, and a correlation that peaks within 2 px at 0.3 or more.</p>
+    <div class="row" style="justify-content:space-between"><label class="note"><input type="checkbox" class="gridon" checked> <span data-t="gridon">Show the squares</span></label><span class="note layname"></span></div>
+    <div class="legend"><span>${SW(id, 'v')}<i data-t="lgV">verified: matches and pixels agree</i></span><span>${SW(id, 'w')}<i data-t="lgW">weak: measured, does not hold</i></span><span>${SW(id, 'n')}<i data-t="lgN">no evidence: nothing claimed</i></span></div>
+    <details class="more"><summary data-t="rule">The exact rule</summary><p data-t="ruleTxt">A square is verified only with at least 3 inliers, a local inlier ratio of 0.5 or more, and a correlation that peaks within 2 px at 0.3 or more.</p></details>
   </div>
   <div class="col">
     <div class="verdict"></div>
@@ -694,37 +929,44 @@ const VIEWER = `<div class="viewer">
     <div class="sq"></div>
     <div class="inputs"></div>
     <div class="twin" hidden></div>
+    <details class="more"><summary data-t="gloss">What the words mean</summary><dl>
+      <dt data-t="gHeld">held-out</dt><dd data-t="gHeldT">The 20% of matches the fit never saw; the median error on them, in pixels of the reference grid.</dd>
+      <dt data-t="gInl">inlier</dt><dd data-t="gInlT">A match that agrees with the transform MAGSAC++ fitted.</dd>
+      <dt data-t="gChk">area check</dt><dd data-t="gChkT">Correlates the aligned image with the reference in every square; it never reads a match, and it is the only step allowed to overrule the rest.</dd>
+      <dt data-t="gCs">cross-sensor</dt><dd data-t="gCsT">Two different instruments. Two images from one camera are the same sensor.</dd>
+      <dt data-t="gMm">multi-modal</dt><dd data-t="gMmT">Visible against infrared, or optical against elevation.</dd></dl></details>
   </div>
 </div>`;
 function makeViewer(root, id){
-  root.innerHTML = VIEWER; collar(root);
-  const q = s => root.querySelector(s), st = {m:null, cell:27, timer:null};
+  root.innerHTML = VIEWER(id); collar(root);
+  const q = s => root.querySelector(s), st = {m:null, cell:27, timer:null, layer:null, sx:50, drag:false};
   function drawGrid(){ let s = PAT(id); st.m.cells.forEach((c, i) => { const x = i % 8, y = (i - x) / 8;
     s += `<rect class="cell${i === st.cell ? ' on' : ''}" data-i="${i}" x="${x}" y="${y}" width="1" height="1" ${cellFill(id, c.s)}/>`; }); q('.grid').innerHTML = s; }
   function drawSquare(){
-    const m = st.m, c = m.cells[st.cell], s = {verified:'verified', weak:'weak', no_evidence:'no evidence'}[c.s], metres = typeof m.gsd === 'number';
-    q('.sq').innerHTML = `<h4>Square ${sqName(st.cell)}<span>${s}</span></h4><dl>
-      <dt>inliers, of raw matches here</dt><dd class="num">${fmt(c.n)} of ${fmt(c.raw)}</dd>
-      <dt>local inlier ratio</dt><dd class="num">${c.lir === null || c.lir === undefined ? (c.raw ? 'not measurable' : 'no matches') : c.lir.toFixed(2)}</dd>
-      <dt>area check, correlation at the peak</dt><dd class="num">${c.ncc === null ? 'not measurable' : (c.ncc > 0 ? '+' : '') + c.ncc.toFixed(2)}</dd>
-      <dt>median inlier residual</dt><dd class="num">${c.res === null ? 'none' : c.res.toFixed(2) + ' px' + (metres ? ' = ' + (c.res * m.gsd).toFixed(2) + ' m' : '')}</dd>
-      <dt>reference grid</dt><dd class="num">${metres ? m.gsd + ' m per pixel' : 'no ground scale, pixels only'}</dd></dl>`;
+    const m = st.m, c = m.cells[st.cell], s = {verified:t('sqV', 'verified'), weak:t('sqW', 'weak'), no_evidence:t('sqN', 'no evidence')}[c.s], metres = typeof m.gsd === 'number';
+    q('.sq').innerHTML = `<h4>${fill(t('sqH', 'Square {s}'), {s:sqName(st.cell)})}<span>${s}</span></h4><dl>
+      <dt>${t('sqInl', 'inliers, of raw matches here')}</dt><dd class="num">${fmt(c.n)} / ${fmt(c.raw)}</dd>
+      <dt>${t('sqLir', 'local inlier ratio')}</dt><dd class="num">${c.lir === null || c.lir === undefined ? (c.raw ? t('sqNM', 'not measurable') : t('sqNoM', 'no matches')) : c.lir.toFixed(2)}</dd>
+      <dt>${t('sqNcc', 'area check, correlation at the peak')}</dt><dd class="num">${c.ncc === null ? t('sqNM', 'not measurable') : (c.ncc > 0 ? '+' : '') + c.ncc.toFixed(2)}</dd>
+      <dt>${t('sqRes', 'median inlier residual')}</dt><dd class="num">${c.res === null ? t('sqNone', 'none') : c.res.toFixed(2) + ' px' + (metres ? ' = ' + (c.res * m.gsd).toFixed(2) + ' m' : '')}</dd>
+      <dt>${t('sqGrid', 'reference grid')}</dt><dd class="num">${metres ? fill(t('sqMpp', '{g} m per pixel'), {g:m.gsd}) : t('sqPx', 'no ground scale, pixels only')}</dd></dl>`;
   }
   function drawVerdict(){
     const m = st.m, v = vword(m);
     q('.plate').dataset.v = v.v;
-    q('.verdict').innerHTML = `<p class="vword ${v.v}">${v.w}${v.v === 'contradicted' ? ',<br>fallback declared' : ''}</p>
-      <p class="vsub"><em>${esc(m.label)}</em>. ${esc(m.sub)}</p>
-      <dl class="facts"><dt>squares</dt><dd>${countsSaid(m.counts)}</dd><dt>matches</dt><dd class="num">${fmt(m.inliers)} inliers of ${fmt(m.n_matches)}</dd>
-        <dt>time</dt><dd class="num">${m.seconds} s on the CPU</dd><dt>method</dt><dd>${esc(m.method)}</dd><dt>the check says</dt><dd>${esc(whySaid(m.why))}</dd></dl>`;
-    q('.gloss').innerHTML = m.plain;
+    q('.verdict').innerHTML = `<p class="vword ${v.v}">${v.w}${v.v === 'contradicted' && m.rescued ? ',<br>' + t('vFb', 'fallback declared') : ''}</p>
+      <p class="vplain">${vplain(m)}</p>
+      <p class="vsub"><em>${esc(L(m, 'label'))}</em>. ${esc(L(m, 'sub'))}</p>
+      <dl class="facts"><dt>${t('fSq', 'squares')}</dt><dd>${countsSaid(m.counts)}</dd><dt>${t('fMt', 'matches')}</dt><dd class="num">${fill(t('fInl', '{a} inliers of {b}'), {a:fmt(m.inliers), b:fmt(m.n_matches)})}</dd>
+        <dt>${t('fTime', 'time')}</dt><dd class="num">${fill(t('fSec', '{s} s on the CPU'), {s:m.seconds})}</dd><dt>${t('fMeth', 'method')}</dt><dd>${esc(m.method)}</dd><dt>${t('fWhy', 'the check says')}</dt><dd>${esc(whySaid(m.why))}</dd></dl>`;
+    q('.gloss').innerHTML = L(m, 'plain');
   }
   function drawKnown(){
     const k = st.m.known, el = q('.known');
     if (!k){ el.hidden = true; el.innerHTML = ''; return; }
     el.hidden = false; const e = k.err_final, g = k.got, w = k.want, f = (v, n) => v === null || v === undefined ? '–' : Number(v).toFixed(n);
     const row = (l, a, b) => `<tr><td>${l}</td><td class="num">${a}</td><td class="num">${b}</td></tr>`;
-    el.innerHTML = `<h4>Against the known answer</h4>
+    el.innerHTML = `<h4>${t('knownH', 'Against the known answer')}</h4>
       <p class="kbig num">${e ? f(e.rms, 2) + ' px' : 'No transform'}<small>${e ? `RMS distance between where the delivered transform and the true one send a 20 × 20 grid over your image; ${f(e.max, 2)} px at worst. Your image has no ground scale, so this is in its pixels, not metres.` : 'The pipeline delivered no transform, so there is nothing to measure.'}</small></p>
       <div style="overflow-x:auto"><table><thead><tr><th></th><th>asked for</th><th>recovered</th></tr></thead><tbody>
       ${row('rotation', f(w.rot, 2) + '°', g ? f(g.rot, 2) + '°' : '–')}${row('scale', f(w.scale, 3), g ? f(g.scale, 3) : '–')}
@@ -736,17 +978,18 @@ function makeViewer(root, id){
     const m = st.m, el = q('.dl');
     if (!m.bundle){ el.hidden = true; el.innerHTML = ''; return; }
     el.hidden = false;
-    el.innerHTML = `<a class="btn" href="${m.bundle}" download>Download the result (.zip)</a>
-      <p class="fine">The registered image on the reference grid (GeoTIFF when the reference has a map), every match with its residual and trust state, control points for GDAL and QGIS, an ISIS match list, the trust map and a report.</p>`;
+    el.innerHTML = `<a class="btn" href="${m.bundle}" download>${t('dl', 'Download this result (.zip)')}</a>
+      <p class="fine">${t('dlT', 'The registered image on the reference grid (GeoTIFF), control points for GDAL and QGIS (every one, and a set spread evenly over the image), an ISIS match list, every match with its residual and trust state, the trust map and a report.')}</p>`;
+    el.querySelector('a').addEventListener('click', () => setStep(4));
   }
   function drawInputs(){ const m = st.m;
-    q('.inputs').innerHTML = `<figure><img src="${layerImg(m, 'src')}" alt="Image A: ${esc(m.a.inst)}"><figcaption>Moved: ${cap(m.a)}</figcaption></figure>
-      <figure><img src="${layerImg(m, 'ref')}" alt="Image B: ${esc(m.b.inst)}"><figcaption>Reference: ${cap(m.b)}</figcaption></figure>`; }
+    q('.inputs').innerHTML = `<figure><img src="${layerImg(m, 'src')}" alt="Image A: ${esc(m.a.inst)}"><figcaption>${t('moved', 'Moved')}: ${cap(m.a)}</figcaption></figure>
+      <figure><img src="${layerImg(m, 'ref')}" alt="Image B: ${esc(m.b.inst)}"><figcaption>${t('refl', 'Reference')}: ${cap(m.b)}</figcaption></figure>`; }
   function drawTwin(){
     const w = st.m.twin, el = q('.twin');
     if (!w){ el.hidden = true; el.innerHTML = ''; return; }
     el.hidden = false; const row = (l, a, b) => `<tr><td>${l}</td><td>${a}</td><td>${b}</td></tr>`, sh = (w.a.sharp / w.b.sharp).toFixed(1);
-    el.innerHTML = `<h4>Is the infrared frame only blurrier? The same source against two bands of the same map product.</h4>
+    el.innerHTML = `<h4>${t('twinH', 'Is the infrared frame only blurrier? The same source against two bands of the same map product.')}</h4>
       <div style="overflow-x:auto"><table><thead><tr><th></th><th>${w.other_band}</th><th>${w.band}</th></tr></thead><tbody>
       ${row('reference grid', w.a.gsd + ' m', w.b.gsd + ' m')}${row('fine detail', w.a.sharp, w.b.sharp + ', ' + sh + '× less')}
       ${row('matches found', fmt(w.a.matches), fmt(w.b.matches))}${row('inliers', fmt(w.a.inliers), fmt(w.b.inliers))}
@@ -754,15 +997,23 @@ function makeViewer(root, id){
       ${row('verdict', w.a.verdict + ', ' + w.a.med + ' px', w.b.verdict)}
       ${w.fallback_px !== null ? row('fallback against the visible fit', 'none', w.fallback_px + ' px = ' + w.fallback_m + ' m') : ''}</tbody></table></div>`;
   }
+  function swipeAt(x){ st.sx = Math.max(0, Math.min(100, x)); q('.imB').style.clipPath = `inset(0 0 0 ${st.sx}%)`; q('.swipe').style.left = `calc(${st.sx}% - 1px)`; }
   function setLayer(l){
     const m = st.m; if (!m.layers.some(x => x.k === l)) l = 'ref';
-    clearInterval(st.timer); st.timer = null;
+    clearInterval(st.timer); st.timer = null; st.layer = l;
     root.querySelectorAll('.tabs button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.l === l)));
-    const Ai = q('.imA'), Bi = q('.imB'); Ai.src = l === 'blink' ? layerImg(m, 'ref') : layerImg(m, l); Ai.alt = LNAME[l];
-    const w = layerImg(m, 'warp'); if (w) Bi.src = w; Bi.hidden = true;
-    q('.layname').textContent = l === 'blink' ? 'If they are aligned, nothing jumps.' : (!m.ok && l === 'warp') ? 'The answer the check refused.' : '';
+    const Ai = q('.imA'), Bi = q('.imB'), two = l === 'blink' || l === 'swipe';
+    Ai.src = two ? layerImg(m, 'ref') : layerImg(m, l); Ai.alt = lname(l);
+    const w = layerImg(m, 'warp'); if (w) Bi.src = w; Bi.hidden = l !== 'swipe'; Bi.style.clipPath = '';
+    q('.swipe').hidden = l !== 'swipe'; q('.pimg').classList.toggle('swiping', l === 'swipe');
+    if (l === 'swipe') swipeAt(st.sx);
+    q('.layname').textContent = l === 'blink' ? t('lnBlink', 'If they are aligned, nothing jumps.') : l === 'swipe' ? t('lnSwipe', 'Drag the line: the reference on the left, the aligned image on the right.') : (!m.ok && l === 'warp') ? t('lnRef', 'The answer the check refused.') : '';
     if (l === 'blink') st.timer = setInterval(() => { Bi.hidden = !Bi.hidden; }, reduce ? 1600 : 650);
   }
+  { const pim = q('.pimg'), at = e => { const r = pim.getBoundingClientRect(); return (e.clientX - r.left) / r.width * 100; };
+    pim.addEventListener('pointerdown', e => { if (st.layer !== 'swipe') return; st.drag = true; try { pim.setPointerCapture(e.pointerId); } catch (_) {} swipeAt(at(e)); });
+    pim.addEventListener('pointermove', e => { if (st.drag) swipeAt(at(e)); });
+    ['pointerup', 'pointercancel'].forEach(k => pim.addEventListener(k, () => { st.drag = false; })); }
   function pickCell(i){ if (i === st.cell || i < 0 || i > 63) return; st.cell = i; root.querySelectorAll('.grid .cell').forEach((r, k) => r.classList.toggle('on', k === i)); drawSquare(); }
   ['pointerover','click'].forEach(t => q('.grid').addEventListener(t, e => { const r = e.target.closest('.cell'); if (r) pickCell(+r.dataset.i); }));
   q('.pimg').addEventListener('keydown', e => { const d = {ArrowLeft:-1, ArrowRight:1, ArrowUp:-8, ArrowDown:8}[e.key]; if (!d) return; e.preventDefault();
@@ -770,11 +1021,12 @@ function makeViewer(root, id){
   q('.gridon').addEventListener('change', e => q('.pimg').classList.toggle('nogrid', !e.target.checked));
   return {
     show(m, cell){
-      st.m = m; st.cell = cell !== undefined ? cell : (m.cells.findIndex(c => c.s === 'weak') >= 0 ? m.cells.findIndex(c => c.s === 'weak') : 27);
-      q('.tabs').innerHTML = m.layers.map(l => `<button type="button" data-l="${l.k}" aria-pressed="false">${LNAME[l.k] || esc(l.n)}</button>`).join('');
+      const same = st.m === m; st.m = m; if (!same) st.layer = null; st.cell = cell !== undefined ? cell : (m.cells.findIndex(c => c.s === 'weak') >= 0 ? m.cells.findIndex(c => c.s === 'weak') : 27);
+      const keep = same && st.layer;
+      q('.tabs').innerHTML = m.layers.map(l => `<button type="button" data-l="${l.k}" aria-pressed="false">${lname(l.k) || esc(l.n)}</button>`).join('');
       root.querySelectorAll('.tabs button').forEach(b => { b.onclick = () => setLayer(b.dataset.l); });
       drawGrid(); drawSquare(); drawVerdict(); drawKnown(); drawDl(); drawInputs(); drawTwin();
-      setLayer(m.ok ? 'blink' : (m.layers.some(x => x.k === 'warp') ? 'warp' : 'ref'));
+      setLayer(keep ? st.layer : m.ok ? (m.layers.some(x => x.k === 'swipe') ? 'swipe' : 'blink') : (m.layers.some(x => x.k === 'warp') ? 'warp' : 'ref'));
     },
     stop(){ clearInterval(st.timer); st.timer = null; }
   };
@@ -783,7 +1035,8 @@ function makeViewer(root, id){
 /* ================= the workbench =================
    Live when web/server.py is serving this page: every run is core.pipeline.run_all on this CPU.
    Anywhere else the page cannot run Python, says so, and opens the saved runs instead. */
-const B = {live:false, health:null, busy:false, runs:[], cur:-1, lib:[], group:'all', files:{a:null, b:null, k:null}, kimg:null, maxBytes:0};
+const B = {live:false, health:null, busy:false, runs:[], cur:-1, curId:null, lib:[], group:'all', files:{a:null, b:null, k:null}, kimg:null, maxBytes:0};
+function setStep(n){ $$('#steps li').forEach(li => { const s = +li.dataset.s; li.dataset.on = String(s === n); li.dataset.done = String(s < n); }); }
 const bview = makeViewer($('#bview'), 'bv');
 const mb = n => n < 1048576 ? Math.max(1, Math.round(n / 1024)) + ' KB' : (n / 1048576).toFixed(1) + ' MB';
 const isPic = f => /\.(png|jpe?g)$/i.test(f.name);
@@ -876,7 +1129,8 @@ $('#goKnown').onclick = async () => {
 };
 
 /* --- running a job and following it --- */
-const STAGE = {queued:'Sending', wait:'Waiting for the run before this one', prepare:'Running the pipeline on the CPU', check:'Fitting MAGSAC++ and running the area check', pack:'Drawing the result', done:'Done'};
+const STAGE_EN = {queued:['stSend','Sending'], wait:['stWait','Waiting for the run before this one'], prepare:['stPrep','Running the pipeline on the CPU'], check:['stCheck','Fitting MAGSAC++ and running the area check'], pack:['stPack','Drawing the result'], done:['stDone','Done']};
+const STAGE = new Proxy({}, {get: (_, k) => STAGE_EN[k] ? t(...STAGE_EN[k]) : undefined});
 function setBusy(b){ B.busy = b; $('#lib').setAttribute('aria-busy', String(b)); pairReady(); $('#goKnown').disabled = !(B.live && !b && B.files.k); }
 function inputFig(el, src, name){ el.outerHTML = src ? `<img id="${el.id}" src="${src}" alt="">` : `<div class="ph" id="${el.id}">${esc(name || '')}</div>`; }
 async function run(body, view){
@@ -895,7 +1149,7 @@ async function run(body, view){
     await new Promise(r => setTimeout(r, 700));
     let j; try { j = await (await fetch('api/jobs/' + job.id)).json(); } catch (e) { return fail(`Lost the server while it was working (${e.message}).`); }
     if (j.error && j.state !== 'running') return fail(j.error);
-    if (j.stage === 'match' && j.total){ $('#rstage').textContent = `Matching with LoFTR, tile ${j.done} of ${j.total}`; $('#rbar').classList.add('det'); $('#rbar i').style.width = (100 * j.done / j.total) + '%'; }
+    if (j.stage === 'match' && j.total){ $('#rstage').textContent = fill(t('stMatch', 'Matching with LoFTR, tile {d} of {t}'), {d:j.done, t:j.total}); $('#rbar').classList.add('det'); $('#rbar i').style.width = (100 * j.done / j.total) + '%'; }
     else $('#rstage').textContent = STAGE[j.stage] || 'Working';
     if (j.state === 'done'){ clearInterval(tick); setBusy(false);
       const secs = ((performance.now() - t0) / 1000).toFixed(1);
@@ -903,13 +1157,16 @@ async function run(body, view){
   }
 }
 function addRun(m, line){
+  const k = B.runs.findIndex(x => x.m === m); if (k >= 0) return showRun(k);
   B.runs.unshift({m, line}); $('#runs').hidden = false; showRun(0);
 }
-function showRun(i){
+function showRun(i, quiet){
   B.cur = i; const r = B.runs[i];
   $('#runList').innerHTML = B.runs.map((x, k) => { const v = vword(x.m);
-    return `<li><button type="button" data-k="${k}" aria-current="${k === i}"><em>${esc(x.m.label)}</em><b class="${v.v}">${v.w}</b><small>${esc(x.m.sub)}</small></button></li>`; }).join('');
-  $('#rsay').textContent = r.line; panel('result'); bview.show(r.m);
+    return `<li><button type="button" data-k="${k}" aria-current="${k === i}"><em>${esc(L(x.m, 'label'))}</em><b class="${v.v}">${v.w}</b><small>${esc(L(x.m, 'sub'))}</small></button></li>`; }).join('');
+  $('#rsay').innerHTML = `<span class="rv">${vplain(r.m)}</span><small>${esc(typeof r.line === 'function' ? r.line() : r.line)}</small>`;
+  if (quiet){ ['empty','running','result'].forEach(k => { $('#' + k).hidden = k !== 'result'; }); } else panel('result');
+  bview.show(r.m); setStep(3);
 }
 $('#runList').addEventListener('click', e => { const b = e.target.closest('button'); if (b) showRun(+b.dataset.k); });
 
@@ -917,9 +1174,20 @@ $('#runList').addEventListener('click', e => { const b = e.target.closest('butto
 function drawChips(){
   const groups = {}; B.lib.forEach(e => { groups[e.group] = (groups[e.group] || 0) + 1; });
   const order = Object.entries(groups).sort((a, b) => b[1] - a[1]);
-  $('#chips').innerHTML = [['all', B.lib.length], ...order].map(([g, n]) => `<button type="button" data-g="${esc(g)}" aria-pressed="${g === B.group}">${g === 'all' ? 'All' : esc(g)} <span class="num">${n}</span></button>`).join('');
+  $('#chips').innerHTML = [['all', B.lib.length], ...order].map(([g, n]) => `<button type="button" data-g="${esc(g)}" aria-pressed="${g === B.group}">${g === 'all' ? t('all', 'All') : esc(g)} <span class="num">${n}</span></button>`).join('');
+}
+function drawGallery(){
+  const card = e => { const m = e.saved, v = vword(m);
+    return `<button type="button" data-id="${esc(e.id)}" data-v="${v.v}" aria-current="${B.curId === e.id}"><img src="${e.thumb}" alt="" loading="lazy" width="200" height="200"><em>${esc(L(m, 'label'))}</em>`
+      + `<small><b class="${v.v}">${v.w}</b> · ${fill(t('galLine', '{v} of 64 squares verified'), {v:m.counts.verified})}</small></button>`; };
+  const reg = B.lib.filter(e => !e.saved.limit), ref = B.lib.filter(e => e.saved.limit);
+  $('#lib').className = '';
+  $('#lib').innerHTML = `<h3 class="galh">${t('galReg', 'What it registers')} <small>${reg.length}</small></h3><div class="gal">${reg.map(card).join('')}</div>`
+    + `<h3 class="galh">${t('galRef', 'Its limits, shown')} <small>${ref.length}</small></h3><div class="gal">${ref.map(card).join('')}</div>`;
 }
 function drawLib(){
+  if (!B.live) return drawGallery();
+  $('#lib').className = 'lib';
   const list = B.lib.filter(e => B.group === 'all' || e.group === B.group);
   $('#lib').innerHTML = list.map(e => `<button type="button" data-id="${esc(e.id)}"${e.v ? ` data-v="${e.v}"` : ''} title="${esc(e.label)}">
     <img src="${e.thumb}" alt="" loading="lazy" width="120" height="120"><span>${esc(e.group)}${e.window ? ', w' + String(e.window).padStart(2, '0') : ''}</span><small>${esc(e.tag)}${e.v ? ', ' + vword(e.saved).w.toLowerCase() : ''}</small></button>`).join('');
@@ -928,33 +1196,42 @@ $('#chips').addEventListener('click', e => { const b = e.target.closest('button'
 $('#lib').addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b || B.busy) return;
   const x = B.lib.find(l => l.id === b.dataset.id); if (!x) return;
-  if (x.saved) return addRun(x.saved, 'The saved run from the frozen evidence. Nothing ran just now: this copy of the page cannot run Python.');
+  B.curId = x.id; $$('#lib button').forEach(k => k.setAttribute('aria-current', String(k === b)));
+  if (x.saved) return addRun(x.saved, () => t('savedLine', 'The saved result from the frozen evidence, measured at commit ' + D.freeze + '.'));
   run({mode:'sample', id:x.id}, {a:`api/thumb/${x.id}_source.jpg`, b:x.thumb, an:x.a, bn:x.b, title:`${x.label}, window ${String(x.window || '').padStart(2, '0')}, run live from its files`, note:''});
 });
 
 /* --- saved results only, until the server answers --- */
 const SHORT = s => s.replace('Chandrayaan-2 ', '').replace('LRO LROC ', '').replace('LRO ', '').replace('SELENE (Kaguya) Terrain Camera', 'Kaguya TC').replace('SELENE (Kaguya) Multiband Imager', 'Kaguya MI').replace('SELENE (Kaguya) ', 'Kaguya ');
+function staticTexts(){
+  $('#pill').className = 'pill'; $('#pill span').textContent = t('pillSaved', 'Saved results only');
+  $('#status').innerHTML = t('offline', 'This copy is static: it opens the saved results above and lets you download them, but it cannot run Python.');
+  $('#ownCta').innerHTML = (D.live ? `<a class="go" href="${esc(D.live)}" target="_blank" rel="noopener">${t('ctaLive', 'Open the live workbench')} \u2197</a><p class="fine">${t('ctaLiveT', 'The same pipeline on a free cloud CPU. Drop in your own images or re-run a real pair. If it has been asleep it takes about a minute to wake.')}</p>` : '')
+    + `<p class="fine">${t('ctaLocal', 'Or on your laptop, offline, no GPU:')}</p><pre class="cmd">git clone ${esc(D.repo)}\ncd sih26166\npip install -r requirements.txt\npython -m core.fetch_weights\npython -m web.server</pre>`;
+  $('#libSay').textContent = t('galSay', 'Each card is one real window, as the pipeline returned it. Pick one: see it align, check every square, download the result.');
+}
 function offline(){
-  B.live = false; $('#pill').className = 'pill'; $('#pill span').textContent = 'Saved results only';
-  $('#status').innerHTML = `This copy of the page cannot run the pipeline: LoFTR and MAGSAC++ are Python, and a web page cannot run them. The pairs below open their saved results. To register your own images, run <code>python -m web.server</code> on a laptop with the project and open the address it prints.`;
-  $('#mPair').classList.add('dis'); $('#mKnown').classList.add('dis');
-  B.lib = D.maps.map((m, i) => ({id:'saved' + i, label:m.label, group:SHORT(m.label), tag:m.tag.toLowerCase(), thumb:layerImg(m, 'ref'), saved:m, v:vword(m).v, window:null}));
-  $('#libTitle').textContent = 'Real pairs, saved runs'; $('#libSay').textContent = `The ${D.maps.length} pairs from the evidence, one per instrument pairing, as the pipeline returned them.`;
-  $('#chips').innerHTML = ''; drawLib();
+  B.live = false; $('#deck').classList.remove('live');
+  $('.modes').hidden = true; $('#mPair').hidden = true; $('#mKnown').hidden = true; $('#ownCta').hidden = false;
+  B.lib = D.maps.map((m, i) => ({id:'saved' + i, saved:m, thumb:layerImg(m, 'ref'), v:vword(m).v}));
+  $('#chips').innerHTML = ''; staticTexts(); drawGallery();
 }
 offline();
-fetch('api/health').then(r => r.ok ? r.json() : null).then(async h => {
+ON_LANG.push(() => { if (!B.live){ staticTexts(); B.lib.forEach(e => { e.v = vword(e.saved).v; }); } drawLib(); if (B.cur >= 0 && !$('#result').hidden) showRun(B.cur, true); });
+(location.protocol === 'file:' ? Promise.reject() : fetch('api/health')).then(r => r.ok ? r.json() : null).then(async h => {
   if (!h || h.service !== 'lunaxx-console') return;
   B.live = true; B.health = h; B.maxBytes = Number(h.max_bytes) || 0;
-  $('#pill').className = 'pill on'; $('#pill span').textContent = 'Live on this laptop';
-  $('#status').innerHTML = `Live. Every run is <code>core.pipeline.run_all</code> on this laptop's CPU, the same function behind every frozen number, at code commit ${esc(h.commit)}. Nothing you send is kept.`;
+  const liveTexts = () => { $('#pill').className = 'pill on'; $('#pill span').textContent = t('pillLive', 'Live on this machine');
+    $('#status').innerHTML = fill(t('live', '<b>Live.</b> Every run is <code>core.pipeline.run_all</code> on this machine\'s CPU, the same function behind every frozen number, at code commit {c}. Nothing you send is kept.'), {c:esc(h.commit)}); };
+  liveTexts(); ON_LANG.push(liveTexts);
+  $('#deck').classList.add('live'); $('.modes').hidden = false; $('#ownCta').hidden = true; setMode('pair');
+  const lt = $('#libTitle'); lt.dataset.t = 'galhLive'; lt.dataset.en = 'Real pairs, run live'; lt.innerHTML = t('galhLive', 'Real pairs, run live');
   $('#mPair').classList.remove('dis'); $('#mKnown').classList.remove('dis');
   try {
     const L = (await (await fetch('api/library')).json()).pairs || [];
     if (!L.length){ $('#libSay').textContent = 'No real pairs on this machine: data/pairs/ is empty. They live in the team Drive, not in git.'; B.lib = []; drawLib(); return; }
     B.lib = L.map(e => ({...e, thumb:`api/thumb/${e.id}.jpg`}));
-    $('#libTitle').textContent = 'Real pairs';
-    $('#libSay').textContent = `${L.length} windows on this laptop, from Chandrayaan-2, LRO and Kaguya. Pick one to run it again, live, from its files.`;
+    $('#libSay').textContent = fill(t('libLive', '{n} windows on this machine, from Chandrayaan-2, LRO and Kaguya. Pick one to run it again, live, from its files.'), {n:L.length});
     B.group = 'all'; drawChips(); drawLib();
   } catch (e) { $('#libSay').textContent = 'Could not list the real pairs: ' + e.message; }
   pairReady();
@@ -987,17 +1264,18 @@ fetch('api/health').then(r => r.ok ? r.json() : null).then(async h => {
       s += `<rect x="${cxx}" y="${cy}" width="1" height="1" fill="${st === 'v' ? 'none' : st === 'w' ? 'url(#aw)' : 'url(#an)'}" stroke="rgba(255,255,255,.35)" stroke-width="1" vector-effect="non-scaling-stroke"/>`;
     }
     grid.innerHTML = s;
-    $('#ascore').innerHTML = `${ok} <small>of 64 squares agree</small>`;
+    $('#ascore').innerHTML = fill(t('alScore', '{n} <small>of 64 squares agree</small>'), {n:ok});
     const r = Math.hypot(ox, oy), m = A.pairs[A.p];
-    $('#aoff').innerHTML = r < .5 ? '<b>Where the pipeline put it.</b>' : `Shifted <b>${Math.abs(ox)} px ${ox > 0 ? 'right' : 'left'}</b> and <b>${Math.abs(oy)} px ${oy > 0 ? 'down' : 'up'}</b> from where the pipeline put it.`;
+    $('#aoff').innerHTML = r < .5 ? t('alHere', '<b>Where the pipeline put it.</b>') : fill(t('alOff', 'Shifted <b>{x} px {xd}</b> and <b>{y} px {yd}</b> from where the pipeline put it.'),
+      {x:Math.abs(ox), xd:ox > 0 ? t('dR', 'right') : t('dL', 'left'), y:Math.abs(oy), yd:oy > 0 ? t('dD', 'down') : t('dU', 'up')});
     $('#asay').innerHTML = A.p === 0
-      ? (r < .5 ? `Aligned. The real check on this pair: <b>${m.counts.verified} of 64 squares verified, accepted</b>, with the Suns 174° apart.` : 'Keep going. The squares agree when the ground lines up, whatever the shadows do.')
-      : (r < .5 ? 'This is where the matcher put it, and almost nothing agrees. The real check refused it and delivered a phase-correlation fallback instead, <b>declared as one</b>.' : 'Try any shift you like: this pair never lines up. The matcher’s answer is wrong in a way that sliding cannot fix.');
+      ? (r < .5 ? fill(t('alOk', 'Aligned. The real check on this pair: <b>{v} of 64 squares verified, accepted</b>, with the Suns 174° apart.'), {v:m.counts.verified}) : t('alGo', 'Keep going. The squares agree when the ground lines up, whatever the shadows do.'))
+      : (r < .5 ? t('alRef', 'This is where the matcher put it, and almost nothing agrees. The real check refused it and delivered a phase-correlation fallback instead, <b>declared as one</b>.') : t('alNever', 'Try any shift you like: this pair never lines up. The matcher’s answer is wrong in a way that sliding cannot fix.'));
   }
   let raf = 0; const ask = () => { if (!raf) raf = requestAnimationFrame(() => { raf = 0; mov.style.transform = `translate(${A.ox / A.n * 100}%, ${A.oy / A.n * 100}%)`; score(); }); };
   async function load(p){
     A.p = p; const m = A.pairs[p]; ref.src = layerImg(m, 'ref'); mov.src = layerImg(m, 'warp') || layerImg(m, 'src');
-    $('#apair').innerHTML = `<em>${m.label}</em>. ${m.sub} Drag the paler image until the squares stop objecting.`;
+    $('#apair').innerHTML = fill(t('alPair', '<em>{l}</em>. {s} Drag the paler image until the squares stop objecting.'), {l:esc(L(m, 'label')), s:esc(L(m, 'sub'))});
     $('#apA').setAttribute('aria-pressed', String(p === 0)); $('#apR').setAttribute('aria-pressed', String(p === 1));
     [A.ref, A.mov] = await Promise.all([grey(ref.src), grey(mov.src)]); scatter();
   }
@@ -1012,6 +1290,7 @@ fetch('api/health').then(r => r.ok ? r.json() : null).then(async h => {
   stage.addEventListener('keydown', e => { const d = {ArrowLeft:[-1,0], ArrowRight:[1,0], ArrowUp:[0,-1], ArrowDown:[0,1]}[e.key]; if (!d) return; e.preventDefault(); A.ox += d[0]; A.oy += d[1]; ask(); });
   $('#apA').onclick = () => load(0); $('#apR').onclick = () => load(1);
   $('#asnap').onclick = snap; $('#ascat').onclick = scatter;
+  ON_LANG.push(() => { const m = A.pairs[A.p]; $('#apair').innerHTML = fill(t('alPair', '<em>{l}</em>. {s} Drag the paler image until the squares stop objecting.'), {l:esc(L(m, 'label')), s:esc(L(m, 'sub'))}); score(); });
   load(0);
 }
 
@@ -1067,8 +1346,8 @@ function rose(){
     <text x="${pt(bAz, R0 - 8)[0]}" y="${pt(bAz, R0 - 8)[1] + 1.3}" text-anchor="middle" style="font:500 3.6px Jost;fill:#fff;paint-order:stroke;stroke:#000;stroke-width:.9px">B</text></g>`;
   $('#rose').innerHTML = s;
 }
-const OUT = {correct_accepted:['registered and accepted', '#000', 'dot'], caught_failure:['failed, and the system said so', HATCH, 'sq'],
-             false_alarm:['correct, but refused', '#000', 'dia'], inconclusive:['the image cannot judge', '#46463f', 'plus']};
+const OUT = {correct_accepted:['registered and accepted', '#000', 'dot', 'oOk'], caught_failure:['failed, and the system said so', HATCH, 'sq', 'oCaught'],
+             false_alarm:['correct, but refused', '#000', 'dia', 'oFa'], inconclusive:['the image cannot judge', '#46463f', 'plus', 'oInc']};
 const glyph = (k, x, y, r) => { const [, col, sh] = OUT[k];
   if (sh === 'dot') return `<circle cx="${x}" cy="${y}" r="${r}" fill="${col}"/>`;
   if (sh === 'sq') return `<rect x="${x-r}" y="${y-r}" width="${2*r}" height="${2*r}" fill="${col}"/>`;
@@ -1082,17 +1361,17 @@ function drawScatter(){
   let s = `<rect x="${sx(b.a)}" y="16" width="${sx(Math.min(b.b, 180)) - sx(b.a)}" height="246" fill="#000" fill-opacity=".08"/>`;
   [1, 10, 100, 1000, 10000].forEach((n, i) => { s += `<line x1="58" x2="548" y1="${sy(n)}" y2="${sy(n)}" stroke="#000" stroke-opacity=".18"/><text x="50" y="${sy(n) + 4}" font-size="12" text-anchor="end">${['1','10','100','1,000','10,000'][i]}</text>`; });
   for (let v = 0; v <= 180; v += 30) s += `<line x1="${sx(v)}" x2="${sx(v)}" y1="262" y2="267" stroke="#000"/><text x="${sx(v)}" y="283" font-size="12" text-anchor="middle">${v}°</text>`;
-  s += `<line x1="58" x2="548" y1="262" y2="262" stroke="#000"/><text x="303" y="305" font-size="13" text-anchor="middle">angle between the two Suns, in azimuth</text>
-    <text transform="translate(12,139) rotate(-90)" font-size="13" text-anchor="middle">inlier matches per window</text>`;
+  s += `<line x1="58" x2="548" y1="262" y2="262" stroke="#000"/><text x="303" y="305" font-size="13" text-anchor="middle">${t('axAz', 'angle between the two Suns, in azimuth')}</text>
+    <text transform="translate(12,139) rotate(-90)" font-size="13" text-anchor="middle">${t('axInl', 'inlier matches per window')}</text>`;
   D.sweep.forEach(p => { s += glyph(p.o, sx(p.az), sy(p.inl), 3.6); });
   s += `<line x1="${sx(Math.min(dz, 180))}" x2="${sx(Math.min(dz, 180))}" y1="10" y2="262" stroke="#000" stroke-width="1.4"/>`;
   $('#scatter').innerHTML = s;
   const o = b.o, g = k => o[k] || 0, ex = dz <= 52 ? EXACT.reduce((a, e) => Math.abs(e[0] - dz) < Math.abs(a[0] - dz) ? e : a) : null;
-  $('#band').innerHTML = `<h3>Suns ${b.a}° to ${b.b}° apart<span>${b.n} windows from ${b.frames} NAC frames</span></h3><dl>
-    ${['correct_accepted','caught_failure','false_alarm','inconclusive'].map(k => `<dt><i>${glyphHTML(k)}</i>${OUT[k][0]}</dt><dd class="num">${g(k)}</dd>`).join('')}
-    <dt>median inlier matches per window</dt><dd class="num">${fmt(b.inl)}</dd></dl>
-    <dl class="zero"><dt>failed, and not caught</dt><dd class="num">${g('missed_failure')}</dd></dl>`
-    + (ex ? `<p class="ex">Against exact truth, on a synthetic LOLA render with the Suns ${ex[0]}° apart: ${ex[1]} on the 60 m grid.</p>` : `<p class="ex">No exact-truth figure is quoted past 45°; the synthetic curve in REPORT.md stops there.</p>`);
+  $('#band').innerHTML = `<h3>${fill(t('bandH', 'Suns {a}° to {b}° apart'), {a:b.a, b:b.b})}<span>${fill(t('bandS', '{n} windows from {f} NAC frames'), {n:b.n, f:b.frames})}</span></h3><dl>
+    ${['correct_accepted','caught_failure','false_alarm','inconclusive'].map(k => `<dt><i>${glyphHTML(k)}</i>${t(OUT[k][3], OUT[k][0])}</dt><dd class="num">${g(k)}</dd>`).join('')}
+    <dt>${t('oMed', 'median inlier matches per window')}</dt><dd class="num">${fmt(b.inl)}</dd></dl>
+    <dl class="zero"><dt>${t('oMiss', 'failed, and not caught')}</dt><dd class="num">${g('missed_failure')}</dd></dl>`
+    + (ex ? `<p class="ex">${fill(t('exQ', 'Against exact truth, on a synthetic LOLA render with the Suns {a}° apart: {v} on the 60 m grid.'), {a:ex[0], v:ex[1]})}</p>` : `<p class="ex">${t('exNo', 'No exact-truth figure is quoted past 45°; the synthetic curve in REPORT.md stops there.')}</p>`);
   $('#dzv').textContent = Math.round(dz) + '°';
 }
 function setLit(v){ sun.alt = v === 'X'; if (v !== 'X') sun.lit = v; sun.dirty = true; [['A','#litA'],['B','#litB'],['X','#litX']].forEach(([k, id]) => $(id).setAttribute('aria-pressed', String(k === v))); }
@@ -1115,20 +1394,22 @@ function tick(t){
   requestAnimationFrame(tick);
 }
 requestAnimationFrame(tick);
+ON_LANG.push(() => { lastDz = -1; });
 
 /* ================= every pairing: the saved runs ================= */
 const pview = makeViewer($('#pview'), 'pv');
 let pcur = 0;
 const frameHTML = (m, i) => `<button type="button" class="frame" data-p="${i}" data-v="${vword(m).v}" aria-pressed="${i === pcur}">
   <span class="frame__img"><img src="${layerImg(m, 'ref')}" alt=""></span>
-  <span class="frame__cap"><em>${m.label}</em><small>${m.tag.toLowerCase()}, ${vword(m).w.toLowerCase()}</small></span></button>`;
+  <span class="frame__cap"><em>${esc(L(m, 'label'))}</em><small>${m.tag.toLowerCase()}, ${vword(m).w.toLowerCase()}</small></span></button>`;
 $('#sheet').innerHTML = D.maps.map(frameHTML).join('');
 function setPair(i){ pcur = i; $$('#sheet .frame').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.p === i))); pview.show(D.maps[i], i === 0 ? 27 : undefined); }
 $('#sheet').addEventListener('click', e => { const b = e.target.closest('.frame'); if (b) setPair(+b.dataset.p); });
 setPair(0);
+ON_LANG.push(() => { $('#sheet').innerHTML = D.maps.map(frameHTML).join(''); setPair(pcur); });
 
 /* ================= the check, tested ================= */
-{ const near = D.near, hard = D.hard, L = 58, R = 548, Tt = 24, B = 262, n = near.length, bw = (R - L) / n, y = p => B - p / 100 * (B - Tt);
+function drawCal(){ const near = D.near, hard = D.hard, L = 58, R = 548, Tt = 24, B = 262, n = near.length, bw = (R - L) / n, y = p => B - p / 100 * (B - Tt);
   let s = `<defs><pattern id="bh" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(-45)"><rect width="1.7" height="4" fill="#f4f4f1"/></pattern></defs>`;
   [0, 25, 50, 75, 100].forEach(p => { s += `<line x1="${L}" x2="${R}" y1="${y(p)}" y2="${y(p)}" stroke="#f4f4f1" stroke-opacity=".18"/><text x="${L - 8}" y="${y(p) + 4}" font-size="12" text-anchor="end" style="fill:#a9a9a3">${p}%</text>`; });
   near.forEach((d, i) => { const p = 100 * d.hit / d.n, cx = L + bw * (i + .5), h = hard.find(q => q.m === d.m), hp = h ? 100 * h.hit / h.n : null;
@@ -1136,35 +1417,89 @@ setPair(0);
       <text x="${cx}" y="${Math.min(y(p), hp !== null ? y(hp) - 7 : 1e9) - 8}" font-size="12.5" text-anchor="middle" style="fill:#f4f4f1">${Math.round(p)}%</text>
       <text x="${cx}" y="${B + 19}" font-size="12.5" text-anchor="middle" style="fill:#a9a9a3">${d.m}</text>`;
     if (hp !== null) s += `<path d="M${cx} ${y(hp) - 6}L${cx + 6} ${y(hp)}L${cx} ${y(hp) + 6}L${cx - 6} ${y(hp)}Z" fill="#0e0e0d" stroke="#f4f4f1" stroke-width="2"><title>${h.hit} of ${h.n} flagged at ${h.m} m, Suns 132 to 174 degrees apart</title></path>`; });
-  s += `<line x1="${L}" x2="${R}" y1="${B}" y2="${B}" stroke="#f4f4f1"/><text x="${(L + R) / 2}" y="${B + 44}" font-size="13" text-anchor="middle" style="fill:#a9a9a3">size of the planted error, in metres</text>
-    <text transform="translate(12,${(Tt + B) / 2}) rotate(-90)" font-size="13" text-anchor="middle" style="fill:#a9a9a3">flagged as wrong</text>`;
+  s += `<line x1="${L}" x2="${R}" y1="${B}" y2="${B}" stroke="#f4f4f1"/><text x="${(L + R) / 2}" y="${B + 44}" font-size="13" text-anchor="middle" style="fill:#a9a9a3">${t('axErr', 'size of the planted error, in metres')}</text>
+    <text transform="translate(12,${(Tt + B) / 2}) rotate(-90)" font-size="13" text-anchor="middle" style="fill:#a9a9a3">${t('axFlag', 'flagged as wrong')}</text>`;
   $('#calchart').innerHTML = s;
   const r = D.rotscale, a = 100 * r.refused / r.moved, b = 100 * r.kept / r.still;
-  $('#rs').innerHTML = `<p class="big num" style="font-size:clamp(38px,4vw,58px)">${a.toFixed(1)}%<small>of squares a planted rotation or scale error moved past 2 px lose their verified state (${fmt(r.refused)} of ${fmt(r.moved)}, over ${fmt(r.trials)} trials)</small></p>
-    <p class="big num" style="font-size:clamp(38px,4vw,58px)">${b.toFixed(1)}%<small>of squares the same errors moved by under 1 px stay verified: it is not simply refusing everything</small></p>`; }
+  $('#rs').innerHTML = `<p class="big num" style="font-size:clamp(38px,4vw,58px)">${fill(t('rsA', '{p}%<small>of squares a planted rotation or scale error moved past 2 px lose their verified state ({r} of {m}, over {t} trials)</small>'), {p:a.toFixed(1), r:fmt(r.refused), m:fmt(r.moved), t:fmt(r.trials)})}</p>
+    <p class="big num" style="font-size:clamp(38px,4vw,58px)">${fill(t('rsB', '{p}%<small>of squares the same errors moved by under 1 px stay verified: it is not simply refusing everything</small>'), {p:b.toFixed(1)})}</p>`; }
+drawCal(); ON_LANG.push(drawCal);
 
 /* ================= the whole overlap ================= */
-{ const T = D.tiles, w = T[0].w, pad = w * 1.4;
-  const x0 = Math.min(...T.map(t => t.x)) - pad, x1 = Math.max(...T.map(t => t.x)) + pad, y0 = Math.min(...T.map(t => t.y)) - pad - w, y1 = Math.max(...T.map(t => t.y)) + pad;
+{ const TL = D.tiles, w = TL[0].w, pad = w * 1.4;
+  const x0 = Math.min(...TL.map(q => q.x)) - pad, x1 = Math.max(...TL.map(q => q.x)) + pad, y0 = Math.min(...TL.map(q => q.y)) - pad - w, y1 = Math.max(...TL.map(q => q.y)) + pad;
   const k = 1000 / (x1 - x0), W = 1000, Hh = (y1 - y0) * k, X = v => (v - x0) * k, Y = v => (y1 - v) * k, svg = $('#tilemap');
   svg.setAttribute('viewBox', `0 0 ${W} ${Hh.toFixed(0)}`);
   let s = ''; const step = 2000;
   for (let gv = Math.ceil(x0 / step) * step; gv < x1; gv += step) s += `<line x1="${X(gv)}" x2="${X(gv)}" y1="0" y2="${Hh}" stroke="#f4f4f1" stroke-opacity=".14" vector-effect="non-scaling-stroke"/>`;
   for (let gv = Math.ceil(y0 / step) * step; gv < y1; gv += step) s += `<line y1="${Y(gv)}" y2="${Y(gv)}" x1="0" x2="${W}" stroke="#f4f4f1" stroke-opacity=".14" vector-effect="non-scaling-stroke"/>`;
-  T.forEach((t, i) => { const out = t.med > 3, op = Math.max(.14, Math.min(.85, 1.15 - t.med * .8));
-    s += `<rect class="t${out ? ' out' : ''}" data-i="${i}" x="${X(t.x - w/2) + w*k*.03}" y="${Y(t.y + w/2) + w*k*.03}" width="${w*k*.94}" height="${w*k*.94}" fill="#f4f4f1" fill-opacity="${out ? .04 : op.toFixed(2)}"/>`; });
+  TL.forEach((q, i) => { const out = q.med > 3, op = Math.max(.14, Math.min(.85, 1.15 - q.med * .8));
+    s += `<rect class="t${out ? ' out' : ''}" data-i="${i}" x="${X(q.x - w/2) + w*k*.03}" y="${Y(q.y + w/2) + w*k*.03}" width="${w*k*.94}" height="${w*k*.94}" fill="#f4f4f1" fill-opacity="${out ? .04 : op.toFixed(2)}"/>`; });
   const bx = 30, by = Hh - 28, L2 = 2000 * k;
   s += `<rect x="${bx}" y="${by - 6}" width="${L2/2}" height="6" fill="#f4f4f1"/><rect x="${bx + L2/2}" y="${by - 6}" width="${L2/2}" height="6" fill="none" stroke="#f4f4f1" vector-effect="non-scaling-stroke"/>
     <text x="${bx}" y="${by - 13}" font-size="22" style="fill:#f4f4f1;font-family:Jost">0</text><text x="${bx + L2}" y="${by - 13}" font-size="22" text-anchor="middle" style="fill:#f4f4f1;font-family:Jost">2 km</text>
     <text x="${W - 26}" y="${by}" font-size="22" text-anchor="end" style="fill:#a9a9a3;font-family:Jost">grid every 2 km, near 74.2°S 43.6°E</text>`;
   svg.innerHTML = s;
-  let cur = -1; const show = i => { if (i === cur || i < 0) return; cur = i; const t = T[i], out = t.med > 3;
+  let cur = -1; const show = (i, force) => { if ((i === cur && !force) || i < 0) return; cur = i; const q = TL[i], out = q.med > 3;
     svg.querySelectorAll('.t').forEach((r, kk) => r.classList.toggle('on', kk === i));
-    $('#tsquare').innerHTML = `<h4>Window ${t.id}<span>${out ? 'accepted, at the limit of the metric' : 'accepted'}</span></h4><dl>
-      <dt>held-out median</dt><dd class="num">${t.med.toFixed(2)} px = ${(t.med * .931).toFixed(2)} m</dd><dt>inliers, and the inlier ratio</dt><dd class="num">${fmt(t.inl)}, ${t.ratio.toFixed(3)}</dd>
-      <dt>squares verified</dt><dd class="num">${t.ver} of 64</dd><dt>verdict for the window</dt><dd>${t.verdict}</dd><dt>time on the CPU</dt><dd class="num">${t.sec} s</dd></dl>`; };
+    $('#tsquare').innerHTML = `<h4>${fill(t('tlW', 'Window {i}'), {i:q.id})}<span>${out ? t('tlLim', 'accepted, at the limit of the metric') : t('tlAcc', 'accepted')}</span></h4><dl>
+      <dt>${t('tlMed', 'held-out median')}</dt><dd class="num">${q.med.toFixed(2)} px = ${(q.med * .931).toFixed(2)} m</dd><dt>${t('tlInl', 'inliers, and the inlier ratio')}</dt><dd class="num">${fmt(q.inl)}, ${q.ratio.toFixed(3)}</dd>
+      <dt>${t('tlVer', 'squares verified')}</dt><dd class="num">${fill(t('tlOf', '{v} of 64'), {v:q.ver})}</dd><dt>${t('tlVd', 'verdict for the window')}</dt><dd>${q.verdict}</dd><dt>${t('tlSec', 'time on the CPU')}</dt><dd class="num">${q.sec} s</dd></dl>`; };
   ['pointerover','click'].forEach(ev => svg.addEventListener(ev, e => { const r = e.target.closest('.t'); if (r) show(+r.dataset.i); }));
-  show(T.findIndex(t => t.med > 3)); }
+  show(TL.findIndex(q => q.med > 3)); ON_LANG.push(() => show(cur, true)); }
+
+/* ================= one site, every camera (REPORT.md, Site N) =================
+   Four instruments as nodes and every registration as an arrow, drawn from the logged rows the
+   build summarised (D.siten): windows accepted of windows, and the held-out median on each leg's
+   reference grid. The buttons open the saved run of one window of each leg on the first page. */
+function legSay(g){ return g ? fill(t('of', '{b} of {a}'), {a:g.n, b:g.ok}) : '–'; }
+function legMed(g){ return g && g.med !== null ? `${g.med.toFixed(2)} px = ${(g.med * g.gsd).toFixed(1)} m` : ''; }
+function drawNet(){
+  const S = D.siten; if (!S || !S.ot) return;
+  const node = (x, y, a, b, hi) => `<g><rect x="${x - 112}" y="${y - 34}" width="224" height="68" rx="9" fill="${hi ? '#e9eef6' : '#ecebe7'}" stroke="#000" stroke-width="1.5"/>
+    <text x="${x}" y="${y - 6}" text-anchor="middle" font-size="17" font-weight="600" fill="#000">${a}</text><text x="${x}" y="${y + 16}" text-anchor="middle" font-size="14" fill="#262624">${b}</text></g>`;
+  const arrow = (x0, y0, x1, y1) => `<line x1="${x0}" y1="${y0}" x2="${x1}" y2="${y1}" stroke="#000" stroke-width="2.2" marker-end="url(#ah)"/>`;
+  const lab = (x, y, a, b, anchor) => `<text x="${x}" y="${y}" text-anchor="${anchor || 'middle'}" font-size="14.5" fill="#000" font-weight="600">${a}</text><text x="${x}" y="${y + 18}" text-anchor="${anchor || 'middle'}" font-size="13.5" fill="#262624">${b}</text>`;
+  let s = `<defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#000"/></marker></defs>`;
+  const mpp = g => g ? `${g} ${t('mpp', 'm per pixel')}` : '';
+  s += node(130, 70, t('netO', 'Chandrayaan-2 OHRC'), S.vp ? mpp(S.vp.gsd) : '', true) + node(510, 70, t('netN', 'LRO NAC'), mpp(S.on.gsd), false)
+     + node(130, 300, t('netT', 'Chandrayaan-2 TMC-2'), mpp(S.ot.gsd), true) + node(510, 300, t('netI', 'Chandrayaan-2 IIRS'), mpp(S.ti.gsd), true);
+  s += arrow(242, 70, 396, 70) + arrow(130, 104, 130, 264) + arrow(470, 104, 220, 264) + arrow(242, 300, 396, 300);
+  s += lab(320, 36, legSay(S.on), legMed(S.on)) + lab(142, 168, legSay(S.ot), legMed(S.ot), 'start')
+     + lab(378, 178, legSay(S.nt), legMed(S.nt), 'start') + lab(320, 340, legSay(S.ti), `${S.ti.lat[0]}–${S.ti.lat[1]}°N`);
+  if (S.loop) s += `<text x="320" y="390" text-anchor="middle" font-size="14" fill="#8f0050">${fill(t('netLoop', 'loop: {m} m median'), {m:S.loop.med.toFixed(2)})}</text>`;
+  $('#net').innerHTML = s;
+  $('#snsay').innerHTML = fill(t('snSay', 'OHRC → TMC-2: <b>{a}</b>, OHRC → LRO NAC: <b>{b}</b>, NAC → TMC-2: <b>{c}</b>, and IIRS along the same TMC-2 pass: <b>{d}</b>. The two routes meet with a loop RMS of {lm} m (median; max {lx} m). And the OHRC of the next orbit, seen 40° apart: <b>{e}</b>.'),
+    {a:legSay(S.ot), b:legSay(S.on), c:legSay(S.nt), d:legSay(S.ti), e:legSay(S.vp), lm:S.loop ? S.loop.med.toFixed(2) : '–', lx:S.loop ? S.loop.max.toFixed(2) : '–'});
+  const open = [['siten_ohrc2031_tmc20200607_c03', 'OHRC → TMC-2'], ['siten_nacm1282456834re_tmc20200607_c00', 'NAC → TMC-2'], ['chain_tmc20200607_iirs1555_w05', 'TMC-2 → IIRS'], ['siten_ohrc2031_ohrc2229_c15', 'OHRC → OHRC']];
+  $('#snbtn').innerHTML = open.filter(([id]) => D.maps.some(m => m.id === id)).map(([id, l]) => `<button type="button" class="btn" data-open="${id}">${fill(t('snOpen', 'Open {l}'), {l})}</button>`).join('');
+}
+$('#snbtn').addEventListener('click', e => { const b = e.target.closest('[data-open]'); if (!b) return; openSaved(b.dataset.open); });
+function openSaved(id){ const m = D.maps.find(mm => mm.id === id); if (!m) return; const x = B.lib.find(e => e.saved === m); location.hash = '#bench';
+  setTimeout(() => { if (x){ B.curId = x.id; drawLib(); } addRun(m, () => t('savedLine', 'The saved result from the frozen evidence, measured at commit ' + D.freeze + '.')); }, 30); }
+drawNet(); ON_LANG.push(drawNet);
+
+/* ================= the Sun raised: SAC's frame against LRO images chosen by their Sun ================= */
+function drawLadder(){
+  const Lr = D.ladder || []; if (!Lr.length) return;
+  const X = a => 60 + a / 180 * 470, Y = e => 290 - (e + 5) / 55 * 260;
+  let s = '';
+  [0, 10, 20, 30, 40, 50].forEach(e => { s += `<line x1="60" x2="530" y1="${Y(e)}" y2="${Y(e)}" stroke="#000" stroke-opacity=".14"/><text x="52" y="${Y(e) + 4}" font-size="12" text-anchor="end">+${e}°</text>`; });
+  [0, 30, 60, 90, 120, 150, 180].forEach(a => { s += `<text x="${X(a)}" y="308" font-size="12" text-anchor="middle">${a}°</text>`; });
+  s += `<line x1="60" x2="530" y1="290" y2="290" stroke="#000"/><text x="295" y="328" font-size="13" text-anchor="middle">${t('axLdX', 'how far the Sun turned (azimuth difference)')}</text>
+    <text transform="translate(14,160) rotate(-90)" font-size="13" text-anchor="middle">${t('axLdY', 'how far the Sun rose (elevation difference)')}</text>`;
+  const placed = [];
+  Lr.slice().sort((p, q) => q.el - p.el).forEach(d => { const x = X(d.az), y = Y(d.el), r = 9, f = d.ok / d.n, a = f * 2 * Math.PI;
+    let ly = y + 4; while (placed.some(([px, py]) => Math.abs(px - x) < 40 && Math.abs(py - ly) < 13)) ly += 13; placed.push([x, ly]);
+    const arc = f >= 1 ? `<circle cx="${x}" cy="${y}" r="${r}" fill="#000"/>` : f <= 0 ? '' : `<path d="M${x} ${y}L${x} ${y - r}A${r} ${r} 0 ${a > Math.PI ? 1 : 0} 1 ${x + r * Math.sin(a)} ${y - r * Math.cos(a)}Z" fill="#000"/>`;
+    s += `<g><title>${d.nac}: ${d.ok}/${d.n}</title><circle cx="${x}" cy="${y}" r="${r}" fill="#d4d2cc" stroke="#000" stroke-width="1.3"/>${arc}</g>
+      <text x="${x + 13}" y="${ly}" font-size="11.5">${d.ok}/${d.n}</text>`; });
+  $('#ldr').innerHTML = s;
+  const nr = Lr.filter(d => d.az <= 90), op = Lr.filter(d => d.az > 90), sum = (a, k) => a.reduce((q, d) => q + d[k], 0);
+  $('#ldsay').innerHTML = fill(t('ldSay', 'Azimuth within 20° of the OHRC\'s: <b>{b} of {a} windows accepted</b>, with the Sun raised by up to {e}°. Azimuth more than 90° away: <b>{d} of {c}</b>. Each disc is one LRO image; the filled part is the share of its windows accepted.'),
+    {a:sum(nr, 'n'), b:sum(nr, 'ok'), c:sum(op, 'n'), d:sum(op, 'ok'), e:Math.max(...nr.map(d => d.el)).toFixed(1)});
+}
+drawLadder(); ON_LANG.push(drawLadder);
 
 /* ================= two views, and where the reader is =================
    The workbench is the page; the evidence is one link away. Section links open the evidence
@@ -1187,4 +1522,5 @@ setPair(0);
   addEventListener('hashchange', route);
   addEventListener('scroll', () => { if (!raf) raf = requestAnimationFrame(mark); }, {passive:true}); addEventListener('resize', mark);
   route(); }
+applyLang();
 </script>

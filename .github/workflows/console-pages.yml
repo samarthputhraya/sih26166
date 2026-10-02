@@ -1,0 +1,45 @@
+# Publish the Mission Console to GitHub Pages.
+#
+# The console is built on a machine that has the imagery (python -m web.build_console --site), which
+# writes web/dist/console-site.zip: the page plus every showcase pair's exported result. That zip is
+# attached to a GitHub release tagged console-*, and this workflow deploys it. Nothing built goes into
+# git, so the repository stays code-only (no binaries, Invariant 5), and the published page is
+# exactly the file that was checked locally.
+name: console-pages
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - name: Fetch the newest console release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag=$(gh release list -R "${{ github.repository }}" --limit 100 --json tagName,createdAt \
+                -q '[.[] | select(.tagName | startswith("console-"))] | sort_by(.createdAt) | last | .tagName')
+          echo "deploying $tag"
+          gh release download "$tag" -R "${{ github.repository }}" -p console-site.zip
+          mkdir _site && unzip -q console-site.zip -d _site
+          test -f _site/index.html
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deploy
+        uses: actions/deploy-pages@v4
