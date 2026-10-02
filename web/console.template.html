@@ -747,7 +747,7 @@ const T = {
   galReg:'यह क्या पंजीकृत करता है', galRef:'इसकी सीमाएँ, खुलकर', galSay:'हर कार्ड एक वास्तविक विंडो है, pipeline के सहेजे परिणाम के रूप में। एक चुनें: संरेखण देखें, हर वर्ग जाँचें, परिणाम डाउनलोड करें।',
   galLine:'64 में से {v} वर्ग सत्यापित',
   offline:'यह प्रति स्थिर (static) है: यह ऊपर के सहेजे परिणाम खोलती है और डाउनलोड करने देती है, पर Python नहीं चला सकती।',
-  ctaLive:'लाइव workbench खोलें', ctaLiveT:'वही pipeline एक मुफ़्त क्लाउड CPU पर चलती है। अपनी छवियाँ डालें या कोई वास्तविक जोड़ी फिर से चलाएँ। अगर वह सो रहा हो तो जागने में लगभग एक मिनट लगता है।',
+  ctaLive:'लाइव workbench खोलें', ctaLiveT:'वही pipeline एक क्लाउड CPU पर चलती है। अपनी छवियाँ डालें या कोई वास्तविक जोड़ी फिर से चलाएँ। अगर वह सो रहा हो तो जागने में लगभग एक मिनट लगता है।',
   ctaLocal:'या अपने लैपटॉप पर, ऑफ़लाइन, बिना GPU:',
   live:'<b>लाइव।</b> हर run इसी मशीन के CPU पर <code>core.pipeline.run_all</code> है, वही फ़ंक्शन जिसके पीछे हर स्थिर आँकड़ा है, कोड कमिट {c} पर। आप जो भेजते हैं वह रखा नहीं जाता।',
   pillLive:'इस मशीन पर लाइव', pillSaved:'केवल सहेजे परिणाम', galhLive:'वास्तविक जोड़ियाँ, लाइव चलाएँ',
@@ -1208,7 +1208,7 @@ const SHORT = s => s.replace('Chandrayaan-2 ', '').replace('LRO LROC ', '').repl
 function staticTexts(){
   $('#pill').className = 'pill'; $('#pill span').textContent = t('pillSaved', 'Saved results only');
   $('#status').innerHTML = t('offline', 'This copy is static: it opens the saved results above and lets you download them, but it cannot run Python.');
-  $('#ownCta').innerHTML = (D.live ? `<a class="go" href="${esc(D.live)}" target="_blank" rel="noopener">${t('ctaLive', 'Open the live workbench')} \u2197</a><p class="fine">${t('ctaLiveT', 'The same pipeline on a free cloud CPU. Drop in your own images or re-run a real pair. If it has been asleep it takes about a minute to wake.')}</p>` : '')
+  $('#ownCta').innerHTML = (D.live ? `<a class="go" href="${esc(D.live)}" target="_blank" rel="noopener">${t('ctaLive', 'Open the live workbench')} \u2197</a><p class="fine">${t('ctaLiveT', 'The same pipeline on a cloud CPU. Drop in your own images or re-run a real pair. If it has been asleep it takes about a minute to wake.')}</p>` : '')
     + `<p class="fine">${t('ctaLocal', 'Or on your laptop, offline, no GPU:')}</p><pre class="cmd">git clone ${esc(D.repo)}\ncd sih26166\npip install -r requirements.txt\npython -m core.fetch_weights\npython -m web.server</pre>`;
   $('#libSay').textContent = t('galSay', 'Each card is one real window, as the pipeline returned it. Pick one: see it align, check every square, download the result.');
 }

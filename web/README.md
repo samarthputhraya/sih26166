@@ -88,10 +88,24 @@ Put it back.
 ### Publish it (GitHub Pages)
 
 ```
-python -m web.build_console --site --live-url https://<hugging-face-space>.hf.space
+python -m web.build_console --site --live-url https://lunaxx-<id>.asia-south1.run.app
 gh release create console-vNN web/dist/console-site.zip --title "Console vNN" --notes "..."
 gh workflow run console-pages.yml --ref main
 ```
+
+### Host the live workbench (Cloud Run)
+
+```
+python -m web.cloud_bundle <out_dir>        # code, LoFTR weights, the page, the showcase pairs, a Dockerfile
+gcloud run deploy lunaxx --source <out_dir> --region asia-south1 --port 7860 --cpu 2 --memory 4Gi ^
+    --max-instances 1 --min-instances 0 --concurrency 20 --timeout 300 --no-cpu-throttling --allow-unauthenticated
+```
+
+The container runs `python -m web.server --public`: at most 3 jobs at once, 24 MB per request,
+nothing kept. `--no-cpu-throttling` is required (a registration runs in a background thread the
+page polls, and the default throttles the CPU between requests); `--max-instances 1` keeps every
+poll on the instance holding the job and caps the cost. It sleeps when idle, so the first visit
+after a quiet spell waits for it to start.
 
 `--site` also writes `dist/site/` (the page, a favicon, and every showcase pair's exported result
 as `bundles/<pair>.zip`, so the static page can offer a real download) and zips it as

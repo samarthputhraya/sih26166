@@ -3,7 +3,7 @@
     python -m web.build_console                       # dist/mission-console.html and dist/index.html
     python -m web.build_console --site                # also dist/site/ + dist/console-site.zip, the
                                                       # published copy with every pair's result to download
-    python -m web.build_console --site --live-url https://<user>-lunaxx.hf.space
+    python -m web.build_console --site --live-url https://lunaxx-<id>.asia-south1.run.app
 
 The console is a DISPLAY of the evidence, never a source of it. This script only READS: the
 evidence logs, the demo caches, geometry_prior.json, the exported result bundles and the LOLA
@@ -35,7 +35,7 @@ sys.path.insert(0, str(ROOT))
 
 ap = argparse.ArgumentParser(description="Build the Mission Console")
 ap.add_argument("--site", action="store_true", help="also write dist/site/ and dist/console-site.zip")
-ap.add_argument("--live-url", default="", help="the hosted live workbench (a Hugging Face Space)")
+ap.add_argument("--live-url", default="", help="the hosted live workbench (web/cloud_bundle.py, on Cloud Run)")
 ARGS = ap.parse_args()
 
 

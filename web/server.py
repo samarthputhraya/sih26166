@@ -392,16 +392,17 @@ def _side_from(meta: dict, inst: str, prod: str) -> dict:
 
 def run_job(job: dict, body: dict, run=None) -> None:
     """Do one job end to end. Fills job['result'] or job['error']; never raises."""
-    from core.io_loader import load
-    from web.panel import panel
-    if run is None:
-        from core.pipeline import run_all as run
-
     def progress(done, total):
         job.update(stage="check" if done >= total else "match", done=int(done), total=int(total))
 
     tmp = pathlib.Path(tempfile.mkdtemp(prefix="lunaxx_job_"))
     try:
+        # inside the try: an import that fails (a package missing on a hosted copy, 2 Oct) must end
+        # the job with its error, not kill the thread and leave the page polling "queued" forever
+        from core.io_loader import load
+        from web.panel import panel
+        if run is None:
+            from core.pipeline import run_all as run
         mode, H_true, extra = job["mode"], None, {}
         if mode == "sample":
             pid = str(body.get("id") or "")
@@ -633,7 +634,7 @@ def main(argv=None):
     ap.add_argument("--host", default="127.0.0.1",
                     help="loopback by default; this has no auth, do not expose it")
     ap.add_argument("--public", action="store_true",
-                    help="a hosted copy (e.g. a Hugging Face Space): at most %d jobs at once and a "
+                    help="a hosted copy (web.cloud_bundle, on Cloud Run): at most %d jobs at once and a "
                          "smaller upload cap; still one registration on the CPU at a time" % PUBLIC_QUEUE)
     a = ap.parse_args(argv)
     if a.public:

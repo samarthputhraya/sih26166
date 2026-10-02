@@ -117,6 +117,17 @@ def test_start_job_validates_and_the_view_reports_progress():
     assert server.job_view(job)["result"] == {"id": "x"}
 
 
+def test_a_failed_import_ends_the_job_with_its_error(monkeypatch):
+    # 2 Oct: the hosted copy lacked psutil, the import raised outside the job's try, the thread
+    # died and the page polled "queued" for ever. The job must end in "error", saying why.
+    import sys
+    monkeypatch.setitem(sys.modules, "core.pipeline", None)
+    job = {"id": "f" * 32, "mode": "sample", "state": "running", "stage": "queued", "done": 0, "total": 0}
+    server.run_job(job, {"id": "x"})
+    assert job["state"] == "error" and "core.pipeline" in job["error"]
+    assert job.get("finished")
+
+
 def test_finished_jobs_are_trimmed_to_keep_jobs():
     before = len(server._jobs)
     for _ in range(server.KEEP_JOBS + 5):
