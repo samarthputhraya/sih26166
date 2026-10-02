@@ -185,6 +185,154 @@ def _residual_caveat(acc, g) -> str:
             f"is 1.08 px. This is a limit of the metric, not of the registration, and it is why "
             f"the area check never looks at the matches")
 
+def section_classical():
+    """SIFT / ORB / AKAZE on the windows behind each headline, judged by the same MAGSAC++, held-out
+    evaluate(), area check and fallback as ours (ops/classical_real.py, results_log rows tagged
+    CLASSICAL-REAL). 3 Oct 2026: every cold reader asked what "accepted" is compared with."""
+    try:
+        from ops.classical_real import METHOD_NAMES, axis_pairs, classical_rows, latest_real, ours_accepted
+        rows = classical_rows(LOG)
+    except Exception:  # noqa: BLE001 - the report must still be written
+        return []
+    if not rows:
+        return []
+    latest = latest_real(REAL)
+    commits = Counter(v.get("commit") for v in rows.values())
+    L = ["## Classical matchers on the same windows, judged by the same rule", "",
+         "`ops/classical_real.py`: SIFT, ORB and AKAZE (OpenCV, 0.75 ratio test, on the common-grid 8-bit "
+         "images - the MiLOI protocol) on exactly the windows behind each result above. Their matches then go "
+         "through everything ours go through after matching: MAGSAC++, the held-out `evaluate()`, the "
+         "independent area check and the fallback (`core.pipeline.run_all(matches=...)`). So *accepted* means "
+         "the same for every method: the area check agrees and no fallback was needed. Rows measured at "
+         + ", ".join(f"`{c}` ({n})" for c, n in commits.most_common()) + ".", "",
+         "| windows behind | windows | ours accepted | " + " | ".join(f"{m} accepted" for m in METHOD_NAMES) + " |",
+         "|---|---|---|" + "---|" * len(METHOD_NAMES)]
+    per_method = {m: {"n": 0, "acc": 0, "fine_refused": 0, "fine": 0} for m in METHOD_NAMES}
+    for label, ids in axis_pairs(latest):
+        if not ids:
+            continue
+        cells = []
+        for m in METHOD_NAMES:
+            have = [rows[(p, m)] for p in ids if (p, m) in rows]
+            acc = sum(h.get("accepted") == "True" for h in have)
+            cells.append(f"{acc}/{len(ids)}" if len(have) == len(ids) else f"{acc} of {len(have)} run ({len(ids)} windows)")
+            for h in have:
+                pm = per_method[m]
+                pm["n"] += 1
+                pm["acc"] += h.get("accepted") == "True"
+                frac = h.get("holdout_inlier_frac")
+                fine = frac not in (None, "", "None") and float(frac) >= 0.5
+                pm["fine"] += fine
+                pm["fine_refused"] += fine and h.get("accepted") != "True"
+        ours = sum(ours_accepted(latest[p]) for p in ids)
+        L.append(f"| {label} | {len(ids)} | {ours}/{len(ids)} | " + " | ".join(cells) + " |")
+    L += ["", "Per method, over every window above: how often its OWN residual looked fine (at least half "
+              "of the held-out matches within 3 px of its transform) and the area check still refused it.", "",
+          "| method | windows run | accepted | own residual looked fine | of those, refused by the area check |",
+          "|---|---|---|---|---|"]
+    for m, pm in per_method.items():
+        L.append(f"| {m} | {pm['n']} | {pm['acc']} | {pm['fine']} | {pm['fine_refused']} |")
+    L.append("")
+    return L
+
+
+def section_check_points(reg, d):
+    """Independent check points clicked by hand (evaluation/check_points.py): the one accuracy figure on
+    real pairs that the matcher never saw. Rendered from the click CSVs and the exported bundles."""
+    try:
+        from evaluation import check_points as CP
+    except Exception:  # noqa: BLE001
+        return [], []
+    pids = CP.clicked_pairs()
+    if not pids or not d:
+        return [], []
+    scored, refused = [], []
+    for pid in pids:
+        extra = {}
+        for m in ("SIFT", "ORB", "AKAZE"):
+            j = _jsonfile(d / "out_classical" / pid / f"{m}.json")
+            if j and j.get("accepted") and j.get("H_final"):
+                extra[m] = j["H_final"]
+        try:
+            scored.append(CP.score_pair(pid, d / "out", extra=extra))
+        except (ValueError, FileNotFoundError, KeyError) as e:
+            refused.append(f"`{pid}`: {e}")
+    if not scored:
+        return ([f"Independent check points: none scored ({'; '.join(refused)})", ""] if refused else []), []
+    prec = [s["precision"] for s in scored if s["precision"].get("n")]
+    L = ["## Independent check points: accuracy against points the matcher never saw", "",
+         "A person clicked the same feature (small crater centres, boulders - never shadow edges) in both "
+         "images of each window with `ops/click_check_points.py`, which shows the source around where the "
+         "ARCHIVE georeference puts it and never reads a registration (a test enforces it). So these points "
+         "are independent of every transform scored against them: the standard photogrammetric check point, "
+         "and the RMSE the problem statement names. Errors are where the declared transform puts each "
+         "clicked source point, against where it was clicked in the reference - on the reference grid, in "
+         "metres, and in the source image's own pixels. *Plane floor*: each point against a homography "
+         "fitted to all the other clicked points (leave-one-out) - the click error plus relief that no single "
+         "transform can remove. *Click precision*: the same features clicked again later without the first "
+         "clicks shown (repeat difference / √2)."
+         + (f" Over {sum(p['n'] for p in prec)} repeats, one click's precision is a median "
+            f"{st.median(p['ref_click_m'] for p in prec):.2f} m on the reference and "
+            f"{st.median(p['src_click_m'] for p in prec):.2f} m on the source." if prec else ""), "",
+         "| pair | points | ours: RMSE on the reference grid px (m) | RMSE in the source's own px | median (m) | "
+         "max (m) | archive prior RMSE (m) | plane floor RMSE (m) | verdict |",
+         "|---|---|---|---|---|---|---|---|---|"]
+    for s in scored:
+        o, a, fl = s["ours"], s["archive_prior"], s["floor"]
+        L.append(f"| `{s['pair_id']}` | {o['n']} | {o['rmse_px']:.2f} ({o['rmse_m']:.2f}) on {s['ref_gsd']:g} m | "
+                 f"{o['rmse_src_px']:.2f} on {s['src_gsd']:g} m | {o['median_m']:.2f} | {o['max_m']:.2f} | "
+                 f"{a['rmse_m']:.1f} | {fl['rmse_m']:.2f} | "
+                 + ("refused (fallback)" if s["contradicted"] else "accepted") + " |")
+    cl = [(s["pair_id"], m, s[m]) for s in scored for m in ("SIFT", "ORB", "AKAZE") if m in s]
+    if cl:
+        L += ["", "Classical transforms the area check accepted on the same windows, scored on the same points:", "",
+              "| pair | method | RMSE (m) | ours on these points (m) |", "|---|---|---|---|"]
+        for pid, m, sc in cl:
+            ours = next(s["ours"]["rmse_m"] for s in scored if s["pair_id"] == pid)
+            L.append(f"| `{pid}` | {m} | {sc['rmse_m']:.2f} | {ours:.2f} |")
+    if refused:
+        L += ["", "Not scored: " + "; ".join(refused)]
+    L.append("")
+    sub = []
+    acc = [s for s in scored if not s["contradicted"]]
+    if acc:
+        rm = sorted(s["ours"]["rmse_m"] for s in acc)
+        grids = sorted({s["ref_gsd"] for s in acc})
+        sub.append(f"| Independent check points clicked by hand, {len(acc)} accepted windows "
+                   f"({sum(s['ours']['n'] for s in acc)} points) | features clicked in both images, never seen by "
+                   f"the matcher"
+                   + (f"; one click's precision {st.median(p['ref_click_m'] for p in prec):.2f} m" if prec else "")
+                   + f" | {grids[0]:g}-{grids[-1]:g} m | RMSE per window {rm[0]:.2f}-{rm[-1]:.2f} m |")
+    return L, sub
+
+
+def archive_lines(d, full):
+    """PRADAN's catalogue (ops/pradan_archive.py) against the whole-overlap rate measured above."""
+    try:
+        from ops.pradan_archive import summary
+        arch = summary(d / "pradan" / "shapefiles")
+    except Exception:  # noqa: BLE001 - no catalogue on this machine: say nothing
+        return []
+    o, t, i = arch["OHRC"], arch["TMC-2"], arch["IIRS"]
+    L = [f"Archive scale, from PRADAN's own footprint catalogue (`<data>/pradan/shapefiles`, downloaded 18 Sep "
+         f"2026; OHRC releases 1-11; `ops/pradan_archive.py`): {o['products']} calibrated OHRC products "
+         f"({o['observations']} observations; some are listed twice, one copy per ground station) covering "
+         f"{o['area_km2']:,.0f} km² (median frame {o['median_area_km2']:.1f} km²); {t['products']:,} calibrated "
+         f"TMC-2 products ({t['nadir_products']:,} nadir); {i['products']:,} calibrated IIRS products."]
+    secs = [float(r["seconds"]) for r in full if r.get("seconds")]
+    if full and secs:
+        g = float(full[0]["ref_gsd_m"])
+        km2 = len(full) * (640 * g) ** 2 / 1e6
+        mins = sum(secs) / 60
+        rate = km2 / (mins / 60)
+        L[0] += (f" At the whole-overlap rate measured above ({km2:.1f} km² in {mins:.1f} min = {rate:.0f} km² "
+                 f"per hour on one laptop CPU, registration only, against a {g} m NAC reference), all "
+                 f"{o['area_km2']:,.0f} km² of OHRC is about {o['area_km2'] / rate:.0f} laptop-hours. A projection "
+                 f"from one measured rate, not a measurement: it leaves out reading and cutting the products and "
+                 f"assumes lit, textured ground and a reference as fine as that NAC.")
+    return L + [""]
+
+
 def section_full_overlap(full):
     """The dense tiling of one OHRC/NAC overlap (`--tag full`): acceptance, residuals, throughput,
     and whether any ACCEPTED window's archive offset breaks with its nearest accepted neighbour."""
@@ -737,15 +885,24 @@ def main(argv=None):
     # SAC's grids are the paper's (arXiv:2509.04775, Table 1), cited, not measured here
     for stem, pid, where, sac_grid in (
             ("sac_ohrc_nac_", "M1350459544RE", "equatorial, 13.3-13.9°S 25.2°E", "1.1179"),
+            # 3 Oct 2026: the same windows' centres re-cut with the NAC resampled to the paper's grid
+            # (ops/cut_pradan_pairs.py --ref-gsd 1.1179 --stem sac_ohrc_nac112 --centres-from sac_ohrc_nac)
+            ("sac_ohrc_nac112_", "M1350459544RE", "equatorial, re-cut on the paper's 1.1179 m grid", "1.1179"),
             ("sac_polar_ohrc_nac_", "M165491149RE", "polar, 61.6-62.3°S 56.6°E", "0.88779")):
         rows = sorted([r for r in reg if r["pair_id"].startswith(stem)], key=lambda r: r["pair_id"])
         if not rows:
             continue
         gp = _jsonfile(ROOT / "data" / "pairs" / rows[0]["pair_id"] / "geometry_prior.json") or {}
         native = (gp.get("reference") or {}).get("resolution_mpp")
-        grid = (f"NAC on a {rows[0]['ref_gsd_m']} m grid (its label resolution "
-                f"{_f(native, 2)} m; the paper's NAC grid was {sac_grid} m, so pixel figures "
-                f"differ in size as well as in kind)")
+        if abs(float(rows[0]["ref_gsd_m"]) - float(sac_grid)) < 1e-3:
+            grid = (f"NAC resampled to {rows[0]['ref_gsd_m']} m, the grid the paper measured this pair on "
+                    f"(the NAC's own label resolution is {_f(native, 2)} m), windows centred where the frozen "
+                    f"1.622 m windows are (their inner {640 * float(sac_grid):.0f} m); pixel figures are the "
+                    f"same size as the paper's, held-out and in-sample still differ in kind")
+        else:
+            grid = (f"NAC on a {rows[0]['ref_gsd_m']} m grid (its label resolution "
+                    f"{_f(native, 2)} m; the paper's NAC grid was {sac_grid} m, so pixel figures "
+                    f"differ in size as well as in kind)")
         geo = _jsonfile(d / "site_geometry" / f"{pid}.json") if d else None
         wide = (geo or {}).get("wide_offset") or {}
         field = (geo or {}).get("model") or {}
@@ -870,6 +1027,7 @@ def main(argv=None):
                            "reference is 25 × 25 px. The matcher finds nothing, the system says so and falls back; the "
                            "fallback's translation on a 25-px frame is not evidence of anything and the verdict stays "
                            "`unconfirmed`. This row exists to show the declared failure, not a registration.")
+    L += section_classical()
     # --- loops ----------------------------------------------------------------------------
     if loops:
         rms = [float(r["loop_rms_m"]) for r in loops]
@@ -996,14 +1154,38 @@ def main(argv=None):
                    "Sun azimuth differences under 10° (these rows predate the per-trial column)")
                   + (f"; |NCC| of the true alignment {min(abs(v) for v in nccs):.2f}-{max(abs(v) for v in nccs):.2f}"
                      f" (sign {'negative: opposite Suns anti-correlate' if max(nccs) < 0 else 'positive'})" if nccs else "")
-                  + (f". Windows: {', '.join(f'`{w}`' for w in wins)}." if len(wins) <= 12 else "."), "",
-                  "| planted error (m) | ~px on the reference grid | trials | flagged as wrong | mean verified cells /64 |",
-                  "|---|---|---|---|---|"]
+                  + (f". Windows: {', '.join(f'`{w}`' for w in wins)}." if len(wins) <= 12 else ".")]
+            # 3 Oct 2026, the head-to-head: what a residual check would read on the same planted
+            # answers (ops/trust_real_calibration.planted_residual). Its threshold is the loosest any of
+            # these windows' OWN registration needs, so it accepts every true registration here.
+            has = rows_p and all(r.get("planted_residual_median_px") not in (None, "", "None") for r in rows_p)
+            trs = [float(r["true_residual_median_px"]) for r in rows_p
+                   if r.get("true_residual_median_px") not in (None, "", "None")] if has else []
+            thr = max(trs) if trs else None
+            if thr is not None:
+                L += [f"Beside the area check, what a residual check reads on the SAME planted answers: the median "
+                      f"held-out residual of the planted matches, and the share a residual threshold of "
+                      f"**{thr:.2f} px** would flag - the loosest threshold that still accepts every one of these "
+                      f"windows' true registrations (their own held-out medians reach {thr:.2f} px)."]
+            L += ["", "| planted error (m) | ~px on the reference grid | trials | flagged as wrong | mean verified cells /64 |"
+                  + (" residual check: median held-out residual (px) | flagged by the residual threshold |" if thr is not None else ""),
+                  "|---|---|---|---|---|" + ("---|---|" if thr is not None else "")]
             for dm in sorted(by):
                 t = by[dm]
                 rate = sum(r["contradicted"] == "True" for r in t) / len(t)
-                L.append(f"| {dm:g} | {st.median(float(r['displacement_px']) for r in t):.2f} | {len(t)} | "
-                         f"{rate:.1%} | {st.mean(float(r['verified']) for r in t):.1f} |")
+                row = (f"| {dm:g} | {st.median(float(r['displacement_px']) for r in t):.2f} | {len(t)} | "
+                       f"{rate:.1%} | {st.mean(float(r['verified']) for r in t):.1f} |")
+                if thr is not None:
+                    pres = [float(r["planted_residual_median_px"]) for r in t]
+                    row += f" {st.median(pres):.2f} | {sum(v > thr for v in pres) / len(pres):.1%} |"
+                L.append(row)
+            if thr is not None:
+                big = [r for r in rows_p if float(r["displacement_m"]) >= 5]
+                if big:
+                    a_flag = sum(r["contradicted"] == "True" for r in big)
+                    r_flag = sum(float(r["planted_residual_median_px"]) > thr for r in big)
+                    L += ["", f"Planted errors of 5 m or more: the residual threshold flags **{r_flag} of {len(big)}**; "
+                              f"the area check flags **{a_flag} of {len(big)}**."]
             L.append("")
         nt = [r for r in tr if (r.get("kind") or "translation") != "translation"]
         if nt:
@@ -1095,6 +1277,7 @@ def main(argv=None):
 
     # --- sub-pixel, by grid; runtime; coverage (20 Sep 2026: gathered here so the deck can name
     # the grid beside every sub-pixel figure - nothing below is a new measurement) ---------------
+    cp_section, cp_rows = section_check_points(reg, d)
     L += ["## Sub-pixel accuracy, with the pixel grid named", "",
           "\"Sub-pixel\" means nothing without its grid. Every figure below is on the REFERENCE grid "
           "with its metres, and says what its truth is. None is a new measurement: each is the row "
@@ -1127,6 +1310,12 @@ def main(argv=None):
         L.append(f"| Real OHRC → LRO NAC, SAC's equatorial pair, {len(sac_eq)} windows, Sun azimuths "
                  f"{azs[0]:g}-{azs[-1]:g}° apart | held-out matches | {g} m | median per window "
                  f"{min(med):.2f}-{max(med):.2f} px = {min(med) * g:.1f}-{max(med) * g:.1f} m |")
+    sac112 = sorted([r for r in reg if r["pair_id"].startswith("sac_ohrc_nac112_")], key=lambda r: r["pair_id"])
+    if sac112:
+        med = [float(r["residual_median_px"]) for r in sac112 if r.get("residual_median_px")]
+        g = float(sac112[0]["ref_gsd_m"])
+        L.append(f"| The same pair on the paper's {g:g} m grid, {len(sac112)} windows | held-out matches | {g:g} m | "
+                 f"median per window {min(med):.2f}-{max(med):.2f} px = {min(med) * g:.1f}-{max(med) * g:.1f} m |")
     if loops:
         px = [float(r["loop_rms_px"]) for r in loops]
         L.append(f"| Loop closure OHRC → NAC A → NAC B vs OHRC → NAC B, {len(loops)} loops | consistency of "
@@ -1152,6 +1341,7 @@ def main(argv=None):
                      "network truth | a translation network from ours+SIFT agreement on OTHER pairs; its own "
                      "leave-one-out error is in the MiLOI section (S3: not measurable) | per pair | "
                      + "; ".join(parts) + " |")
+    L += cp_rows
     L.append("")
     # 1 Oct 2026: the PS asks for "sub-pixel accuracy of source image". The pipeline measures every
     # pair on the COARSER of its two grids. Where the Chandrayaan-2 image is the coarser one that grid
@@ -1211,6 +1401,7 @@ def main(argv=None):
     except Exception:  # noqa: BLE001
         pass
     cov = [float(r["grid_coverage_fraction"]) for r in ohrc_nac if r.get("grid_coverage_fraction")]
+    L += cp_section
     L += ["## Runtime and match distribution", "",
           f"Wall time of `run_all` per window (the `seconds` column; LoFTR on CPU, tiled; no GPU), latest "
           f"rows: median {st.median(on):.1f} s over the {len(on)} OHRC → NAC windows at 74 °S "
@@ -1223,6 +1414,8 @@ def main(argv=None):
           + ", ".join(f"`{r['pair_id']}` {float(r['grid_coverage_fraction']):.2f}"
                       for r in sorted(ohrc_nac, key=lambda r: float(r.get('grid_coverage_fraction') or 1))[:2])
           + ").", ""]
+    if d:
+        L += archive_lines(d, full)
     # 1 Oct 2026: the deliverable also carries gcps_uniform.* - the inliers thinned to at most
     # core.export.UNIFORM_PER_CELL per cell of an 8 x 8 grid on the reference (core.export.uniform_inliers),
     # so the control points a user takes away are spread by construction. Read from each accepted

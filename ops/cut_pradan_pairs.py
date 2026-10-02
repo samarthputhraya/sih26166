@@ -424,23 +424,42 @@ def nac_corrected(pid, ohrc_key, proj, ohrc_f, o_read, refit=False):
     return nac_f, n_read, info, prior
 
 
-def cut_ohrc_nac(kind, n_windows=6, ref_px=640, refit=False):
+def cut_ohrc_nac(kind, n_windows=6, ref_px=640, refit=False, ref_gsd=None, stem=None, centres_from=None):
     """SAC's OHRC <-> NAC pairs: OHRC (native) source, NAC (native) reference, windows picked in
-    shared, lit, textured ground on the corrected 4 m overviews."""
+    shared, lit, textured ground on the corrected 4 m overviews.
+
+    `ref_gsd` puts the reference on another grid than the NAC's own (3 Oct 2026: SAC's paper
+    measures its equatorial pair on a 1.1179 m grid, ours on the NAC's 1.622 m); `stem` names the
+    new pairs so the frozen ones are never overwritten; `centres_from` reuses the window centres of
+    an existing stem (`<stem>_wNN/geometry_prior.json`), so the new windows are the inner part of
+    the same ground rather than a fresh pick."""
     from core import geometry as G
     from ops import cut_site_pairs as S
-    ohrc_key, pid, stem = SAC_NAC[kind]
+    ohrc_key, pid, own_stem = SAC_NAC[kind]
+    stem = stem or own_stem
     proj = LocalEqc(*_frame_centre_latlon(PRODUCTS[ohrc_key][1]))
     ohrc_f, o_read, o_info = product(ohrc_key, proj, block=1)
     nac_f, n_read, n_info, prior = nac_corrected(pid, ohrc_key, proj, ohrc_f, o_read, refit=refit)
     n_info["coarse_prior"] = {k: v for k, v in prior.items() if k != "boxes"}
     n_info["geometry"] = nac_f.source
     src_gsd = round(float(np.mean(ohrc_f.gsd())), 3)
-    ref_gsd = round(float(np.mean(nac_f.gsd())), 3)
+    native_gsd = round(float(np.mean(nac_f.gsd())), 3)
+    ref_gsd = round(float(ref_gsd), 4) if ref_gsd else native_gsd
     window_m = ref_px * ref_gsd
-    a, va, b, vb, gt = S.overviews_between(ohrc_f, o_read, PRODUCTS[ohrc_key][0].stem, nac_f, n_read, pid,
-                                           DATA / "overviews")
-    wins = S.pick_windows(a, va, b, vb, gt, window_m, n_windows)
+    if centres_from:
+        wins = []
+        for gp in sorted(PAIRS.glob(f"{centres_from}_w[0-9][0-9]/geometry_prior.json")):
+            g = json.loads(gp.read_text(encoding="utf-8"))
+            if g.get("crs") != proj.name:
+                raise SystemExit(f"{gp.parent.name} is on {g.get('crs')}, not {proj.name}")
+            cx, cy = g["window_centre_map_m"]
+            wins.append({"cx": cx, "cy": cy, "lit": g["source"].get("lit_fraction_4m"),
+                         "centre_of": gp.parent.name})
+        wins = wins[:n_windows]
+    else:
+        a, va, b, vb, gt = S.overviews_between(ohrc_f, o_read, PRODUCTS[ohrc_key][0].stem, nac_f, n_read, pid,
+                                               DATA / "overviews")
+        wins = S.pick_windows(a, va, b, vb, gt, window_m, n_windows)
     if not wins:
         raise SystemExit("no lit window fits inside the shared footprint")
     tier, term = S._tier("ohrc", pid.lower())
@@ -495,6 +514,10 @@ def cut_ohrc_nac(kind, n_windows=6, ref_px=640, refit=False):
                           "archive-geometry prior is a pure scale; any rotation or offset the pipeline finds "
                           "is disagreement between the (corrected) archive georeferences",
             "benchmark": "SAC's own pair, arXiv:2509.04775 Table 1",
+            **({"ref_grid_note": f"reference resampled to {ref_gsd} m (the NAC's own grid here is "
+                                 f"{native_gsd} m), the grid SAC's paper measures this pair on",
+                "native_ref_gsd_mpp": native_gsd} if ref_gsd != native_gsd else {}),
+            **({"centre_of": w["centre_of"]} if "centre_of" in w else {}),
             "edge_pixels_filled": {"source": s_fill, "reference": r_fill},
             "files": {q.name: _sha(q) for q in (src_p, ref_p)},
             "command": "python -m ops.cut_pradan_pairs " + " ".join(sys.argv[1:]),
@@ -504,6 +527,19 @@ def cut_ohrc_nac(kind, n_windows=6, ref_px=640, refit=False):
         print(f"  {pair_id}: centre ({lat:.4f}, {lon:.4f}); src {sh_s} @ {src_gsd} m, ref {sh_r} @ "
               f"{ref_gsd} m; d_az {d_az} deg, d_inc {d_inc} deg")
     return out
+
+
+def guard_new_stem(stem: str) -> None:
+    """A new stem must be SAC's (`sac_`), must not reuse the frozen `sac_ohrc_nac_` / `sac_polar_`
+    ids, and must not fall under the planted-error calibration's window globs - so the frozen rows,
+    REPORT's 74 S table (which excludes `sac_` ids) and the trust trial list stay as they are."""
+    import fnmatch
+    from ops.trust_real_calibration import EXTRA_WINDOWS
+    probe = f"{stem}_w01"
+    if (not stem.startswith("sac_") or stem.startswith(("sac_ohrc_nac_", "sac_polar_"))
+            or stem in {s for _k, (_o, _p, s) in SAC_NAC.items()}
+            or any(fnmatch.fnmatch(probe, g) for g in EXTRA_WINDOWS)):
+        raise SystemExit(f"stem {stem!r} would collide with frozen pairs or the trust calibration's windows")
 
 
 def _frame_centre_latlon(grid_csv):
@@ -520,7 +556,14 @@ def main(argv=None):
     ap.add_argument("--tmc-product", help="a calibrated TMC-2 nadir product id other than the "
                                           f"{TMC_PASS} pass, for ohrc-tmc; the pair ids become "
                                           "sac_ohrc_tmc<yyyymmdd>_wNN")
+    ap.add_argument("--ref-gsd", type=float, help="OHRC-NAC kinds: resample the NAC reference to this "
+                                                  "grid (m) instead of its own")
+    ap.add_argument("--stem", help="OHRC-NAC kinds: a new pair-id stem; never one the evidence freeze "
+                                   "already holds")
+    ap.add_argument("--centres-from", help="OHRC-NAC kinds: reuse the window centres of this stem's pairs")
     a = ap.parse_args(argv)
+    if a.stem is not None:
+        guard_new_stem(a.stem)
     stem = None
     if a.tmc_product:
         if a.kind != "ohrc-tmc":
@@ -529,7 +572,8 @@ def main(argv=None):
         # no "_a"/"_b" anywhere in the stem (core.pipeline.resolve_pair's hints)
         stem = f"sac_ohrc_tmc{a.tmc_product[12:20]}"
     if a.kind in SAC_NAC:
-        dirs = cut_ohrc_nac(a.kind, a.windows or 6, a.ref_px or 640, refit=a.refit)
+        dirs = cut_ohrc_nac(a.kind, a.windows or 6, a.ref_px or 640, refit=a.refit, ref_gsd=a.ref_gsd,
+                            stem=a.stem, centres_from=a.centres_from)
     else:
         dirs = cut(a.kind, a.windows or 4, a.ref_px or 384, stem=stem)
     print(f"{len(dirs)} pair(s) written under {PAIRS}")

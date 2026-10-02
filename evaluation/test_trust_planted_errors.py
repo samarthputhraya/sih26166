@@ -161,3 +161,38 @@ def test_the_summary_note_is_built_for_every_row_the_sweep_can_produce():
 def _true_error_grid_for(kind, dm, gsd=0.931):
     from core.reliability import _true_error_grid
     return _true_error_grid(SHAPE, plant(kind, dm / gsd, +1.0, SHAPE), np.eye(3), 8)
+
+
+# --- What a residual check sees on a planted wrong answer (3 Oct 2026) ------------------------
+
+def _consensus_wrong(n=400, seed=3):
+    """A match set that agrees with a WRONG transform, as the calibration plants it."""
+    g = np.random.default_rng(seed)
+    src = g.uniform(0, 2000, (n, 2))
+    H_wrong = np.array([[0.3, 0.0, 12.0], [0.0, 0.3, -7.0], [0.0, 0.0, 1.0]])
+    ref = _apply(H_wrong, src) + g.normal(0, 0.3, src.shape)
+    return src, ref
+
+
+def test_the_planted_residual_never_touches_the_trial_stream():
+    from ops.trust_real_calibration import planted_residual
+    rng = np.random.default_rng(7)
+    before = rng.bit_generator.state
+    src, ref = _consensus_wrong()
+    planted_residual(SHAPE, src, ref)
+    assert rng.bit_generator.state == before
+
+
+def test_a_residual_check_sees_nothing_wrong_with_a_consensus_wrong_answer():
+    from ops.trust_real_calibration import planted_residual
+    src, ref = _consensus_wrong()
+    m = planted_residual(SHAPE, src, ref)
+    assert m["planted_inlier_ratio"] > 0.99
+    assert m["planted_residual_median_px"] < 0.6
+
+
+def test_too_few_matches_give_empty_values_not_an_exception():
+    from ops.trust_real_calibration import PLANTED_FIELDS, planted_residual
+    m = planted_residual(SHAPE, np.zeros((3, 2)), np.zeros((3, 2)))
+    assert set(m) == set(PLANTED_FIELDS)
+    assert m["planted_residual_median_px"] is None

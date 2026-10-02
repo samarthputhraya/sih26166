@@ -144,6 +144,29 @@ def cell_effect(ref_shape, H_wrong, H_true, state):
             "max_cell_displacement_px": round(float(np.nanmax(te)), 3)}
 
 
+PLANTED_FIELDS = ("planted_residual_median_px", "planted_holdout_rmse_px", "planted_holdout_frac",
+                  "planted_inlier_ratio")
+
+
+def planted_residual(ref_shape, src_in, ref_w):
+    """What a residual check sees on a planted wrong answer: the project's own held-out scoring
+    (evaluation.metrics.evaluate - fit on 80 % of the matches, error on the 20 % it never saw) run on
+    the planted match set. The matches agree with the wrong transform by construction, so this is
+    the number a 'low RMSE, so accept' rule would read (3 Oct 2026: the head-to-head the cold readers
+    asked for - 'something to beat'). evaluate() draws from its OWN generator (seed 0), so the trial
+    stream above is untouched; any failure gives empty values, never a lost calibration run."""
+    try:
+        from evaluation.metrics import evaluate
+        m = evaluate(tuple(ref_shape), np.asarray(src_in, np.float64), np.asarray(ref_w, np.float64))
+    except Exception:                                  # noqa: BLE001 - a trial must never stop the run
+        return {k: None for k in PLANTED_FIELDS}
+    r = lambda v: None if v is None else round(float(v), 4)  # noqa: E731
+    return {"planted_residual_median_px": r(m.get("residual_median_px")),
+            "planted_holdout_rmse_px": r(m.get("holdout_inlier_rmse_px")),
+            "planted_holdout_frac": r(m.get("holdout_inlier_frac")),
+            "planted_inlier_ratio": r(m.get("inlier_ratio"))}
+
+
 def main(argv=None):
     import cv2
     from core.io_loader import load
@@ -184,6 +207,10 @@ def main(argv=None):
         if not good:
             continue
         used.append(d.name)
+        # The window's own (true) registration as the same residual check scores it: the loosest of
+        # these is the tightest residual threshold that still accepts every real window.
+        _trm = (r.get("metrics") or {}).get("residual_median_px")
+        true_res = None if _trm is None else round(float(_trm), 4)
         prior = json.loads((d / "geometry_prior.json").read_text(encoding="utf-8"))
         gsd_ref = prior["reference"]["resampled_gsd_mpp"]
         H = np.asarray(r["H"], np.float64)
@@ -223,7 +250,9 @@ def main(argv=None):
                                    "verified": c["verified"], "weak": c["weak"], "no_evidence": c["no_evidence"],
                                    "d_sun_azimuth_deg": prior.get("d_sun_azimuth_deg"),
                                    "ncc_true": round(ncc, 3),
-                                   **cell_effect(B.shape[:2], Hw, H, relw["state"])})
+                                   **cell_effect(B.shape[:2], Hw, H, relw["state"]),
+                                   **planted_residual(B.shape[:2], src_in, ref_w),
+                                   "true_residual_median_px": true_res})
     if not trials:
         print("no usable windows")
         return 1
@@ -266,6 +295,12 @@ def main(argv=None):
         from core.pipeline import _log_row
         az = sorted({str(t["d_sun_azimuth_deg"]) for t in trials})
         for kind, dm, dpx, n, rate, ver, nm, mnv, ns, sv in rows:
+            pt = [x for x in trials if x["kind"] == kind and x["displacement_m"] == dm]
+            pres = [x["planted_residual_median_px"] for x in pt if x["planted_residual_median_px"] is not None]
+            prat = [x["planted_inlier_ratio"] for x in pt if x["planted_inlier_ratio"] is not None]
+            seen = (f"What a residual check sees on these planted wrong answers: median held-out residual "
+                    f"{np.median(pres):.3f} px, median inlier ratio {np.median(prat):.3f} ({len(pres)} trials). "
+                    if pres and prat else "")
             what = {"translation": f"H_true shifted by {dm:g} m (~{dpx:.2f} px of the reference grid)",
                     "rotation": f"H_true rotated about the frame centre until the CORNERS move {dm:g} m "
                                 f"(~{dpx:.2f} px); the centre does not move",
@@ -282,7 +317,7 @@ def main(argv=None):
                         f"{_n_trials(kind, dm)} "
                         f"{'directions' if kind == 'translation' else 'signs'}; seed {a.seed}"),
                 notes=(f"area check contradicted {rate:.1%} of {n} trials; mean verified cells "
-                       f"{ver:.1f}/64. d=0 is the false-alarm baseline. " + cell_note(nm, mnv, ns, sv)
+                       f"{ver:.1f}/64. d=0 is the false-alarm baseline. " + cell_note(nm, mnv, ns, sv) + seen
                        + f"windows: {', '.join(used)} "
                        f"(Sun azimuth differences {', '.join(az)} deg; window selection by |NCC| >= 0.5). "
                        f"per-trial table: evaluation/trust_real_calibration.csv"))

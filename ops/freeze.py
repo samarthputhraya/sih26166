@@ -69,7 +69,8 @@ PY = sys.executable
 MATCHING_CODE = ["core/matcher.py", "core/subpixel.py", "core/illumination.py", "core/scale.py",
                  "core/io_loader.py", "baselines"]
 MM_CSV = ROOT / "evaluation" / "multimodal_check.csv"
-STEPS = ("real", "sweep", "loops", "mmcheck", "trust", "miloi", "viewpoint", "calib", "gate2", "report")
+STEPS = ("real", "sweep", "loops", "mmcheck", "trust", "miloi", "classic", "viewpoint", "calib", "gate2",
+         "report")
 CHUNK = 12          # pair ids per run_real_pairs process
 
 
@@ -312,7 +313,26 @@ class Freeze:
         if TRUST_CSV.exists():
             _trust_prev().parent.mkdir(parents=True, exist_ok=True)
             TRUST_CSV.replace(_trust_prev())
-        return _run(["-m", "ops.trust_real_calibration", *wins, "--log"], logf) == 0
+        ok = _run(["-m", "ops.trust_real_calibration", *wins, "--log"], logf) == 0
+        if ok:
+            same = same_trials(_rows(_trust_prev()), _rows(TRUST_CSV))
+            msg = f"   trust trials {same} the previous calibration's"
+            print(msg)
+            logf.write(msg + "\n")
+            self.state["trust_trials_vs_previous"] = same
+            self.save()
+        return ok
+
+    def classic(self, logf):
+        # The classical matchers pick their windows from the latest real rows, and are compared
+        # with OUR verdict on each: those rows must be this commit's.
+        from ops.classical_real import axis_pairs
+        stale = stale_real(self.commit)
+        old = [p for _l, ids in axis_pairs(latest_real()) for p in ids if p in stale]
+        if old:
+            print(f"   {len(old)} pair(s) not at {self.commit} ({', '.join(old[:3])}...) - run `real` first")
+            return None
+        return _run(["-m", "ops.classical_real", "--log", "--resume"], logf) == 0
 
     def miloi(self, logf):
         return _run(["-m", "evaluation.miloi", "--retrust", "--truth", "--score", "--log", "--table"],
@@ -356,6 +376,28 @@ def _now() -> str:
     return _dt.datetime.now(_dt.timezone.utc).isoformat(timespec="seconds")
 
 
+def same_trials(prev: list[dict], new: list[dict]) -> str:
+    """'IDENTICAL to' when the planted trials are the same draws as before (window, kind, size,
+    direction, in order); otherwise where they first differ. A changed trial list means a fresh
+    random draw (Known issue 17), which REPORT's numbers must then be read as."""
+    key = lambda r: (r.get("pair_id"), r.get("kind"), r.get("displacement_m"), r.get("direction_deg"))  # noqa: E731
+    a, b = [key(r) for r in prev], [key(r) for r in new]
+    if a == b:
+        return "IDENTICAL to"
+    for i, (x, y) in enumerate(zip(a, b)):
+        if x != y:
+            return f"DIFFER (trial {i}: {x} -> {y}) from"
+    return f"DIFFER ({len(a)} -> {len(b)} trials) from"
+
+
+def stale_classical(commit: str) -> list[str]:
+    """Pair x method cells of the classical table not logged at `commit` (missing ones included)."""
+    from ops.classical_real import METHOD_NAMES, axis_pairs, classical_rows
+    rows = classical_rows()
+    want = [(p, m) for _l, ids in axis_pairs(latest_real()) for p in ids for m in METHOD_NAMES]
+    return [f"{p} {m}" for p, m in want if rows.get((p, m), {}).get("commit") != commit]
+
+
 def check(commit: str) -> int:
     """Every latest evidence row at `commit`? Prints what is stale; returns the stale count."""
     stale = stale_real(commit)
@@ -375,11 +417,15 @@ def check(commit: str) -> int:
         mm[r["pair_id"]] = r
     mms = [k for k, r in mm.items() if r.get("git_commit") != commit]
     print(f"multimodal_check: {len(mm) - len(mms)}/{len(mm)} latest rows at {commit}")
+    cls = stale_classical(commit)
+    print(f"classical baselines: {len(cls)} pair x method cell(s) not at {commit}"
+          + (f" ({', '.join(cls[:3])}...)" if cls else ""))
     st_p = _data() / "freeze" / commit / "state.json"
     steps = json.loads(st_p.read_text(encoding="utf-8"))["steps"] if st_p.exists() else {}
     for s in STEPS:
         print(f"   step {s:10} {steps.get(s, {}).get('status', 'not run')}")
-    n = len(stale) + len(ms) + len(mms) + sum(1 for s in STEPS if steps.get(s, {}).get("status") != "done")
+    n = (len(stale) + len(ms) + len(mms) + len(cls)
+         + sum(1 for s in STEPS if steps.get(s, {}).get("status") != "done"))
     print("FROZEN" if n == 0 else f"NOT FROZEN: {n} stale item(s)")
     return n
 
@@ -407,6 +453,10 @@ def plan() -> None:
           + ("UNCHANGED since the stored matches" if not changed else "CHANGED since the stored "
              "matches - re-match first (evaluation.miloi --run on an emptied miloi_runs):\n         "
              + "\n         ".join(changed)))
+    from ops.classical_real import METHOD_NAMES, axis_pairs
+    n_cls = sum(len(ids) for _l, ids in axis_pairs(latest_real(rows)))
+    print(f"classic {n_cls} pairs x {len(METHOD_NAMES)} methods ({', '.join(METHOD_NAMES)}), judged by our area "
+          f"check (ops.classical_real --log --resume)")
     print("viewpoint, calib, gate2: synthetic sweeps (see the docstring); report: REPORT.md, figures, deck")
 
 

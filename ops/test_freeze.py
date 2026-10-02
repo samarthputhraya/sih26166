@@ -54,3 +54,28 @@ def test_loops_step_reads_three_leg_commands_and_waits_for_their_legs(monkeypatc
     rows[1] = _row("siten_ab_c01", "python -m ops.run_real_pairs siten_* --log", commit="old0000")
     ok, ran = _loops_step(monkeypatch, rows, "new1234")
     assert ok is None and ran == []                          # a stale leg: run `real` first
+
+
+def test_the_classical_step_runs_after_the_real_rows_and_before_the_report():
+    from ops.freeze import STEPS
+    assert STEPS.index("real") < STEPS.index("classic") < STEPS.index("report")
+
+
+def test_same_trials_says_identical_only_for_the_same_draws_in_the_same_order():
+    from ops.freeze import same_trials
+    a = [{"pair_id": "w1", "kind": "translation", "displacement_m": "5.0", "direction_deg": "12.3"},
+         {"pair_id": "w1", "kind": "rotation", "displacement_m": "3.0", "direction_deg": "57.3"}]
+    assert same_trials(a, [dict(r) for r in a]) == "IDENTICAL to"
+    b = [dict(a[0]), {**a[1], "direction_deg": "-57.3"}]
+    assert same_trials(a, b).startswith("DIFFER (trial 1")
+    assert same_trials(a, a[:1]).startswith("DIFFER (2 -> 1")
+
+
+def test_a_missing_classical_cell_counts_as_stale(monkeypatch):
+    from ops import classical_real as C
+    from ops import freeze as F
+    monkeypatch.setattr(F, "latest_real", lambda rows=None: {"sac_ohrc_nac_w01": {"pair_id": "sac_ohrc_nac_w01"}})
+    monkeypatch.setattr(C, "classical_rows", lambda log=None: {("sac_ohrc_nac_w01", "SIFT"): {"commit": "abc"},
+                                                                ("sac_ohrc_nac_w01", "ORB"): {"commit": "old"}})
+    stale = F.stale_classical("abc")
+    assert stale == ["sac_ohrc_nac_w01 ORB", "sac_ohrc_nac_w01 AKAZE"]
