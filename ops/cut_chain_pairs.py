@@ -43,6 +43,7 @@ import math
 import pathlib
 import re
 import sys
+import time
 
 import numpy as np
 
@@ -196,14 +197,42 @@ def choose_windows(t, i, n, ref_px, lat_range, step_km):
     return sorted(chosen, key=lambda c: -c[1])  # north to south
 
 
+def strip_windows(t, i, ref_px, lat_range):
+    """Every window along the IIRS centre line, edge to edge (one window length apart), wherever both
+    strips cover it - no texture ranking, no selection: the whole strip (3 Oct 2026)."""
+    lats, lons = _centre_line(i["grid"])
+    keep = (lats >= lat_range[0]) & (lats <= lat_range[1])
+    lats, lons = lats[keep], lons[keep]
+    if not len(lats):
+        raise SystemExit(f"the IIRS strip has no lattice node between latitudes {lat_range}")
+    d = np.r_[0, np.cumsum(np.hypot(np.diff(lats), np.diff(lons) * np.cos(np.radians(lats[1:]))))] \
+        * math.pi / 180 * 1737.4
+    probe = _cut_one(float(lats[len(lats) // 2]), float(lons[len(lons) // 2]), t, i, ref_px, with_source=False)
+    win_km = (probe["window_m"] if probe else ref_px * 84.0) / 1000.0
+    out = []
+    for target in np.arange(win_km / 2, d[-1], win_km):
+        j = int(np.argmin(np.abs(d - target)))
+        if _cut_one(float(lats[j]), float(lons[j]), t, i, ref_px, with_source=False) is not None:
+            out.append((None, float(lats[j]), float(lons[j]), float(d[j])))
+    return sorted(out, key=lambda c: -c[1])        # north to south, as the other cuts
+
+
 def cut_tmc_iirs(tmc_pid, iirs_pid, band, n_windows=8, ref_px=192, lat_range=(-60.0, 60.0), step_km=15.0,
-                 same_as=None):
+                 same_as=None, strip=False):
+    t_start = time.perf_counter()
     xml_t, grid_t, read_t, shape_t, info_t = tmc_product(tmc_pid)
     xml_i, grid_i, read_i, shape_i, info_i = iirs_product(iirs_pid, band)
     t = dict(grid=grid_t, read=read_t, shape=shape_t)
     i = dict(grid=grid_i, read=read_i, shape=shape_i)
     stem = f"chain_tmc{tmc_pid[12:20]}_iirs{round(info_i['center_wavelength_nm'])}"
-    if same_as:
+    if strip:
+        # NOT `chain_tmc...`: fig10, the console and REPORT's chain section count `chain_tmc<day>_iirs*`
+        # ids; the whole-strip windows are their own evidence and must never change those counts.
+        stem = f"strip_tmc{tmc_pid[12:20]}_iirs{round(info_i['center_wavelength_nm'])}"
+        centres = strip_windows(t, i, ref_px, lat_range)
+        rule = (f"the whole strip: every window along the IIRS centre line, one window length apart, within "
+                f"latitude {lat_range} where both strips cover it - no selection")
+    elif same_as:
         other = f"chain_tmc{tmc_pid[12:20]}_iirs{same_as}"
         centres = []
         for p in sorted(PAIRS.glob(f"{other}_w*")):
@@ -246,7 +275,8 @@ def cut_tmc_iirs(tmc_pid, iirs_pid, band, n_windows=8, ref_px=192, lat_range=(-6
     import tifffile
     from core import geometry as G
     for k, (tex, la, lo, _) in enumerate(centres, 1):
-        pair_id = f"{stem}_w{k:02d}"
+        pair_id = f"{stem}_s{k:03d}" if strip else f"{stem}_w{k:02d}"
+        t_win = time.perf_counter()
         c = _cut_one(la, lo, t, i, ref_px)
         if c is None:
             print(f"  {pair_id}: window not covered - skipped")
@@ -284,6 +314,9 @@ def cut_tmc_iirs(tmc_pid, iirs_pid, band, n_windows=8, ref_px=192, lat_range=(-6
             "edge_pixels_filled": {"source": s_fill, "reference": r_fill},
             "files": {q.name: _sha(q) for q in (src_p, ref_p)},
             "command": "python -m ops.cut_chain_pairs " + " ".join(sys.argv[1:]),
+            **({"cut_seconds": round(time.perf_counter() - t_win, 2),
+                "strip_seconds_since_start": round(time.perf_counter() - t_start, 1),
+                "strip_window_index": k, "strip_windows": len(centres)} if strip else {}),
         }
         (d / "geometry_prior.json").write_text(json.dumps(meta, indent=2), encoding="utf-8")
         out.append(d)
@@ -1188,6 +1221,8 @@ def main(argv=None):
     ap.add_argument("--lat", type=float, nargs=2, default=(-60.0, 60.0))
     ap.add_argument("--step-km", type=float, default=15.0)
     ap.add_argument("--same-as", type=int, help="reuse the windows of this band's pairs (nm, as in their ids)")
+    ap.add_argument("--strip", action="store_true", help="tmc-iirs: every window of the whole strip, edge to edge, "
+                                                         "ids strip_tmc<day>_iirs<nm>_sNNN (no selection)")
     ap.add_argument("--refit", action="store_true", help="nac-tmc: recompute the NAC's saved correction field")
     ap.add_argument("--anchor", default="corners",
                     help="nac-tmc: the NAC's geometry prior - 'corners' (default: LROC's published corners, "
@@ -1218,7 +1253,7 @@ def main(argv=None):
         if not (a.iirs and a.band):
             raise SystemExit("tmc-iirs needs --iirs and --band")
         dirs = cut_tmc_iirs(a.tmc, a.iirs, a.band, a.windows or 8, a.ref_px or 192, tuple(a.lat), a.step_km,
-                            a.same_as)
+                            a.same_as, strip=a.strip)
     elif a.kind == "ohrc-tmc":
         dirs = cut_ohrc_tmc(a.tmc, a.windows or 4, a.ref_px or 384)
     else:

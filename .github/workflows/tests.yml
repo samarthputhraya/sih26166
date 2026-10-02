@@ -2,11 +2,13 @@
 #
 # A clean checkout has no imagery (data/pairs and the evidence products live outside git, Invariant 5)
 # and no LoFTR weights (weights/ is gitignored); tests that need either skip with a reason, and the
-# weights are fetched and verified by sha256 first (core/fetch_weights.py). Started by hand until a run
-# is green; then on every push to main.
+# weights are fetched and verified by sha256 first (core/fetch_weights.py). First green run: 2 Oct 2026,
+# 391 passed, 3 skipped (the three that need imagery).
 name: tests
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
 
 permissions:

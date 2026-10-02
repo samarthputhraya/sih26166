@@ -4,6 +4,7 @@
 *Multi-modal, Sun angle and scale invariant image correspondence using Chandrayaan-2 optical
 images (OHRC, TMC and IIRS).*
 
+[![tests](https://github.com/samarthputhraya/sih26166/actions/workflows/tests.yml/badge.svg)](https://github.com/samarthputhraya/sih26166/actions/workflows/tests.yml)
 [![Licence: Apache-2.0](https://img.shields.io/badge/licence-Apache--2.0-blue)](LICENSE)
 ![Python 3.12](https://img.shields.io/badge/python-3.12-blue)
 ![CPU only](https://img.shields.io/badge/hardware-laptop%20CPU%20only-lightgrey)
