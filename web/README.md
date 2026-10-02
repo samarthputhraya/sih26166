@@ -90,12 +90,13 @@ Put it back.
 ```
 python -m web.build_console --site --live-url https://<hugging-face-space>.hf.space
 gh release create console-vNN web/dist/console-site.zip --title "Console vNN" --notes "..."
+gh workflow run console-pages.yml --ref main
 ```
 
 `--site` also writes `dist/site/` (the page, a favicon, and every showcase pair's exported result
 as `bundles/<pair>.zip`, so the static page can offer a real download) and zips it as
-`dist/console-site.zip`. Publishing a `console-*` release runs `.github/workflows/console-pages.yml`,
-which downloads that zip from the release and deploys it to Pages. Nothing built is committed: the
+`dist/console-site.zip`. `.github/workflows/console-pages.yml` downloads the newest `console-*`
+release's zip and deploys it to Pages (https://samarthputhraya.github.io/sih26166/). Nothing built is committed: the
 release carries the binary, git carries the code. `--live-url` points the page's "Open the live
 workbench" button at the hosted server; leave it out and the page offers the local commands only.
 

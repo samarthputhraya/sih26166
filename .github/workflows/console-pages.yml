@@ -7,9 +7,10 @@
 # exactly the file that was checked locally.
 name: console-pages
 
+# Run by hand after the release exists (gh workflow run console-pages.yml --ref main). Not on the
+# release event itself: a release runs on its tag, and the github-pages environment only lets the
+# default branch deploy.
 on:
-  release:
-    types: [published]
   workflow_dispatch:
 
 permissions:
