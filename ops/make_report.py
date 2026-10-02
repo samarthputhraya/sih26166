@@ -333,6 +333,68 @@ def archive_lines(d, full):
     return L + [""]
 
 
+def section_strip(strip, d):
+    """One whole TMC-2 -> IIRS strip, edge to edge (cut_chain_pairs tmc-iirs --strip): no selection,
+    every window, timed. Kept out of every other count in this file."""
+    if not strip:
+        return []
+    acc = [r for r in strip if r["verdict"] == "agrees" and "fallback" not in r["method_declared"]]
+    verd = Counter(r["verdict"] for r in strip)
+    secs = [float(r["seconds"]) for r in strip if r.get("seconds")]
+    gp = [_jsonfile(ROOT / "data" / "pairs" / r["pair_id"] / "geometry_prior.json") or {} for r in strip]
+    win_m = [g.get("window_m") for g in gp if g.get("window_m")]
+    cut_s = max((g.get("strip_seconds_since_start") or 0) for g in gp) if gp else 0
+    lats = [float(r["window_lat"]) for r in strip]
+    km = len(strip) * (st.median(win_m) / 1000 if win_m else 0)
+    med = [float(r["residual_median_px"]) for r in _robust(acc)] if acc else []
+    g = float(strip[0]["ref_gsd_m"])
+    note = (f"Every window of one whole strip, edge to edge, with no selection (`ops/cut_chain_pairs.py "
+            f"tmc-iirs --strip`): TMC-2 nadir `{strip[0]['source_product']}` onto IIRS `{strip[0]['reference_product']}` "
+            f"at 1555 nm (multi-modal), the same orbit. {len(strip)} windows of about "
+            f"{st.median(win_m) / 1000:.1f} km = {km:.0f} km of strip, latitude {min(lats):.1f}-{max(lats):.1f}°. "
+            f"Verdicts: " + ", ".join(f"{v} {n}" for v, n in verd.most_common())
+            + f"; **accepted {len(acc)}/{len(strip)}**"
+            + (f"; held-out median of the accepted windows above an inlier ratio of 0.5: "
+               f"{_rng(min(med), max(med), '.2f')} px = {_rng(min(med) * g, max(med) * g, '.1f')} m on the {g} m "
+               f"IIRS grid" if med else "")
+            + (f". Time on one laptop CPU: cutting {cut_s / 60:.1f} min (reading both products and resampling), "
+               f"registration {sum(secs) / 60:.1f} min (median {st.median(secs):.1f} s per window)" if secs else "")
+            + ". Reported only here, never merged with the selected windows above.")
+    return section_pairs("A whole strip: TMC-2 → IIRS 1555 nm, every window (no selection)", strip, note)
+
+
+def section_finder(d):
+    """ops/find_reference.py on Site N's OHRC frame: the search that found Site N by hand, as a tool."""
+    target = "ch2_ohr_ncp_20250612T2031048828_d_img_d18"
+    try:
+        from ops.find_reference import nac_records, pradan_records, rank
+        tgt, cands = rank(target, pradan_records(d / "pradan" / "shapefiles") + nac_records(d), 0.2)
+    except (Exception, SystemExit):  # noqa: BLE001 - no catalogue here: say nothing
+        return []
+    la, lo = tgt["centre"]
+    L = ["## Choosing the reference by its Sun (`ops/find_reference.py`)", "",
+         f"Registration across very different Suns is the hard case (0 of 12 accepted with the Suns 60-120° apart, "
+         f"above), so the reference is chosen by its Sun: every image in PRADAN's footprint catalogue (OHRC, "
+         f"TMC-2 nadir, IIRS) and every LRO NAC known on this machine that covers the Chandrayaan-2 footprint, "
+         f"ranked by the angle between the two Sun directions at the footprint's centre. PRADAN's catalogue "
+         f"carries no Sun (its angle fields are zero), so the Sun is computed from each image's start time "
+         f"(`ops/lunar_sun.py`: Meeus, no ephemeris file; it matches LROC's own published sub-solar points to "
+         f"0.04° - `ops/test_lunar_sun.py`). For Site N's OHRC frame `{target}` (centre {la:.2f}°, "
+         f"{lo:.2f}°; Sun incidence {tgt['incidence']:.1f}°), {len(cands)} images cover at least 20 % of it; "
+         f"the best Sun first:", "",
+         "| image | instrument | covers | Sun directions apart | azimuth apart | incidence |",
+         "|---|---|---|---|---|---|"]
+    for r in cands[:10]:
+        L.append(f"| `{r['id']}` | {r['instrument']} | {r['overlap']:.0%} | {r['sun_angle']:.1f}° | "
+                 f"{r['d_azimuth']:.1f}° | {r['incidence']:.1f}° |")
+    used = {"ch2_ohr_ncp_20250612T2229094979_d_img_d18", "ch2_tmc_ncn_20200607T2239162106_d_img_d18",
+            "M1282456834RE"}
+    hit = [k for k, r in enumerate(cands, 1) if r["id"] in used]
+    L += ["", f"The three images Site N's evidence uses (the next orbit's OHRC, TMC-2 `20200607T2239`, LRO NAC "
+              f"`M1282456834RE`) rank {', '.join(str(k) for k in hit)} of {len(cands)}." if hit else "", ""]
+    return L
+
+
 def section_full_overlap(full):
     """The dense tiling of one OHRC/NAC overlap (`--tag full`): acceptance, residuals, throughput,
     and whether any ACCEPTED window's archive offset breaks with its nearest accepted neighbour."""
@@ -836,6 +898,10 @@ def main(argv=None):
     # A pair whose latest row says INVALIDATED is withdrawn (the row says why); it is not shown.
     reg = [r for r in latest.values() if not r["pair_id"].startswith("loop_")
            and (r.get("verdict") or "") != "INVALIDATED"]
+    # 3 Oct 2026: one whole strip, every window (section_strip) - its own evidence, kept out of every
+    # count and table below so the selected windows' numbers are exactly what they were.
+    strip = sorted([r for r in reg if r["pair_id"].startswith("strip_")], key=lambda r: r["pair_id"])
+    reg = [r for r in reg if not r["pair_id"].startswith("strip_")]
     loops = [r for r in latest.values() if r["pair_id"].startswith("loop_") and not r["pair_id"].startswith("loop_siten")]
     site_loops = [r for r in latest.values() if r["pair_id"].startswith("loop_siten")]
     # The commit that RENDERED this file and the commit(s) the evidence rows were MEASURED at are
@@ -982,6 +1048,7 @@ def main(argv=None):
             L.append("")
     L += section_ladder(reg)
     L += section_chain(reg, d)
+    L += section_strip(strip, d)
     L += section_site_n(reg, site_loops)
     fa = sorted([r for r in reg if _kind(r) == "tmc2-tmc2"], key=lambda r: r["pair_id"])
     if fa:
@@ -1028,6 +1095,8 @@ def main(argv=None):
                            "fallback's translation on a 25-px frame is not evidence of anything and the verdict stays "
                            "`unconfirmed`. This row exists to show the declared failure, not a registration.")
     L += section_classical()
+    if d:
+        L += section_finder(d)
     # --- loops ----------------------------------------------------------------------------
     if loops:
         rms = [float(r["loop_rms_m"]) for r in loops]
@@ -1448,7 +1517,8 @@ def main(argv=None):
           f"Rows in real_pairs_log.csv: {len(real_rows)}: {len(latest)} distinct pair ids (latest row "
           f"wins) = {len(reg)} registered pairs{_distinct_note(reg)}{_pairings_note(reg)} + "
           f"{len(loops) + len(site_loops)} loops + "
-          f"{len(latest) - len(reg) - len(loops) - len(site_loops)} withdrawn (INVALIDATED). Rows in results_log.csv: "
+          + (f"{len(strip)} windows of one whole strip (their own section) + " if strip else "")
+          + f"{len(latest) - len(reg) - len(strip) - len(loops) - len(site_loops)} withdrawn (INVALIDATED). Rows in results_log.csv: "
           f"{len(log)}.", ""]
     OUT.write_text("\n".join(L), encoding="utf-8")
     print(f"wrote {OUT} ({len(L)} lines)")
