@@ -123,7 +123,7 @@ verified state from 62–63 % at 3 m (476 of 752 for rotation, 469 of 752 for sc
 | Case | What happens | REPORT.md section |
 |---|---|---|
 | Visible → near-infrared, Kaguya TC → MI 1548 nm | matcher refused on 3 of 3 windows; the declared fallback lands 3.4–16.2 m (0.23–1.09 px on MI's 14.8 m grid) from the visible-band registration of the same window | *Kaguya TC → Kaguya MI* |
-| OHRC → TMC-2 at SAC's frame, Sun azimuths 120° apart and elevations 9.9° against 69.4° | 6–7 inliers fitted to 0.13–0.96 px per axis in-sample on the 5.58 m TMC-2 grid, yet 0 % of held-out matches agree: refused on 4 of 4, and again 4 of 4 with the OHRC first placed in LRO's geometry. With the Suns matched (Site N, above) the same two instruments register 10 of 10 | *SAC's benchmark site: OHRC → TMC-2 nadir*; *OHRC → TMC-2 again* |
+| OHRC → TMC-2 at SAC's frame, Sun azimuths 120° apart, elevations 9.9° against 69.4°, and a 5× scale gap | 6–7 inliers fitted to 0.13–0.96 px per axis in-sample on the 5.58 m TMC-2 grid, yet 0 % of held-out matches agree: refused on 4 of 4, and again 4 of 4 with the OHRC first placed in LRO's geometry. This test cannot separate the Sun from the scale (REPORT judges the elevation gap the likelier cause). At Site N, another site, with the Suns matched and a 4.2× gap, the same two instruments register 10 of 10 | *SAC's benchmark site: OHRC → TMC-2 nadir*; *OHRC → TMC-2 again* |
 | IIRS near-infrared (89 m per pixel, 12× coarser) against Kaguya TC | 0 of 11 accepted when matched direct. In a separate test, IIRS strips of two other orbits register onto their own TMC-2: 62 of 62 | *Kaguya TC → Chandrayaan-2 IIRS* |
 | TMC-2 fore → aft (±25°): terrain relief is not a homography | 1 of 4 accepted | *Real viewpoint: TMC-2 fore → aft* |
 | Sun vectors 90° or more apart (MiLOI [3]) | no method we ran registers any of the 16 pairs: ours, SIFT, ORB or AKAZE | *MiLOI* |
@@ -264,6 +264,9 @@ What changed was taking the Sun out of the problem instead of fighting it:
 
 What it does not show: Site N is one site; OHRC → TMC-2 there is 0.61–1.57 TMC-2 px held-out over 9
 of 10 windows, so not sub-pixel in every window; and OHRC → TMC-2 under a Sun far from the OHRC's is still refused.
+At SAC's frame the Sun and the 5× scale change together, so that refusal does not say which of
+the two was too much (REPORT judges the 59° elevation gap the likelier cause, because the frozen
+evidence accepts much larger azimuth gaps at low, similar elevations).
 
 ### Does it hold when the Sun rises, not only when it turns?
 

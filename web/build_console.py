@@ -110,10 +110,10 @@ ROSTER = [
     dict(id="siten_ohrc2031_tmc20200607_c03", tag="CROSS-SENSOR",
          en=("Chandrayaan-2 OHRC → TMC-2",
              "Two cameras on one spacecraft, at 60.7°N, passes chosen for their Sun: 2.2° apart in azimuth.",
-             "At SAC's frame this pairing was refused, with the Suns 120° apart. Here the passes were chosen for their Sun, and all 10 windows are accepted: held-out median 0.61–1.57 TMC-2 px (3.2–8.1 m) over 9 of them. Choosing the pass by its Sun is part of the method."),
+             "At SAC's frame this pairing was refused, with the Suns 120° apart and a 5× scale gap; that test cannot separate the two. Here the passes were chosen for their Sun, at 4.2×, and all 10 windows are accepted: held-out median 0.61–1.57 TMC-2 px (3.2–8.1 m) over 9 of them. Choosing the pass by its Sun is part of the method."),
          hi=("चंद्रयान-2 OHRC → TMC-2",
              "एक ही यान के दो कैमरे, 60.7°N पर; पास सूर्य के आधार पर चुने गए: दिगंश में केवल 2.2° का अंतर।",
-             "SAC के फ्रेम पर यह जोड़ी अस्वीकार हुई थी, जहाँ सूर्य 120° अलग थे। यहाँ पास सूर्य के आधार पर चुने गए, और सभी 10 विंडो स्वीकार हुईं: 9 विंडो पर held-out माध्यिका 0.61–1.57 TMC-2 px (3.2–8.1 m)। सूर्य देखकर पास चुनना हमारी विधि का हिस्सा है।")),
+             "SAC के फ्रेम पर यह जोड़ी अस्वीकार हुई थी, जहाँ सूर्य 120° अलग थे और पैमाने में 5× का अंतर था; वह परीक्षण इन दोनों को अलग नहीं कर सकता। यहाँ पास सूर्य के आधार पर चुने गए, 4.2× पर, और सभी 10 विंडो स्वीकार हुईं: 9 विंडो पर held-out माध्यिका 0.61–1.57 TMC-2 px (3.2–8.1 m)। सूर्य देखकर पास चुनना हमारी विधि का हिस्सा है।")),
     # Site N: NAC -> TMC-2 4 agrees; loop RMS median 1.99 m, max 4.04 m
     dict(id="siten_nacm1282456834re_tmc20200607_c00", tag="CROSS-SENSOR",
          en=("LRO NAC → Chandrayaan-2 TMC-2",
@@ -126,10 +126,10 @@ ROSTER = [
     dict(id="chain_tmc20200607_iirs1555_w05", tag="MULTI-MODAL",
          en=("Chandrayaan-2 TMC-2 → IIRS 1555 nm",
              "Visible onto near-infrared, 16× coarser, on the same orbit under the same Sun.",
-             "IIRS flies with TMC-2 and images the same ground seconds apart, so the Sun is the same and only the band and the scale change. Over two orbits, 62 of 62 infrared registrations are accepted; at 1555 nm the held-out median is 0.16–0.32 IIRS px (14–27 m)."),
+             "IIRS flies with TMC-2 and images the same ground seconds apart, so the Sun is the same and only the band and the scale change. Over two orbits, 62 of 62 infrared registrations are accepted; at 1555 nm the held-out median is 0.16–0.32 IIRS px (13.9–27.3 m)."),
          hi=("चंद्रयान-2 TMC-2 → IIRS 1555 nm",
              "दृश्य प्रकाश से निकट-अवरक्त (near-infrared) पर, 16× मोटे पिक्सेल, एक ही कक्षा और एक ही सूर्य।",
-             "IIRS, TMC-2 के साथ उड़ता है और कुछ ही सेकंड में वही ज़मीन देखता है, इसलिए सूर्य वही रहता है; बदलते केवल बैंड और पैमाना हैं। दो कक्षाओं में 62 में से 62 अवरक्त पंजीकरण स्वीकार; 1555 nm पर held-out माध्यिका 0.16–0.32 IIRS px (14–27 m)।")),
+             "IIRS, TMC-2 के साथ उड़ता है और कुछ ही सेकंड में वही ज़मीन देखता है, इसलिए सूर्य वही रहता है; बदलते केवल बैंड और पैमाना हैं। दो कक्षाओं में 62 में से 62 अवरक्त पंजीकरण स्वीकार; 1555 nm पर held-out माध्यिका 0.16–0.32 IIRS px (13.9–27.3 m)।")),
     # "A real viewpoint test at Site N": 8/8, 39.6-39.8 deg apart, 0.91 px (1.12 m) on 1.232 m
     dict(id="siten_ohrc2031_ohrc2229_c15", tag="SAME SENSOR",
          en=("OHRC → OHRC of the next orbit",
@@ -162,14 +162,15 @@ ROSTER = [
          hi=("Kaguya TC → चंद्रयान-2 IIRS",
              "दृश्य छवि सीधे इमेजिंग-स्पेक्ट्रोमीटर बैंड पर: 12× मोटे पिक्सेल, 89 m प्रति पिक्सेल।",
              "Kaguya मानचित्र पर सीधे मिलान करने पर 11 में से कोई IIRS विंडो स्वीकार नहीं: 10 अस्वीकार और एक अपुष्ट। हम इसे एक सीमा के रूप में बताते हैं। अपनी ही कक्षा के TMC-2 के माध्यम से IIRS पंजीकृत हो जाता है (ऊपर TMC-2 → IIRS जोड़ी)।")),
-    # "SAC's benchmark site: OHRC -> TMC-2": 4 of 4 refused; Suns 120 deg az, incidence 59 deg
+    # "SAC's benchmark site: OHRC -> TMC-2": 4 of 4 refused; Suns 120 deg az, incidence 59 deg, scale 5.0x.
+    # "OHRC -> TMC-2 again": the Sun and the 5.0x scale "this test cannot separate" - never the Sun alone.
     dict(id="sac_ohrc_tmc_w01", limit=True, tag="CROSS-SENSOR",
          en=("Chandrayaan-2 OHRC → TMC-2 at SAC's frame",
-             "Two cameras on one spacecraft, with the Suns 120° apart in azimuth and 59° in incidence.",
-             "Refused on all four windows at SAC's frame, and rightly: a 1.9 km offset between the archives left these windows barely sharing ground, and re-cut in LRO's geometry they are still refused. Where the Suns match, the same two cameras register 10 of 10 (above)."),
+             "Two cameras on one spacecraft, with the Suns 120° apart in azimuth and 59° in incidence, and a 5× scale gap.",
+             "Refused on all four windows at SAC's frame, and rightly: a 1.9 km offset between the archives left these windows barely sharing ground, and re-cut in LRO's geometry they are still refused. That leaves the Sun and the 5× scale, which this test cannot separate. Where the Suns match, at 4.2×, the same two cameras register 10 of 10 (above)."),
          hi=("SAC फ्रेम पर चंद्रयान-2 OHRC → TMC-2",
-             "एक ही यान के दो कैमरे, सूर्य दिगंश में 120° और आपतन (incidence) में 59° अलग।",
-             "SAC के फ्रेम पर चारों विंडो अस्वीकार, और सही कारण से: आर्काइवों के बीच 1.9 km के अंतर से इन विंडो में साझा ज़मीन बहुत कम थी, और LRO की ज्यामिति में दोबारा काटने पर भी वे अस्वीकार हैं। जहाँ सूर्य मेल खाते हैं, वही दो कैमरे 10 में से 10 पंजीकृत करते हैं (ऊपर)।")),
+             "एक ही यान के दो कैमरे, सूर्य दिगंश में 120° और आपतन (incidence) में 59° अलग, और पैमाने में 5× का अंतर।",
+             "SAC के फ्रेम पर चारों विंडो अस्वीकार, और सही कारण से: आर्काइवों के बीच 1.9 km के अंतर से इन विंडो में साझा ज़मीन बहुत कम थी, और LRO की ज्यामिति में दोबारा काटने पर भी वे अस्वीकार हैं। तब बचते हैं सूर्य और 5× का पैमाना, जिन्हें यह परीक्षण अलग नहीं कर सकता। जहाँ सूर्य मेल खाते हैं, 4.2× पर, वही दो कैमरे 10 में से 10 पंजीकृत करते हैं (ऊपर)।")),
     # "Real viewpoint: TMC-2 fore -> aft": 1 of 4 accepted, ~50 deg apart
     dict(id="sac_tmcfore_tmcaft_w04", limit=True, tag="SAME SENSOR",
          en=("TMC-2 fore → TMC-2 aft",
@@ -246,12 +247,6 @@ rs = {"moved": sum(int(r["cells_moved_2px"]) for r in nt), "refused": sum(int(r[
 
 
 # --- the Sun ladder on SAC's frame: one dot per LRO image (REPORT, "Sun azimuth and elevation") ---
-def _robust_med(rs_):
-    v = [f(r["residual_median_px"]) for r in rs_ if r["verdict"] == "agrees"
-         and f(r["inlier_ratio"] or 0) > 0.5 and r.get("residual_median_px")]
-    return round(st.median(v), 2) if v else None
-
-
 ladder = []
 by_nac = collections.defaultdict(list)
 for k, r in reg.items():
@@ -264,12 +259,36 @@ for nac, rs_ in sorted(by_nac.items()):
 
 
 # --- Site N: four instruments, matched Suns (REPORT, "One site, every camera") ---
-def _leg(pred):
+# Each leg carries what REPORT's Site N table prints: windows, accepted, and the RANGE of the
+# per-window held-out medians of accepted windows with an inlier ratio above 0.5, on the leg's
+# reference grid. Until 2 Oct the console drew a median of those medians (1.09, 0.92, 0.62 px),
+# which REPORT never prints (pre-submission audit, L2). Every string is checked against
+# REPORT.md below; the build stops if one is not printed there.
+REPORT_TXT = (ROOT / "REPORT.md").read_text(encoding="utf-8")
+UNPRINTED = []
+
+
+def _printed(s):
+    if s not in REPORT_TXT:
+        UNPRINTED.append(s)
+    return s
+
+
+def _leg(pred, ranged=True):
     rs_ = [r for k, r in reg.items() if pred(k)]
     if not rs_:
         return None
-    return {"n": len(rs_), "ok": sum(r["verdict"] == "agrees" for r in rs_), "med": _robust_med(rs_),
-            "gsd": round(f(rs_[0]["ref_gsd_m"]), 3)}
+    g = f(rs_[0]["ref_gsd_m"])
+    out = {"n": len(rs_), "ok": sum(r["verdict"] == "agrees" for r in rs_), "gsd": round(g, 3),
+           "src": round(f(rs_[0]["src_gsd_m"]), 3)}
+    rob = [f(r["residual_median_px"]) for r in rs_ if r["verdict"] == "agrees"
+           and f(r["inlier_ratio"] or 0) > 0.5 and r.get("residual_median_px")]
+    if ranged and rob:
+        lo, hi = min(rob), max(rob)
+        _printed(f"{lo:.2f}-{hi:.2f} ({lo * g:.1f}-{hi * g:.1f} m) on {g:g} m")
+        _printed(f"{g:g} m")
+        out["px"], out["m"] = f"{lo:.2f}–{hi:.2f}", f"{lo * g:.1f}–{hi * g:.1f}"
+    return out
 
 
 loops = [r for k, r in latest.items() if k.startswith("loop_siten")]
@@ -277,12 +296,19 @@ iirs2 = [r for k, r in reg.items() if k.startswith("chain_tmc20200607_iirs") and
 siten = {"ot": _leg(lambda k: k.startswith("siten_ohrc") and "_tmc" in k),
          "on": _leg(lambda k: k.startswith("siten_ohrc") and "_nac" in k),
          "nt": _leg(lambda k: k.startswith("siten_nac")),
-         "vp": _leg(lambda k: k.startswith("siten_ohrc") and "_ohrc" in k[6:]),
+         "vp": _leg(lambda k: k.startswith("siten_ohrc") and "_ohrc" in k[6:], ranged=False),
          "ti": {"n": len(iirs2), "ok": sum(r["verdict"] == "agrees" for r in iirs2),
-                "gsd": round(st.median(f(r["ref_gsd_m"]) for r in iirs2), 1),
+                # REPORT's grid for this orbit (own-pixels table), not a median of the windows' grids
+                "gsd": _printed(f"{min(f(r['ref_gsd_m']) for r in iirs2):.2f} m")[:-2],
                 "lat": [round(min(f(r["window_lat"]) for r in iirs2), 1), round(max(f(r["window_lat"]) for r in iirs2), 1)]},
          "loop": {"n": len(loops), "med": round(st.median(f(r["loop_rms_m"]) for r in loops), 2),
                   "max": round(max(f(r["loop_rms_m"]) for r in loops), 2)} if loops else None}
+if loops:
+    _printed(f"Loop RMS median **{siten['loop']['med']:.2f} m**")
+    _printed(f"max {siten['loop']['max']:.2f} m")
+if UNPRINTED:
+    raise SystemExit("Site N values that REPORT.md does not print - regenerate REPORT.md or fix the "
+                     "console: " + "; ".join(UNPRINTED))
 
 dem = np.load(DATA / "raw/dem_site_60m.npy").astype(np.float64)
 n = min(dem.shape); dem = dem[:n, :n]; N = 224

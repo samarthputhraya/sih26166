@@ -482,8 +482,8 @@ svg.net text{font-family:var(--f)}
     <div class="head"><h2 data-t="snh">One site, every camera</h2>
       <p data-t="snp">The problem statement names OHRC, TMC and IIRS. At 60.7°N we found an OHRC frame, a TMC-2 pass with its own IIRS strip, and an LRO image whose Suns all lie within a few degrees, and registered every leg. Choosing images by their Sun is part of the method.</p></div>
     <div class="two">
-      <figure><svg class="net" id="net" viewBox="0 0 640 400" role="img" aria-label="The four cameras at one site and the registrations between them"></svg>
-        <figcaption class="src" data-t="sncap">From REPORT.md, One site, every camera. Each arrow: windows accepted of windows, and the held-out median on the reference grid (the error on matches the fit never saw).</figcaption></figure>
+      <figure><svg class="net" id="net" viewBox="0 0 640 412" role="img" aria-label="The four cameras at one site and the registrations between them"></svg>
+        <figcaption class="src" data-t="sncap">From REPORT.md, One site, every camera. Each arrow: windows accepted of windows, and the range of per-window held-out medians in the arrowhead image's pixels (the error on matches the fit never saw; windows with an inlier ratio above 0.5).</figcaption></figure>
       <div class="col">
         <p class="body" id="snsay"></p>
         <div class="sitebtns" id="snbtn"></div>
@@ -583,7 +583,7 @@ svg.net text{font-family:var(--f)}
       <li data-t="lg2"><span><em>OHRC onto LRO NAC, the Sun raised</em><small>cross-sensor, SAC's frame</small></span><p>Nine LRO images with the Sun's azimuth within 20° of the OHRC's and the Sun up to 41.7° higher; 7 of 8 at the highest Sun. Seven more with the Sun 154–177° away: 48 of 56.</p><b class="num">61 of 71</b></li>
       <li data-t="lg3"><span><em>OHRC onto TMC-2, Suns matched</em><small>cross-sensor, one mission</small></span><p>At 60.7°N, passes chosen for their Sun. Held-out median 0.61–1.57 px on TMC-2's 5.17 m grid over 9 of the 10 windows.</p><b class="num">10 of 10, 3.2–8.1 m</b></li>
       <li data-t="lg4"><span><em>OHRC onto LRO NAC, and NAC onto TMC-2, same site</em><small>cross-sensor, two missions</small></span><p>The chain through LRO meets the direct OHRC → TMC-2 with a loop RMS of 1.99 m, median of 4 windows (max 4.04 m): consistency, not accuracy.</p><b class="num">5 of 5, 4 of 4</b></li>
-      <li data-t="lg5"><span><em>TMC-2 onto IIRS, two orbits</em><small>multi-modal, beyond 850 nm</small></span><p>Same orbit, same Sun, 16× scale gap, 999–3223 nm. At 1555 nm the held-out median is 0.16–0.32 IIRS px (14–27 m).</p><b class="num">62 of 62</b></li>
+      <li data-t="lg5"><span><em>TMC-2 onto IIRS, two orbits</em><small>multi-modal, beyond 850 nm</small></span><p>Same orbit, same Sun, 16× scale gap, 999–3223 nm. At 1555 nm the held-out median is 0.16–0.32 IIRS px (13.9–27.3 m).</p><b class="num">62 of 62</b></li>
       <li data-t="lg6"><span><em>OHRC onto OHRC, the next orbit</em><small>same sensor, viewpoint</small></span><p>Viewing directions 40° apart, the Sun within 2.2°. Held-out median 0.91 px on the 1.23 m grid.</p><b class="num">8 of 8, 1.12 m</b></li>
       <li data-t="lg7"><span><em>OHRC onto LRO NAC, 74°S</em><small>whole lit overlap, tiled; cross-sensor</small></span><p>Every window in the shared ground, 13.1 km², none chosen by hand. Held-out median on the 0.93 m grid.</p><b class="num">37 of 37, 0.57 m</b></li>
       <li data-t="lg8"><span><em>OHRC onto LRO NAC, the Sun sweep</em><small>cross-sensor</small></span><p>One OHRC frame against 25 NAC frames, Suns 3° to 153° apart, 69 windows. Nothing wrongly accepted in any band.</p><b class="num">51 registered, 0 missed</b></li>
@@ -598,7 +598,7 @@ svg.net text{font-family:var(--f)}
       <p data-t="rfp">Each line is a section of REPORT.md, hatched the way the plates above are.</p></div>
     <ul class="ledger refused">
       <li data-t="rf1"><span><em>OHRC onto NAC, Suns 60° to 120° apart</em><small>cross-sensor</small></span><p>The hard band of the real sweep: one failure caught, two correct registrations refused, nine the images could not judge. Nothing wrongly accepted.</p><b class="num">0 of 12 accepted</b></li>
-      <li data-t="rf2"><span><em>OHRC onto TMC-2 at SAC's frame</em><small>cross-sensor, one mission</small></span><p>Suns 120° apart in azimuth and 59° in incidence. Re-cut in LRO's geometry it is refused again; where the Suns match, it registers 10 of 10.</p><b class="num">4 of 4 refused</b></li>
+      <li data-t="rf2"><span><em>OHRC onto TMC-2 at SAC's frame</em><small>cross-sensor, one mission</small></span><p>Suns 120° apart in azimuth and 59° in incidence, with a 5× scale gap. Re-cut in LRO's geometry it is refused again. This test cannot separate the Sun from the scale; at another site, with the Suns matched and a 4.2× gap, it registers 10 of 10.</p><b class="num">4 of 4 refused</b></li>
       <li data-t="rf3"><span><em>Kaguya TC onto MI 1548 nm</em><small>multi-modal</small></span><p>The matcher is refused on every window. The declared fallback lands 3.4 to 16.2 m from the visible-band registration of the same window.</p><b class="num">3 of 3 refused</b></li>
       <li data-t="rf4"><span><em>Kaguya TC onto Chandrayaan-2 IIRS, direct</em><small>multi-modal</small></span><p>Near-infrared at 89 m per pixel, 12× coarser than TC. None accepted; through TMC-2 of its own orbit IIRS registers.</p><b class="num">10 of 11 refused</b></li>
       <li data-t="rf5"><span><em>MiLOI, Sun vectors 90° or more apart</em><small>same sensor</small></span><p>No method registered any of them: ours, SIFT, ORB or AKAZE. All in scene S3.</p><b class="num">0 of 16, any method</b></li>
@@ -669,7 +669,7 @@ const T = {
   alnote:'हमारी जाँच का सरल रूप, आपके ब्राउज़र में: हर वर्ग वर्तमान खिसकाव पर पिक्सेल की तुलना करता है, बस इतना। असली जाँच Python में चलती है, हर वर्ग में सहसंबंध (correlation) का शिखर खोजती है, और किसी मिलान की स्थिति कभी नहीं पढ़ती।',
   snh:'एक स्थल, हर कैमरा',
   snp:'समस्या-कथन OHRC, TMC और IIRS का नाम लेता है। 60.7°N पर हमें एक OHRC फ्रेम, अपनी IIRS पट्टी सहित एक TMC-2 पास, और एक LRO छवि मिली जिनके सूर्य कुछ ही डिग्री के भीतर हैं, और हर कड़ी पंजीकृत की। सूर्य देखकर छवियाँ चुनना हमारी विधि का हिस्सा है।',
-  sncap:'REPORT.md, “One site, every camera” से। हर तीर: कुल में से स्वीकृत विंडो, और संदर्भ ग्रिड पर held-out माध्यिका (उन मिलानों पर त्रुटि जिन्हें फ़िट ने कभी नहीं देखा)।',
+  sncap:'REPORT.md, “One site, every camera” से। हर तीर: कुल में से स्वीकृत विंडो, और तीर जिस छवि पर पहुँचता है उसके पिक्सेल में प्रति-विंडो held-out माध्यिकाओं का दायरा (उन मिलानों पर त्रुटि जिन्हें फ़िट ने कभी नहीं देखा; inlier अनुपात 0.5 से ऊपर वाली विंडो)।',
   snnote:'Loop OHRC से TMC-2 तक के दो रास्तों की तुलना करता है, एक LRO छवि से होकर और एक सीधा। सहमति का अर्थ है कि पंजीकरण आपस में सुसंगत हैं; यह पूर्ण सटीकता का माप नहीं है। IIRS विंडो उसी TMC-2 पास के साथ हैं, OHRC फ्रेम पर नहीं।',
   suh:'एक ही ज़मीन, दो सूर्य',
   sup:'चंद्र दक्षिणी ध्रुव पर सूर्य कभी ऊँचा नहीं चढ़ता, इसलिए छायाएँ लंबी होती हैं और पूरे कंपास में घूमती हैं। हर छाया-किनारा जिसका matcher उपयोग कर सकता है, खिसक जाता है या उलट जाता है।',
@@ -695,7 +695,7 @@ const T = {
   lg2:'<span><em>OHRC से LRO NAC, सूर्य ऊँचा</em><small>cross-sensor, SAC का फ्रेम</small></span><p>नौ LRO छवियाँ, सूर्य का दिगंश OHRC के 20° के भीतर और सूर्य 41.7° तक ऊँचा; सबसे ऊँचे सूर्य पर 8 में 7। सात और, सूर्य 154–177° दूर: 56 में 48।</p><b class="num">71 में 61</b>',
   lg3:'<span><em>OHRC से TMC-2, सूर्य मिलाए गए</em><small>cross-sensor, एक मिशन</small></span><p>60.7°N पर, सूर्य देखकर चुने गए पास। 10 में से 9 विंडो पर TMC-2 के 5.17 m ग्रिड पर held-out माध्यिका 0.61–1.57 px।</p><b class="num">10 में 10, 3.2–8.1 m</b>',
   lg4:'<span><em>OHRC से LRO NAC, और NAC से TMC-2, वही स्थल</em><small>cross-sensor, दो मिशन</small></span><p>LRO से होकर जाने वाली श्रृंखला सीधे OHRC → TMC-2 से 1.99 m के loop RMS पर मिलती है, 4 विंडो की माध्यिका (अधिकतम 4.04 m): सुसंगति, सटीकता नहीं।</p><b class="num">5 में 5, 4 में 4</b>',
-  lg5:'<span><em>TMC-2 से IIRS, दो कक्षाएँ</em><small>multi-modal, 850 nm से आगे</small></span><p>एक ही कक्षा, एक ही सूर्य, 16× पैमाना-अंतर, 999–3223 nm। 1555 nm पर held-out माध्यिका 0.16–0.32 IIRS px (14–27 m)।</p><b class="num">62 में 62</b>',
+  lg5:'<span><em>TMC-2 से IIRS, दो कक्षाएँ</em><small>multi-modal, 850 nm से आगे</small></span><p>एक ही कक्षा, एक ही सूर्य, 16× पैमाना-अंतर, 999–3223 nm। 1555 nm पर held-out माध्यिका 0.16–0.32 IIRS px (13.9–27.3 m)।</p><b class="num">62 में 62</b>',
   lg6:'<span><em>OHRC से OHRC, अगली कक्षा</em><small>same sensor, दृष्टिकोण</small></span><p>दृष्टि-दिशाएँ 40° अलग, सूर्य 2.2° के भीतर। 1.23 m ग्रिड पर held-out माध्यिका 0.91 px।</p><b class="num">8 में 8, 1.12 m</b>',
   lg7:'<span><em>OHRC से LRO NAC, 74°S</em><small>पूरा प्रकाशित साझा क्षेत्र, टाइलों में; cross-sensor</small></span><p>साझा ज़मीन की हर विंडो, कुल 13.1 km², कोई हाथ से नहीं चुनी। 0.93 m ग्रिड पर held-out माध्यिका।</p><b class="num">37 में 37, 0.57 m</b>',
   lg8:'<span><em>OHRC से LRO NAC, सूर्य-परीक्षण श्रृंखला</em><small>cross-sensor</small></span><p>एक OHRC फ्रेम 25 NAC फ्रेमों के सामने, सूर्य 3° से 153° अलग, 69 विंडो। किसी भी पट्टी में कुछ भी ग़लत स्वीकार नहीं।</p><b class="num">51 पंजीकृत, 0 छूटे</b>',
@@ -706,7 +706,7 @@ const T = {
   lgexact:'सटीक सत्य के विरुद्ध, LOLA मॉडल से ज्ञात रूपांतरण के साथ बनी कृत्रिम जोड़ी पर, 60 m ग्रिड पर त्रुटि 0.086 px = 5.1 m है जब सूर्य 0° और 15° अलग हों। वास्तविक छवियों पर कोई ज़मीनी सत्य नहीं, इसलिए ऊपर के आँकड़े held-out अवशेष हैं। दोनों तरह के आँकड़े कभी जोड़े नहीं जाते।',
   rfh:'यह क्या अस्वीकार करता है', rfp:'हर पंक्ति REPORT.md का एक खंड है, ऊपर की प्लेटों की तरह धारीदार।',
   rf1:'<span><em>OHRC से NAC, सूर्य 60° से 120° अलग</em><small>cross-sensor</small></span><p>सूर्य-श्रृंखला की कठिन पट्टी: एक विफलता पकड़ी, दो सही पंजीकरण अस्वीकार, नौ को छवियाँ आँक नहीं सकीं। कुछ भी ग़लत स्वीकार नहीं।</p><b class="num">12 में 0 स्वीकृत</b>',
-  rf2:'<span><em>SAC फ्रेम पर OHRC से TMC-2</em><small>cross-sensor, एक मिशन</small></span><p>सूर्य दिगंश में 120° और आपतन में 59° अलग। LRO की ज्यामिति में दोबारा काटने पर फिर अस्वीकार; जहाँ सूर्य मिलते हैं, 10 में 10 पंजीकृत।</p><b class="num">4 में 4 अस्वीकार</b>',
+  rf2:'<span><em>SAC फ्रेम पर OHRC से TMC-2</em><small>cross-sensor, एक मिशन</small></span><p>सूर्य दिगंश में 120° और आपतन में 59° अलग, साथ में पैमाने में 5× का अंतर। LRO की ज्यामिति में दोबारा काटने पर फिर अस्वीकार। यह परीक्षण सूर्य और पैमाने को अलग नहीं कर सकता; दूसरे स्थल पर, सूर्य मिलाकर और 4.2× के अंतर पर, 10 में 10 पंजीकृत।</p><b class="num">4 में 4 अस्वीकार</b>',
   rf3:'<span><em>Kaguya TC से MI 1548 nm</em><small>multi-modal</small></span><p>हर विंडो पर matcher अस्वीकार। घोषित fallback उसी विंडो के दृश्य-बैंड पंजीकरण से 3.4 से 16.2 m दूर पड़ता है।</p><b class="num">3 में 3 अस्वीकार</b>',
   rf4:'<span><em>Kaguya TC से चंद्रयान-2 IIRS, सीधे</em><small>multi-modal</small></span><p>89 m प्रति पिक्सेल पर निकट-अवरक्त, TC से 12× मोटा। कोई स्वीकार नहीं; अपनी कक्षा के TMC-2 के माध्यम से IIRS पंजीकृत होता है।</p><b class="num">11 में 10 अस्वीकार</b>',
   rf5:'<span><em>MiLOI, सूर्य-सदिश 90° या अधिक अलग</em><small>same sensor</small></span><p>किसी भी विधि ने इनमें से कोई पंजीकृत नहीं किया: हमारी, SIFT, ORB या AKAZE। सभी दृश्य S3 में।</p><b class="num">16 में 0, कोई भी विधि</b>',
@@ -768,7 +768,7 @@ const T = {
   snOpen:'खोलें: {l}', of:'{a} में से {b}', ldSay:'दिगंश OHRC के 20° के भीतर: <b>{a} में {b} विंडो स्वीकृत</b>, सूर्य {e}° तक ऊँचा। दिगंश 90° से अधिक दूर: <b>{c} में {d}</b>। हर गोला एक LRO छवि है; भरा भाग उसकी स्वीकृत विंडो का हिस्सा।',
   axLdX:'सूर्य कितना घूमा (दिगंश में अंतर)', axLdY:'सूर्य कितना ऊँचा (उन्नयन में अंतर)',
   knownH:'ज्ञात उत्तर के विरुद्ध', twinH:'क्या अवरक्त फ्रेम केवल धुंधला है? एक ही स्रोत, एक ही मानचित्र-उत्पाद के दो बैंडों के सामने।',
-  netO:'चंद्रयान-2 OHRC', netN:'LRO NAC', netT:'चंद्रयान-2 TMC-2', netI:'चंद्रयान-2 IIRS', netLoop:'loop: {m} m माध्यिका', netVp:'+ अगली कक्षा का OHRC, 40° अलग: {e}'
+  netO:'चंद्रयान-2 OHRC', netN:'LRO NAC', netT:'चंद्रयान-2 TMC-2', netI:'चंद्रयान-2 IIRS', netLoop:'loop: माध्यिका {m} m, अधिकतम {x} m', netGrid:'{g} m ग्रिड', netGridO:'{g} m ग्रिड पर मिलान', netVp:'+ अगली कक्षा का OHRC, 40° अलग: {e}'
 };
 const t = (k, en) => (LANG === 'hi' && T[k] !== undefined) ? T[k] : en;
 const fill = (s, o) => String(s).replace(/\{(\w+)\}/g, (_, k) => (o[k] !== undefined ? o[k] : ''));
@@ -1456,24 +1456,32 @@ drawCal(); ON_LANG.push(drawCal);
 
 /* ================= one site, every camera (REPORT.md, Site N) =================
    Four instruments as nodes and every registration as an arrow, drawn from the logged rows the
-   build summarised (D.siten): windows accepted of windows, and the held-out median on each leg's
-   reference grid. The buttons open the saved run of one window of each leg on the first page. */
+   build summarised (D.siten): windows accepted of windows, and the range of per-window held-out
+   medians REPORT prints for each leg, in pixels of the arrowhead image's grid (the build checks
+   each against REPORT.md). The loop shows its median AND its max: a bare median reads as a bound.
+   The buttons open the saved run of one window of each leg on the first page. */
 function legSay(g){ return g ? fill(t('of', '{b} of {a}'), {a:g.n, b:g.ok}) : '–'; }
-function legMed(g){ return g && g.med !== null ? `${g.med.toFixed(2)} px = ${(g.med * g.gsd).toFixed(1)} m` : ''; }
+function legPx(g, grid){ return g && g.px ? `${g.px} ${grid} px` : ''; }
+function legM(g){ return g && g.m ? `(${g.m} m)` : ''; }
 function drawNet(){
   const S = D.siten; if (!S || !S.ot) return;
   const node = (x, y, a, b, hi) => `<g><rect x="${x - 112}" y="${y - 34}" width="224" height="68" rx="9" fill="${hi ? '#e9eef6' : '#ecebe7'}" stroke="#000" stroke-width="1.5"/>
     <text x="${x}" y="${y - 6}" text-anchor="middle" font-size="17" font-weight="600" fill="#000">${a}</text><text x="${x}" y="${y + 16}" text-anchor="middle" font-size="14" fill="#262624">${b}</text></g>`;
   const arrow = (x0, y0, x1, y1) => `<line x1="${x0}" y1="${y0}" x2="${x1}" y2="${y1}" stroke="#000" stroke-width="2.2" marker-end="url(#ah)"/>`;
-  const lab = (x, y, a, b, anchor) => `<text x="${x}" y="${y}" text-anchor="${anchor || 'middle'}" font-size="14.5" fill="#000" font-weight="600">${a}</text><text x="${x}" y="${y + 18}" text-anchor="${anchor || 'middle'}" font-size="13.5" fill="#262624">${b}</text>`;
+  const txt = (x, y, s, anchor, bold) => `<text x="${x}" y="${y}" text-anchor="${anchor || 'middle'}" font-size="${bold ? 14.5 : 13.5}" fill="${bold ? '#000' : '#262624'}"${bold ? ' font-weight="600"' : ''}>${s}</text>`;
+  const lab = (x, y, lines, anchor) => lines.filter(Boolean).map((l, i) => txt(x, y + 18 * i, l, anchor, i === 0)).join('');
   let s = `<defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#000"/></marker></defs>`;
-  const mpp = g => g ? `${g} ${t('mpp', 'm per pixel')}` : '';
-  s += node(130, 70, t('netO', 'Chandrayaan-2 OHRC'), S.vp ? mpp(S.vp.gsd) : '', true) + node(510, 70, t('netN', 'LRO NAC'), mpp(S.on.gsd), false)
-     + node(130, 300, t('netT', 'Chandrayaan-2 TMC-2'), mpp(S.ot.gsd), true) + node(510, 300, t('netI', 'Chandrayaan-2 IIRS'), mpp(S.ti.gsd), true);
-  s += arrow(242, 70, 396, 70) + arrow(130, 104, 130, 264) + arrow(470, 104, 220, 264) + arrow(242, 300, 396, 300);
-  s += lab(320, 36, legSay(S.on), legMed(S.on)) + lab(142, 168, legSay(S.ot), legMed(S.ot), 'start')
-     + lab(378, 178, legSay(S.nt), legMed(S.nt), 'start') + lab(320, 340, legSay(S.ti), `${S.ti.lat[0]}–${S.ti.lat[1]}°N`);
-  if (S.loop) s += `<text x="320" y="390" text-anchor="middle" font-size="14" fill="#8f0050">${fill(t('netLoop', 'loop: {m} m median'), {m:S.loop.med.toFixed(2)})}</text>`;
+  const grid = g => fill(t('netGrid', '{g} m grid'), {g});
+  // OHRC's own pixels are ~0.25 m; every leg at this site matched it resampled to this grid.
+  s += node(130, 88, t('netO', 'Chandrayaan-2 OHRC'), fill(t('netGridO', 'matched on a {g} m grid'), {g:S.ot.src}), true)
+     + node(510, 88, t('netN', 'LRO NAC'), grid(S.on.gsd), false)
+     + node(130, 300, t('netT', 'Chandrayaan-2 TMC-2'), grid(S.ot.gsd), true) + node(510, 300, t('netI', 'Chandrayaan-2 IIRS'), grid(S.ti.gsd), true);
+  s += arrow(242, 88, 396, 88) + arrow(130, 122, 130, 264) + arrow(470, 122, 220, 264) + arrow(242, 300, 396, 300);
+  s += lab(320, 22, [legSay(S.on), `${legPx(S.on, 'NAC')} ${legM(S.on)}`])
+     + lab(142, 176, [legSay(S.ot), legPx(S.ot, 'TMC-2'), legM(S.ot)], 'start')
+     + lab(396, 190, [legSay(S.nt), `${legPx(S.nt, 'TMC-2')} ${legM(S.nt)}`], 'start')
+     + lab(320, 354, [legSay(S.ti), `${S.ti.lat[0]}–${S.ti.lat[1]}°N`]);
+  if (S.loop) s += `<text x="320" y="400" text-anchor="middle" font-size="14" fill="#8f0050">${fill(t('netLoop', 'loop: median {m} m, max {x} m'), {m:S.loop.med.toFixed(2), x:S.loop.max.toFixed(2)})}</text>`;
   $('#net').innerHTML = s;
   $('#snsay').innerHTML = fill(t('snSay', 'OHRC → TMC-2: <b>{a}</b>, OHRC → LRO NAC: <b>{b}</b>, NAC → TMC-2: <b>{c}</b>, and IIRS along the same TMC-2 pass: <b>{d}</b>. The two routes meet with a loop RMS of {lm} m (median; max {lx} m). And the OHRC of the next orbit, seen 40° apart: <b>{e}</b>.'),
     {a:legSay(S.ot), b:legSay(S.on), c:legSay(S.nt), d:legSay(S.ti), e:legSay(S.vp), lm:S.loop ? S.loop.med.toFixed(2) : '–', lx:S.loop ? S.loop.max.toFixed(2) : '–'});
