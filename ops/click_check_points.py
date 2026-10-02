@@ -118,12 +118,21 @@ class Clicker:
         import matplotlib
         matplotlib.use(os.environ.get("LUNAXX_CLICK_BACKEND", "TkAgg"))   # tests run it headless (Agg)
         import matplotlib.pyplot as plt
+        # matplotlib's own keys fought this tool (3 Oct 2026, first real session): `c` and Backspace
+        # are its "back" (they reset the views), `s` saves a PICTURE (it looked like saving a point),
+        # `q` closes. Only this tool's meanings are left.
+        for k, keep in (("keymap.back", ["left"]), ("keymap.forward", ["right"]), ("keymap.save", ["ctrl+s"]),
+                        ("keymap.quit", ["ctrl+w"]), ("keymap.xscale", []), ("keymap.yscale", []),
+                        ("keymap.grid", []), ("keymap.grid_minor", []), ("keymap.fullscreen", ["ctrl+f"])):
+            matplotlib.rcParams[k] = keep
         self.plt = plt
+        self.msg = ""
         self.pair_id, self.clicker = pair_id, clicker
         src_p, ref_p, prior_p = pair_paths(pair_id)
         g = json.loads(prior_p.read_text(encoding="utf-8"))
         self.ref_gsd = float(g["reference"]["resampled_gsd_mpp"])
         self.src_gsd = float(g["source"]["resampled_gsd_mpp"])
+        self.d_sun = g.get("d_sun_azimuth_deg")
         self.H_prior_inv = np.linalg.inv(np.asarray(g["prior_H_source_to_reference"], np.float64))
         self.ref, self.src = _read(ref_p), _read(src_p)
         self.sha = (sha12(src_p), sha12(ref_p))
@@ -150,8 +159,21 @@ class Clicker:
         self.src_zoom_half = HALF_REF_ZOOM * self.ref_gsd / self.src_gsd
         fig, axs = plt.subplots(2, 2, figsize=(14, 11))
         self.fig, (self.aR, self.aRz), (self.aS, self.aSz) = fig, axs[0], axs[1]
+        fig.subplots_adjust(bottom=0.12, top=0.86)
         fig.canvas.mpl_connect("button_press_event", self.on_click)
         fig.canvas.mpl_connect("key_press_event", self.on_key)
+        # Buttons for every action: a keyboard is not needed, and a click on one is never a point.
+        from matplotlib.widgets import Button
+        self.buttons = []
+        for k, (label, fn, color) in enumerate((("ACCEPT this point  (Enter)", self.accept, "#bfe6c4"),
+                                                ("Remove last point", self.drop_last, "#eeeeee"),
+                                                ("Contrast", self._contrast, "#eeeeee"),
+                                                ("Invert source", self._invert, "#eeeeee"),
+                                                ("Done - save and close", self._quit, "#f3d9b1"))):
+            bax = fig.add_axes((0.04 + k * 0.19, 0.02, 0.17, 0.05))
+            b = Button(bax, label, color=color, hovercolor="#ffffff")
+            b.on_clicked(lambda _ev, f=fn: (f(), self.draw()))
+            self.buttons.append((bax, b))
         if self.queue:
             self._next_repeat()
         self.draw()
@@ -207,17 +229,33 @@ class Clicker:
                    "source, magnified - click the same centre", True, invert=self.invert, marks=smarks,
                    cur=self.src_pt, col="cyan")
         mode = (f"REPEAT {len(self.queue)} left (re-click point {self.queue[0]['point_id']})" if self.queue
-                else f"{len(acc)} points accepted")
+                else f"{len(acc)} points saved")
+        warn = ""
+        if self.d_sun is not None and float(self.d_sun) > 90:
+            warn = (f"\nSUNS {float(self.d_sun):.0f}° APART: shadows fall on OPPOSITE sides of every crater. Click a "
+                    "crater's RIM CENTRE (between its bright and dark halves) or a boulder - never a dark shadow.")
         self.fig.suptitle(f"{self.pair_id} - {mode} - confidence {self.conf} - contrast: "
                           f"{CONTRASTS[self.contrast][0]}{' - source inverted' if self.invert else ''}\n"
-                          "Enter accept   Backspace drop last   1/2/3 confidence   c contrast   i invert   q quit",
-                          fontsize=10)
+                          f"{self.msg or 'Click the feature in all four panels, then ACCEPT (button or Enter).'}"
+                          f"{warn}", fontsize=10, color="black")
         self.fig.canvas.draw_idle()
+
+    def _contrast(self):
+        self.contrast = (self.contrast + 1) % len(CONTRASTS)
+
+    def _invert(self):
+        self.invert = not self.invert
+
+    def _quit(self):
+        self.plt.close(self.fig)
 
     def on_click(self, ev):
         tb = getattr(self.fig.canvas, "toolbar", None)
         if ev.inaxes is None or ev.xdata is None or (tb is not None and tb.mode):
             return                                    # the toolbar is panning or zooming
+        if ev.inaxes not in (self.aR, self.aRz, self.aS, self.aSz):
+            return                                    # a button: its own callback acts
+        self.msg = ""
         x, y = float(ev.xdata), float(ev.ydata)
         # A panned source view stays where it was panned to.
         xl, yl = self.aS.get_xlim(), self.aS.get_ylim()
@@ -257,7 +295,10 @@ class Clicker:
 
     def accept(self):
         if self.ref_pt is None or self.src_pt is None:
-            print("  click the exact centre in BOTH magnified views first")
+            missing = " and ".join(w for w, p in (("the top-right (reference) zoom", self.ref_pt),
+                                                  ("the bottom-right (source) zoom", self.src_pt)) if p is None)
+            self.msg = f"NOT SAVED: click the exact centre in {missing} first."
+            print("  " + self.msg)
             return
         n = len(self.rows) + 1
         row = {"point_id": f"p{n:03d}", "src_x": f"{self.src_pt[0]:.2f}", "src_y": f"{self.src_pt[1]:.2f}",
@@ -270,6 +311,8 @@ class Clicker:
         self.rows.append(row)
         print(f"  {row['point_id']}" + (f" (repeat of {row['repeat_of']})" if row["repeat_of"] else "") +
               f": ref ({row['ref_x']}, {row['ref_y']})  src ({row['src_x']}, {row['src_y']})")
+        self.msg = (f"SAVED {row['point_id']}. Now click the next feature in the top-left panel." if not self.queue
+                    else f"SAVED repeat of {row['repeat_of']}.")
         self.ref_pt = self.src_pt = None
         if self.queue:
             self.queue.pop(0)
@@ -284,6 +327,7 @@ class Clicker:
             return
         gone = self.rows.pop()
         _rewrite(self.csv, self.rows)
+        self.msg = f"Removed {gone['point_id']}."
         print(f"  removed {gone['point_id']}")
 
 
