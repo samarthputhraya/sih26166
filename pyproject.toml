@@ -1,0 +1,33 @@
+# Install (CPU only - torch comes from the CPU index, so install the pinned requirements first):
+#   pip install -r requirements.txt
+#   pip install -e .
+# then: lunaxx-register, lunaxx-find-reference, lunaxx-workbench (lunaxx/cli.py).
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lunaxx"
+version = "1.0.0"
+description = "Lunar image registration that knows when it is wrong: Chandrayaan-2 across Sun, scale and sensor, with an independent per-region verdict (SIH 2026, SIH26166)"
+readme = "README.md"
+license = { text = "Apache-2.0" }
+requires-python = ">=3.12"
+authors = [{ name = "Team LunaXX" }]
+# The pinned, CPU-only set is requirements.txt (it needs the PyTorch CPU index, which a pyproject
+# dependency list cannot name); these are the minimums the code imports.
+dependencies = ["torch", "kornia", "numpy", "opencv-contrib-python", "scipy", "pillow", "tifffile",
+                "pds4_tools", "pvl", "certifi"]
+
+[project.urls]
+Console = "https://samarthputhraya.github.io/sih26166/"
+Source = "https://github.com/samarthputhraya/sih26166"
+
+[project.scripts]
+lunaxx-register = "lunaxx.cli:register"
+lunaxx-find-reference = "lunaxx.cli:find_reference"
+lunaxx-workbench = "lunaxx.cli:workbench"
+
+[tool.setuptools.packages.find]
+include = ["lunaxx*", "core*", "ops*", "web*", "evaluation*", "baselines*", "app*"]
+namespaces = true
