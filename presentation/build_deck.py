@@ -61,6 +61,7 @@ FIGURES NOT FROM make_figures (made once, 23 Sep, committed):
                     the crop, and the run's timing sentence was removed from the page before the
                     capture: a live run's counts and seconds differ from the logged row (4,182 vs
                     4,179 inliers), and only logged figures go on a slide.
+  qr_console.png    segno 1.6.6, make('https://samarthputhraya.github.io/sih26166/', error='m'), 2 Oct;
   qr_repo.png       segno 1.6.6, make('https://github.com/samarthputhraya/sih26166', error='m'),
                     scale 12, border 2, dark #1F3A5F. Decodes to the repository URL on slide 6.
 
@@ -571,8 +572,9 @@ def slide3(s):
     ty = 4.46
     _tab(s, L, ty, H[1])
     chip_rows = [
-        ("Stack", ("Python", "OpenCV", "PyTorch (CPU)", "kornia", "NumPy", "Streamlit")),
-        ("Methods", ("LoFTR", "MAGSAC++", "gradient orientation", "FFT area check")),
+        ("Stack", ("Python", "OpenCV", "PyTorch (CPU)", "kornia", "HTML5 console")),
+        # v11: no "Methods" row - the pipeline above names every method, and the space goes to
+        # the prototype a judge can open.
         ("Data", ("OHRC", "TMC-2", "IIRS", "LRO NAC", "LOLA", "Kaguya TC", "MI")),
     ]
     for k, (label, chips) in enumerate(chip_rows):
@@ -588,20 +590,22 @@ def slide3(s):
     # "Runtime and match distribution": median seconds over the 74 deg S OHRC -> NAC windows.
     _box(s, L, 6.30, 8.25, 0.50,
          [P(R("Hardware: ", 12.5, True, ACCENT),
-            R("laptop CPU, no discrete GPU, offline — median 7.7 s per 640-px window "
+            R("laptop CPU, no GPU, offline — median 7.7 s per 640-px window "
               "(89 OHRC → NAC windows)",
               12.5, False, INK))],
          fill=FILL_ORANGE, line=LINE_ORANGE, anchor="m", margins=(0.14, 0.03, 0.12, 0.03),
          name="hardware")
 
-    # The working prototype (pointer: "Flow Charts/Images/ working prototype").
-    pic = _pic(s, "fig8_console.jpg", 0, ty, h=1.94, border=LINE_GREY)
+    # The working prototype (pointer: "Flow Charts/Images/ working prototype"): the published
+    # console on a laptop, and the same page on a phone in Hindi (fig8, composed 2 Oct from two
+    # screenshots of web/dist/site). The caption is the address, so a judge can open it.
+    pic = _pic(s, "fig8_console.jpg", 0, ty, h=2.40, border=LINE_GREY)
     if pic is not None:
         pic.left = Inches(RIGHT) - pic.width
-    _text(s, 9.10, 6.46, RIGHT - 9.10, 0.40,
-          [P(R("Working prototype: ", 11.5, True, NAVY),
-             R("the LunaXX workbench, registering live on a laptop CPU", 11.5, False, MUTED),
-             align="r")], name="proto-caption")
+    _box(s, L, ty + 0.44 + 2 * 0.45 + 0.02, 8.25, 0.44,
+         [P(R("Try it: ", 12.5, True, NAVY), R("samarthputhraya.github.io/sih26166", 12.5, True, ACCENT),
+            R(" · any browser or phone, no install, English or Hindi", 12, False, INK))],
+         fill=FILL_BLUE, line=LINE_BLUE, anchor="m", margins=(0.14, 0.03, 0.12, 0.03), name="try-it")
 
 
 # ---------------------------------------------------------------------------------------------
@@ -752,11 +756,12 @@ def slide5(s):
     # Benefits (social, economic, environmental, etc.).
     by = 5.44
     _tab(s, L, by, H[1])
-    cards = [("SCIENTIFIC", "A calibrated verdict per region, on real lunar data"),
+    # v11: concrete, and each one something a user does or saves (fresh-eyes review, 2 Oct).
+    cards = [("SCIENTIFIC", "Mosaics and hazard maps use only pixel-confirmed squares"),
              # Open-source since LICENSE (Apache-2.0) and NOTICE were added on 23 Sep (v9 H3).
-             ("ECONOMIC", "Open-source (Apache-2.0), CPU-only; outputs open in QGIS and GDAL"),
-             ("SOCIAL", "Public data and code: anyone can check every number"),
-             ("ENVIRONMENTAL", "Runs offline on an existing laptop: no new hardware")]
+             ("ECONOMIC", "Apache-2.0, CPU-only, no licence; results open in QGIS and GDAL"),
+             ("SOCIAL", "English and Hindi, in any browser; public data, every number checkable"),
+             ("ENVIRONMENTAL", "Runs offline on an existing laptop: no new hardware, no cloud")]
     gap = 0.15
     cw = (12.78 - L - gap * 3) / 4
     for k, (head, body) in enumerate(cards):
@@ -821,15 +826,18 @@ def slide6(s):
     cx, cw = 8.55, 12.78 - 8.55
     _box(s, cx, 1.33, cw, 5.52, fill=FILL_BLUE, line=LINE_BLUE, radius=0.04, name="repo-card")
     _text(s, cx + 0.2, 1.43, cw - 0.4, 0.34,
-          [P(R("Code, evidence and the full report", 13.5, True, NAVY), align="c")], name="repo-head")
-    _pic(s, "qr_repo.png", cx + (cw - 2.05) / 2, 1.84, w=2.05)
-    _text(s, cx + 0.15, 3.96, cw - 0.3, 0.30,
-          [P(R("github.com/samarthputhraya/sih26166", 12.5, True, ACCENT), align="c")], name="repo-url")
-    _text(s, cx + 0.22, 4.38, cw - 0.44, 2.42,
+          [P(R("Try it, then read the code", 13.5, True, NAVY), align="c")], name="repo-head")
+    # v11: the QR opens the published console (it works on a phone, in English or Hindi); the
+    # repository is one link from there and is printed below it.
+    _pic(s, "qr_console.png", cx + (cw - 2.05) / 2, 1.84, w=2.05)
+    _text(s, cx + 0.15, 3.92, cw - 0.3, 0.42,
+          [P(R("samarthputhraya.github.io/sih26166", 12.5, True, ACCENT), align="c"),
+           P(R("code: github.com/samarthputhraya/sih26166", 11.5, False, NAVY), align="c")], name="repo-url")
+    _text(s, cx + 0.22, 4.42, cw - 0.44, 2.38,
           [P(R("The pipeline, the evidence logs and REPORT.md, regenerated from them by one command. "
                "Apache-2.0.", 12, False, INK), sa=5),
-           P(R("Try it: ", 12, True, NAVY),
-             R("python -m web.server opens a workbench that registers your own images.", 12, False, INK),
+           P(R("Offline: ", 12, True, NAVY),
+             R("python -m web.server registers your own images on a laptop.", 12, False, INK),
              sa=5),
            P(R("Next: ", 12, True, NAVY),
              R("time a whole OHRC strip; Suns 60–120° apart by choosing the pass; relief by DTM "

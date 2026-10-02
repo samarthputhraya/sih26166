@@ -306,6 +306,7 @@ footer{padding-block:48px 70px;border-top:1.5px solid var(--ink)}
 
 /* ---------- v11: language, the four steps, the gallery, swipe, plain verdicts ---------- */
 html[lang="hi"] body{line-height:1.7}
+html[lang="hi"] :is(i,em,.gloss,.src,.it){font-style:normal}  /* Devanagari has no italic; a slanted one reads as a mistake */
 .lang{appearance:none;border:1.5px solid var(--ink);background:none;font:inherit;font-size:15px;padding:3px 10px;cursor:pointer;color:var(--ink);display:inline-flex;gap:6px}
 .lang span[aria-current="true"]{font-weight:650;text-decoration:underline;text-underline-offset:3px}
 .lede{font-size:16.5px;line-height:1.5;color:var(--ink2);margin-top:-8px}
@@ -334,6 +335,7 @@ html[lang="hi"] body{line-height:1.7}
 .cta .go{text-align:center;text-decoration:none}
 .cmd{font-size:13.5px;line-height:1.45;background:rgba(0,0,0,.08);padding:8px 10px;overflow-x:auto;white-space:pre;color:var(--ink)}
 .vplain{font-size:19px;line-height:1.45;margin-top:12px;max-width:44ch}
+#bview .vplain{display:none}  /* on the bench the same sentence heads the result */
 .legend{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:15px;color:var(--ink2);margin-top:10px}
 .legend span{display:inline-flex;align-items:center;gap:7px}
 .legend svg{width:18px;height:18px;flex:none;background:#000}

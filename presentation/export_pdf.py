@@ -31,6 +31,13 @@ DECK = HERE / "SIH26166_LunaXX_deck.pptx"
 PDF = DECK.with_suffix(".pdf")
 POWERPNT = r"C:\Program Files\Microsoft Office\root\Office16\POWERPNT.EXE"
 FOOTER_TOP_IN = 6.95                      # the template's footer bar starts here (build_deck)
+# Addresses printed on the slides, made clickable again after printing (search text -> link).
+# The console's address is searched first; "github.com/samarthputhraya/sih26166" does not match
+# inside "samarthputhraya.github.io/sih26166", so the two never overlap.
+LINKS = (("samarthputhraya.github.io/sih26166", "https://samarthputhraya.github.io/sih26166/"),
+         ("github.com/samarthputhraya/sih26166", "https://github.com/samarthputhraya/sih26166"),
+         ("arxiv.org/abs/2509.04775", "https://arxiv.org/abs/2509.04775"),
+         ("arxiv.org/abs/2604.25208", "https://arxiv.org/abs/2604.25208"))
 # Page 1 and 2 carry the idea title since v9 (23 Sep): "TITLE PAGE" and "IDEA TITLE" were the
 # template's placeholders for it, and build_deck's audit now bans both strings.
 TITLES = ("Knows When It Is Wrong", "Knows When It Is Wrong", "TECHNICAL APPROACH",
@@ -137,6 +144,15 @@ def crop_and_check(printed: pathlib.Path, final: pathlib.Path) -> int:
             fam = _family(buf)
             if fam and fam != "Calibri":
                 problems.append(f"page {i + 1}: printed in {fam}, not Calibri - export again")
+    # Printing to PDF drops PowerPoint's hyperlinks, so a judge reading the PDF could not click the
+    # addresses on slides 3 and 6. Put the links back over the printed text (v11, 2 Oct).
+    n_links = 0
+    for page in doc:
+        for text, uri in LINKS:
+            for rect in page.search_for(text):
+                page.insert_link({"kind": pymupdf.LINK_URI, "from": rect, "uri": uri})
+                n_links += 1
+    print(f"  {n_links} link(s) restored over the printed addresses")
     doc.set_metadata({"title": "SIH26166 - LunaXX", "author": "Team LunaXX",
                       "subject": "Smart India Hackathon 2026, problem statement SIH26166"})
     doc.save(str(final), garbage=3, deflate=True)
