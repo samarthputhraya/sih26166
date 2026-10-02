@@ -161,6 +161,7 @@ def _call(url, body=None):
 def test_the_routes_answer_and_refuse_what_they_should(live):
     code, h = _call(live + "api/health")
     assert code == 200 and h["service"] == "lunaxx-console" and h["modes"] == ["upload", "sample", "known"]
+    assert h["hosted"] is False                        # the page says "this machine", not "a cloud CPU"
     assert _call(live + "api/jobs/" + "0" * 32)[0] == 404
     assert _call(live + "api/thumb/no_such_pair.jpg")[0] == 404
     code, err = _call(live + "api/jobs", {"mode": "nope"})

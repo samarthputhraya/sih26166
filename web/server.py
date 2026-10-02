@@ -554,7 +554,8 @@ class Handler(BaseHTTPRequestHandler):
                                     "commit": _commit(), "max_bytes": MAX_UPLOAD,
                                     "accepts": sorted(ALLOWED),
                                     "modes": ["upload", "sample", "known"],
-                                    "library": len(library()), "known_max_side": KNOWN_MAX_SIDE})
+                                    "library": len(library()), "known_max_side": KNOWN_MAX_SIDE,
+                                    "hosted": PUBLIC})
         if path == "/api/library":
             return self._json(200, {"pairs": library()})
         m = re.fullmatch(r"/api/thumb/([A-Za-z0-9_.-]+?)(_source)?\.jpg", path)

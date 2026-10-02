@@ -750,7 +750,8 @@ const T = {
   ctaLive:'लाइव workbench खोलें', ctaLiveT:'वही pipeline एक क्लाउड CPU पर चलती है। अपनी छवियाँ डालें या कोई वास्तविक जोड़ी फिर से चलाएँ। अगर वह सो रहा हो तो जागने में लगभग एक मिनट लगता है।',
   ctaLocal:'या अपने लैपटॉप पर, ऑफ़लाइन, बिना GPU:',
   live:'<b>लाइव।</b> हर run इसी मशीन के CPU पर <code>core.pipeline.run_all</code> है, वही फ़ंक्शन जिसके पीछे हर स्थिर आँकड़ा है, कोड कमिट {c} पर। आप जो भेजते हैं वह रखा नहीं जाता।',
-  pillLive:'इस मशीन पर लाइव', pillSaved:'केवल सहेजे परिणाम', galhLive:'वास्तविक जोड़ियाँ, लाइव चलाएँ',
+  liveHosted:'<b>लाइव।</b> हर run इस सर्वर के CPU पर <code>core.pipeline.run_all</code> है, वही फ़ंक्शन जिसके पीछे हर स्थिर आँकड़ा है, कोड कमिट {c} पर। यह साझा प्रति है: एक समय में एक registration, अधिकतम 3 कतार में, हर अपलोड {mb} MB तक। आप जो भेजते हैं वह रखा नहीं जाता।',
+  pillLive:'इस मशीन पर लाइव', pillHosted:'क्लाउड CPU पर लाइव', pillSaved:'केवल सहेजे परिणाम', galhLive:'वास्तविक जोड़ियाँ, लाइव चलाएँ',
   libLive:'इस मशीन पर {n} विंडो, चंद्रयान-2, LRO और Kaguya से। किसी को चुनें और उसकी फ़ाइलों से उसे लाइव फिर चलाएँ।',
   savedLine:'स्थिर साक्ष्य से सहेजा गया परिणाम।', all:'सभी',
   stSend:'भेजा जा रहा है', stWait:'पिछले run की प्रतीक्षा', stPrep:'CPU पर pipeline चल रही है', stCheck:'MAGSAC++ फ़िट और क्षेत्र-जाँच', stPack:'परिणाम बनाया जा रहा है', stDone:'पूरा', stMatch:'LoFTR मिलान, टाइल {d} में से {t}', stWork:'काम जारी', stNot:'पंजीकृत नहीं',
@@ -1223,8 +1224,11 @@ ON_LANG.push(() => { if (!B.live){ staticTexts(); B.lib.forEach(e => { e.v = vwo
 (location.protocol === 'file:' ? Promise.reject() : fetch('api/health')).then(r => r.ok ? r.json() : null).then(async h => {
   if (!h || h.service !== 'lunaxx-console') return;
   B.live = true; B.health = h; B.maxBytes = Number(h.max_bytes) || 0;
-  const liveTexts = () => { $('#pill').className = 'pill on'; $('#pill span').textContent = t('pillLive', 'Live on this machine');
-    $('#status').innerHTML = fill(t('live', '<b>Live.</b> Every run is <code>core.pipeline.run_all</code> on this machine\'s CPU, the same function behind every frozen number, at code commit {c}. Nothing you send is kept.'), {c:esc(h.commit)}); };
+  // a hosted copy (web.server --public, e.g. on Cloud Run) says so: "this machine" would read as the visitor's own
+  const liveTexts = () => { $('#pill').className = 'pill on'; $('#pill span').textContent = h.hosted ? t('pillHosted', 'Live on a cloud CPU') : t('pillLive', 'Live on this machine');
+    $('#status').innerHTML = h.hosted
+      ? fill(t('liveHosted', '<b>Live.</b> Every run is <code>core.pipeline.run_all</code> on this server\'s CPU, the same function behind every frozen number, at code commit {c}. A shared copy: one registration at a time, at most 3 waiting, {mb} MB per upload. Nothing you send is kept.'), {c:esc(h.commit), mb:Math.round(B.maxBytes / 1048576)})
+      : fill(t('live', '<b>Live.</b> Every run is <code>core.pipeline.run_all</code> on this machine\'s CPU, the same function behind every frozen number, at code commit {c}. Nothing you send is kept.'), {c:esc(h.commit)}); };
   liveTexts(); ON_LANG.push(liveTexts);
   $('#deck').classList.add('live'); $('.modes').hidden = false; $('#ownCta').hidden = true; setMode('pair');
   const lt = $('#libTitle'); lt.dataset.t = 'galhLive'; lt.dataset.en = 'Real pairs, run live'; lt.innerHTML = t('galhLive', 'Real pairs, run live');
