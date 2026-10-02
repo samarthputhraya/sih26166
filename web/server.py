@@ -65,6 +65,12 @@ _lock = threading.Lock()                # one registration at a time: LoFTR is m
 PUBLIC = False                          # --public: a hosted copy anyone can reach (see main)
 PUBLIC_QUEUE = 3                        # jobs running or waiting, at most, on a public copy
 PUBLIC_MAX_UPLOAD = 24 * 1024 * 1024
+TILE = 640                              # core.matcher.TILE: the reference is matched in one pass
+
+
+def _where() -> str:
+    """Where a live run happened, in the visitor's terms: a hosted copy's CPU is not theirs."""
+    return "on this server's CPU" if PUBLIC else "on this machine"
 
 
 # The built page is a FRAGMENT: the Artifact runtime wraps it in a document and supplies a small
@@ -145,6 +151,50 @@ def _save(upload, into: pathlib.Path, stem: str) -> pathlib.Path:
     return path
 
 
+def _fit_reference(a: pathlib.Path, b: pathlib.Path) -> str:
+    """Two photos (no ground scale) whose reference is wider than one matcher tile: reduce BOTH
+    by the factor that brings the reference to TILE px, so their relative scale is kept and the
+    matcher can take the pair. Returns the sentence the panel adds, or "" if nothing was done.
+
+    core.matcher matches the reference in one pass and refuses a reference over TILE px (it tiles
+    only the image to align). The page shrinks photos to 1600 px before sending, so until 2 Oct
+    two ordinary screenshots came back "Not registered" with advice to call Python functions. A
+    GeoTIFF or PDS product keeps its pixels: its ground scale decides the common grid, and
+    resampling it here would make that scale false.
+    """
+    import cv2
+    import tifffile
+    from core.io_loader import load
+    if any(p.suffix.lower() not in (".tif", ".tiff") for p in (a, b)):
+        return ""
+    if load(a)[1].get("gsd_mpp") or load(b)[1].get("gsd_mpp"):
+        return ""
+    ia, ib = tifffile.imread(str(a)), tifffile.imread(str(b))
+    side = max(ib.shape[:2])
+    if side <= TILE:
+        return ""
+    f = TILE / side
+    for path, im in ((a, ia), (b, ib)):
+        size = (max(1, round(im.shape[1] * f)), max(1, round(im.shape[0] * f)))
+        tifffile.imwrite(str(path), cv2.resize(im, size, interpolation=cv2.INTER_AREA))
+    return (f"Both images were reduced by the same factor, to {f:.2f} of their size, so that the "
+            f"reference fits one {TILE}-px window, as every frozen pair does; their relative scale is "
+            f"unchanged.")
+
+
+def _plain_error(msg: str) -> str:
+    """The matcher's refusal of an oversized reference, in the visitor's terms."""
+    m = re.search(r"exceed the (\d+) px tile \((\([^)]*\)) and (\([^)]*\))\)", msg)
+    if not m:
+        return msg
+    return (f"The reference is too large to register here in one pass: after both images are "
+            f"brought to one ground scale it is {m.group(3)} px, and this workbench matches onto a "
+            f"reference of at most {m.group(1)} px, one window, as every frozen pair is. Crop the "
+            f"reference to the ground you want, at most {m.group(1)} x {m.group(1)} px (the image to "
+            f"align can be larger), and run it again. Photos and screenshots are reduced "
+            f"automatically; a GeoTIFF keeps its pixels, so that its ground scale stays true.")
+
+
 def register(body: dict) -> dict:
     """Run the real pipeline on two uploaded images and return a console panel."""
     from core.pipeline import run_all
@@ -155,9 +205,13 @@ def register(body: dict) -> dict:
     try:
         a = _save(body["a"], tmp, "a")
         b = _save(body["b"], tmp, "b")
+        fitted = _fit_reference(a, b)
         t0 = time.perf_counter()
         with _lock:
-            r = run_all(a, b)
+            try:
+                r = run_all(a, b)
+            except ValueError as e:
+                raise ValueError(_plain_error(str(e))) from e
         wall = time.perf_counter() - t0
 
         def side(path, which):
@@ -176,18 +230,19 @@ def register(body: dict) -> dict:
         scaled = ((r.get("scale_factors") or {}).get("note") or "").strip()
         scaled = scaled.split(". A NAC EDR label")[0].rstrip(". ")
         plain = (
-            "<b>This ran just now, on this machine.</b> Not a cached result: "
+            f"<b>This ran just now, {_where()}.</b> Not a cached result: "
             f"<code>core.pipeline.run_all</code> took {wall:.1f} s on CPU, the same function that "
             "produced every number in the frozen evidence, and the panel you are reading was "
             "drawn by the same renderer the frozen pairs use."
             + (f" Scale: {scaled}." if scaled else "")
+            + (f" {fitted}" if fitted else "")
             + ("" if sa["gsd"] != "unknown" and sb["gsd"] != "unknown" else
                " <b>Neither upload carried a ground scale</b>, so the common-scale step had "
                "nothing to bridge and both images were taken to be at the same scale already. "
                "Upload GeoTIFFs to exercise scale invariance.")
         )
         return panel(r, sa, sb, pid="upload", label="Your upload",
-                     sub="Registered live on this machine, not from cache.",
+                     sub=f"Registered live {_where()}, not from cache.",
                      tag="LIVE", plain=plain)
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
@@ -412,7 +467,7 @@ def run_job(job: dict, body: dict, run=None) -> None:
             a, b = PAIRS / pid / f"{pid}_source.tif", PAIRS / pid / f"{pid}_ref.tif"
             label, tag, names = e["label"], e["tag"], (e["a"], e["b"])
             sub = (f"Window {e['window']:02d}, " if e["window"] else "") + "run from its files in data/pairs."
-            plain = ("<b>Run just now, on this machine, from the pair's own files.</b> A live run can "
+            plain = (f"<b>Run just now, {_where()}, from the pair's own files.</b> A live run can "
                      "differ from the logged row by a few inliers, because MAGSAC++ samples at random.")
         elif mode == "known":
             def v(k, d, lo, hi):
@@ -428,11 +483,12 @@ def run_job(job: dict, body: dict, run=None) -> None:
             names = ("your image, warped", "your image")
         else:
             a, b = _save(body["a"], tmp, "a"), _save(body["b"], tmp, "b")
+            fitted = _fit_reference(a, b)
             label, tag = "Your upload", "live"
-            sub = "Registered live on this machine, not from cache."
-            plain = ("<b>This ran just now, on this machine.</b> Not a cached result: "
+            sub = f"Registered live {_where()}, not from cache."
+            plain = (f"<b>This ran just now, {_where()}.</b> Not a cached result: "
                      "<code>core.pipeline.run_all</code>, the same function that produced every "
-                     "number in the frozen evidence.")
+                     "number in the frozen evidence." + (f" {fitted}" if fitted else ""))
             names = (body["a"].get("name") or "image A", body["b"].get("name") or "image B")
 
         if _lock.locked():
@@ -456,7 +512,7 @@ def run_job(job: dict, body: dict, run=None) -> None:
         res["bundle"] = f"api/jobs/{job['id']}/bundle.zip" if job["bundle"] else None
         job.update(result=res, state="done", stage="done")
     except ValueError as e:
-        job.update(state="error", error=str(e))
+        job.update(state="error", error=_plain_error(str(e)))
     except Exception as e:                              # a bad pair must not kill the bench
         traceback.print_exc()
         job.update(state="error", error=f"{type(e).__name__}: {e}")
@@ -609,7 +665,7 @@ class Handler(BaseHTTPRequestHandler):
                 f"(about {mb(MAX_UPLOAD * 3 / 4)} of image, because the payload is base64). "
                 f"Crop or downsample, or register a 640-px window instead of the whole frame - "
                 f"that is what every frozen pair on the page is. The cap is a memory guard on "
-                f"this laptop, not a limit of the pipeline.")})
+                f"{'this shared server' if PUBLIC else 'this laptop'}, not a limit of the pipeline.")})
         try:
             body = json.loads(self.rfile.read(n).decode("utf-8"))
             if not isinstance(body, dict):

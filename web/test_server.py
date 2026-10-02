@@ -193,3 +193,57 @@ def test_an_empty_post_is_a_400_not_a_413(live):
     except urllib.error.HTTPError as e:
         code = e.code
     assert code == 400
+
+
+def _tif(path, w, h, gsd=None, seed=0):
+    """A grey TIFF, with a GeoTIFF ModelPixelScaleTag when `gsd` is given."""
+    import tifffile
+    img = (np.random.default_rng(seed).random((h, w)) * 255).astype(np.uint8)
+    extra = [(33550, "d", 3, (gsd, gsd, 0.0), False)] if gsd else []
+    tifffile.imwrite(str(path), img, extratags=extra)
+    return path
+
+
+def test_two_large_photos_are_reduced_by_one_factor_so_the_reference_fits_a_tile(tmp_path):
+    """Until 2 Oct two ordinary screenshots (the page sends at most 1600 px) came back "Not
+    registered": core.matcher takes a reference of at most one tile."""
+    import tifffile
+    a, b = _tif(tmp_path / "a.tif", 1600, 1200), _tif(tmp_path / "b.tif", 1000, 1500, seed=1)
+    note = server._fit_reference(a, b)
+    ra, rb = tifffile.imread(str(a)), tifffile.imread(str(b))
+    assert max(rb.shape) == server.TILE
+    f = server.TILE / 1500
+    assert ra.shape == (round(1200 * f), round(1600 * f))      # the same factor: relative scale kept
+    assert "same factor" in note and f"{f:.2f}" in note
+
+
+def test_a_photo_already_within_a_tile_and_a_georeferenced_pair_keep_their_pixels(tmp_path):
+    small = (_tif(tmp_path / "a.tif", 1600, 1200), _tif(tmp_path / "b.tif", 600, 500))
+    geo = (_tif(tmp_path / "ga.tif", 1600, 1600, gsd=1.25), _tif(tmp_path / "gb.tif", 1500, 1500, gsd=5.0))
+    for a, b in (small, geo):
+        before = [p.read_bytes() for p in (a, b)]
+        assert server._fit_reference(a, b) == ""
+        assert [p.read_bytes() for p in (a, b)] == before
+
+
+def test_the_tile_matches_the_matcher():
+    from core.matcher import TILE
+    assert server.TILE == TILE
+
+
+def test_the_matchers_oversize_refusal_reaches_the_visitor_in_plain_words():
+    raw = ("both images exceed the 640 px tile ((1600, 1600) and (1500, 900)). Crop to the overlap "
+           "first with io_loader.crop_to_overlap, and resample to a common GSD with "
+           "scale.to_common_gsd - matching two full strips directly is not affordable on this machine.")
+    msg = server._plain_error(raw)
+    assert "(1500, 900) px" in msg and "at most 640 x 640 px" in msg
+    assert "io_loader" not in msg and "this machine" not in msg
+    assert server._plain_error("notes.png: could not be decoded as an image") == \
+        "notes.png: could not be decoded as an image"
+
+
+def test_a_hosted_copy_does_not_call_its_cpu_the_visitors_machine(monkeypatch):
+    monkeypatch.setattr(server, "PUBLIC", True)
+    assert server._where() == "on this server's CPU"
+    monkeypatch.setattr(server, "PUBLIC", False)
+    assert server._where() == "on this machine"

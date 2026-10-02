@@ -406,7 +406,7 @@ svg.net text{font-family:var(--f)}
         <label class="check"><input type="checkbox" id="shrink" checked><span data-t="shrink">Shrink photos larger than 1600 px before sending, both by the same factor. Faster, and it keeps their relative scale.</span></label>
         <button type="button" class="go" id="goPair" disabled data-t="goPair">Register the pair</button>
         <p class="log" id="logPair" aria-live="polite"></p>
-        <p class="fine" data-t="finePair">GeoTIFF, PDS (.img, .xml, .lbl), PNG or JPEG. The two must show overlapping ground. A GeoTIFF's map scale is used; a PNG or JPEG has none, so both are taken to be at about the same scale.</p>
+        <p class="fine" data-t="finePair">GeoTIFF, PDS (.img, .xml, .lbl), PNG or JPEG. The two must show overlapping ground. A GeoTIFF's map scale is used; a PNG or JPEG has none, so both are taken to be at about the same scale. The reference is matched as one window of at most 640 px: photos are reduced to fit, both by the same factor; crop a larger GeoTIFF reference first.</p>
       </div>
 
       <div class="mode" id="mKnown" role="tabpanel" aria-labelledby="tabKnown" hidden>
@@ -663,6 +663,7 @@ const T = {
   galh:'चंद्रयान-2 के वास्तविक परिणाम', ownh:'अपनी छवियाँ', runsh:'इस सत्र में खोले गए',
   efoot1:'LunaXX चंद्रयान-2 की छवियों को सूर्य कोण, पैमाने और सेंसर के पार चंद्र संदर्भ-छवियों पर संरेखित करता है, फिर उत्तर को वर्ग-दर-वर्ग ऐसे परीक्षण से जाँचता है जो मिलानों को नहीं देखता, और बताता है कि वह कहाँ परिणाम की ज़िम्मेदारी नहीं लेगा।',
   efoot2:'बाईं ओर कोई वास्तविक जोड़ी चुनें, उसका परिणाम यहाँ दिखेगा। यह ज़मीन LOLA उन्नयन मॉडल से 74°S का वास्तविक स्थल है, जिस पर अक्षर खड़े हैं; सूर्य घुमाने के लिए इस पर खींचें।',
+  runnoteH:'यह इसी सर्वर के CPU पर चल रही वास्तविक pipeline है: दोनों छवियाँ एक ज़मीनी पैमाने पर, प्रकाश को ढलान-दिशा (gradient orientation) में बदलना, LoFTR मिलान, sub-pixel परिशोधन, MAGSAC++, फिर वर्ग-दर-वर्ग क्षेत्र-जाँच।',
   runnote:'यह इसी मशीन के CPU पर चल रही वास्तविक pipeline है: दोनों छवियाँ एक ज़मीनी पैमाने पर, प्रकाश को ढलान-दिशा (gradient orientation) में बदलना, LoFTR मिलान, sub-pixel परिशोधन, MAGSAC++, फिर वर्ग-दर-वर्ग क्षेत्र-जाँच।',
   evh:'साक्ष्य', evp:'नीचे का सब कुछ वास्तविक चंद्र छवियों पर, स्थिर (freeze) कमिट पर, एक बार मापा गया है, और हर आँकड़ा REPORT.md में है। पहले पृष्ठ पर कोई भी जोड़ी चुनकर उसका सहेजा परिणाम खोलें और डाउनलोड करें।',
   alh:'स्वयं संरेखित करें', alA:'एक स्वीकृत जोड़ी', alR:'एक अस्वीकृत जोड़ी', alsnap:'pipeline को संरेखित करने दें', alscat:'फिर से बिखेरें',
@@ -723,7 +724,7 @@ const T = {
   imp1:'टीम LunaXX, स्मार्ट इंडिया हैकाथॉन 2026, समस्या-कथन SIH26166', imp3:'Jost में मुद्रित (Apollo 11 की चंद्र पट्टिका के Futura का पुनरुद्धार), हिंदी के लिए Poppins',
   tabPair:'दो छवियाँ', tabKnown:'एक छवि, ज्ञात उत्तर', dAb:'संरेखित करने वाली छवि', dAs:'जो खिसकेगी', dBb:'संदर्भ', dBs:'वह ग्रिड जिस पर वह बैठेगी',
   shrink:'1600 px से बड़ी तस्वीरों को भेजने से पहले छोटा करें, दोनों को एक ही गुणक से। तेज़, और उनका सापेक्ष पैमाना बना रहता है।', goPair:'जोड़ी पंजीकृत करें',
-  finePair:'GeoTIFF, PDS (.img, .xml, .lbl), PNG या JPEG। दोनों में साझा ज़मीन होनी चाहिए। GeoTIFF का मानचित्र-पैमाना उपयोग होता है; PNG या JPEG में नहीं होता, इसलिए दोनों को लगभग समान पैमाने का माना जाता है।',
+  finePair:'GeoTIFF, PDS (.img, .xml, .lbl), PNG या JPEG। दोनों में साझा ज़मीन होनी चाहिए। GeoTIFF का मानचित्र-पैमाना उपयोग होता है; PNG या JPEG में नहीं होता, इसलिए दोनों को लगभग समान पैमाने का माना जाता है। संदर्भ छवि अधिकतम 640 px की एक विंडो के रूप में मिलाई जाती है: फ़ोटो दोनों एक ही अनुपात में छोटी की जाती हैं; बड़े GeoTIFF संदर्भ को पहले काट लें।',
   knownFine:'चंद्रमा की कोई भी तस्वीर दें। सर्वर उसे नीचे दी गई मात्राओं से विकृत करता है, विकृत प्रति को मूल पर वापस पंजीकृत करता है और मापता है कि वह कितनी दूर पड़ी। सही उत्तर ज्ञात है, इसलिए यह वास्तविक त्रुटि है, अनुमान नहीं। यह उसी तस्वीर से उसी की तुलना है, इसलिए सूर्य या सेंसर नहीं बदलता: यह ज्यामिति, धुंधलापन और शोर जाँचता है।',
   dKb:'चंद्रमा की कोई भी छवि', dKs:'तस्वीर, स्क्रीनशॉट, PDS उत्पाद', kRand:'यादृच्छिक रूपांतरण', goKnown:'विकृत करें और वापस पंजीकृत करें',
   /* script sentences */
@@ -752,6 +753,7 @@ const T = {
   live:'<b>लाइव।</b> हर run इसी मशीन के CPU पर <code>core.pipeline.run_all</code> है, वही फ़ंक्शन जिसके पीछे हर स्थिर आँकड़ा है, कोड कमिट {c} पर। आप जो भेजते हैं वह रखा नहीं जाता।',
   liveHosted:'<b>लाइव।</b> हर run इस सर्वर के CPU पर <code>core.pipeline.run_all</code> है, वही फ़ंक्शन जिसके पीछे हर स्थिर आँकड़ा है, कोड कमिट {c} पर। यह साझा प्रति है: एक समय में एक registration, अधिकतम 3 कतार में, हर अपलोड {mb} MB तक। आप जो भेजते हैं वह रखा नहीं जाता।',
   pillLive:'इस मशीन पर लाइव', pillHosted:'क्लाउड CPU पर लाइव', pillSaved:'केवल सहेजे परिणाम', galhLive:'वास्तविक जोड़ियाँ, लाइव चलाएँ',
+  libHosted:'इस सर्वर पर {n} विंडो, चंद्रयान-2, LRO और Kaguya से। किसी को चुनें और उसकी फ़ाइलों से उसे लाइव फिर चलाएँ।',
   libLive:'इस मशीन पर {n} विंडो, चंद्रयान-2, LRO और Kaguya से। किसी को चुनें और उसकी फ़ाइलों से उसे लाइव फिर चलाएँ।',
   savedLine:'स्थिर साक्ष्य से सहेजा गया परिणाम।', all:'सभी',
   stSend:'भेजा जा रहा है', stWait:'पिछले run की प्रतीक्षा', stPrep:'CPU पर pipeline चल रही है', stCheck:'MAGSAC++ फ़िट और क्षेत्र-जाँच', stPack:'परिणाम बनाया जा रहा है', stDone:'पूरा', stMatch:'LoFTR मिलान, टाइल {d} में से {t}', stWork:'काम जारी', stNot:'पंजीकृत नहीं',
@@ -1229,6 +1231,10 @@ ON_LANG.push(() => { if (!B.live){ staticTexts(); B.lib.forEach(e => { e.v = vwo
     $('#status').innerHTML = h.hosted
       ? fill(t('liveHosted', '<b>Live.</b> Every run is <code>core.pipeline.run_all</code> on this server\'s CPU, the same function behind every frozen number, at code commit {c}. A shared copy: one registration at a time, at most 3 waiting, {mb} MB per upload. Nothing you send is kept.'), {c:esc(h.commit), mb:Math.round(B.maxBytes / 1048576)})
       : fill(t('live', '<b>Live.</b> Every run is <code>core.pipeline.run_all</code> on this machine\'s CPU, the same function behind every frozen number, at code commit {c}. Nothing you send is kept.'), {c:esc(h.commit)}); };
+  // the note under every live result names the CPU it ran on (pre-submission audit, L15)
+  if (h.hosted){ const rn = $('[data-t="runnote"]'); if (rn){ rn.dataset.t = 'runnoteH';
+    rn.dataset.en = "This is the real pipeline on this server's CPU: both images to one ground scale, lighting reduced to gradient orientation, LoFTR matching, sub-pixel refinement, MAGSAC++, then the area check square by square.";
+    rn.innerHTML = t('runnoteH', rn.dataset.en); } }
   liveTexts(); ON_LANG.push(liveTexts);
   $('#deck').classList.add('live'); $('.modes').hidden = false; $('#ownCta').hidden = true; setMode('pair');
   const lt = $('#libTitle'); lt.dataset.t = 'galhLive'; lt.dataset.en = 'Real pairs, run live'; lt.innerHTML = t('galhLive', 'Real pairs, run live');
@@ -1237,7 +1243,9 @@ ON_LANG.push(() => { if (!B.live){ staticTexts(); B.lib.forEach(e => { e.v = vwo
     const L = (await (await fetch('api/library')).json()).pairs || [];
     if (!L.length){ $('#libSay').textContent = 'No real pairs on this machine: data/pairs/ is empty. They live in the team Drive, not in git.'; B.lib = []; drawLib(); return; }
     B.lib = L.map(e => ({...e, thumb:`api/thumb/${e.id}.jpg`}));
-    $('#libSay').textContent = fill(t('libLive', '{n} windows on this machine, from Chandrayaan-2, LRO and Kaguya. Pick one to run it again, live, from its files.'), {n:L.length});
+    $('#libSay').textContent = h.hosted
+      ? fill(t('libHosted', '{n} windows on this server, from Chandrayaan-2, LRO and Kaguya. Pick one to run it again, live, from its files.'), {n:L.length})
+      : fill(t('libLive', '{n} windows on this machine, from Chandrayaan-2, LRO and Kaguya. Pick one to run it again, live, from its files.'), {n:L.length});
     B.group = 'all'; drawChips(); drawLib();
   } catch (e) { $('#libSay').textContent = 'Could not list the real pairs: ' + e.message; }
   pairReady();
