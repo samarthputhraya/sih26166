@@ -983,102 +983,158 @@ def fig_sun_map():
     return out
 
 
+# fig10 is drawn at the size slide 4 places it (presentation/build_deck.py reads the PNG's pixel width
+# back at SITE_N_DPI), so every point size below IS the size on the slide. The v11 draft was drawn at
+# 6.6 x 4.1 in and shrunk to 5.45 in: its captions printed at 7.0 and 7.8 pt and its labels at 8.7-9.5 pt,
+# under the deck's 11 pt floor (pre-submission audit, 2 Oct). Nothing here is smaller than 11 pt.
+SITE_N_SIZE = (5.90, 3.50)
+SITE_N_DPI = 200
+SITE_N_MIN_PT = 11.0
+REPORT_MD = ROOT / "REPORT.md"
+DECK_ACCENT = "#c24a1e"            # the deck's ACCENT (build_deck): readable at 11 pt, unlike ORANGE
+
+
 def fig_site_n():
     """Site N (ops/cut_chain_pairs.py site, 1 Oct 2026): one place where OHRC, TMC-2, IIRS and an
-    LRO NAC were all registered under matched Suns. Four instruments as nodes, every leg as an edge
-    labelled with windows accepted / windows and its held-out median on its reference grid (accepted
-    windows with an inlier ratio above 0.5, as REPORT.md quotes them), and the loop closure of
-    OHRC -> NAC -> TMC-2 against OHRC -> TMC-2. Every value from real_pairs_log.csv."""
+    LRO NAC were all registered under matched Suns. Four instruments as nodes; every leg an edge
+    labelled with windows accepted / windows and the RANGE of its per-window held-out medians on its
+    reference grid - the range REPORT.md prints in its Site N table (accepted windows with an inlier
+    ratio above 0.5), not a median of medians, which REPORT never prints. The loop closure OHRC -> NAC
+    -> TMC-2 against OHRC -> TMC-2 is a caption with its median AND its max: as a bare "2.0 m" it was
+    read as a bound, and two of the four loops are above 2.0 m (audit, 2 Oct).
+
+    Every value is read from real_pairs_log.csv, and every one that REPORT.md prints is looked up in
+    REPORT.md before the figure is written: a figure that disagrees with the report is not drawn."""
     latest = {}
     for r in _rows(REAL_LOG):
         latest[r["pair_id"]] = r
     legs = {"ot": [r for p, r in latest.items() if p.startswith("siten_ohrc") and "_tmc" in p],
             "on": [r for p, r in latest.items() if p.startswith("siten_ohrc") and "_nac" in p],
             "nt": [r for p, r in latest.items() if p.startswith("siten_nac")]}
-    if not legs["ot"]:
+    if not (legs["ot"] and legs["on"] and legs["nt"]):
         return None
     tmc = legs["ot"][0]["reference_product"]
+    # The IIRS strip of the same orbit, bands beyond TMC-2's 400-850 nm passband (746 nm is the control).
     ti = [r for p, r in latest.items() if p.startswith(f"chain_tmc{tmc[12:20]}_iirs") and "_iirs746_" not in p]
     loops = [r for p, r in latest.items() if p.startswith("loop_siten")]
+    if not (ti and loops):
+        return None
+    report = REPORT_MD.read_text(encoding="utf-8")
+    unprinted = []
 
-    def summ(rows):
+    def need(text):
+        """A value as REPORT.md prints it; recorded if the report does not contain it."""
+        if text not in report:
+            unprinted.append(text)
+        return text
+
+    def leg(rows, grid):
+        """REPORT.md's Site N cell for one leg (ops/make_report.py section_site_n): accepted / windows,
+        and the min-max of the held-out medians of accepted windows with an inlier ratio above 0.5,
+        in pixels of `grid` - the leg's reference, the image at the arrowhead."""
         acc = [r for r in rows if r["verdict"] == "agrees"]
         rob = [float(r["residual_median_px"]) for r in acc
                if r.get("residual_median_px") and float(r.get("inlier_ratio") or 0) > 0.5]
         g = float(rows[0]["ref_gsd_m"])
-        med = f"held-out {np.median(rob):.2f} px = {np.median(rob) * g:.1f} m" if rob else "no accuracy quoted"
-        return f"{len(acc)}/{len(rows)} accepted", med
+        lo, hi = min(rob), max(rob)
+        need(f"{lo:.2f}-{hi:.2f} ({lo * g:.1f}-{hi * g:.1f} m) on {g:g} m")
+        need(f"| {len(rows)} | agrees {len(acc)} |")
+        return (f"{len(acc)}/{len(rows)} accepted", f"{lo:.2f}–{hi:.2f} {grid} px",
+                f"({lo * g:.1f}–{hi * g:.1f} m)")
 
-    fig, ax = plt.subplots(figsize=(6.6, 4.1))
-    ax.set_xlim(0, 10)
-    ax.set_ylim(0, 6.25)
-    ax.axis("off")
-    g = lambda rows, k: float(rows[0][k])  # noqa: E731
-    nodes = {
-        "O": (1.7, 4.6, f"Chandrayaan-2 OHRC\nmatched at {g(legs['ot'], 'src_gsd_m'):.2f} m"),
-        "N": (8.3, 4.6, f"LRO NAC\n{g(legs['on'], 'ref_gsd_m'):.2f} m" if legs["on"] else "LRO NAC"),
-        "T": (1.7, 1.4, f"Chandrayaan-2 TMC-2\n{g(legs['ot'], 'ref_gsd_m'):.1f} m"),
-        "I": (8.3, 1.4, f"Chandrayaan-2 IIRS\n{float(ti[0]['ref_gsd_m']):.0f} m, 999-3223 nm" if ti else "IIRS"),
-    }
-    for k, (x, y, label) in nodes.items():
-        col = BLUE if k in ("O", "T", "I") else MUTED
-        from matplotlib.patches import FancyBboxPatch
-        ax.add_patch(FancyBboxPatch((x - 1.55, y - 0.55), 3.1, 1.1,
-                     boxstyle="round,pad=0.05,rounding_size=0.15", fc="#eef4fb" if col == BLUE else "#f1f1ef",
-                     ec=col, lw=1.4))
-        ax.text(x, y, label, ha="center", va="center", fontsize=11.5, color=INK, fontweight="bold")
-
-    def edge(a, b, rows, label_xy, ha="center"):
-        (x0, y0, _), (x1, y1, _) = nodes[a], nodes[b]
-        ax.annotate("", xy=(x1 - (1.5 if x1 > x0 else -1.5 if x1 < x0 else 0), y1 + (0.6 if y1 < y0 else -0.6 if y1 > y0 else 0)),
-                    xytext=(x0 + (1.5 if x1 > x0 else -1.5 if x1 < x0 else 0), y0 - (0.6 if y1 < y0 else -0.6 if y1 > y0 else 0)),
-                    arrowprops=dict(arrowstyle="-|>", color=AQUA, lw=2.2))
-        a1, m1 = summ(rows)
-        ax.text(*label_xy, f"{a1}\n{m1}", ha=ha, va="center", fontsize=11, color=INK)
-
-    edge("O", "T", legs["ot"], (1.85, 3.0), ha="left")
-    if legs["on"]:
-        edge("O", "N", legs["on"], (5.0, 5.2))
-    if legs["nt"]:
-        edge("N", "T", legs["nt"], (5.75, 2.75), ha="left")
-    if ti:
-        bands = sorted({re.search(r"_iirs(\d+)_", r["pair_id"]).group(1) for r in ti}, key=int)
-        acc = sum(r["verdict"] == "agrees" for r in ti)
-        edge("T", "I", ti, (5.0, 0.42))
-        # The IIRS windows lie along the TMC-2 strip, not on the site's windows (claim-check, 2 Oct): say where.
-        lats = [float(r["window_lat"]) for r in ti]
-        ax.texts[-1].set_text(f"{acc}/{len(ti)}, {len(bands)} infrared bands (multi-modal)\n"
-                              f"along this TMC-2 pass, {min(lats):.1f}-{max(lats):.1f}°N")
-        ax.texts[-1].set_fontsize(10.5)
-    view = [r for p, r in latest.items() if re.match(r"siten_ohrc\d+_ohrc\d+_c\d+$", p)]
-    if view:
-        import json
-        a1, m1 = summ(view)
-        sep = []
-        for r in view:                     # the angle between the two viewing directions, per window
-            p = ROOT / "data" / "pairs" / r["pair_id"] / "geometry_prior.json"
-            if p.exists():
-                v = (json.loads(p.read_text(encoding="utf-8")).get("view_at_window") or {}).get("angle_between_deg")
-                sep += [float(v)] if v is not None else []
-        apart = f"viewed {np.median(sep):.0f}° apart: " if sep else ""
-        ax.text(0.15, 5.74, f"+ OHRC → OHRC of the next orbit,\n{apart}{a1},\n{m1}",
-                ha="left", va="center", fontsize=10.5, color=INK)
-    if loops:
-        rms = [float(r["loop_rms_m"]) for r in loops]
-        # a caption, not a label: no free space in the triangle at the slide size
-        fig.text(0.014, 0.085, f"Loop OHRC → NAC → TMC-2 against OHRC → TMC-2: {np.median(rms):.1f} m median over "
-                 f"{len(loops)} windows (consistency, not accuracy)", fontsize=9.5, color=ORANGE)
-    every = legs["ot"] + legs["on"] + legs["nt"]                       # the middle of the windows, as REPORT
+    ot, on, nt = leg(legs["ot"], "TMC-2"), leg(legs["on"], "NAC"), leg(legs["nt"], "TMC-2")
+    g_ohrc, g_nac, g_tmc = (need(f"{float(legs['ot'][0]['src_gsd_m']):g} m"),
+                            need(f"{float(legs['on'][0]['ref_gsd_m']):g} m"),
+                            need(f"{float(legs['ot'][0]['ref_gsd_m']):g} m"))
+    g_iirs = need(f"{min(float(r['ref_gsd_m']) for r in ti):.2f} m")
+    bands = sorted({int(re.search(r"_iirs(\d+)_", r["pair_id"]).group(1)) for r in ti})
+    ti_acc = sum(r["verdict"] == "agrees" for r in ti)
+    # 30 = the per-band "accepted" cells of that orbit's IIRS table, summed: each must be printed there.
+    orbit = report.split(f"orbit of {tmc[12:16]}-{tmc[16:18]}-{tmc[18:20]} (", 1)[-1].split("####", 1)[0]
+    for b in bands:
+        n_b = sum(f"_iirs{b}_" in r["pair_id"] for r in ti)
+        a_b = sum(f"_iirs{b}_" in r["pair_id"] and r["verdict"] == "agrees" for r in ti)
+        if f"| {b} nm | infrared: multi-modal | {a_b}/{n_b} |" not in orbit:
+            unprinted.append(f"{b} nm {a_b}/{n_b} in the orbit's IIRS table")
+    lats = [float(r["window_lat"]) for r in ti]
+    for v in (min(lats), max(lats)):
+        need(f"{v:.4f}")                                          # the window rows print 4 decimals
+    rms = [float(r["loop_rms_m"]) for r in loops]
+    need(f"Loop RMS median **{np.median(rms):.2f} m**")
+    need(f"max {max(rms):.2f} m")
+    every = legs["ot"] + legs["on"] + legs["nt"]                  # the middle of the windows, as REPORT
     lat = float(np.median([float(r["window_lat"]) for r in every]))
     lon = float(np.median([float(r["window_lon"]) for r in every]))
-    ax.set_title(f"One site ({lat:.1f}°N, {abs(lon if lon < 180 else lon - 360):.1f}°W) and its TMC-2 pass: "
-                 "Suns matched, each leg checked", loc="left", fontweight="bold", fontsize=13, pad=6)
-    fig.text(0.014, 0.01, "windows accepted / windows · held-out = median error of matches the fit never saw, on the\n"
-             "reference grid, accepted windows with inlier ratio above 0.5 · REPORT.md, Site N", fontsize=8.5, color=MUTED)
-    fig.tight_layout(rect=(0, 0.12, 1, 1))
+    lon = (lon + 180.0) % 360.0 - 180.0
+    site = f"{abs(lat):.1f}°{'N' if lat >= 0 else 'S'} {abs(lon):.1f}°{'E' if lon >= 0 else 'W'}"
+    need(f"near {abs(lat):.1f}°{'N' if lat >= 0 else 'S'}, {abs(lon):.1f}°{'E' if lon >= 0 else 'W'}")
+    if unprinted:
+        raise RuntimeError("fig10 would show values REPORT.md does not print - regenerate REPORT.md or fix "
+                           "the figure: " + "; ".join(unprinted))
+
+    W, H = SITE_N_SIZE
+    fig = plt.figure(figsize=(W, H))
+    ax = fig.add_axes((0, 0, 1, 1))
+    ax.set_xlim(0, W)
+    ax.set_ylim(0, H)
+    ax.axis("off")
+    fs, fs_name, fs_title = 11, 11.5, 12
+
+    def text(x, y, s, size=fs, weight="normal", colour=INK, ha="center"):
+        return ax.text(x, y, s, ha=ha, va="center", fontsize=size, fontweight=weight, color=colour,
+                       zorder=3)
+
+    # Nodes, in inches from the bottom-left corner: the Chandrayaan-2 cameras in blue, LRO in grey.
+    bw, bh = 2.00, 0.48
+    top, bot = H - 0.60, H - 2.12                                 # top edges of the two node rows
+    left, right = 0.04, W - 0.04 - bw
+    # OHRC's own pixels are ~0.25 m; every Site N leg matched it resampled to 1.232 m (src_gsd_m).
+    nodes = {"O": (left, top, "Chandrayaan-2 OHRC", f"matched on a {g_ohrc} grid", BLUE),
+             "N": (right, top, "LRO NAC", f"{g_nac} grid", MUTED),
+             "T": (left, bot, "Chandrayaan-2 TMC-2", f"{g_tmc} grid", BLUE),
+             "I": (right, bot, "Chandrayaan-2 IIRS", f"{g_iirs} grid, {bands[0]}–{bands[-1]} nm", BLUE)}
+    for x, y, name, detail, col in nodes.values():
+        ax.add_patch(FancyBboxPatch((x, y - bh), bw, bh, boxstyle="round,pad=0,rounding_size=0.08",
+                                    fc="#eef4fb" if col == BLUE else "#f1f1ef", ec=col, lw=1.4, zorder=2))
+        text(x + bw / 2, y - bh / 2 + 0.11, name, fs_name, "bold")
+        text(x + bw / 2, y - bh / 2 - 0.11, detail)
+
+    def arrow(x0, y0, x1, y1):
+        ax.add_patch(FancyArrowPatch((x0, y0), (x1, y1), arrowstyle="-|>", mutation_scale=16, linewidth=2.0,
+                                     color=AQUA, zorder=1, shrinkA=0, shrinkB=0))
+
+    gap = 0.03
+    # OHRC -> NAC, along the top; its label above the boxes, where it may run wider than the gap.
+    arrow(left + bw + gap, top - bh / 2, right - gap, top - bh / 2)
+    text(W / 2, top + 0.16, f"{on[0]} · {on[1]} {on[2]}")
+    # OHRC -> TMC-2, straight down the left; three short lines beside it.
+    cx = left + bw / 2
+    arrow(cx, top - bh - gap, cx, bot + gap)
+    mid = (top - bh + bot) / 2
+    for k, s in enumerate(ot):
+        text(cx + 0.12, mid + (1 - k) * 0.18, s, ha="left")
+    # NAC -> TMC-2, the diagonal; its label right of the line and clear of it.
+    arrow(right + 0.30, top - bh - gap, left + bw - 0.20, bot + gap)
+    text(right - 0.25, mid + 0.07, nt[0], ha="left")
+    text(right - 0.25, mid - 0.11, f"{nt[1]} {nt[2]}", ha="left")
+    # TMC-2 -> IIRS along the bottom; the IIRS windows lie along the strip, not on the site's windows.
+    arrow(left + bw + gap, bot - bh / 2, right - gap, bot - bh / 2)
+    text(W / 2, bot - bh - 0.16, f"{ti_acc}/{len(ti)} accepted · {len(bands)} infrared bands (multi-modal)")
+    text(W / 2, bot - bh - 0.34, f"IIRS windows along this TMC-2 pass, {min(lats):.1f}–{max(lats):.1f}°N")
+    # The loop: median AND max, and what it is.
+    text(0.04, 0.31, f"Loop via NAC vs direct, {len(loops)} windows: median {np.median(rms):.2f} m, "
+                     f"max {max(rms):.2f} m (consistency, not accuracy)", colour=DECK_ACCENT, ha="left")
+    text(0.04, 0.12, "Ranges: per-window held-out medians (matches the fit never saw), inlier ratio > 0.5",
+         colour=MUTED, ha="left")
+    text(0.04, H - 0.16, f"One site, {site}, and its TMC-2 pass: Suns matched, every leg checked",
+         fs_title, "bold", ha="left")
+
     out = OUT / "fig10_site_n.png"
     _audit(fig, out.name)
-    fig.savefig(out, dpi=200)
+    small = [s for s in FONT_PT[out.name][1] if s < SITE_N_MIN_PT]
+    if small:
+        raise RuntimeError(f"fig10 has text at {small} pt; it is drawn at its slide size, floor {SITE_N_MIN_PT} pt")
+    fig.savefig(out, dpi=SITE_N_DPI)
     plt.close(fig)
     return out
 

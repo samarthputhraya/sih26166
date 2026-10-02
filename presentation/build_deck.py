@@ -253,9 +253,31 @@ NBSP = chr(0xA0)
 _UNIT = re.compile(r"(?<=\d) (?=(?:m/px|km²|km|nm|px|m|s|MB)(?:[^\w]|$))")
 
 
+_TO = f"{NBSP}→{NBSP}"             # "NAC → TMC-2" stays on one line
+_EQ = f"{NBSP}={NBSP}"             # "0.36–0.48 px = 1.6–2.2 m" never starts a line with "="
+
+
 def R(text, size, bold=False, colour=INK, italic=False):
     """One run: (text, size pt, bold, colour, italic). A number keeps its unit on its line."""
     return (_UNIT.sub(NBSP, text), size, bold, colour, italic)
+
+
+def _wrap(text: str, size_pt: float, bold: bool, width_in: float) -> list[str]:
+    """`text` broken at spaces into lines no wider than `width_in`, NBSPs joining as R() sets them.
+
+    Joined with "\\n" (a line break, see _fill_text) the lines are ours, not PowerPoint's: it also
+    breaks after an en dash, and on 2 Oct it set "1.6–" and "2.2 m" on two lines of slide 4.
+    PowerPoint's Calibri is ~0.6 % wider than this measure (the v11 PDF), so wrap a little
+    narrower than the box and PowerPoint never has to break a line itself."""
+    lines, cur = [], ""
+    for w in _UNIT.sub(NBSP, text).split(" "):
+        trial = f"{cur} {w}" if cur else w
+        if cur and _text_width_in(trial.replace(NBSP, " "), size_pt, bold) > width_in:
+            lines.append(cur)
+            cur = w
+        else:
+            cur = trial
+    return lines + [cur]
 
 
 def P(*runs, align="l", sb=0, sa=0, ls=1.0):
@@ -280,13 +302,22 @@ def _fill_text(tf, paras, anchor="t", margins=(0.06, 0.03, 0.06, 0.03)):
         para.space_before = Pt(p["sb"])
         para.space_after = Pt(p["sa"])
         for text, size, bold, colour, italic in p["runs"]:
-            run = para.add_run()
-            run.text = text
-            run.font.size = Pt(size)
-            run.font.bold = bold
-            run.font.italic = italic
-            run.font.color.rgb = colour
-            _set_run_font(run)
+            # "\n" is a line break inside the paragraph, sized as its run: a bare <a:br> takes the
+            # template's body size and would make its line taller than the run's.
+            for k, piece in enumerate(text.split("\n")):
+                if k:
+                    rPr = para._p.add_br().get_or_add_rPr()
+                    rPr.set("sz", str(int(round(size * 100))))
+                    _set_rpr_font(rPr, BODY_FONT)
+                if not piece:
+                    continue
+                run = para.add_run()
+                run.text = piece
+                run.font.size = Pt(size)
+                run.font.bold = bold
+                run.font.italic = italic
+                run.font.color.rgb = colour
+                _set_run_font(run)
 
 
 def _strip_style(shape):
@@ -363,6 +394,19 @@ def _pic(slide, name, x, y, w=None, h=None, border=None):
         pic.line.color.rgb = border
         pic.line.width = Pt(0.75)
     return pic
+
+
+FIG10 = "fig10_site_n.png"
+FIG10_DPI = 200                                    # make_figures.SITE_N_DPI
+
+
+def _native_in(path, default):
+    """(width, height) in inches of a figure drawn at FIG10_DPI at its placed size; `default`
+    while it is not built (then `_pic` reports it missing)."""
+    if not path.is_file():
+        return default
+    with Image.open(path) as im:
+        return im.size[0] / FIG10_DPI, im.size[1] / FIG10_DPI
 
 
 def _dot(slide, x, y, d, colour):
@@ -625,19 +669,27 @@ SCORECARD = [
     # "Sun azimuth and elevation, on SAC's own frame": the near-azimuth table, its totals line.
     ("Sun elevation", "Same frame, azimuth within 20°: Sun up to 41.7° higher, 61/71 accepted", GREEN),
     # "A real viewpoint test at Site N": agrees / windows, angle apart, held-out median.
-    ("Viewpoint", "OHRC → OHRC, next orbit, views 40° apart: 8/8, held-out 0.91 px = 1.12 m", GREEN),
+    ("Viewpoint", f"OHRC → OHRC, next orbit, views 40° apart: 8/8, held-out 0.91 px{_EQ}1.12 m", GREEN),
     # "Scale rung" 3 agrees of 4; "TMC-2 -> IIRS" scale column 16.2x, every window on both orbits.
     ("Scale", "16× TMC-2 → IIRS: 62/62 · 4.2× OHRC → TMC-2: 10/10 · 29.6× to Kaguya TC: 3/4", GREEN),
     # "TMC-2 -> IIRS", both orbits: bands beyond 850 nm, windows accepted.
     ("Multi-modal", "TMC-2 → IIRS infrared, 999–3223 nm: 62/62, 16 places on two orbits", GREEN),
-    # "One site, every camera ... (Site N)": the legs table and the loop paragraph.
-    ("OHRC, TMC, IIRS", "One site, Suns matched: OHRC → TMC-2 10/10, OHRC → NAC 5/5, NAC → TMC-2 4/4; "
-                        "chain via NAC meets direct within 2.0 m", GREEN),
-    # "In the Chandrayaan-2 image's own pixels": NAC <-> TMC-2 and TMC-2 <-> IIRS 1555 nm (held-out medians).
-    # ... and the Site N OHRC -> TMC-2 row, which is not sub-pixel in every window (claim-check 2 Oct).
-    # AMBER (fresh-eyes review, 2 Oct): sub-pixel holds on some pairings, not on OHRC -> TMC-2.
-    ("Sub-pixel", "Held-out, reference grid: OHRC → NAC 0.61 px = 0.57 m; IIRS 1555 nm 0.16–0.32 px = "
-                  "14–27 m; OHRC → TMC-2 0.61–1.57 px = 3.2–8.1 m", AMBER),
+    # "One site, every camera ... (Site N)": the legs table; then "TMC-2 -> IIRS" on that TMC-2's own
+    # orbit (20200607), its four infrared bands' "windows accepted" summed: 8 + 8 + 8 + 6 = 30/30.
+    # v11 ended this row "chain via NAC meets direct within 2.0 m": false - the loop's median is 1.99 m,
+    # its max 4.04 m, and 2 of its 4 windows are above 2.0 m (audit, 2 Oct). fig10's caption carries
+    # the loop with both numbers. Arrows are no-break, so no instrument is cut from its arrow.
+    ("OHRC, TMC, IIRS", f"One site, Suns matched: OHRC{_TO}TMC-2 10/10, OHRC{_TO}NAC 5/5, NAC{_TO}TMC-2 4/4; "
+                        "IIRS along the same TMC-2 pass: 30/30", GREEN),
+    # "Sub-pixel accuracy ... / In the Chandrayaan-2 image's own pixels" (the PS asks for the accuracy
+    # "of source image"): NAC <-> TMC-2 at SAC's site, TMC-2 <-> IIRS 1555 nm on orbit 20200607, and
+    # OHRC -> NAC at 74 S in OHRC pixels - OHRC is finer than any reference, so it is not sub-pixel in
+    # its own pixels, which is why the row is AMBER. 1555 nm is named: 3223 nm reaches 1.2 px. v11 put
+    # reference-grid pixels here, which are not the source image's. No figure from SAC's own pair: its
+    # paper's SuperGlue number is in-sample, ours are held-out, and the two are not the same measure.
+    ("Sub-pixel", f"In the Chandrayaan-2 image's own pixels: TMC-2 0.36–0.48 px{_EQ}1.6–2.2 m; "
+                  f"IIRS 1555 nm 0.16–0.32 px{_EQ}13.9–27.3 m; OHRC, finer than NAC, "
+                  f"2.0–3.7 px{_EQ}0.51–0.94 m", AMBER),
     # "Runtime and match distribution": grid coverage, and the delivered uniform set.
     ("Uniform spread", "Inliers in ≥95% of 8×8 cells on 17/20 windows; uniform control points ship", GREEN),
     ("Deliverables", "GeoTIFF, GDAL/QGIS control points, ISIS match list, trust map, report", GREEN),
@@ -656,19 +708,25 @@ def slide4(s):
     L, RIGHT = 0.55, 12.78
     ty = 1.33
     tw0 = _tab(s, L, ty, H[0])
+    # Two lines by choice: on one, at 3.05 in, it overran its 3.01 in and v11 printed "pairings" alone.
     _text(s, L + tw0 + 0.10, ty, 6.72 - L - tw0 - 0.10, 0.36,
-          [P(R("Real data: " + " · ".join(EVIDENCE_SCALE), 11, True, MUTED), align="r")], anchor="m",
+          [P(R("Real data: " + "\n".join(EVIDENCE_SCALE), 11, True, MUTED), align="r")], anchor="m",
           name="evidence-scale")
-    ry0, rh, rg = 1.76, 0.455, 0.045
+    y, rg = 1.76, 0.045
     lw, tw = 1.30, 4.82
-    for k, (label, text, colour) in enumerate(SCORECARD):
-        y = ry0 + k * (rh + rg)
+    for label, text, colour in SCORECARD:
+        # Each row's lines are set here (_wrap, at 97 % of the text width), never by PowerPoint,
+        # which would split a range at its en dash. Two lines of 11 pt fit 0.455 in; a further
+        # line adds one line's height (the sub-pixel row takes three).
+        lines = _wrap(text, 11, False, 0.97 * (tw - 0.08 - 0.30))
+        rh = 0.455 + 0.19 * max(0, len(lines) - 2)
         _box(s, L, y, lw, rh, [P(R(label, 11.5, True, NAVY), align="c")], fill=FILL_BLUE,
              line=LINE_BLUE, anchor="m", margins=(0.04, 0, 0.04, 0), name="req-label")
-        _box(s, L + lw + 0.05, y, tw, rh, [P(R(text, 11, False, INK))], fill=WHITE, line=LINE_GREY,
-             anchor="m", margins=(0.08, 0.01, 0.30, 0.01), name="req-text")
+        _box(s, L + lw + 0.05, y, tw, rh, [P(R("\n".join(lines), 11, False, INK))], fill=WHITE,
+             line=LINE_GREY, anchor="m", margins=(0.08, 0.01, 0.30, 0.01), name="req-text")
         _dot(s, L + lw + 0.05 + tw - 0.24, y + rh / 2 - 0.07, 0.14, colour)
-    ly = ry0 + len(SCORECARD) * (rh + rg) + 0.01
+        y += rh + rg
+    ly = y + 0.01
     _dot(s, L + lw + 0.05, ly + 0.07, 0.13, GREEN)
     _text(s, L + lw + 0.24, ly, 1.7, 0.26, [P(R("met, as measured", 11, False, MUTED))], name="legend")
     _dot(s, L + lw + 1.90, ly + 0.07, 0.13, AMBER)
@@ -676,15 +734,18 @@ def slide4(s):
 
     # Every Chandrayaan-2 camera the PS names, at one site, each leg checked (REPORT "Site N"). v11 draft
     # had fig9 (the Sun map on SAC's frame) here; the scorecard's two Sun rows carry those numbers.
+    # fig10 is drawn at the size it is placed (make_figures SITE_N_SIZE), so it goes in at its pixel
+    # size / FIG10_DPI, never scaled: its point sizes are then the slide's, 11 pt and up. v11 shrank a
+    # 6.6 in drawing to 5.45 in and set its captions at 7.0 and 7.8 pt (audit, 2 Oct).
     fx = 6.82
-    fw = 5.45                          # fig10 is 6.6 x 4.1 in: 3.39 in tall, clear of the risk tabs at 4.74
-    _pic(s, "fig10_site_n.png", fx + (RIGHT - fx - fw) / 2, 1.30, w=fw)
-    cy = 4.74
+    fw, fh = _native_in(FIGURES / FIG10, (5.90, 3.50))
+    _pic(s, FIG10, fx + (RIGHT - fx - fw) / 2, 1.30, w=fw)
+    cy = 1.30 + fh + 0.05                                        # 4.85: the tabs start under the figure
     cw0 = (RIGHT - fx - 0.30) / 2
     sx0 = fx + cw0 + 0.30
     _tab(s, fx, cy, H[1], colour=ACCENT, size=11.5, w=cw0, h=0.50)
     _tab(s, sx0, cy, H[2], colour=GREEN, size=11.5, w=cw0, h=0.50)
-    ph, pg = 0.70, 0.05
+    ph, pg = 0.66, 0.05                                          # three lines each; ends at 6.78 in
     for k, ((rt, rb), (st, sb)) in enumerate(RISKS):
         y = cy + 0.56 + k * (ph + pg)
         _box(s, fx, y, cw0, ph, [P(R(rt, 11.5, True, ACCENT)), P(R(rb, 11, False, INK))],
@@ -730,8 +791,11 @@ def slide5(s):
                11.5, True, MUTED, True))], anchor="m", name="imp-audience")
 
     # Why per-region: "Errors that are not translations". Frame contradicted at 3 m: 0 of 120
-    # (60 rotation + 60 scale). 94 % = cells moved > 2 px that are NOT verified, over every rotation
-    # and scale trial (94.1 %). V8's "105 of 120 still say good" was FALSE (v9 H1) - not used.
+    # (60 rotation + 60 scale). At 3 m the cells moved > 2 px that are NOT verified are 476/752 = 63 %
+    # (rotation) and 469/752 = 62 % (scale); 94 % (94.1 %) pools every rotation and scale trial, 0-20 m.
+    # v11 set 94 % beside the 3 m result, as if it were the 3 m figure, and named reference grids
+    # (0.93-1.62 m/px) that REPORT does not print for this test (audit, 2 Oct: L4, L6).
+    # V8's "105 of 120 still say good" was FALSE (v9 H1) - not used.
     py, ph = 3.80, 1.50
     _box(s, L, py, 7.07, ph, fill=FILL_ORANGE, line=LINE_ORANGE, name="per-region")
     gx, gy, cell = L + 0.16, py + 0.12, 0.13
@@ -744,9 +808,9 @@ def slide5(s):
           [P(R("illustration", 11, False, MUTED, True), align="c")], name="grid-caption")
     _text(s, L + 1.42, py + 0.10, 5.52, 1.32,
           [P(R("Why region by region", 13, True, ACCENT)),
-           P(R("A rotation or scale error moves the corners, not the centre: at 3 m of corner "
-               "movement a whole-frame check refuses 0 of 120 trials. The 8×8 map stops vouching for "
-               "94% of the cells moved past 2 px, on reference grids of 0.93–1.62 m/px.",
+           P(R("Rotation and scale errors move the corners, not the centre. At 3 m of corner "
+               "movement a whole-frame check refuses 0 of 120 trials; the 8×8 map refuses to verify "
+               "62–63% of the cells moved past 2 px (94% over all trials, up to 20 m).",
                12, False, INK), sb=2)],
           name="per-region-text")
 
@@ -806,7 +870,10 @@ REFS = [
 # Say "measured at". `_audit_deck` verifies any "REPORT.md ... at commit X" claim it finds.
 # v11: the 2 Oct freeze re-ran every row at 51a9ad0 and its report step wrote REPORT.md with that
 # commit's code, so one commit names both (REPORT.md's own header says so).
-PROVENANCE = ("Every figure comes from REPORT.md, generated from evidence measured at the freeze "
+# "or a count or sum of its rows": REPORT prints 62/62 (s2, s4), 30/30 (s4) and SAC's pair's 6/6
+# (s2, s4) only as the rows they add up from - per band, per window - so "every figure comes from
+# REPORT.md" was not literally true (audit, 2 Oct). "Result": a grid size or a place is not one.
+PROVENANCE = ("Every result is in REPORT.md, or a count or sum of its rows, measured at the freeze "
               "commit 51a9ad0.")
 
 
@@ -1008,6 +1075,13 @@ def _audit_deck(deck) -> list[str]:
         # A picture must not share space with any other shape of ours.
         pics = [sh for sh in ours if sh.shape_type == 13]
         for pic in pics:
+            # fig10's type is 11-12 pt only at its drawn size (make_figures checks the drawing).
+            if pic.name == f"lx pic {FIG10}":
+                with Image.open(FIGURES / FIG10) as im:
+                    drawn = im.size[0] / FIG10_DPI
+                if abs(Emu(pic.width).inches - drawn) > 0.01:
+                    bad.append(f"slide {i}: {FIG10} placed {Emu(pic.width).inches:.2f} in wide, drawn "
+                               f"{drawn:.2f} in: its type is no longer the 11 pt it was drawn at")
             pl, pr = Emu(pic.left).inches, Emu(pic.left).inches + Emu(pic.width).inches
             pt_, pb = Emu(pic.top).inches, Emu(pic.top).inches + Emu(pic.height).inches
             for o in ours:

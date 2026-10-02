@@ -56,16 +56,16 @@ transform; held-out errors are on the 20 % of matches the fit never saw.
 | **Sun azimuth** | SAC's own equatorial pair [1], OHRC → LRO NAC, Sun azimuths 174° apart: **6 of 6** windows accepted. The same OHRC frame against 7 NACs with the Sun 154–177° away in azimuth: 48 of 56 | *SAC's own benchmark pair (equatorial)*; *Sun azimuth and elevation, on SAC's own frame* |
 | **Sun elevation** | The same frame against 9 NACs, Sun azimuth within 20° of the OHRC's, the Sun raised by up to 41.7°: **61 of 71** accepted; 7 of 8 at the highest Sun | *Sun azimuth and elevation, on SAC's own frame* |
 | **Scale** | OHRC → Kaguya TC, 29.6×: 3 of 4 accepted, one of them on dense evidence (0.55 px = 4.0 m on TC's 7.4 m grid) and two on 1 and 7 verified cells. TMC-2 → IIRS, about 16×: every window on two orbits | *Scale rung*; *TMC-2 → IIRS* |
-| **Multi-modal** (visible → infrared) | TMC-2 → IIRS at 999–3223 nm: **62 of 62** registrations, 16 places on two orbits in four infrared bands; at 1555 nm, held-out median 0.16–0.32 IIRS px per window = 14–27 m on IIRS's 74 and 84 m grids | *TMC-2 → IIRS* |
+| **Multi-modal** (visible → infrared) | TMC-2 → IIRS at 999–3223 nm: **62 of 62** registrations, 16 places on two orbits in four infrared bands; at 1555 nm, held-out median 0.16–0.32 IIRS px per window = 13.9–27.3 m on IIRS's 73.85 and 83.67 m grids | *TMC-2 → IIRS* |
 | **OHRC, TMC and IIRS** | One site at 60.7°N with the Suns matched: OHRC → TMC-2 **10 of 10**, OHRC → LRO NAC 5 of 5, NAC → TMC-2 4 of 4. The chain OHRC → NAC → TMC-2 meets the direct OHRC → TMC-2 with a loop RMS of 1.99 m (median of 4 windows, max 4.04 m; consistency, not accuracy). IIRS onto that same TMC-2 pass, along the strip at 51.7–60.7°N rather than on the site's windows: 30 of 30 | *One site, every camera (Site N)* |
 | **Viewpoint** | OHRC → OHRC of the next orbit, viewing directions 40° apart, Sun within 2.2°: **8 of 8**, held-out median 0.91 px = 1.12 m on the 1.232 m grid. TMC-2 fore → aft, 50° apart: 1 of 4 (relief parallax, a measured limit) | *A real viewpoint test at Site N*; *Real viewpoint: TMC-2 fore → aft* |
-| **Sub-pixel, "of source image"** | Where the Chandrayaan-2 image is the coarser grid, in its own pixels: TMC-2 0.36–0.48 px = 1.6–2.2 m against a NAC (4.56 m grid); IIRS 0.16–0.32 px = 14–27 m against TMC-2. OHRC → TMC-2 at the site above is 0.61–1.57 TMC-2 px = 3.2–8.1 m over 9 of its 10 windows (the 10th, at an inlier ratio of 0.48, is not quoted), so not every window is sub-pixel. Where OHRC is finer than its reference, the reference grid bounds it: 0.41–1.01 NAC px = 0.51–0.94 m at 74 °S, which is 2.0–3.7 OHRC px, and 4.0–9.7 OHRC px on SAC's pair | *Sub-pixel accuracy, with the pixel grid named* |
+| **Sub-pixel, "of source image"** | Where the Chandrayaan-2 image is the coarser grid, in its own pixels: TMC-2 0.36–0.48 px = 1.6–2.2 m against a NAC (4.555 m grid); IIRS at 1555 nm 0.16–0.32 px = 13.9–27.3 m against TMC-2. OHRC → TMC-2 at the site above is 0.61–1.57 TMC-2 px = 3.2–8.1 m over 9 of its 10 windows (the 10th, at an inlier ratio of 0.48, is not quoted), so not every window is sub-pixel. Where OHRC is finer than its reference, the reference grid bounds it: 0.41–1.01 NAC px = 0.51–0.94 m at 74 °S, which is 2.0–3.7 OHRC px | *Sub-pixel accuracy, with the pixel grid named* |
 | **Uniform distribution** | Inliers in 95 % or more of the 8 × 8 reference cells on 17 of 20 windows at 74 °S. Every accepted registration also ships `gcps_uniform`: at most 4 control points per cell | *Runtime and match distribution* |
 | Usable outputs | GeoTIFF on the reference grid, GDAL and QGIS control points, an ISIS match list, the per-cell trust map, a report | *How it works*, below |
 
 <p align="center">
   <img src="presentation/figures/fig10_site_n.png" width="640"
-       alt="Site N at 60.7 N: Chandrayaan-2 OHRC, TMC-2 and an LRO NAC registered under matched Suns, IIRS along the same TMC-2 pass, every leg accepted, with held-out medians and the loop closure">
+       alt="Site N at 60.7 N: Chandrayaan-2 OHRC, TMC-2 and an LRO NAC registered under matched Suns, IIRS along the same TMC-2 pass, every leg accepted, with each leg's range of held-out medians and the loop closure's median and max">
 </p>
 
 The TMC-2 → IIRS pairs, the Sun-elevation ladder and the site above were measured after the
@@ -82,7 +82,7 @@ window count once) and 11 instrument pairings (3 of them one instrument against 
 |---|---|---|
 | **Sun angle:** SAC's own equatorial benchmark pair [1], OHRC → LRO NAC, Sun azimuths 174° apart, every shadow reversed | **6 of 6** windows accepted | *SAC's own benchmark pair (equatorial)* |
 | **Sun angle:** SAC's polar benchmark pair [1] | 4 of 6 windows vouched for, 2 flagged | *SAC's own benchmark pair (polar)* |
-| **Sun sweep:** one OHRC frame against 25 NAC frames, 69 windows, Sun azimuths 3.3–152.7° apart | **0** wrong acceptances among the 54 windows the images could judge; none of the other 15 was accepted | *Real sun-angle sweep* |
+| **Sun sweep:** one OHRC frame against 25 NAC frames, 69 windows, Sun azimuths 3.3–152.7° apart | **0** wrong acceptances among the 54 windows the images could judge | *Real sun-angle sweep* |
 | **Whole overlap, not chosen windows:** one OHRC frame × one NAC at 74 °S, Suns 3.3° apart, every lit and textured 640-px window, 13.1 km² | **37 of 37** accepted; held-out median 0.61 px = 0.57 m on the 0.93 m NAC grid; 36 of 37 under 3 px | *The whole lit overlap of one OHRC frame with one NAC* |
 | **Scale:** OHRC at 0.25 m onto Kaguya TC at 7.4 m (29.6×) | 3 of 4 accepted: one on dense evidence (0.55 px = 4.0 m), two on 1 and 7 verified cells | *Scale rung* |
 | **Sub-pixel, exact truth:** synthetic pairs rendered from LOLA, 60 m grid | 0.086 px = 5.1 m with the Suns 0–15° apart; 1.096 px = 65.8 m at 45° | *Sub-pixel accuracy, with the pixel grid named* |
@@ -103,7 +103,8 @@ that are never pooled (*Trust layer on real imagery*). For shifts:
 
 Rotations and scale changes are a separate test: they move the corners and not the centre, so a
 whole-frame verdict misses them (0 of 120 trials refused at 3 m of corner movement), and it is the
-8 × 8 map that catches them, stripping the verified state from 94% of the cells they move past 2 px.
+8 × 8 map that catches them: at that same 3 m it strips the verified state from 62–63% of the cells
+they move past 2 px, and from 94% over every rotation and scale trial, up to 20 m.
 
 <p align="center">
   <img src="presentation/figures/fig6_trust_real_calibration.png" width="620"
@@ -114,7 +115,8 @@ Errors that are not translations are why the verdict is per region. A rotation o
 about the centre leaves the centre still and moves the corners, so a frame-level verdict watches
 the wrong place: at 3 m of corner displacement it refuses 0 of 120 trials, at 5 m only 15 of
 120. Of the cells such an error moves past 2 px on the reference grid, the 8×8 map strips
-verified state from 94 % (*Errors that are not translations*).
+verified state from 62–63 % at 3 m (476 of 752 for rotation, 469 of 752 for scale), and from
+94 % over every rotation and scale trial, 0–20 m (*Errors that are not translations*).
 
 ### What it refuses, and says so
 

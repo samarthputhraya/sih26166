@@ -5,8 +5,9 @@
 PowerPoint here is unlicensed: COM automation fails (0x80048240), but PRINTING still works.
 So the deck is printed with PowerPoint's own `/pt` switch to "Microsoft Print to PDF" - the
 render is PowerPoint's, not an approximation - and the "Save Print Output As" dialog that
-printer always opens is answered by keystroke. A "Sign in to set up Office" window also
-appears; it is left alone and PowerPoint is closed at the end.
+printer always opens is answered by window messages, not keystrokes (see PS). A "Sign in to
+get started with PowerPoint" window also appears; it is left alone and PowerPoint is closed
+at the end.
 
 The printer lays each 13.33 x 7.5 in slide on a Letter-landscape page (792 x 612 pt) with
 white bands above and below; every page is then cropped to the slide band (792 x 446 pt)
@@ -20,6 +21,7 @@ no "[TBD]" left, the file size. Do not upload a PDF this script did not pass.
 """
 from __future__ import annotations
 
+import os
 import pathlib
 import subprocess
 import sys
@@ -43,38 +45,80 @@ LINKS = (("samarthputhraya.github.io/sih26166", "https://samarthputhraya.github.
 TITLES = ("Knows When It Is Wrong", "Knows When It Is Wrong", "TECHNICAL APPROACH",
           "FEASIBILITY AND VIABILITY", "IMPACT AND BENEFITS", "RESEARCH")
 
+# Run as a .ps1 with the paths in LX_PPT, LX_SRC and LX_OUT. The printer's "Save Print Output As"
+# dialog is found by its title AND PowerPoint's process id, and answered with window messages:
+# WM_SETTEXT into its file-name box (Edit, id 1001), then WM_COMMAND IDOK. Nothing depends on the
+# focus. Until 2 Oct it was answered by SendKeys after AppActivate - and PowerPoint's "Sign in to
+# get started" window, which opens on top, took the focus and the keystrokes: no PDF was written.
 PS = r"""
 $ErrorActionPreference = 'Stop'
-Add-Type -AssemblyName System.Windows.Forms
-$sh = New-Object -ComObject WScript.Shell
-$p = Start-Process -FilePath '{ppt}' -ArgumentList @('/pt', '"Microsoft Print to PDF"', '""', '""', '"{src}"') -PassThru
-$done = $false
-for ($i = 0; $i -lt 120 -and -not $done; $i++) {{
+Add-Type @'
+using System;
+using System.Text;
+using System.Runtime.InteropServices;
+public static class Dlg {
+  delegate bool EnumProc(IntPtr h, IntPtr l);
+  [DllImport("user32.dll")] static extern bool EnumWindows(EnumProc f, IntPtr l);
+  [DllImport("user32.dll")] static extern bool EnumChildWindows(IntPtr parent, EnumProc f, IntPtr l);
+  [DllImport("user32.dll", CharSet = CharSet.Unicode)] static extern int GetWindowText(IntPtr h, StringBuilder s, int n);
+  [DllImport("user32.dll", CharSet = CharSet.Unicode)] static extern int GetClassName(IntPtr h, StringBuilder s, int n);
+  [DllImport("user32.dll")] static extern uint GetWindowThreadProcessId(IntPtr h, out uint pid);
+  [DllImport("user32.dll")] static extern bool IsWindowVisible(IntPtr h);
+  [DllImport("user32.dll")] static extern int GetDlgCtrlID(IntPtr h);
+  [DllImport("user32.dll", CharSet = CharSet.Unicode)] static extern IntPtr SendMessage(IntPtr h, uint m, IntPtr w, string l);
+  [DllImport("user32.dll")] static extern IntPtr SendMessage(IntPtr h, uint m, IntPtr w, IntPtr l);
+  // The visible top-level window of process `pid` with this title, or zero.
+  public static IntPtr Find(string title, int pid) {
+    IntPtr found = IntPtr.Zero;
+    EnumWindows((h, l) => {
+      var sb = new StringBuilder(256); GetWindowText(h, sb, 256); uint p;
+      GetWindowThreadProcessId(h, out p);
+      if (p == (uint)pid && IsWindowVisible(h) && sb.ToString() == title) { found = h; return false; }
+      return true; }, IntPtr.Zero);
+    return found;
+  }
+  // The descendant of `dlg` with this window class and control id, or zero.
+  public static IntPtr Child(IntPtr dlg, string cls, int id) {
+    IntPtr found = IntPtr.Zero;
+    EnumChildWindows(dlg, (h, l) => {
+      var sb = new StringBuilder(64); GetClassName(h, sb, 64);
+      if (sb.ToString() == cls && GetDlgCtrlID(h) == id) { found = h; return false; }
+      return true; }, IntPtr.Zero);
+    return found;
+  }
+  public static void SetText(IntPtr h, string s) { SendMessage(h, 0x000C, IntPtr.Zero, s); }   // WM_SETTEXT
+  public static void Ok(IntPtr dlg, IntPtr btn) { SendMessage(dlg, 0x0111, (IntPtr)1, btn); }   // WM_COMMAND, IDOK
+}
+'@
+$out = $env:LX_OUT
+$p = Start-Process -FilePath $env:LX_PPT -ArgumentList @('/pt', '"Microsoft Print to PDF"', '""', '""', ('"' + $env:LX_SRC + '"')) -PassThru
+$dlg = [IntPtr]::Zero
+for ($i = 0; $i -lt 120 -and $dlg -eq [IntPtr]::Zero; $i++) {
   Start-Sleep -Milliseconds 500
-  if ($sh.AppActivate('Save Print Output As')) {{
-    Start-Sleep -Milliseconds 600
-    [System.Windows.Forms.SendKeys]::SendWait('%n')
-    Start-Sleep -Milliseconds 300
-    [System.Windows.Forms.SendKeys]::SendWait('{keys}')
-    Start-Sleep -Milliseconds 400
-    [System.Windows.Forms.SendKeys]::SendWait('{{ENTER}}')
-    $done = $true
-  }}
-}}
-if (-not $done) {{ Stop-Process -Id $p.Id -Force; Write-Output 'NO DIALOG'; exit 3 }}
-for ($i = 0; $i -lt 90; $i++) {{
+  $dlg = [Dlg]::Find('Save Print Output As', $p.Id)
+}
+if ($dlg -eq [IntPtr]::Zero) { Stop-Process -Id $p.Id -Force; Write-Output 'NO DIALOG'; exit 3 }
+$edit = [IntPtr]::Zero
+for ($i = 0; $i -lt 40 -and $edit -eq [IntPtr]::Zero; $i++) {
+  Start-Sleep -Milliseconds 250
+  $edit = [Dlg]::Child($dlg, 'Edit', 1001)
+}
+$save = [Dlg]::Child($dlg, 'Button', 1)
+if ($edit -eq [IntPtr]::Zero -or $save -eq [IntPtr]::Zero) {
+  Stop-Process -Id $p.Id -Force; Write-Output 'NO FILE NAME BOX OR SAVE BUTTON'; exit 5 }
+Start-Sleep -Milliseconds 500
+[Dlg]::SetText($edit, $out)
+Start-Sleep -Milliseconds 300
+[Dlg]::Ok($dlg, $save)
+for ($i = 0; $i -lt 90; $i++) {
   Start-Sleep -Seconds 1
-  if (Test-Path '{out}') {{ $a = (Get-Item '{out}').Length; Start-Sleep 2
-    if ($a -gt 0 -and $a -eq (Get-Item '{out}').Length) {{ break }} }}
-}}
+  if (Test-Path $out) { $a = (Get-Item $out).Length; Start-Sleep 2
+    if ($a -gt 0 -and $a -eq (Get-Item $out).Length) { break } }
+}
 Start-Sleep -Seconds 2
 Get-Process POWERPNT -ErrorAction SilentlyContinue | Stop-Process -Force
-if (Test-Path '{out}') {{ Write-Output 'PRINTED' }} else {{ Write-Output 'NO PDF'; exit 4 }}
+if (Test-Path $out) { Write-Output 'PRINTED' } else { Write-Output 'NO PDF'; exit 4 }
 """
-
-
-def _sendkeys_escape(s: str) -> str:
-    return "".join("{" + c + "}" if c in "+^%~(){}[]" else c for c in s)
 
 
 def print_to_pdf(src: pathlib.Path, out: pathlib.Path) -> None:
@@ -83,13 +127,14 @@ def print_to_pdf(src: pathlib.Path, out: pathlib.Path) -> None:
     running = subprocess.run(["tasklist", "/FI", "IMAGENAME eq POWERPNT.EXE"], capture_output=True,
                              text=True).stdout
     if "POWERPNT" in running:
-        raise SystemExit("PowerPoint is already running - close it first (the dialog would be ambiguous)")
+        raise SystemExit("PowerPoint is already running - close it first")
     if out.exists():
         out.unlink()
-    script = PS.format(ppt=POWERPNT, src=str(src), out=str(out).replace("'", "''"),
-                       keys=_sendkeys_escape(str(out)).replace("'", "''"))
-    r = subprocess.run(["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", script],
-                       capture_output=True, text=True, timeout=300)
+    script = src.with_name("print.ps1")
+    script.write_text(PS, encoding="utf-8-sig")         # with a BOM: PowerShell 5.1 reads it as UTF-8
+    env = {**os.environ, "LX_PPT": POWERPNT, "LX_SRC": str(src), "LX_OUT": str(out)}
+    r = subprocess.run(["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(script)],
+                       capture_output=True, text=True, timeout=300, env=env)
     if "PRINTED" not in r.stdout:
         raise SystemExit(f"printing failed: {r.stdout.strip()} {r.stderr.strip()[:400]}")
 
@@ -172,7 +217,7 @@ def main() -> int:
     if not DECK.exists():
         print(f"missing {DECK} - run `python -m presentation.build_deck` first")
         return 2
-    with tempfile.TemporaryDirectory() as td:
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
         # A copy with a plain name: the dialog is typed into, so the path stays simple.
         src = pathlib.Path(td) / "deck.pptx"
         src.write_bytes(DECK.read_bytes())
