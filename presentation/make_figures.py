@@ -448,22 +448,52 @@ _SHORT = {"Chandrayaan-2 OHRC": "CH-2 OHRC", "LRO LROC NAC": "LRO NAC",
           "SELENE (Kaguya) Terrain Camera": "Kaguya TC", "SELENE (Kaguya) Multiband Imager": "MI"}
 
 
-def _panel_label(pair: str) -> tuple[str, str]:
-    """(instruments and reference grid, what differs) from the pair's own geometry_prior.json."""
+def _panel_lines(pair: str) -> list[str]:
+    """Short lines for the column beside a panel: instruments, reference grid, what differs - from
+    the pair's own geometry_prior.json."""
     import json
     g = json.loads((ROOT / "data" / "pairs" / pair / "geometry_prior.json").read_text(encoding="utf-8"))
     s, r = g["source"], g["reference"]
     ref = _SHORT.get(r["instrument"], r["instrument"])
     if r.get("band"):
         ref += " " + r["band"].split(" (")[0]
-    what = f"{_SHORT.get(s['instrument'], s['instrument'])} → {ref} · {r['resampled_gsd_mpp']:.3g} m/px"
+    lines = [f"{_SHORT.get(s['instrument'], s['instrument'])} → {ref}",
+             f"{r['resampled_gsd_mpp']:.3g} m/px grid"]
     if g.get("benchmark"):
-        how = f"SAC's own pair · Sun azimuths {g['d_sun_azimuth_deg']:.0f}° apart"
+        lines += ["SAC's own pair", f"Sun azimuths {g['d_sun_azimuth_deg']:.0f}° apart"]
     elif "infrared" in (r.get("band") or ""):
-        how = "visible ↔ near-infrared (multi-modal)"
+        lines += ["visible ↔ near-infrared", "(multi-modal)"]
     else:
-        how = g.get("terminology", "")
-    return what, how
+        lines += [g.get("terminology", "")]
+    return lines
+
+
+# fig3 and fig6 are drawn at the size their slides place them (build_deck reads each file's pixel
+# width back at FIG10_DPI and places it at exactly that width), so every point size in them IS the
+# size on the slide - fig10's rule. Until the cold read of 2 Oct both were drawn larger and shrunk:
+# fig3's footnote printed at 8.5 pt and its panel titles at 9.2, fig6's legend at 9.8 and its
+# footnote at 9.4.
+FIG3_SIZE = (3.55, 5.36)       # slide 2, the column right of the text, from 1.36 in down
+FIG6_SIZE = (4.93, 3.80)       # slide 5, right of the impact column, above the benefits tab
+AT_SIZE_DPI = 200              # = SITE_N_DPI = build_deck.FIG10_DPI
+AT_SIZE_MIN_PT = 11.0
+
+
+def _check_at_size(name: str):
+    small = [s for s in FONT_PT[name][1] if s < AT_SIZE_MIN_PT]
+    if small:
+        raise RuntimeError(f"{name} has text at {small} pt; it is drawn at its slide size, "
+                           f"floor {AT_SIZE_MIN_PT} pt")
+
+
+def _fallback_vs_visible_m(pair: str) -> str:
+    """REPORT.md's metres between `pair`'s declared fallback and the visible-band registration of
+    the same window ("Fallback vs the visible band") - printed there, never computed here."""
+    m = re.search(rf"\| `{re.escape(pair)}` \| `[^`]+` \|[^|]*\|[^|]*\| [0-9.]+ \(([0-9.]+)\) \|",
+                  REPORT_MD.read_text(encoding="utf-8"))
+    if not m:
+        raise RuntimeError(f"REPORT.md prints no fallback-vs-visible distance for {pair}")
+    return m.group(1)
 
 
 def fig_trust_map():
@@ -475,74 +505,80 @@ def fig_trust_map():
     learned matching fails, the pixels contradict the homography, the system refuses it and
     declares the fallback. Until 19 Sep this figure showed pair_01 (two crops of ONE OHRC
     frame, not a validation tier) and a Tier D pair. Every count on it is read from the cached
-    result dict, and matches the pair's row in evaluation/real_pairs_log.csv.
+    result dict, and matches the pair's row in evaluation/real_pairs_log.csv; the fallback's
+    metres are read from REPORT.md, which prints them. Drawn at its slide size (FIG3_SIZE).
     """
-    # STACKED, not side by side. Slide 2 answers four template pointers, so its text needs
-    # width; a wide two-panel figure left the column 5% too narrow whatever was trimmed.
-    # Stacked, the same two panels occupy 3.6 in instead of 5.5 in and are TALLER, so they
-    # read at least as well - and the text column gains 1.4 in.
-    panels = [(p, *_panel_label(p)) for p in FIG3_PAIRS]
-    fig = plt.figure(figsize=(5.0, 7.2))
-    # top leaves room for a TWO-LINE suptitle plus the first panel's own two-line title;
-    # at 0.925 the suptitle printed straight through "Chandrayaan-2 OHRC · 0.23 m/px".
-    gs = fig.add_gridspec(3, 1, height_ratios=(1, 1, 0.34), hspace=0.66,
-                          left=0.02, right=0.98, top=0.85, bottom=0.05)
-    for row, (pair, what, how) in enumerate(panels):
+    # STACKED, not side by side: slide 2's text needs the width. Each map has its words in the
+    # column beside it, which lets the maps be larger at the slide's own size than they were
+    # when the whole figure was drawn 5 in wide and shrunk.
+    W, H = FIG3_SIZE
+    fig = plt.figure(figsize=(W, H))
+    canvas = fig.add_axes((0, 0, 1, 1))
+    canvas.set_xlim(0, W)
+    canvas.set_ylim(0, H)
+    canvas.axis("off")
+
+    def at(x, top, s, **kw):                     # inches from the left and from the TOP
+        return canvas.text(x, H - top, s, va="top", ha="left", linespacing=1.2, **kw)
+
+    at(0.02, 0.03, "The trust map: one accepted, one refused", fontsize=13, fontweight="bold",
+       color=INK)
+    side, row_gap, line = 1.78, 0.18, 11 * 1.2 / 72     # 1.85 cut "MI 1548 nm" at the right edge
+    tx = side + 0.10
+    for k, pair in enumerate(FIG3_PAIRS):
+        top = 0.40 + k * (side + row_gap)
         r = _cached(pair)
         rel = r["reliability"]
-        base = _to_u8(_reference_image(r, pair))
-        img = _overlay(base, np.asarray(rel["state"]))
-        ax = fig.add_subplot(gs[row, 0])
+        img = _overlay(_to_u8(_reference_image(r, pair)), np.asarray(rel["state"]))
+        ax = fig.add_axes((0.0, (H - top - side) / H, side / W, side / H))
         ax.imshow(img, interpolation="bilinear")
         ax.set_xticks([])
         ax.set_yticks([])
         for sp in ax.spines.values():
             sp.set_visible(False)
-        ax.set_title(f"{what}\n{how}", fontsize=13, loc="left", pad=4, color=INK)
+        lines = _panel_lines(pair)
+        at(tx, top, "\n".join(lines), fontsize=11, color=INK)
+        vy = top + len(lines) * line + 0.12
         counts, n_cells = rel["counts"], int(rel["n_cells"])
         if r["declared"]["contradicted"]:
-            # "0 of 64 verified" is the OUTPUT; the verdict comes from the cells the area
-            # check could score. An arrow between them implied a causality that does not
-            # hold, and the slide text names the other denominator - so state the count,
-            # then the verdict, rather than deriving one from the other. The fallback's
-            # metres are not printed: no log row carries them.
-            verdict = (f"{counts['verified']} of {n_cells} cells verified\n"
-                       f"CONTRADICTED — refused, fallback declared")
-            colour = ORANGE
+            # The count, then the verdict, never one derived from the other: the verdict comes
+            # from the cells the area check could score. Whether refusing was RIGHT is the
+            # declared fallback's distance from the visible-band registration of the same
+            # window, which REPORT prints ("Fallback vs the visible band"). A cold reader took
+            # this panel, beside slide 2's "62/62 accepted TMC-2 → IIRS", to mean multi-modal
+            # registration fails (2 Oct).
+            at(tx, vy, f"{counts['verified']} of {n_cells} verified\n→ refused", fontsize=12,
+               fontweight="bold", color=DECK_ACCENT)
+            at(tx, vy + 2 * 12 * 1.2 / 72 + 0.06,
+               f"fallback {_fallback_vs_visible_m(pair)} m from\nthe visible-band fit",
+               fontsize=11, color=INK)
         else:
-            verdict = (f"{counts['verified']} of {n_cells} cells verified, "
-                       f"{counts['weak']} weak → accepted")
-            colour = "#146b3c"
-        ax.set_xlabel(verdict, fontsize=15, fontweight="bold", color=colour, labelpad=4)
+            at(tx, vy, f"{counts['verified']} of {n_cells} verified,\n{counts['weak']} weak → accepted",
+               fontsize=12, fontweight="bold", color="#146b3c")
 
-    # Legend: the same three marks the app draws, on a flat grey swatch, produced by the
-    # same overlay function - so the key cannot disagree with the picture. Three ROWS, not
-    # three columns: a 5 in canvas gives each column 1.7 in, too narrow for the glosses.
-    leg = fig.add_subplot(gs[2, 0])
-    leg.set_xlim(0, 1)
-    leg.set_ylim(0, 3)
-    leg.axis("off")
-    words = {VERIFIED: ("verified", "matches + pixels agree"),
-             WEAK: ("weak", "measured, does not hold"),
+    # Legend: the same three marks the app draws, on a flat grey swatch, produced by the same
+    # overlay function - so the key cannot disagree with the picture. "weak" was glossed
+    # "measured, does not hold"; both cold readers asked what does not hold (2 Oct).
+    words = {VERIFIED: ("verified", "matches and pixels agree"),
+             WEAK: ("weak", "measured, alignment not confirmed"),
              NO_EVIDENCE: ("no evidence", "unmeasured, never guessed")}
+    ly = 0.40 + 2 * (side + row_gap) + 0.02
     for i, s in enumerate((VERIFIED, WEAK, NO_EVIDENCE)):
+        top = ly + i * 0.25
         sw = _overlay(np.full((64, 64), 150, np.uint8), np.array([[s]]))
-        ins = leg.inset_axes([0.005, (2 - i) / 3 + 0.035, 0.062, 0.26])   # axes fraction
+        ins = fig.add_axes((0.02 / W, (H - top - 0.19) / H, 0.19 / W, 0.19 / H))
         ins.imshow(sw)
         ins.axis("off")
         head, gloss = words[s]
-        leg.text(0.095, 2.5 - i, f"{head} — {gloss}", fontsize=14.5, va="center",
-                 color=INK)                                               # data units
-    fig.text(0.02, 0.008, "8×8 cells on the reference grid · real_pairs_log.csv",
-             fontsize=12, color=MUTED)
-    fig.suptitle("The trust map: one the system\naccepts, one it refuses",
-                 x=0.02, ha="left", fontsize=18, fontweight="bold", y=0.995,
-                 va="top", linespacing=1.2)
+        at(0.30, top, f"{head} — {gloss}", fontsize=11, color=INK)
+    # The log file's name meant nothing to a judge (cold read, 2 Oct).
+    at(0.02, ly + 3 * 0.25 + 0.03, "8×8 squares on the reference grid", fontsize=11, color=MUTED)
     # JPEG, not PNG: the panels are photographs, and the PNG was 1.5 MB - a third of the
     # deck. The portal wants a PDF under its size cap and a judge's laptop wants it fast.
     p = OUT / "fig3_trust_map.jpg"
     _audit(fig, p.name)
-    fig.savefig(p, dpi=200, pil_kwargs={"quality": 88})
+    _check_at_size(p.name)
+    fig.savefig(p, dpi=AT_SIZE_DPI, pil_kwargs={"quality": 88})
     plt.close(fig)
     return p
 
@@ -768,7 +804,7 @@ def fig_trust_real():
     # judge converting the diamond series with the printed grids got the wrong answer
     # (claim-checker, 22 Sep).
     grids = sorted({float(r["gsd_ref_m"]) for r in all_rows})
-    fig, ax = plt.subplots(figsize=(6.3, 4.2))
+    fig, ax = plt.subplots(figsize=FIG6_SIZE)          # drawn at its slide size: see FIG6_SIZE
     ax.grid(True, which="major", color=GRID, linewidth=0.8, zorder=0)
     ax.set_axisbelow(True)
     xs = np.arange(len(ds))
@@ -788,12 +824,16 @@ def fig_trust_real():
         # the bar's label sits above the bar AND above the hard-Sun marker at that x (20 Sep:
         # the 2 m marker printed over the "1%")
         top = max(100 * v, max([h for hxi, h in zip(hx, hr) if hxi == x], default=0) + 4)
-        ax.text(x, top + 2, f"{100 * v:.0f}%", ha="center", va="bottom", fontsize=13, color=INK)
+        ax.text(x, top + 2, f"{100 * v:.0f}%", ha="center", va="bottom", fontsize=11, color=INK)
     if hard:
         az_hi = sorted({float(r["d_sun_azimuth_deg"]) for r in hard})
-        ax.scatter(hx, hr, s=90, marker="D", c=ORANGE, edgecolors=SURFACE, linewidths=1.2, zorder=6,
+        # "8 SAC windows" beside slide 2's "6/6 accepted on SAC's pair" read as two counts of one
+        # pair to both cold readers (2 Oct): the 8 are windows of SAC's TWO pairs, equatorial and
+        # polar, so the label counts the pairs too.
+        n_sac_pairs = len({r["pair_id"].rsplit("_w", 1)[0] for r in hard})
+        ax.scatter(hx, hr, s=60, marker="D", c=ORANGE, edgecolors=SURFACE, linewidths=1.0, zorder=6,
                    label=f"Suns {az_hi[0]:.0f}–{az_hi[-1]:.0f}° apart\n"
-                         f"{len({r['pair_id'] for r in hard})} SAC windows")
+                         f"{len({r['pair_id'] for r in hard})} windows of SAC's {n_sac_pairs} pairs")
         # the 0-2 m columns are empty below ~75 %: the legend sits there, clear of the 3 m bar
         # Above the plot, in one row: at slide-legible sizes the legend no longer fits the empty
         # 0-2 m columns without running into the 3 m bar's label.
@@ -804,17 +844,17 @@ def fig_trust_real():
         handles = [Patch(facecolor=BLUE, label=lab) if lab == lo_label else h
                    for h, lab in zip(handles, labels)]
         ax.legend(handles=handles, loc="lower left", bbox_to_anchor=(0.0, 1.0), ncol=2,
-                  fontsize=12.5, frameon=False, columnspacing=1.8, handletextpad=0.4,
+                  fontsize=11, frameon=False, columnspacing=1.2, handletextpad=0.4,
                   borderaxespad=0.15)
     ax.set_xticks(xs)
-    ax.set_xticklabels([f"{d:g}" for d in ds], fontsize=14)
-    ax.tick_params(axis="y", labelsize=14)
+    ax.set_xticklabels([f"{d:g}" for d in ds], fontsize=11)
+    ax.tick_params(axis="y", labelsize=11)
     ax.set_ylim(0, 112)
     ax.set_xlabel(f"planted shift, metres (reference grids {grids[0]:.2f}–{grids[-1]:.2f} m/px)",
-                  fontsize=15)
-    ax.set_ylabel("flagged as wrong (%)", fontsize=15)
+                  fontsize=11.5)
+    ax.set_ylabel("flagged as wrong (%)", fontsize=11.5)
     ax.set_title("Planted shifts: how many are flagged?",
-                 loc="left", fontweight="bold", fontsize=17, pad=48)
+                 loc="left", fontweight="bold", fontsize=13, pad=40)
     ids = {r["pair_id"] for r in rows}
     # `_distinct_windows` opens each pair's geometry_prior.json, and data/pairs is gitignored, so
     # on a machine that has the logs but not the imagery this would take the whole figure - and
@@ -828,17 +868,19 @@ def fig_trust_real():
     n_hard = len({r["pair_id"] for r in hard})
     # The chart plots BOTH populations, so the caption counts both. It said "22 real windows"
     # under a chart of 30 while slide 2 said 30 (claim-checker, 22 Sep).
-    wins = (f"{n_win + n_hard} real windows: {n_win} OHRC→NAC and NAC→NAC (bars), "
-            f"{n_hard} SAC OHRC→NAC (diamonds)" if hard else
+    wins = (f"{n_win + n_hard} real windows: {n_win} OHRC→NAC and NAC→NAC, {n_hard} SAC OHRC→NAC"
+            if hard else
             f"{n_win} real windows" + (f" ({n_ground} distinct)" if n_ground != n_win else "")
             + ", OHRC→NAC and NAC→NAC")
-    fig.text(0.014, 0.008, f"{wins}\n0 m = false-alarm rate · every planted match agrees with the "
-             f"wrong answer", fontsize=12, color=MUTED, linespacing=1.3, va="bottom")
-    fig.set_figheight(4.5)
-    fig.tight_layout(rect=(0, 0.11, 1, 1))
+    # "every planted match agrees with the wrong answer" was a phrase a cold reader could not
+    # decode (2 Oct); slide 5 now says it the same way as this line.
+    fig.text(0.008, 0.008, f"{wins}\n0 m = false-alarm rate · the planted matches fit the "
+             f"wrong answer", fontsize=11, color=MUTED, linespacing=1.25, va="bottom")
+    fig.tight_layout(rect=(0, 0.115, 1, 1))
     out = OUT / "fig6_trust_real_calibration.png"
     _audit(fig, out.name)
-    fig.savefig(out, dpi=200)
+    _check_at_size(out.name)
+    fig.savefig(out, dpi=AT_SIZE_DPI)
     plt.close(fig)
     return out
 

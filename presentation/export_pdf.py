@@ -38,8 +38,9 @@ FOOTER_TOP_IN = 6.95                      # the template's footer bar starts her
 # inside "samarthputhraya.github.io/sih26166", so the two never overlap.
 LINKS = (("samarthputhraya.github.io/sih26166", "https://samarthputhraya.github.io/sih26166/"),
          ("github.com/samarthputhraya/sih26166", "https://github.com/samarthputhraya/sih26166"),
-         ("arxiv.org/abs/2509.04775", "https://arxiv.org/abs/2509.04775"),
-         ("arxiv.org/abs/2604.25208", "https://arxiv.org/abs/2604.25208"))
+         *((f"arxiv.org/abs/{a}", f"https://arxiv.org/abs/{a}")       # every arXiv reference on slide 6
+           for a in ("2509.04775", "2604.25208", "2104.00680", "1912.05909", "1602.02720",
+                     "2106.12738", "2101.01710")))
 # Page 1 and 2 carry the idea title since v9 (23 Sep): "TITLE PAGE" and "IDEA TITLE" were the
 # template's placeholders for it, and build_deck's audit now bans both strings.
 TITLES = ("Knows When It Is Wrong", "Knows When It Is Wrong", "TECHNICAL APPROACH",

@@ -397,7 +397,13 @@ def _pic(slide, name, x, y, w=None, h=None, border=None):
 
 
 FIG10 = "fig10_site_n.png"
-FIG10_DPI = 200                                    # make_figures.SITE_N_DPI
+FIG10_DPI = 200                                    # make_figures.SITE_N_DPI = AT_SIZE_DPI
+# Drawn at the size they are placed (make_figures FIG3_SIZE, FIG6_SIZE, SITE_N_SIZE), so their type is
+# the slide's: placed at their pixel size / FIG10_DPI, never scaled. fig3 and fig6 joined fig10 after
+# the cold read of 2 Oct; until then they were shrunk on placing, to 8.5-10.7 pt.
+FIG3 = "fig3_trust_map.jpg"
+FIG6 = "fig6_trust_real_calibration.png"
+AT_SIZE = (FIG3, FIG6, FIG10)
 
 
 def _native_in(path, default):
@@ -473,13 +479,17 @@ def slide1(s):
 # How it addresses the problem: the PS's named challenges, one measured line each (v11).
 HOW_ROWS = [
     # REPORT.md "SAC's own benchmark pair (equatorial ...)": `agrees` / rows; Δsun az 173.5-173.7,
-    # said as 174°. A did-it-register fact, NOT an accuracy comparison.
-    ("AZIMUTH", GREEN, "6/6 accepted", " on SAC's pair [1], Suns 174° apart; 0/12 at 60–120°"),
+    # said as 174°. A did-it-register fact, NOT an accuracy comparison. v11c: the line ended
+    # "; 0/12 at 60–120°", and a cold reader (2 Oct) remembered that 0/12 as SAC's pair - it is the
+    # 74°S sweep, a different site. Slide 4's first risk carries it.
+    ("AZIMUTH", GREEN, "6/6 accepted", " on SAC's pair [1], Sun azimuths 174° apart"),
     # "Sun azimuth and elevation, on SAC's own frame": the near-azimuth table's totals line (agrees /
     # windows) and its highest Sun (+41.7° in elevation).
     ("ELEVATION", GREEN, "61/71 accepted", " Sun raised up to 41.7° on SAC's frame"),
-    # "Scale rung: ... TC ortho map": scale column, `agrees` / rows.
-    ("SCALE", GREEN, "10/10 accepted", " OHRC → TMC-2 across 4.2×; 3/4 across 29.6×"),
+    # Site N's OHRC -> TMC-2 leg (scale column 4.199×, agrees 10 of 10) and "TMC-2 -> IIRS" (scale
+    # column 16.2×; its 62/62 is the MULTI-MODAL row). v11 ended "3/4 across 29.6×", bare: a cold
+    # reader asked from which sensor, and two of the three rest on 1 and 7 verified cells (audit L8).
+    ("SCALE", GREEN, "10/10 accepted", " OHRC → TMC-2 at 4.2×; TMC-2 → IIRS at 16×"),
     # "TMC-2 -> IIRS, orbit of ..." (both orbits): windows accepted in the bands beyond 850 nm
     # (multi-modal), 8 x 4 on the first orbit + 8 + 8 + 8 + 6 on the second.
     ("MULTI-MODAL", GREEN, "62/62 accepted", " TMC-2 → IIRS infrared, two orbits"),
@@ -534,17 +544,21 @@ def slide2(s):
               [P(R(bold, 12, True, INK), R(rest, 12, False, INK))], anchor="m", name="how-row")
 
     # Innovation and uniqueness: the calibration, both Sun populations, never pooled.
-    # "Trust layer on real imagery: planted ...": 0 m row = false alarms; >= 5 m rows all flagged on
+    # "Trust layer on real imagery: planted ...": 0 m row = false alarms (0 of 44 near-Sun trials, 0 of
+    # 16 at 132-174°: none in either population, so "0" is no pooled rate); >= 5 m rows all flagged on
     # the 22 near-Sun windows; SAC's 8 flag 84.4 % at 5 m, so that rate is NOT claimed for them
-    # (claim-checker M5, v4). The 1-2 m rows are the printed floor.
+    # (claim-checker M5, v4) - they are claimed from 10 m. The 1-2 m rows are the printed floor.
+    # v11c: the column carried four trial counts (44, 176, 16, and slide 5's 120) against "30 real
+    # windows"; a cold reader stopped reading slide 2 at "0/16" and the other asked "44 of what?"
+    # (2 Oct). One denominator now: the 30 windows.
     ix = L + cw1 + 0.20
     _tab(s, ix, cy, H[3])
     _box(s, ix, cy + 0.38, RIGHT - ix, 6.85 - cy - 0.38, fill=FILL_ORANGE, line=LINE_ORANGE,
          name="card-innovation")
     _text(s, ix + 0.14, cy + 0.46, RIGHT - ix - 0.28, 0.30,
           [P(R("A failure detector, calibrated on real data.", 13, True, INK))], name="inn-lead")
-    for k, (num, lab) in enumerate((("0/44", "false alarms on correct answers, Suns within 10° apart"),
-                                    ("100%", "of planted 5 m shifts caught (176 trials), same Suns"))):
+    for k, (num, lab) in enumerate((("0", f"false alarms on correct answers, in 30{NBSP}real{NBSP}windows"),
+                                    ("100%", "of planted shifts of 5 m or more caught, Suns within 10°"))):
         ry = cy + 0.80 + k * 0.42
         _text(s, ix + 0.14, ry, 0.86, 0.40, [P(R(num, 24, True, ACCENT))], anchor="m", name="inn-num")
         _text(s, ix + 1.02, ry, RIGHT - ix - 1.16, 0.40, [P(R(lab, 12, False, MUTED))], anchor="m",
@@ -552,13 +566,13 @@ def slide2(s):
     # Shifts only: rotations and scale changes of 5 m at the corners are flagged far less often
     # at frame level (4 and 8 of 44 near-Sun trials) - slide 5 says why (claim-check v10, H1).
     _text(s, ix + 0.14, cy + 1.68, RIGHT - ix - 0.28, 0.62,
-          [P(R("30 real windows. Suns 132–174° apart: 0/16 false alarms, every 10 m "
-               "shift caught. At 2 m or less almost nothing is caught: the detection floor.", 12, False, INK))],
+          [P(R("Suns 132–174° apart: every shift of 10 m or more caught. At 2 m or less almost "
+               "nothing is caught: the detection floor.", 12, False, INK))],
           name="inn-body")
 
     # The trust map itself: SAC's OHRC -> NAC w06 (accepted) above Kaguya TC -> MI 1548 nm w01
-    # (refused), through the same code path, re-cached by the freeze's report step.
-    _pic(s, "fig3_trust_map.jpg", 9.22, 1.36, w=3.55)
+    # (refused), through the same code path, re-cached by the freeze's report step. At its drawn size.
+    _pic(s, FIG3, 9.22, 1.36, w=_native_in(FIGURES / FIG3, (3.55, 5.36))[0])
 
 
 # ---------------------------------------------------------------------------------------------
@@ -570,9 +584,11 @@ def slide3(s):
     L, RIGHT = 0.55, 12.78
     _tab(s, L, 1.33, H[0])
 
+    # "sign-invariant" (v11c): the abstract's word for why a shadow and its mirror image match, which a
+    # cold reader said explained why Suns 174° apart register while 60-120° do not (2 Oct).
     steps = [("Input pair", "Chandrayaan-2 image + lunar reference"),
              ("Common scale", "one ground grid"),
-             ("Illumination", "gradient orientation"),
+             ("Illumination", "sign-invariant gradient orientation"),
              ("LoFTR [4]", "dense matching"),
              ("Sub-pixel", "NCC refinement"),
              ("MAGSAC++ [5]", "outlier rejection"),
@@ -631,11 +647,15 @@ def slide3(s):
             _box(s, x, ry, w, 0.36, [P(R(c, 12, False, NAVY), align="c")], fill=FILL_BLUE,
                  line=LINE_BLUE, radius=0.5, margins=(0.04, 0, 0.04, 0), name="chip")
             x += w + 0.08
-    # "Runtime and match distribution": median seconds over the 74 deg S OHRC -> NAC windows.
+    # REPORT.md "The whole lit overlap of one OHRC frame with one NAC (dense tiling)": 37 windows of
+    # 596 m = 13.1 km², accepted 37/37, wall time of run_all 7.0 min, CPU only. v11c: it replaces "median
+    # 7.7 s per 640-px window (89 OHRC → NAC windows)" - the cold reader who reached it called it "your
+    # best answer to cherry-picking, and it appears on no slide", and both asked whether "windows" are
+    # tiles or scenes (2 Oct). The 7.7 s stays in the portal description.
     _box(s, L, 6.30, 8.25, 0.50,
          [P(R("Hardware: ", 12.5, True, ACCENT),
-            R("laptop CPU, no GPU, offline — median 7.7 s per 640-px window "
-              "(89 OHRC → NAC windows)",
+            R("laptop CPU, no GPU, offline — 7.0 min for a 13.1 km² lit overlap, all 37 windows "
+              "accepted",
               12.5, False, INK))],
          fill=FILL_ORANGE, line=LINE_ORANGE, anchor="m", margins=(0.14, 0.03, 0.12, 0.03),
          name="hardware")
@@ -668,35 +688,47 @@ SCORECARD = [
     ("Sun azimuth", "SAC's own pair [1]: 6/6 accepted, Sun azimuths 174° apart", GREEN),
     # "Sun azimuth and elevation, on SAC's own frame": the near-azimuth table, its totals line.
     ("Sun elevation", "Same frame, azimuth within 20°: Sun up to 41.7° higher, 61/71 accepted", GREEN),
-    # "A real viewpoint test at Site N": agrees / windows, angle apart, held-out median.
-    ("Viewpoint", f"OHRC → OHRC, next orbit, views 40° apart: 8/8, held-out 0.91 px{_EQ}1.12 m", GREEN),
+    # "A real viewpoint test at Site N": agrees / windows, angle apart, held-out median, and its grid
+    # (v11c: a cold reader took the 1.12 m for SAC's 1.12 m NAC grid of paper [1], 2 Oct).
+    ("Viewpoint", f"OHRC → OHRC, next orbit, views 40° apart: 8/8, held-out 0.91 px{_EQ}1.12 m on a "
+                  f"1.232 m grid", GREEN),
     # "Scale rung" 3 agrees of 4; "TMC-2 -> IIRS" scale column 16.2x, every window on both orbits.
-    ("Scale", "16× TMC-2 → IIRS: 62/62 · 4.2× OHRC → TMC-2: 10/10 · 29.6× to Kaguya TC: 3/4", GREEN),
-    # "TMC-2 -> IIRS", both orbits: bands beyond 850 nm, windows accepted.
-    ("Multi-modal", "TMC-2 → IIRS infrared, 999–3223 nm: 62/62, 16 places on two orbits", GREEN),
-    # "One site, every camera ... (Site N)": the legs table; then "TMC-2 -> IIRS" on that TMC-2's own
-    # orbit (20200607), its four infrared bands' "windows accepted" summed: 8 + 8 + 8 + 6 = 30/30.
-    # v11 ended this row "chain via NAC meets direct within 2.0 m": false - the loop's median is 1.99 m,
-    # its max 4.04 m, and 2 of its 4 windows are above 2.0 m (audit, 2 Oct). fig10's caption carries
-    # the loop with both numbers. Arrows are no-break, so no instrument is cut from its arrow.
-    ("OHRC, TMC, IIRS", f"One site, Suns matched: OHRC{_TO}TMC-2 10/10, OHRC{_TO}NAC 5/5, NAC{_TO}TMC-2 4/4; "
-                        "IIRS along the same TMC-2 pass: 30/30", GREEN),
+    # v11c names the 29.6× rung's source ("from which sensor?", cold read, 2 Oct).
+    ("Scale", f"16×{NBSP}TMC-2{_TO}IIRS: 62/62 · 4.2×{NBSP}OHRC{_TO}TMC-2: 10/10 · "
+              f"29.6×{NBSP}OHRC{_TO}Kaguya{NBSP}TC: 3/4", GREEN),
+    # "TMC-2 -> IIRS", both orbits: bands beyond 850 nm, windows accepted. (v11c: "16 places" cut to pay
+    # for the words added on this slide.)
+    ("Multi-modal", "TMC-2 → IIRS infrared, 999–3223 nm: 62/62 on two orbits", GREEN),
+    # "One site, every camera ... (Site N)": OHRC -> TMC-2 from the legs table; then "TMC-2 -> IIRS" on
+    # that TMC-2's own orbit (20200607), its four infrared bands' "windows accepted" summed: 8 + 8 + 8 +
+    # 6 = 30/30. v11 ended this row "chain via NAC meets direct within 2.0 m": false - the loop's median
+    # is 1.99 m, its max 4.04 m, and 2 of its 4 windows are above 2.0 m (audit, 2 Oct). v11c drops the
+    # two NAC legs (5/5, 4/4): fig10 beside the row draws both, and the row names the three cameras.
+    # Arrows are no-break, so no instrument is cut from its arrow.
+    ("OHRC, TMC, IIRS", f"One site, Suns matched: OHRC{_TO}TMC-2 10/10; IIRS along the same TMC-2 pass: "
+                        "30/30", GREEN),
     # "Sub-pixel accuracy ... / In the Chandrayaan-2 image's own pixels" (the PS asks for the accuracy
     # "of source image"): NAC <-> TMC-2 at SAC's site, TMC-2 <-> IIRS 1555 nm on orbit 20200607, and
     # OHRC -> NAC at 74 S in OHRC pixels - OHRC is finer than any reference, so it is not sub-pixel in
     # its own pixels, which is why the row is AMBER. 1555 nm is named: 3223 nm reaches 1.2 px. v11 put
     # reference-grid pixels here, which are not the source image's. No figure from SAC's own pair: its
     # paper's SuperGlue number is in-sample, ours are held-out, and the two are not the same measure.
-    ("Sub-pixel", f"In the Chandrayaan-2 image's own pixels: TMC-2 0.36–0.48 px{_EQ}1.6–2.2 m; "
-                  f"IIRS 1555 nm 0.16–0.32 px{_EQ}13.9–27.3 m; OHRC, finer than NAC, "
-                  f"2.0–3.7 px{_EQ}0.51–0.94 m", AMBER),
+    # v11c names each number's partner: both cold readers found TMC-2's accuracy given three ways on
+    # this slide (here, and fig10's two Site N legs on another TMC-2 frame), 2 Oct.
+    ("Sub-pixel", f"Own pixels: TMC-2 vs NAC 0.36–0.48 px{_EQ}1.6–2.2 m; IIRS 1555 nm vs TMC-2 "
+                  f"0.16–0.32 px{_EQ}13.9–27.3 m; OHRC, finer than NAC, 2.0–3.7 px{_EQ}0.51–0.94 m", AMBER),
     # "Runtime and match distribution": grid coverage, and the delivered uniform set.
     ("Uniform spread", "Inliers in ≥95% of 8×8 cells on 17/20 windows; uniform control points ship", GREEN),
-    ("Deliverables", "GeoTIFF, GDAL/QGIS control points, ISIS match list, trust map, report", GREEN),
+    # The exported report carries the PS's own metrics (core/export.py: inlier_count, inlier_ratio,
+    # held-out RMSE of the matches within 3 px). "RMSE appears nowhere", said a cold reader (2 Oct).
+    ("Deliverables", "GeoTIFF, GDAL/QGIS control points, ISIS match list, trust map, report (RMSE, "
+                     "inlier ratio)", GREEN),
 ]
 RISKS = [
-    # "Real sun-angle sweep" bins 60-90 and 90-120: 0 accepted of 7 + 5, none wrongly accepted.
-    (("Sun 60–120° away", "0 of 12 accepted: 1 failure caught, 2 right ones refused"),
+    # "Real sun-angle sweep" bins 60-90 and 90-120: 0 accepted of 7 + 5, none wrongly accepted; 1 failed
+    # and caught, 1 + 1 correct but refused, 5 + 4 inconclusive (the image cannot judge). Both cold
+    # readers asked what happened to the other 9 (2 Oct).
+    (("Sun 60–120° away", "0 of 12 accepted: 1 failure caught, 2 right ones refused, 9 inconclusive"),
      ("Choose the pass by its Sun", "How this slide's site was found")),
     (("Relief parallax", "TMC-2 fore → aft, 50° apart: 1 of 4 accepted"),
      ("Local transforms", "Tile-level transforms after DTM orthorectification")),
@@ -730,7 +762,9 @@ def slide4(s):
     _dot(s, L + lw + 0.05, ly + 0.07, 0.13, GREEN)
     _text(s, L + lw + 0.24, ly, 1.7, 0.26, [P(R("met, as measured", 11, False, MUTED))], name="legend")
     _dot(s, L + lw + 1.90, ly + 0.07, 0.13, AMBER)
-    _text(s, L + lw + 2.09, ly, 2.6, 0.26, [P(R("a measured limit", 11, False, MUTED))], name="legend")
+    # "a measured limit" read as met to one cold reader skimming the dots (2 Oct): the amber row holds
+    # for TMC-2 and IIRS, not for OHRC.
+    _text(s, L + lw + 2.09, ly, 2.6, 0.26, [P(R("partly met", 11, False, MUTED))], name="legend")
 
     # Every Chandrayaan-2 camera the PS names, at one site, each leg checked (REPORT "Site N"). v11 draft
     # had fig9 (the Sun map on SAC's frame) here; the scorecard's two Sun rows carry those numbers.
@@ -806,26 +840,33 @@ def slide5(s):
                  fill=GREEN if d < 2.5 else ACCENT, kind=MSO_SHAPE.RECTANGLE, name="grid-cell")
     _text(s, L + 0.08, py + 1.18, 1.2, 0.26,
           [P(R("illustration", 11, False, MUTED, True), align="c")], name="grid-caption")
+    # v11c: neither cold reader could parse v11b's "...refuses 0 of 120 trials; the 8×8 map refuses to
+    # verify 62–63% of the cells moved past 2 px (94% over all trials, up to 20 m)" (2 Oct). Same
+    # numbers, plain words; the 94% stays in the portal description. "fit the wrong answer perfectly":
+    # REPORT, "The planted matches agree with the wrong transform perfectly in every trial".
     _text(s, L + 1.42, py + 0.10, 5.52, 1.32,
           [P(R("Why region by region", 13, True, ACCENT)),
-           P(R("Rotation and scale errors move the corners, not the centre. At 3 m of corner "
-               "movement a whole-frame check refuses 0 of 120 trials; the 8×8 map refuses to verify "
-               "62–63% of the cells moved past 2 px (94% over all trials, up to 20 m).",
+           P(R("Rotation and scale errors move the corners, not the centre, and the matches fit the "
+               "wrong answer perfectly. With corners 3 m out, a whole-frame check refused none of 120 "
+               "trials; the 8×8 map left 62–63% of the squares moved over 2 px unverified.",
                12, False, INK), sb=2)],
           name="per-region-text")
 
-    # "Trust layer on real imagery: planted ...": the figure, both populations, never pooled.
-    _pic(s, "fig6_trust_real_calibration.png", 7.85, 1.36, w=4.93)
+    # "Trust layer on real imagery: planted ...": the figure, both populations, never pooled. At its
+    # drawn size.
+    _pic(s, FIG6, 7.85, 1.36, w=_native_in(FIGURES / FIG6, (4.93, 3.80))[0])
 
     # Benefits (social, economic, environmental, etc.).
     by = 5.44
     _tab(s, L, by, H[1])
     # v11: concrete, and each one something a user does or saves (fresh-eyes review, 2 Oct).
+    # v11c: "no licence" read as unlicensed (audit L13); "no cloud" contradicted the hosted workbench the
+    # abstract offers, and both cold readers asked where live registration runs (2 Oct).
     cards = [("SCIENTIFIC", "Mosaics and hazard maps use only pixel-confirmed squares"),
              # Open-source since LICENSE (Apache-2.0) and NOTICE were added on 23 Sep (v9 H3).
-             ("ECONOMIC", "Apache-2.0, CPU-only, no licence; results open in QGIS and GDAL"),
+             ("ECONOMIC", "Apache-2.0, CPU-only, no licence fee; results open in QGIS and GDAL"),
              ("SOCIAL", "English and Hindi, in any browser; public data, every number checkable"),
-             ("ENVIRONMENTAL", "Runs offline on an existing laptop: no new hardware, no cloud")]
+             ("ENVIRONMENTAL", "Runs offline on an existing laptop; the hosted copy is optional")]
     gap = 0.15
     cw = (12.78 - L - gap * 3) / 4
     for k, (head, body) in enumerate(cards):
@@ -851,7 +892,9 @@ REFS = [
         ("[4]", "LoFTR, detector-free local feature matching — Sun et al., CVPR 2021 · "
                 "arxiv.org/abs/2104.00680"),
         ("[5]", "MAGSAC++ — Barath et al., CVPR 2020 · arxiv.org/abs/1912.05909")]),
-    ("Reliability estimation — the basis of our contribution", [
+    # v11c: "— the basis of our contribution" was the novelty negative BOTH cold readers quoted: our own
+    # heading said the contribution was borrowed (2 Oct). Slide 3 already says "builds on [6–9]".
+    ("Reliability estimation — prior work", [
         ("[6]", "Uss, Vozel, Lukin, Chehdi — IEEE TGRS 2016 · arxiv.org/abs/1602.02720"),
         ("[7]", "Brown & Lowe — IJCV 2007"),
         ("[8]", "Wan, Shao, Li — 2021 · arxiv.org/abs/2106.12738"),
@@ -1075,12 +1118,15 @@ def _audit_deck(deck) -> list[str]:
         # A picture must not share space with any other shape of ours.
         pics = [sh for sh in ours if sh.shape_type == 13]
         for pic in pics:
-            # fig10's type is 11-12 pt only at its drawn size (make_figures checks the drawing).
-            if pic.name == f"lx pic {FIG10}":
-                with Image.open(FIGURES / FIG10) as im:
+            # fig3, fig6 and fig10 are 11 pt and up only at their drawn size (make_figures checks
+            # each drawing).
+            for name in AT_SIZE:
+                if pic.name != f"lx pic {name}":
+                    continue
+                with Image.open(FIGURES / name) as im:
                     drawn = im.size[0] / FIG10_DPI
                 if abs(Emu(pic.width).inches - drawn) > 0.01:
-                    bad.append(f"slide {i}: {FIG10} placed {Emu(pic.width).inches:.2f} in wide, drawn "
+                    bad.append(f"slide {i}: {name} placed {Emu(pic.width).inches:.2f} in wide, drawn "
                                f"{drawn:.2f} in: its type is no longer the 11 pt it was drawn at")
             pl, pr = Emu(pic.left).inches, Emu(pic.left).inches + Emu(pic.width).inches
             pt_, pb = Emu(pic.top).inches, Emu(pic.top).inches + Emu(pic.height).inches
