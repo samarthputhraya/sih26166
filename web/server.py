@@ -204,8 +204,12 @@ _thumbs: dict[str, bytes] = {}
 
 
 def _term(t: str) -> str:
-    """The prior's terminology up to its first explanation: 'cross-sensor, cross-mission'."""
-    return re.split(r"\s*[(:;]|\s+-\s+", t or "", maxsplit=1)[0].strip().rstrip(",")
+    """The prior's terminology up to its first explanation: 'cross-sensor, cross-mission' - plus
+    'multi-modal' when the prior says so further on (TMC-2 -> IIRS beyond 850 nm is written
+    'cross-sensor (...) ... : MULTI-MODAL'), never when it says 'NOT multi-modal'."""
+    base = re.split(r"\s*[(:;]|\s+-\s+", t or "", maxsplit=1)[0].strip().rstrip(",")
+    mm = re.search(r"(?<!NOT )(?<!not )\bmulti-modal\b", t or "", re.I)
+    return base + (", multi-modal" if mm and "multi-modal" not in base.lower() else "")
 
 
 #: Short instrument names for the library's grouping chips. Anything not listed keeps its name.
