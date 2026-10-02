@@ -8,6 +8,9 @@ interface reads large on a phone. The page gets a drawn cursor (a headless scree
 and each clip logs when its run was started and when the result arrived, so render.py can speed
 through the wait without touching the moments that matter. Every run in these clips is real:
 core.pipeline.run_all on this laptop's CPU.
+
+The fourth clip, `try`, is the published static console (GitHub Pages) on a 390 x 844 phone at 2x
+density, switched to Hindi: what a judge gets from the link, with nothing installed.
 """
 from __future__ import annotations
 
@@ -57,9 +60,25 @@ CURSOR = r"""
     async click(el, fx = .5, fy = .5, ms = 700) { el = await this.to(el, fx, fy, ms); this.pulse(); await new Promise(r => setTimeout(r, 180)); el.click(); return el; },
     async hover(el, fx = .5, fy = .5, ms = 600) { el = await this.to(el, fx, fy, ms);
       el.dispatchEvent(new PointerEvent('pointerover', {bubbles: true})); return el; },
+    // press on `el` at height fy and drag through the fractions xs, each leg `ms` long (the swipe line)
+    async drag(el, fy, xs, ms = 800) {
+      if (typeof el === 'string') el = document.querySelector(el);
+      const r = el.getBoundingClientRect(), y = r.top + r.height * fy, X = f => r.left + r.width * f;
+      const ev = (k, px) => el.dispatchEvent(new PointerEvent(k, {bubbles: true, clientX: px, clientY: y, pointerId: 7, pointerType: 'mouse', isPrimary: true, buttons: k === 'pointerup' ? 0 : 1}));
+      await this.move(X(xs[0]), y, 600); this.pulse(); ev('pointerdown', X(xs[0]));
+      for (let k = 1; k < xs.length; k++){ const a = X(xs[k - 1]), b = X(xs[k]), t0 = performance.now();
+        await new Promise(res => { const f = now => { const p = Math.min(1, (now - t0) / ms), q = ease(p), px = a + (b - a) * q;
+          x = px; c.style.transform = `translate(${x}px,${y}px)`; ev('pointermove', px); if (p < 1) requestAnimationFrame(f); else res(); }; requestAnimationFrame(f); }); }
+      ev('pointerup', X(xs[xs.length - 1])); return el;
+    },
   };
 })();
 """
+
+# A fingertip instead of an arrow, for the phone clip.
+TOUCH = CURSOR.replace(
+    '<svg width="30" height="30" viewBox="0 0 30 30"><path d="M5 3 L5 24 L10.5 18.6 L14.6 27.5 L18.2 26 L14.1 17.2 L21.6 17.2 Z" fill="#fff" stroke="#111" stroke-width="1.7" stroke-linejoin="round"/></svg>',
+    '<div style="width:34px;height:34px;margin:-17px 0 0 -17px;border-radius:50%;background:rgba(255,255,255,.55);border:2px solid rgba(0,0,0,.55)"></div>')
 
 
 class Tab:
@@ -120,8 +139,15 @@ async def fresh(tab):
 
 
 async def scroll_deck_to_library(tab):
-    await tab.js("(() => { const d = document.querySelector('.deck'); d.scrollTop = document.querySelector('.libh').offsetTop - 16; })()")
+    await tab.js("(() => { const d = document.querySelector('.deck'); d.scrollTop = document.querySelector('#gal').offsetTop - 16; })()")
     await asyncio.sleep(1.5)                     # thumbnails load
+
+
+async def scroll_deck_to(tab, sel, above=120):
+    """Bring one library button into view in the deck, `above` CSS px below the deck's top."""
+    await tab.js(f"(() => {{ const d = document.querySelector('.deck'), b = document.querySelector({json.dumps(sel)});"
+                 f" d.scrollBy({{top: b.getBoundingClientRect().top - d.getBoundingClientRect().top - {above}, behavior: 'smooth'}}); }})()")
+    await asyncio.sleep(1.2)
 
 
 async def rect(tab, sel):
@@ -136,7 +162,7 @@ async def clip_accept(tab, mark):
     await scroll_deck_to_library(tab)
     await tab.js("(() => { const b = [...document.querySelectorAll('#chips button')].find(b => /OHRC → NAC/.test(b.textContent)); b.click(); })()")
     await asyncio.sleep(1.5)
-    await tab.js("document.querySelector('.deck').scrollTop = document.querySelector('.libh').offsetTop - 16")
+    await scroll_deck_to(tab, '#lib button[data-id="sac_ohrc_nac_w06"]', 260)
     mark("start")
     await asyncio.sleep(1.0)
     await tab.js("__cur.click('#lib button[data-id=\"sac_ohrc_nac_w06\"]', .5, .45, 900)")
@@ -145,13 +171,15 @@ async def clip_accept(tab, mark):
     mark("done")
     mark.rects.update(plate=await rect(tab, "#bview .plate"), verdict=await rect(tab, "#bview .verdict"),
                       facts=await rect(tab, "#bview .facts"))
-    await asyncio.sleep(1.4)
+    await asyncio.sleep(0.6)
+    # v11: the result opens on the swipe; drag the line across so the alignment shows
+    await tab.js("__cur.drag('#bview .pimg', .55, [.5, .86, .14, .5], 850)")
+    mark("swiped")
+    await asyncio.sleep(0.6)
     await tab.js("__cur.hover(document.querySelectorAll('#bview .cell')[27], .5, .5, 900)")
     await asyncio.sleep(1.8)
-    await tab.js("__cur.hover(document.querySelectorAll('#bview .cell')[32], .5, .5, 800)")
-    await asyncio.sleep(1.8)
     await tab.js("__cur.to('#bview .vword', .3, .5, 900)")
-    await asyncio.sleep(4.0)
+    await asyncio.sleep(3.0)
     mark("end")
 
 
@@ -162,6 +190,7 @@ async def clip_refuse(tab, mark):
     await asyncio.sleep(0.8)
     await tab.js("__cur.click([...document.querySelectorAll('#chips button')].find(b => /MI 1548/.test(b.textContent)), .5, .5, 900)")
     await asyncio.sleep(0.9)
+    await scroll_deck_to(tab, '#lib button[data-id="site_tc_morning_mi1548_w01"]', 300)
     await tab.js("__cur.click('#lib button[data-id=\"site_tc_morning_mi1548_w01\"]', .5, .45, 800)")
     mark("click")
     await tab.until("!document.querySelector('#result').hidden", 180)
@@ -231,12 +260,45 @@ async def clip_known(tab, mark):
     mark("end")
 
 
-CLIPS = {"accept": clip_accept, "refuse": clip_refuse, "known": clip_known}
+SITE = "https://samarthputhraya.github.io/sih26166/"
 
 
-async def record_all(port: int, names):
+async def clip_try(tab, mark):
+    """The published console on a phone: switch to Hindi, open a saved result, drag the swipe line."""
+    await tab.send("Page.navigate", url=SITE)
+    await asyncio.sleep(1.0)
+    await tab.until("typeof D !== 'undefined' && document.querySelectorAll('#lib .gal button').length > 5", 90)
+    await tab.js("Promise.all([...document.images].map(i => i.decode().catch(() => {})))")
+    await tab.js(TOUCH)
+    await tab.js("__cur.move(250, 560, 1)")
+    await asyncio.sleep(1.5)
+    mark("start")
+    await asyncio.sleep(1.0)
+    await tab.js("__cur.click('#lang', .78, .5, 800)")
+    mark("hindi")
+    await asyncio.sleep(1.4)
+    await tab.js("""(() => { const b = document.querySelector('#lib button[data-id="saved2"]');
+        scrollTo({top: scrollY + b.getBoundingClientRect().top - 180, behavior: 'smooth'}); })()""")
+    await asyncio.sleep(1.3)
+    await tab.js("__cur.click('#lib button[data-id=\"saved2\"]', .5, .4, 700)")
+    mark("click")
+    await asyncio.sleep(1.6)                          # the page scrolls to the result by itself
+    await tab.js("__cur.drag('#bview .pimg', .5, [.5, .88, .12, .5], 800)")
+    mark("swiped")
+    await asyncio.sleep(1.4)
+    mark("end")
+
+
+# name -> (recorder, profile); a profile is CSS width, height, density and whether it is a phone
+DESK, PHONE = (W, H, DPR, False), (390, 844, 2.0, True)
+CLIPS = {"accept": (clip_accept, DESK), "refuse": (clip_refuse, DESK), "known": (clip_known, DESK),
+         "try": (clip_try, PHONE)}
+
+
+async def record_all(port: int, names, prof):
     import urllib.request
     import websockets
+    w, h, dpr, phone = prof
     for _ in range(80):
         try:
             tabs = json.loads(urllib.request.urlopen(f"http://127.0.0.1:{port}/json", timeout=2).read())
@@ -254,10 +316,10 @@ async def record_all(port: int, names):
         await tab.send("Runtime.enable")
         # All three are needed for 1080p frames from a 1280-wide layout: headless Chrome's
         # screencast ignores deviceScaleFactor unless the process itself runs at that density.
-        await tab.send("Emulation.setDeviceMetricsOverride", width=W, height=H, deviceScaleFactor=DPR,
-                       mobile=False, screenWidth=int(W * DPR), screenHeight=int(H * DPR))
-        await tab.send("Page.startScreencast", format="jpeg", quality=88, everyNthFrame=1,
-                       maxWidth=int(W * DPR), maxHeight=int(H * DPR))
+        await tab.send("Emulation.setDeviceMetricsOverride", width=w, height=h, deviceScaleFactor=dpr,
+                       mobile=phone, screenWidth=int(w * dpr), screenHeight=int(h * dpr))
+        await tab.send("Page.startScreencast", format="jpeg", quality=90, everyNthFrame=1,
+                       maxWidth=int(w * dpr), maxHeight=int(h * dpr))
         for name in names:
             marks = {}
             tab.frames, tab.recording = [], False
@@ -272,7 +334,7 @@ async def record_all(port: int, names):
                 marks[k] = round(now - t0[0], 3)
             mark.rects = {}
 
-            await CLIPS[name](tab, mark)
+            await CLIPS[name][0](tab, mark)
             tab.recording = False
             frames = list(tab.frames)
             if not frames:
@@ -290,7 +352,7 @@ async def record_all(port: int, names):
                 (d / f"f_{k:05d}.jpg").write_bytes(base64.b64decode(frames[j][1]))
                 k += 1
             meta[name] = {"frames": k, "fps": FPS, "marks": marks, "rects": mark.rects,
-                          "captured": len(frames), "size": [int(W * DPR), int(H * DPR)]}
+                          "captured": len(frames), "size": [int(w * dpr), int(h * dpr)]}
             print(f"  {name}: {k} frames ({len(frames)} captured), marks {marks}")
         await tab.send("Page.stopScreencast")
         pump.cancel()
@@ -306,16 +368,20 @@ def main(argv=None) -> int:
     ap.add_argument("names", nargs="*", default=list(CLIPS))
     ap.add_argument("--port", type=int, default=9333)
     a = ap.parse_args(argv)
-    prof = tempfile.mkdtemp(prefix="lunaxx_rec_")
-    chrome = subprocess.Popen([str(CHROME), "--headless=new", f"--remote-debugging-port={a.port}",
-                               f"--user-data-dir={prof}", "--no-first-run", "--hide-scrollbars",
-                               f"--force-device-scale-factor={DPR}",
-                               f"--window-size={int(W * DPR)},{int(H * DPR)}", "about:blank"],
-                              stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    try:
-        asyncio.run(record_all(a.port, a.names))
-    finally:
-        chrome.kill()
+    # one headless Chrome per screen profile, run at that profile's density (see record_all)
+    for prof in dict.fromkeys(CLIPS[n][1] for n in a.names):
+        w, h, dpr, _ = prof
+        tmp = tempfile.mkdtemp(prefix="lunaxx_rec_")
+        chrome = subprocess.Popen([str(CHROME), "--headless=new", f"--remote-debugging-port={a.port}",
+                                   f"--user-data-dir={tmp}", "--no-first-run", "--hide-scrollbars",
+                                   f"--force-device-scale-factor={dpr}",
+                                   f"--window-size={int(w * dpr)},{int(h * dpr)}", "about:blank"],
+                                  stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        try:
+            asyncio.run(record_all(a.port, [n for n in a.names if CLIPS[n][1] == prof], prof))
+        finally:
+            chrome.kill()
+            time.sleep(1.0)
     return 0
 
 

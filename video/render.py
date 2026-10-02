@@ -41,7 +41,8 @@ from video.script import BEATS                      # noqa: E402
 
 LEAD, TAIL = 0.35, 0.30                             # silence before / after each line, in its scene
 EXTRA = {"hook": (0.9, 0.0), "title": (0.2, 0.5), "live-accept": (0.0, 0.9), "live-refuse": (0.0, 0.8),
-         "live-known": (0.0, 0.6), "evidence": (0.0, 0.4), "close": (0.0, 2.6)}
+         "live-known": (0.0, 0.6), "evidence": (0.0, 0.4), "sitn": (0.2, 0.9), "suns": (0.0, 0.9),
+         "limits": (0.0, 0.5), "try": (0.0, 1.8), "close": (0.0, 2.6)}
 
 
 # ------------------------------------------------------------------------------ data for the page
@@ -115,8 +116,14 @@ def clip_plan(name, meta, dur, words):
         cam = [dict(t=pre + .2, cx=1250, cy=560, z=1.1, d=1.5),
                dict(t=pre + w_out + .05, **fit(union(R["plate"], top), 1.08), d=1.0),
                dict(t=pre + w_out + 3.2, **fit(R["plate"], 1.06), d=1.4)]
+    elif name == "try":
+        # the phone clip plays as it was recorded, a little quicker if the line is shorter than it
+        c0 = 0.4
+        speed = min(1.3, max(1.0, (end - c0) / dur))
+        plan = [dict(o0=0, o1=dur, c0=c0, c1=min(end, c0 + dur * speed))]
+        cam = []
     elif name == "refuse":
-        align = word_at(words, r"^refuses", 6) - 0.1
+        align = word_at(words, r"^refused", 6) - 0.1
         pre, wait = m["click"] + 0.5, m["done"] - m["click"] - 0.5
         hold = max(0.0, align - pre - wait)
         w_out = max(0.8, min(wait, align - pre))
@@ -157,8 +164,8 @@ def timeline() -> dict:
         words = [{"t": round(voice + w["t"], 3), "d": w["d"], "w": w["w"]} for w in vb["words"]]
         e = {"scene": b["scene"], "start": round(t, 3), "dur": round(dur, 3), "voice": voice,
              "vdur": vb["seconds"], "words": words, "cap": b["cap"], "wav": vb["file"]}
-        if b["scene"].startswith("live-"):
-            name = b["scene"][5:]
+        if b["scene"].startswith("live-") or b["scene"] == "try":
+            name = b["scene"].removeprefix("live-")
             e["clip"] = clip_plan(name, clips[name], dur, words)
         out.append(e)
         t += dur

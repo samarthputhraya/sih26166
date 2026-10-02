@@ -4,6 +4,7 @@
 <style>
 @font-face{font-family:Jost;src:url(../web/fonts/jost-normal-latin.woff2) format("woff2");font-weight:100 900;font-style:normal}
 @font-face{font-family:Jost;src:url(../web/fonts/jost-italic-latin.woff2) format("woff2");font-weight:100 900;font-style:italic}
+@font-face{font-family:Jost;src:url(../web/fonts/poppins-500-devanagari.woff2) format("woff2");font-weight:100 900;unicode-range:U+0900-097F,U+1CD0-1CF9,U+200C-200D,U+20A8,U+20B9,U+25CC,U+A830-A839,U+A8E0-A8FF}
 :root{--night:#0e0e0d;--ground:#bab8b2;--white:#f4f4f1;--dim:#a9a9a3;--dim2:#6f6f69;--mag:#c2127a;--mag2:#ee5aa8}
 *{box-sizing:border-box}
 html,body{margin:0;width:1920px;height:1080px;overflow:hidden;background:#000}
@@ -189,6 +190,9 @@ async function glyphs(src, n = 34){
 
 // ------------------------------------------------------------------ scenes
 const W06 = byId('sac_ohrc_nac_w06'), MI15 = byId('site_tc_morning_mi1548_w01'), TMC = byId('sac_ohrc_tmc_w01');
+// v11: Site N (60.7°N) - OHRC -> TMC-2, NAC -> TMC-2, the OHRC of the next orbit - and TMC-2 -> IIRS on its pass
+const SN_OT = byId('siten_ohrc2031_tmc20200607_c03'), SN_NT = byId('siten_nacm1282456834re_tmc20200607_c00'),
+      SN_VP = byId('siten_ohrc2031_ohrc2229_c15'), SN_TI = byId('chain_tmc20200607_iirs1555_w05');
 const SCENES = {};
 
 SCENES.hook = {
@@ -227,11 +231,12 @@ SCENES.hook = {
 SCENES.problem = {
   async init(r){
     const s = {};
-    s.head = put(mk('div', 'abs h2', r, 'Different cameras. Different scales. Different Suns.'), {left: 0, right: 0, top: '120px', textAlign: 'center'});
+    s.head = put(mk('div', 'abs h2', r, 'Three cameras. Other missions\' maps. Different Suns.'), {left: 0, right: 0, top: '120px', textAlign: 'center'});
+    // the three Chandrayaan-2 cameras first, then the other missions' references
     const cards = [
-      ['Chandrayaan-2 OHRC', lay(W06, 'src'), W06.a.gsd], ['LRO NAC', lay(W06, 'ref'), W06.b.gsd],
-      ['Chandrayaan-2 TMC-2', lay(TMC, 'ref'), TMC.b.gsd], ['Kaguya TC', lay(byId('site_tc_morning_mi749_w01'), 'src'), byId('site_tc_morning_mi749_w01').a.gsd],
-      ['Kaguya MI, 1548 nm', lay(MI15, 'ref'), MI15.b.gsd], ['Chandrayaan-2 IIRS', lay(byId('site_tc_ortho_iirs1000_w04'), 'ref'), byId('site_tc_ortho_iirs1000_w04').b.gsd]];
+      ['Chandrayaan-2 OHRC', lay(W06, 'src'), W06.a.gsd], ['Chandrayaan-2 TMC-2', lay(SN_OT, 'ref'), SN_OT.b.gsd],
+      ['Chandrayaan-2 IIRS', lay(SN_TI, 'ref'), SN_TI.b.gsd], ['LRO NAC', lay(W06, 'ref'), W06.b.gsd],
+      ['Kaguya TC', lay(MI15, 'src'), MI15.a.gsd], ['Kaguya MI, 1548 nm', lay(MI15, 'ref'), MI15.b.gsd]];
     s.cards = cards.map(([name, src, g], k) => {
       const c = put(mk('div', 'abs', r), {width: '250px', top: '300px', left: (960 - 3 * 280 + k * 280 + 15) + 'px'});
       const p = put(mk('div', 'panel', c), {position: 'relative', width: '250px', height: '250px'}); mk('img', '', p).src = src;
@@ -444,8 +449,8 @@ SCENES.outputs = {
     s.btn = put(mk('div', 'chip', r, 'Download the result (.zip)'), {left: '50%', top: '150px', transform: 'translateX(-50%)', fontSize: '34px', padding: '16px 34px'});
     s.cur = put(mk('div', 'abs', r, '<svg width="44" height="44" viewBox="0 0 30 30"><path d="M5 3 L5 24 L10.5 18.6 L14.6 27.5 L18.2 26 L14.1 17.2 L21.6 17.2 Z" fill="#fff" stroke="#111" stroke-width="1.7" stroke-linejoin="round"/></svg>'), {zIndex: 5});
     s.ring = put(mk('div', 'abs', r), {width: '70px', height: '70px', margin: '-35px 0 0 -35px', borderRadius: '50%', border: '4px solid #fff', zIndex: 4});
-    const files = [['registered_product.tif', 'GeoTIFF on the reference grid', 'geo'], ['gcps.txt', 'control points for GDAL', 'gcp'], ['gcps.points', 'control points for QGIS', 'gcp'], ['matches_isis.csv', 'match list for USGS ISIS', 'match'],
-                   ['matches.csv', 'every match, residual, trust', 'match'], ['trust_map.csv', 'the 8×8 verdicts', 'trust'], ['report.json', 'metrics, timings, input hashes', 'rep'], ['report.md', 'the same, to read', 'rep']];
+    const files = [['registered_product.tif', 'GeoTIFF on the reference grid', 'geo'], ['gcps_uniform.txt', 'evenly spread: ≤4 points a cell', 'gcp'], ['gcps.txt', 'every control point, for GDAL', 'gcp'], ['gcps.points', 'control points for QGIS', 'gcp'],
+                   ['matches_isis.csv', 'match list for USGS ISIS', 'match'], ['matches.csv', 'every match, residual, trust', 'match'], ['trust_map.csv', 'the 8×8 verdicts', 'trust'], ['report.json', 'metrics, timings, input hashes', 'rep']];
     s.cards = files.map(([f, d, k], i) => { const e = put(mk('div', 'abs', r), {width: '400px', height: '176px', left: (140 + (i % 4) * 420) + 'px', top: (320 + Math.floor(i / 4) * 206) + 'px',
       border: '2px solid #4a4a46', padding: '28px 28px', background: '#151514'});
       mk('div', '', e, f).style.cssText = 'font-size:34px;font-weight:500;letter-spacing:-.005em';
@@ -458,7 +463,7 @@ SCENES.outputs = {
     const cp = eIO(prog(t, 0, click)); put(s.cur, {left: lerp(1300, 1010, cp) + 'px', top: lerp(560, 190, cp) + 'px', opacity: 1 - prog(t, click + .8, click + 1.2)});
     const rp = prog(t, click, click + .45); put(s.ring, {left: '1010px', top: '190px', opacity: rp > 0 && rp < 1 ? 1 - rp : 0, transform: `scale(${.4 + rp})`});
     put(s.btn, {background: t > click && t < click + .25 ? 'var(--white)' : 'rgba(14,14,13,.72)', color: t > click && t < click + .25 ? '#000' : 'var(--white)', opacity: eOut(prog(t, 0, .4))});
-    const hl = {geo: wt(W, /GeoTIFF/, 2), gcp: wt(W, /control/, 4), match: wt(W, /^match/, 5), trust: wt(W, /standard/, 6), rep: wt(W, /tools/, 7)};
+    const hl = {geo: wt(W, /GeoTIFF/, 2), gcp: wt(W, /^evenly/, 4), match: wt(W, /^match/, 5), trust: wt(W, /standard/, 6), rep: wt(W, /tools/, 7)};
     s.cards.forEach((c, i) => { const p = eBack(clamp(prog(t, click + .3 + i * .09, click + .8 + i * .09)));
       const on = t > hl[c.k] - .1 && t < hl[c.k] + 1.6;
       put(c.e, {opacity: clamp(prog(t, click + .3 + i * .09, click + .6 + i * .09)), transform: `translateY(${(1 - p) * -120}px) scale(${.85 + .15 * p})`, borderColor: on ? '#f4f4f1' : '#4a4a46', background: on ? '#232321' : '#151514'}); });
@@ -468,8 +473,8 @@ SCENES.outputs = {
 SCENES.evidence = {
   async init(r){
     const s = {};
-    s.top = put(mk('div', 'abs lab', r, 'Evidence frozen at commit <b>7dd4e5b</b>, every figure in REPORT.md'), {left: '140px', top: '70px', fontSize: '28px'});
-    const stats = [['160', 'distinct ground windows'], ['8', 'instrument pairings'], ['6 of 6', 'accepted on SAC\'s benchmark pair,<br>Sun azimuths 174° apart'],
+    s.top = put(mk('div', 'abs lab', r, `Evidence frozen at commit <b>${D.freeze}</b>, every figure in REPORT.md`), {left: '140px', top: '70px', fontSize: '28px'});
+    const stats = [['400', 'distinct windows: one source,<br>one reference, one place'], ['11', 'instrument pairings'], ['6 of 6', 'accepted on SAC\'s benchmark pair,<br>Sun azimuths 174° apart'],
                    ['37 of 37', 'windows of one whole lit overlap'], ['0.57 m', 'held-out median<br>(0.61 px on the 0.93 m NAC grid)']];
     s.stats = stats.map(([n, l], i) => { const e = put(mk('div', 'abs', r), {left: '120px', top: '0', display: 'flex', alignItems: 'baseline', gap: '28px', width: '880px'});
       const a = mk('div', 'big', e, n), b = mk('div', 'lab', e, l); a.style.whiteSpace = 'nowrap'; b.style.cssText = 'line-height:1.25;color:#d3d3cd;max-width:560px'; e._n = a; e._l = b; return e; });
@@ -485,7 +490,7 @@ SCENES.evidence = {
     return s;
   },
   draw(s, t, dur, W){
-    const cue = [wt(W, /hundred/, 2) - .5, wt(W, /^eight/, 4) - .3, wt(W, /benchmark/, 6) - .5, wt(W, /overlap/, 9) - .6, wt(W, /median/, 12) - .6];
+    const cue = [wt(W, /hundred/, 2) - .5, wt(W, /^eleven/, 4) - .3, wt(W, /benchmark/, 6) - .5, wt(W, /overlap/, 9) - .6, wt(W, /median/, 12) - .6];
     put(s.top, {opacity: eOut(prog(t, 0, .6))});
     s.stats.forEach((e, i) => { const p = eOut(prog(t, cue[i], cue[i] + .6)), next = i < 4 ? prog(t, cue[i + 1], cue[i + 1] + .6) : 0;
       // the newest stat is large at the top; earlier ones step down the column, smaller
@@ -552,25 +557,172 @@ SCENES.calibration = {
   }
 };
 
+// the real Sun sweep (one OHRC frame against 25 NAC frames), windows per bin of Sun azimuths apart, by outcome
+function drawSweep(g, S){
+  const B = D.bins, L = 58, R = S - 14, T = 70, Y0 = S - 138, n = B.length, bw = (R - L) / n, top = 16, y = v => Y0 - v / top * (Y0 - T);
+  g.fillStyle = '#000'; g.fillRect(0, 0, S, S);
+  g.font = '500 25px Jost'; g.fillStyle = '#f4f4f1'; g.fillText('Real Sun sweep: windows, by outcome', 20, 40);
+  B.forEach((b, i) => { if (b.a >= 60 && b.b <= 120){ g.fillStyle = 'rgba(194,18,122,.30)'; g.fillRect(L + i * bw + 2, T - 10, bw - 4, Y0 - T + 10); } });
+  g.strokeStyle = 'rgba(244,244,241,.18)'; g.lineWidth = 1; g.font = '20px Jost'; g.fillStyle = '#a9a9a3'; g.textAlign = 'right';
+  [0, 8, 16].forEach(v => { g.beginPath(); g.moveTo(L, y(v)); g.lineTo(R, y(v)); g.stroke(); g.fillText(v, L - 10, y(v) + 7); });
+  const hatch = hatchPattern(g, 'rgba(244,244,241,.85)', 2.5, 10), dots = stipplePattern(g, 'rgba(244,244,241,.8)', 10, 1.7);
+  const kinds = [['correct_accepted', '#f4f4f1'], ['caught_failure', '#ee5aa8'], ['false_alarm', hatch], ['inconclusive', dots]];
+  B.forEach((b, i) => { let acc = 0; const x = L + i * bw + bw * .2, w = bw * .6;
+    kinds.forEach(([k, fill]) => { const v = b.o[k] || 0; if (!v) return; g.fillStyle = fill; g.fillRect(x, y(acc + v), w, y(acc) - y(acc + v)); acc += v; });
+    g.strokeStyle = '#6f6f69'; g.strokeRect(x, y(acc), w, y(0) - y(acc));
+    g.textAlign = 'center'; g.fillStyle = '#d3d3cd'; g.font = '16px Jost'; g.fillText(`${b.a}-${b.b}`, x + w / 2, Y0 + 24); });
+  g.fillStyle = '#a9a9a3'; g.font = '18px Jost'; g.fillText('Sun azimuths apart, degrees', (L + R) / 2, Y0 + 50);
+  const leg = [['#f4f4f1', 'accepted'], ['#ee5aa8', 'wrong, refused'], [hatch, 'right, refused'], [dots, 'images cannot judge']];
+  g.textAlign = 'left'; leg.forEach(([f, l], i) => { const lx = 24 + (i % 2) * 230, ly = S - 66 + Math.floor(i / 2) * 32;
+    g.fillStyle = f; g.fillRect(lx, ly, 18, 18); g.strokeStyle = '#6f6f69'; g.strokeRect(lx, ly, 18, 18);
+    g.fillStyle = '#d3d3cd'; g.font = '18px Jost'; g.fillText(l, lx + 28, ly + 15); });
+}
+
 SCENES.limits = {
   async init(r){
     const s = {};
     s.h = put(mk('div', 'abs h2', r, 'And it says what it cannot do.'), {left: 0, right: 0, top: '90px', textAlign: 'center'});
-    const card = (m, x, name, sub, big) => { const c = put(mk('div', 'abs', r), {left: x + 'px', top: '200px', width: '620px'});
+    const card = (x, name, sub, big, small, fill) => { const c = put(mk('div', 'abs', r), {left: x + 'px', top: '190px', width: '620px'});
       const bd = put(mk('div', 'hatch-mag', c), {position: 'relative', width: '520px', height: '520px', padding: '16px'});
-      const p = put(mk('div', 'panel', bd), {position: 'relative', width: '488px', height: '488px'}); mk('img', '', p).src = lay(m, 'warp');
+      const p = put(mk('div', 'panel', bd), {position: 'relative', width: '488px', height: '488px'}); fill(p);
       mk('div', 'lab', c, `<b>${name}</b><br>${sub}`).style.cssText = 'margin-top:18px;font-size:28px';
-      const b = put(mk('div', 'abs', c, big), {left: '0', top: '640px', fontSize: '58px', fontWeight: 600, color: 'var(--mag2)', letterSpacing: '-.015em'});
+      const b = put(mk('div', 'abs', c, big + (small ? `<div style="font-size:30px;font-weight:500;color:var(--white);margin-top:6px">${small}</div>` : '')),
+        {left: '0', top: '630px', fontSize: '58px', fontWeight: 600, color: 'var(--mag2)', letterSpacing: '-.015em', lineHeight: 1});
       return {c, b}; };
-    s.a = card(MI15, 290, 'Kaguya TC → MI, 1548 nm', 'visible against near-infrared', '3 of 3 refused');
-    s.b = card(TMC, 1010, 'Chandrayaan-2 OHRC → TMC-2', 'Sun azimuths 120° apart', '4 of 4 refused');
+    s.a = card(290, 'Kaguya TC → MI, 1548 nm', 'visible against near-infrared', '3 of 3 refused', '', p => { mk('img', '', p).src = lay(MI15, 'warp'); });
+    s.b = card(1010, 'Sun azimuths 60–120° apart', 'real sweep: one OHRC frame, 25 LRO frames', '0 of 12 accepted', 'and none accepted wrongly',
+      p => { const c = mk('canvas', '', p); c.width = c.height = 488; drawSweep(c.getContext('2d'), 488); });
     return s;
   },
   draw(s, t, dur, W){
-    const ca = wt(W, /^Near/, 3) - .3, cb = wt(W, /^T-M-C/, 6.5) - .3;
+    const ca = wt(W, /^Visible/, 3) - .3, cb = wt(W, /^sixty/, 7.6) - .6;
     put(s.h, {opacity: eOut(prog(t, 0, .6))});
     [[s.a, ca], [s.b, cb]].forEach(([k, c]) => { const p = eOut(prog(t, c, c + .7)); put(k.c, {opacity: p, transform: `translateY(${(1 - p) * 40}px)`});
       const q = eBack(clamp(prog(t, c + 1.2, c + 1.8))); put(k.b, {opacity: clamp(prog(t, c + 1.2, c + 1.5)), transform: `scale(${.8 + .2 * q})`, transformOrigin: '0 50%'}); });
+  }
+};
+
+// v11: Site N, every Chandrayaan-2 camera at one site under matched Suns, as a network of real windows
+SCENES.sitn = {
+  async init(r){
+    const s = {};
+    s.h = put(mk('div', 'abs h2', r, 'One site, every camera'), {left: '140px', top: '50px'});
+    s.sub = put(mk('div', 'abs lab', r, '60.7°N, 4.6°W &nbsp;·&nbsp; passes chosen for their Sun &nbsp;·&nbsp; every leg checked square by square'), {left: '140px', top: '118px', fontSize: '27px'});
+    s.cv = put(mk('canvas', 'full', r), {}); s.cv.width = 1920; s.cv.height = 1080;
+    const node = (x, y, img, name, sub, above) => {
+      const S = 210, e = put(mk('div', 'abs', r), {left: (x - S / 2) + 'px', top: (y - S / 2) + 'px', width: S + 'px', height: S + 'px', zIndex: 2});
+      const p = put(mk('div', 'panel', e), {inset: 0, width: '100%', height: '100%', outline: '2px solid #f4f4f1'}); mk('img', '', p).src = img;
+      put(mk('div', 'abs lab', e, `<b style="font-size:28px">${name}</b><br>${sub}`), {left: '-80px', right: '-80px', textAlign: 'center', fontSize: '23px', lineHeight: 1.25, [above ? 'bottom' : 'top']: (S + 12) + 'px'});
+      return {x, y, e};
+    };
+    s.N = {
+      o: node(620, 375, lay(SN_OT, 'src'), 'Chandrayaan-2 OHRC', 'high-resolution camera', true),
+      t: node(1300, 375, lay(SN_OT, 'ref'), 'Chandrayaan-2 TMC-2', 'terrain mapping camera, ~5 m', true),
+      i: node(1680, 675, lay(SN_TI, 'ref'), 'Chandrayaan-2 IIRS', 'infrared, ~84 m, TMC-2\'s orbit', false),
+      n: node(960, 675, lay(SN_NT, 'src'), 'LRO NAC', 'NASA, another mission', false),
+      b: node(240, 675, lay(SN_VP, 'ref'), 'OHRC, next orbit', 'looking back at the site', false)};
+    const chip = (big, small) => put(mk('div', 'chip', r, `<span style="font-size:${small ? 38 : 34}px;font-weight:600">${big}</span>${small ? `<br><span style="font-size:20px;font-weight:400;color:#a9a9a3">${small}</span>` : ''}`),
+      {transform: 'translate(-50%,-50%)', textAlign: 'center', lineHeight: 1.12, padding: '9px 18px', background: '#0e0e0d', zIndex: 3, opacity: 0});
+    // f: where along its edge each chip sits (the two NAC legs pushed out, clear of the loop's label)
+    s.E = [{k: 'ot', f: .5, c: chip('10 / 10', 'accepted')}, {k: 'on', f: .42, c: chip('5 / 5')}, {k: 'nt', f: .58, c: chip('4 / 4')},
+           {k: 'ti', f: .5, c: chip('30 / 30', 'infrared bands, along the pass')}, {k: 'ob', f: .5, c: chip('8 / 8', 'views 40° apart')}];
+    s.E.forEach(E => { const A = s.N[E.k[0]], B = s.N[E.k[1]]; E.A = A; E.B = B; put(E.c, {left: lerp(A.x, B.x, E.f) + 'px', top: lerp(A.y, B.y, E.f) + 'px'}); });
+    s.loop = put(mk('div', 'abs', r, '<div style="font-size:23px;color:#d3d3cd">the loop closes</div><div style="font-size:46px;font-weight:600">2.0 m</div><div style="font-size:20px;color:#a9a9a3">median of 4, max 4.0 m</div>'),
+      {left: '960px', top: '478px', transform: 'translate(-50%,-50%)', textAlign: 'center', lineHeight: 1.1, opacity: 0});
+    return s;
+  },
+  draw(s, t, dur, W){
+    const cT = wt(W, /^ten$/, 7.3) - .5, cN = wt(W, /^NASA/, 9) - .4, cL = wt(W, /^loop/, 10.3) - .3, cI = wt(W, /^I-I-R-S/, 13.5) - .4, cB = wt(W, /^orbit/, 18.6) - .7;
+    put(s.h, {opacity: eOut(prog(t, 0, .6))}); put(s.sub, {opacity: eOut(prog(t, .3, .9))});
+    const show = {o: .5, t: .8, i: 1.1, n: cN, b: cB};
+    for (const k in s.N){ const p = eOut(prog(t, show[k], show[k] + .6)); put(s.N[k].e, {opacity: p, transform: `scale(${.92 + .08 * p})`}); }
+    const at = {ot: cT, on: cN + .45, nt: cN + 1.0, ti: cI, ob: cB + .45};
+    const g = s.cv.getContext('2d'); g.clearRect(0, 0, 1920, 1080);
+    const lp = eOut(prog(t, cL, cL + .8));
+    if (lp > 0){ const o = s.N.o, tt = s.N.t, n = s.N.n; g.globalAlpha = .12 * lp; g.fillStyle = '#f4f4f1';
+      g.beginPath(); g.moveTo(o.x, o.y); g.lineTo(tt.x, tt.y); g.lineTo(n.x, n.y); g.closePath(); g.fill(); g.globalAlpha = 1; }
+    s.E.forEach(E => { const t0 = at[E.k], p = eIO(prog(t, t0, t0 + .7));
+      if (p > 0){ g.strokeStyle = '#f4f4f1'; g.lineWidth = 4; g.beginPath(); g.moveTo(E.A.x, E.A.y); g.lineTo(lerp(E.A.x, E.B.x, p), lerp(E.A.y, E.B.y, p)); g.stroke(); }
+      const q = eBack(clamp(prog(t, t0 + .45, t0 + .95))); put(E.c, {opacity: clamp(prog(t, t0 + .45, t0 + .75)), transform: `translate(-50%,-50%) scale(${.7 + .3 * q})`}); });
+    put(s.loop, {opacity: lp});
+  }
+};
+
+// v11: the Sun moved both ways on SAC's own frame - every LRO image a row of its 8 windows
+SCENES.suns = {
+  async init(r){
+    const s = {};
+    s.h = put(mk('div', 'abs h2', r, 'Sun azimuth and elevation, on SAC\'s own frame'), {left: '120px', top: '50px'});
+    s.tr = new Terrain(520, 520, null, {relief: .62, zoom: .5, detail: .05, craters: 60, rmax: 24, seed: 41});
+    s.tw = put(mk('div', 'panel', r), {left: '120px', top: '160px', width: '620px', height: '620px'}); s.tw.appendChild(s.tr.canvas);
+    s.dial = put(mk('div', 'abs', r), {left: '134px', top: '174px', display: 'flex', alignItems: 'center', gap: '14px', fontSize: '24px', padding: '8px 18px 8px 10px', background: 'rgba(0,0,0,.66)', zIndex: 2});
+    s.cap = put(mk('div', 'abs lab', r, 'SAC\'s OHRC frame, its Sun 9.9° up, against 16 LRO images<br>chosen for their Sun alone, up to 8 windows on each'), {left: '120px', top: '796px', fontSize: '24px'});
+    const H = 'repeating-linear-gradient(-45deg,#a9a9a3 0 3px,transparent 3px 9px)';
+    const col = (list, x, title, sub) => {
+      const head = put(mk('div', 'abs', r, `<div style="font-size:30px;font-weight:600">${title}</div><div class="lab" style="font-size:23px">${sub}</div>`), {left: x + 'px', top: '150px'});
+      const rows = list.map((v, i) => { const e = put(mk('div', 'abs', r), {left: x + 'px', top: (700 - i * 56) + 'px', display: 'flex', alignItems: 'center', gap: '14px', height: '44px'});
+        mk('div', '', e, (v.el >= 0 ? '+' : '−') + Math.abs(v.el).toFixed(1) + '°').style.cssText = 'width:92px;text-align:right;font-size:24px;color:#d3d3cd;font-variant-numeric:tabular-nums';
+        const box = put(mk('div', '', e), {display: 'flex', gap: '5px'});
+        const sq = [...Array(v.n)].map((_, k) => put(mk('div', '', box), {width: '28px', height: '28px', border: '2px solid #4a4a46', background: k < v.ok ? '#f4f4f1' : H, opacity: 0}));
+        const cnt = mk('div', '', e, `${v.ok}/${v.n}`); cnt.style.cssText = 'font-size:24px;font-weight:500;font-variant-numeric:tabular-nums;opacity:0';
+        return {e, sq, cnt, v}; });
+      const n = list.reduce((a, v) => a + v.n, 0), ok = list.reduce((a, v) => a + v.ok, 0);
+      const tot = put(mk('div', 'abs', r, `${ok} of ${n} <span style="font-size:26px;font-weight:400;color:#a9a9a3">accepted</span>`), {left: x + 'px', top: '762px', fontSize: '42px', fontWeight: 600, opacity: 0});
+      return {head, rows, tot};
+    };
+    s.A = col(D.ladder.filter(v => v.az < 90).sort((a, b) => a.el - b.el), 800, 'Sun raised, azimuth within 20°', 'Δ elevation of each LRO image');
+    s.B = col(D.ladder.filter(v => v.az >= 90).sort((a, b) => a.el - b.el), 1330, 'Sun on the opposite side', '155–177° in azimuth, then raised');
+    return s;
+  },
+  draw(s, t, dur, W){
+    const cR = wt(W, /^Raised/, 5.3) - .4, c61 = wt(W, /^sixty-one/, 7.4), cO = wt(W, /^Turned/, 10.4) - .4, c48 = wt(W, /^forty-eight/, 13.4);
+    put(s.h, {opacity: eOut(prog(t, 0, .6))}); put(s.cap, {opacity: eOut(prog(t, .4, 1))}); put(s.tw, {opacity: eOut(prog(t, 0, .7))});
+    put(s.A.head, {opacity: eOut(prog(t, .6, 1.2))}); put(s.B.head, {opacity: eOut(prog(t, cO - .2, cO + .4))});
+    // the Sun: the OHRC's own (azimuth 270.9°, 9.9° up) raised by 41.7° as its azimuth drifts 19°,
+    // then swung to the other side (176.8° away, 1.6° lower) and raised again to +47.0° (154.7° away)
+    const AZ = 270.9, EL = 9.9, r1 = [cR, c61 + .6], r2 = [cO + 1.1, c48 + .4];
+    const p1 = prog(t, r1[0], r1[1]), sw = eIO(prog(t, cO, cO + 1.1)), p2 = prog(t, r2[0], r2[1]);
+    let az = AZ + 19.2 * p1, el = EL + 43.3 * p1 - 1.6;
+    if (sw > 0){ az = lerp(AZ + 19.2, AZ - 176.8, sw); el = lerp(EL + 41.7, EL - 1.6, sw); }
+    if (p2 > 0){ az = AZ - lerp(176.8, 154.7, p2); el = EL + lerp(-1.6, 47.0, p2); }
+    s.tr.render(az, el);
+    s.dial.innerHTML = dialSvg(az) + `<span>Sun ${Math.round(el)}° above the horizon</span>`;
+    put(s.dial, {opacity: eOut(prog(t, .2, .8))});
+    // each row fills when the Sun reaches its elevation
+    const fill = (C, t0, t1, lo, hi) => C.rows.forEach(R => { const tr = t0 + (t1 - t0) * clamp((R.v.el - lo) / (hi - lo));
+      put(R.e, {opacity: t >= t0 - .6 ? .35 + .65 * clamp((t - tr) / .25) : 0});
+      R.sq.forEach((q, k) => put(q, {opacity: clamp((t - tr - k * .035) / .12)})); R.cnt.style.opacity = clamp((t - tr - .35) / .2); });
+    fill(s.A, r1[0], r1[1], -1.6, 41.7); fill(s.B, r2[0], r2[1], -1.6, 47.0);
+    put(s.A.tot, {opacity: eOut(prog(t, c61 - .3, c61 + .3))}); put(s.B.tot, {opacity: eOut(prog(t, c48 - .3, c48 + .3))});
+  }
+};
+
+// v11: the published console on a phone, recorded; the address beside it
+SCENES.try = {
+  async init(r, entry){
+    const s = {C: entry.clip};
+    s.h = put(mk('div', 'abs', r, 'Try it'), {left: '140px', top: '200px', fontSize: '120px', fontWeight: 600, letterSpacing: '-.02em', lineHeight: 1});
+    s.url = put(mk('div', 'abs', r, 'samarthputhraya.github.io/sih26166'), {left: '140px', top: '370px', fontSize: '50px', fontWeight: 500, padding: '14px 26px', border: '3px solid #f4f4f1'});
+    s.chips = put(mk('div', 'abs', r), {left: '140px', top: '510px', display: 'flex', gap: '16px', flexWrap: 'wrap', width: '1060px'});
+    s.cl = ['any browser', 'a phone', 'English | हिंदी', 'nothing to install'].map(v => put(mk('div', 'chip', s.chips, v), {position: 'relative', fontSize: '30px'}));
+    s.note = put(mk('div', 'abs lab', r, 'Every saved result with its trust map and its download.<br>Your own images, offline on a laptop: <b>python -m web.server</b>'), {left: '140px', top: '640px', fontSize: '30px', lineHeight: 1.45});
+    const PW = 384, PH = Math.round(PW * 844 / 390);
+    s.ph = put(mk('div', 'abs', r), {left: '1300px', top: '36px', width: (PW + 28) + 'px', height: (PH + 28) + 'px', borderRadius: '48px', background: '#1d1d1b', boxShadow: '0 30px 90px rgba(0,0,0,.65), inset 0 0 0 2px #45453f'});
+    s.scr = put(mk('div', 'abs', s.ph), {left: '14px', top: '14px', width: PW + 'px', height: PH + 'px', borderRadius: '36px', overflow: 'hidden', background: '#000'});
+    s.img = put(mk('img', '', s.scr), {width: '100%', height: '100%', display: 'block'}); s.cur = -1;
+    return s;
+  },
+  draw(s, t, dur, W){
+    const C = s.C, seg = C.plan.find(g => t < g.o1) || C.plan[C.plan.length - 1];
+    const ct = clamp(lerp(seg.c0, seg.c1, clamp((t - seg.o0) / Math.max(1e-6, seg.o1 - seg.o0))), 0, C.frames / 30 - 1 / 30);
+    const idx = Math.min(C.frames - 1, Math.round(ct * 30));
+    if (idx !== s.cur){ s.cur = idx; s.img.src = `dist/clips/${C.name}/f_${String(idx).padStart(5, '0')}.jpg`; s.wait = s.img.decode().catch(() => {}); }
+    put(s.h, {opacity: eOut(prog(t, 0, .6))}); put(s.url, {opacity: eOut(prog(t, .3, .9)), transform: `translateY(${(1 - eOut(prog(t, .3, .9))) * 20}px)`});
+    const cw = [wt(W, /browser/, 1.8), wt(W, /phone/, 2.8), wt(W, /Hindi/, 4.1), wt(W, /install/, 5.6)];
+    s.cl.forEach((c, i) => { const p = eOut(prog(t, cw[i] - .3, cw[i] + .2)); put(c, {opacity: p, transform: `translateY(${(1 - p) * 14}px)`}); });
+    put(s.note, {opacity: eOut(prog(t, cw[3] + .4, cw[3] + 1))});
+    const pp = eOut(prog(t, 0, .8)); put(s.ph, {opacity: pp, transform: `translateY(${(1 - pp) * 60}px)`});
+    return s.wait;
   }
 };
 
@@ -584,8 +736,9 @@ SCENES.close = {
     s.l = put(mk('div', 'abs', r, 'Lunar image registration that knows when it is wrong.'), {left: 0, right: 0, top: '430px', textAlign: 'center', fontSize: '50px', fontWeight: 500});
     s.p = put(mk('div', 'abs', r), {left: 0, right: 0, top: '540px', display: 'flex', justifyContent: 'center', gap: '22px'});
     s.pills = ['Offline', 'Laptop CPU, no GPU', 'Open source, Apache-2.0'].map(v => put(mk('div', 'chip', s.p, v), {position: 'relative', fontSize: '30px'}));
-    s.u = put(mk('div', 'abs', r, 'github.com/samarthputhraya/sih26166'), {left: 0, right: 0, top: '680px', textAlign: 'center', fontSize: '40px', fontWeight: 500});
-    s.f = put(mk('div', 'abs lab', r, 'Team LunaXX &nbsp;&nbsp;|&nbsp;&nbsp; Smart India Hackathon 2026 &nbsp;&nbsp;|&nbsp;&nbsp; SIH26166'), {left: 0, right: 0, top: '760px', textAlign: 'center'});
+    s.u = put(mk('div', 'abs', r, '<span style="color:#a9a9a3;font-weight:400">Try it:</span> samarthputhraya.github.io/sih26166<br><span style="color:#a9a9a3;font-weight:400">Code:</span> github.com/samarthputhraya/sih26166'),
+      {left: 0, right: 0, top: '650px', textAlign: 'center', fontSize: '38px', fontWeight: 500, lineHeight: 1.45});
+    s.f = put(mk('div', 'abs lab', r, 'Team LunaXX &nbsp;&nbsp;|&nbsp;&nbsp; Smart India Hackathon 2026 &nbsp;&nbsp;|&nbsp;&nbsp; SIH26166'), {left: 0, right: 0, top: '790px', textAlign: 'center'});
     return s;
   },
   draw(s, t, dur, W){
