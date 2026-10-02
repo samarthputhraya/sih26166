@@ -13,7 +13,10 @@ images (OHRC, TMC and IIRS).*
 Real Chandrayaan-2 registrations from the evidence below. For each one you can drag a divider
 across the reference and the aligned image, read the verdict square by square, and download the
 result (GeoTIFF and control points for QGIS and GDAL). No install, on a laptop or a phone, in
-English or Hindi.
+English or Hindi. To register **your own images**, or test any Moon picture against a transform
+whose answer is known, the page's *Open the live workbench* button runs the same pipeline on a
+cloud CPU ([direct link](https://lunaxx-215071922486.asia-south1.run.app/); it sleeps when idle,
+so the first run waits for it to start).
 
 <p align="center">
   <img src="presentation/figures/fig8_console.jpg" width="760"
@@ -340,7 +343,7 @@ file, and the prior art they build on is cited in its docstring [6–9].
 <p align="center">
   <img src="web/preview.jpg" width="760"
        alt="The Mission Console workbench: real pairs and drop zones on the left, and the empty bench on the right, the words 'Shadows move. The ground doesn't.' standing as relief on the 74°S terrain">
-  <br/><sub>The Mission Console (<code>web/</code>). Published at <a href="https://samarthputhraya.github.io/sih26166/">samarthputhraya.github.io/sih26166</a> with the saved results; run <code>python -m web.server</code> and the same page registers your own images live, tests one image against a known warp, or re-runs any real pair, and downloads the result.</sub>
+  <br/><sub>The Mission Console (<code>web/</code>). Published at <a href="https://samarthputhraya.github.io/sih26166/">samarthputhraya.github.io/sih26166</a> with the saved results; run <code>python -m web.server</code> and the same page registers your own images live, tests one image against a known warp, or re-runs any real pair, and downloads the result; the published page links a hosted copy of that workbench.</sub>
 </p>
 
 ---
