@@ -9,6 +9,17 @@ images (OHRC, TMC and IIRS).*
 ![CPU only](https://img.shields.io/badge/hardware-laptop%20CPU%20only-lightgrey)
 ![Offline](https://img.shields.io/badge/runs-offline-lightgrey)
 
+**Try it in a browser: [samarthputhraya.github.io/sih26166](https://samarthputhraya.github.io/sih26166/)**.
+Real Chandrayaan-2 registrations from the evidence below. For each one you can drag a divider
+across the reference and the aligned image, read the verdict square by square, and download the
+result (GeoTIFF and control points for QGIS and GDAL). No install, on a laptop or a phone, in
+English or Hindi.
+
+<p align="center">
+  <img src="presentation/figures/fig8_console.jpg" width="760"
+       alt="The published console: SAC's OHRC to LRO NAC pair accepted, 58 of 64 squares confirmed, with a swipe divider between reference and aligned image; inset, the same page on a phone in Hindi">
+</p>
+
 A registration method hands back a transform and a residual. On the Moon that is not enough.
 Under a low or opposite Sun every shadow moves, and a matcher can fit six matches to a sub-pixel
 residual while none of the matches it held back agree with the fit. The residual alone cannot
@@ -329,7 +340,7 @@ file, and the prior art they build on is cited in its docstring [6–9].
 <p align="center">
   <img src="web/preview.jpg" width="760"
        alt="The Mission Console workbench: real pairs and drop zones on the left, and the empty bench on the right, the words 'Shadows move. The ground doesn't.' standing as relief on the 74°S terrain">
-  <br/><sub>The Mission Console (<code>web/</code>, run with <code>python -m web.server</code>): register two images, test one image against a known warp, or re-run any of the real pairs live, and download the result. The frozen evidence is one click away.</sub>
+  <br/><sub>The Mission Console (<code>web/</code>). Published at <a href="https://samarthputhraya.github.io/sih26166/">samarthputhraya.github.io/sih26166</a> with the saved results; run <code>python -m web.server</code> and the same page registers your own images live, tests one image against a known warp, or re-runs any real pair, and downloads the result.</sub>
 </p>
 
 ---
@@ -364,7 +375,7 @@ Each pair folder records the product ids, grids, Sun geometry and the command th
 |---|---|
 | `streamlit run app/streamlit_app.py` | the demo app, offline, from cached results in `demo_cache/` |
 | `python -m ops.precompute_demo_cache <pair> ...` | fill that cache for the pairs you name |
-| `python -m web.build_console` | the Mission Console → `web/dist/index.html` (see `web/README.md`) |
+| `python -m web.build_console` | the Mission Console → `web/dist/index.html`; with `--site`, the published copy (see `web/README.md`) |
 | `python -m web.server` | the console as a live workbench: register your own images, a one-image known-answer test, or any real pair, and download the result |
 | `python -m ops.run_real_pairs "sac_ohrc_nac_w*" --log` | register pairs, export deliverables, append to the evidence log |
 | `python -m ops.make_report` | regenerate REPORT.md from the logs |
