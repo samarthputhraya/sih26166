@@ -1,0 +1,36 @@
+# The test suite on a clean checkout, CPU only (Invariant 3: no GPU anywhere).
+#
+# A clean checkout has no imagery (data/pairs and the evidence products live outside git, Invariant 5)
+# and no LoFTR weights (weights/ is gitignored); tests that need either skip with a reason, and the
+# weights are fetched and verified by sha256 first (core/fetch_weights.py). Started by hand until a run
+# is green; then on every push to main.
+name: tests
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: System libraries OpenCV needs
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libgl1 libglib2.0-0
+      - name: Install (CPU torch, pinned)
+        run: pip install -r requirements.txt
+      - name: LoFTR weights, verified by sha256
+        run: python core/fetch_weights.py
+        continue-on-error: true
+      - name: pytest
+        env:
+          MPLBACKEND: Agg
+          PYTHONIOENCODING: utf-8
+        run: python -m pytest -q -rs -p no:cacheprovider
