@@ -26,6 +26,8 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libgl1 libglib2.0-0
       - name: Install (CPU torch, pinned)
         run: pip install -r requirements.txt
+      - name: An empty data folder (a clean checkout has none; data_path.txt is per machine)
+        run: mkdir -p "$RUNNER_TEMP/lunaxx_data" && printf '%s' "$RUNNER_TEMP/lunaxx_data" > data_path.txt
       - name: LoFTR weights, verified by sha256
         run: python core/fetch_weights.py
         continue-on-error: true
