@@ -1,6 +1,6 @@
 # SIH26166 - evaluation report
 
-Generated 2026-10-03T16:59 from commit `e38a69a` by `python -m ops.make_report`. **Do not edit by hand** - every number below is read from the evidence files named in each section. The latest real-pair rows were measured at commit `e38a69a` (507 rows).
+Generated 2026-10-04T00:58 from commit `04ed5f6` by `python -m ops.make_report`. **Do not edit by hand** - every number below is read from the evidence files named in each section. The latest real-pair rows were measured at commit `04ed5f6` (591 rows).
 
 All pixel figures are on the REFERENCE image's grid, with its metres stated. Real pairs have no exact ground truth: accuracy on them is reported as held-out residuals (the 20 % of matches the fit never saw) and as loop closure. `residual_px` in results_log.csv is the RMSE over ALL held-out matches including outliers and is not quoted for real pairs.
 
@@ -37,7 +37,7 @@ Windows cut at 0.25 m (OHRC) and the NAC's native ~0.9-1.25 m over the same grou
 
 ## The whole lit overlap of one OHRC frame with one NAC (dense tiling)
 
-Dense tiling, not hand-spread windows: every non-overlapping 640-px window (centres at least 1.1 × the window apart) that `ops.cut_site_pairs --windows 60 --tag full` finds in shared, lit, textured ground of the 74 °S OHRC frame and NAC `M1153871873LE` (Sun azimuths 3.3° apart). 37 windows of 596 m = 13.1 km². Verdicts: agrees 37; **accepted 37/37**; held-out median of the accepted windows: median 0.61 px = 0.57 m on the 0.931 m grid, 36 of 37 under 3 px (range 0.44-316.06). 1 accepted window(s) report a held-out median above 3 px (`site_ohrc_m1153871873le_w15_full` 316 px at an inlier ratio of 0.542). That number is the median of the 20 % of matches the fit never saw, and it is robust only while the inlier ratio stays well above 0.5 - at 0.54 a random held-out draw can be majority-outlier, and the median then describes the outliers. Independent image evidence says these windows are registered: the exported `registered_product.tif` correlates with its reference at NCC +0.87 to +0.95 across all 37 accepted windows (`ops/sun_sweep.py`'s |NCC| >= 0.30 rule, applied to the declared warp), and under the declared transform the median error over ALL matches on the worst of them is 1.08 px. This is a limit of the metric, not of the registration, and it is why the area check never looks at the matches. Wall time of `run_all`: 6.0 min in total, median 9.9 s per window, CPU only. Archive offset of each accepted window against its nearest accepted neighbour: median difference 19.3 m, max 57.2 m (`site_ohrc_m1153871873le_w15_full`), 3 over 50 m. Reported separately from the hand-spread windows above and never merged with them.
+Dense tiling, not hand-spread windows: every non-overlapping 640-px window (centres at least 1.1 × the window apart) that `ops.cut_site_pairs --windows 60 --tag full` finds in shared, lit, textured ground of the 74 °S OHRC frame and NAC `M1153871873LE` (Sun azimuths 3.3° apart). 37 windows of 596 m = 13.1 km². Verdicts: agrees 37; **accepted 37/37**; held-out median of the accepted windows: median 0.61 px = 0.57 m on the 0.931 m grid, 36 of 37 under 3 px (range 0.44-316.06). 1 accepted window(s) report a held-out median above 3 px (`site_ohrc_m1153871873le_w15_full` 316 px at an inlier ratio of 0.542). That number is the median of the 20 % of matches the fit never saw, and it is robust only while the inlier ratio stays well above 0.5 - at 0.54 a random held-out draw can be majority-outlier, and the median then describes the outliers. Independent image evidence says these windows are registered: the exported `registered_product.tif` correlates with its reference at NCC +0.87 to +0.95 across all 37 accepted windows (`ops/sun_sweep.py`'s |NCC| >= 0.30 rule, applied to the declared warp), and under the declared transform the median error over ALL matches on the worst of them is 1.08 px. This is a limit of the metric, not of the registration, and it is why the area check never looks at the matches. Wall time of `run_all`: 10.5 min in total, median 17.1 s per window, CPU only. Archive offset of each accepted window against its nearest accepted neighbour: median difference 19.3 m, max 57.2 m (`site_ohrc_m1153871873le_w15_full`), 3 over 50 m. Reported separately from the hand-spread windows above and never merged with them.
 
 | pair | window (lat, lon) | Δsun az | scale | matches | inliers | ratio | coverage | held-out median px (m) | held-out RMSE ≤3 px | verified / no-evid | verdict | declared | archive offset m |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -427,7 +427,7 @@ SAC's OHRC frame `ch2_ohr_ncp_20210401T2357376656_d_img_d18` (arXiv:2509.04775, 
 
 ## After the submission: IIRS and TMC-2, and the route between them
 
-First measured after the idea was submitted (28 Sep 2026); these rows were re-run with every other piece of evidence at commit `e38a69a`. Cut by `ops/cut_chain_pairs.py`; products fetched by `ops/fetch_pradan.py` (members and IIRS bands read out of each PRADAN zip by HTTP range). Three questions the 28 Sep submission left open: does IIRS register onto TMC-2 once the Sun is taken out of the problem; does TMC-2 register onto anything at all; and was OHRC -> TMC-2 refused for the Sun or for something else.
+First measured after the idea was submitted (28 Sep 2026); these rows were re-run with every other piece of evidence at commit `04ed5f6`. Cut by `ops/cut_chain_pairs.py`; products fetched by `ops/fetch_pradan.py` (members and IIRS bands read out of each PRADAN zip by HTTP range). Three questions the 28 Sep submission left open: does IIRS register onto TMC-2 once the Sun is taken out of the problem; does TMC-2 register onto anything at all; and was OHRC -> TMC-2 refused for the Sun or for something else.
 
 ### TMC-2 → IIRS, orbit of 2020-02-03 (cross-sensor, same mission; multi-modal beyond 850 nm) - 1 of 2 orbits
 
@@ -700,7 +700,7 @@ The frozen OHRC -> TMC-2 pairs above were cut on the two archives' own grids. LR
 
 ## A whole strip: TMC-2 → IIRS 1555 nm, every window (no selection)
 
-Every window of one whole strip, edge to edge, with no selection (`ops/cut_chain_pairs.py tmc-iirs --strip`): TMC-2 nadir `ch2_tmc_ncn_20200607T2239162106_d_img_d18` onto IIRS `ch2_iir_nci_20200607T2239153893_d_img_d18 band 51 (1555.0 nm)` at 1555 nm (multi-modal), the same orbit. 58 windows of about 16.2 km = 940 km of strip, latitude 30.3-60.8°. Verdicts: agrees 58; **accepted 58/58**; held-out median of the accepted windows above an inlier ratio of 0.5: 0.15-0.95 px = 12.9-79.2 m on the 83.57 m IIRS grid. Time on one laptop CPU: cutting 2.9 min (reading both products and resampling), registration 1.4 min (median 1.4 s per window). Reported only here, never merged with the selected windows above.
+Every window of one whole strip, edge to edge, with no selection (`ops/cut_chain_pairs.py tmc-iirs --strip`): TMC-2 nadir `ch2_tmc_ncn_20200607T2239162106_d_img_d18` onto IIRS `ch2_iir_nci_20200607T2239153893_d_img_d18 band 51 (1555.0 nm)` at 1555 nm (multi-modal), the same orbit. 58 windows of about 16.2 km = 940 km of strip, latitude 30.3-60.8°. Verdicts: agrees 58; **accepted 58/58**; held-out median of the accepted windows above an inlier ratio of 0.5: 0.15-0.95 px = 12.9-79.2 m on the 83.57 m IIRS grid. Time on one laptop CPU: cutting 2.9 min (reading both products and resampling), registration 1.3 min (median 1.3 s per window). Reported only here, never merged with the selected windows above.
 
 | pair | window (lat, lon) | Δsun az | scale | matches | inliers | ratio | coverage | held-out median px (m) | held-out RMSE ≤3 px | verified / no-evid | verdict | declared | archive offset m |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -786,6 +786,100 @@ Chandrayaan-2 IIRS onto NASA's Moon-wide base map, the USGS LRO WAC global morph
 | `wac_iirs20200607_1555_w07` | 52.7423, 354.8829 | n/a | 1.188 | 148 | 112 | 0.757 | 0.64 | 1.523 (152.267) | 1.167 | 0 / 24 | agrees | loftr+magsac++ | 221.1 |
 | `wac_iirs20200607_1555_w08` | 51.6674, 354.8914 | n/a | 1.187 | 173 | 153 | 0.884 | 0.86 | 0.868 (86.848) | 1.176 | 0 / 9 | agrees | loftr+magsac++ | 259.8 |
 
+## IIRS → LRO WAC, the whole strip, region by region (cross-mission, multi-modal)
+
+The whole Chandrayaan-2 IIRS strip `ch2_iir_nci_20200607T2239153893_d_img_d18 band 51 (1555.0 nm)` onto NASA's Moon-wide base map, the USGS LRO WAC global morphologic mosaic (100 m, visible 643 nm), every window edge to edge with no selection (`ops/cut_wac_pairs.py --strip`): cross-sensor, cross-mission and multi-modal (1555 nm against the visible). The windows are 192 WAC pixels (19.2 km) so that each of the 8 × 8 squares is 24 px, the smallest the area check lets vote (`core/reliability.py` MIN_CELL_SIDE_PX): every verdict here is region by region, unlike the 16 smaller windows in the section above, whose squares were too small to vote. 49 windows, latitude 30.3-60.7°. Verdicts: agrees 44, unconfirmed 3, contradicted 2; **accepted 44/49**; verified squares per accepted window 0-34 of 64 (median 15.5); held-out median of the accepted windows above an inlier ratio of 0.5: 0.91-4.81 px = 91-481 m on the 100 m WAC grid, median 1.58 px = 158 m (39 windows). Registration 0.8 min on the laptop CPU. Reported only here, never merged with the counts above.
+
+| pair | window (lat, lon) | Δsun az | scale | matches | inliers | ratio | coverage | held-out median px (m) | held-out RMSE ≤3 px | verified / no-evid | verdict | declared | archive offset m |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| `wacstrip_iirs20200607_1555_s002` | 60.6731, 354.7980 | n/a | 1.195 | 193 | 162 | 0.839 | 0.69 | 1.318 (131.797) | 1.350 | 20 / 20 | agrees | loftr+magsac++ | 89.2 |
+| `wacstrip_iirs20200607_1555_s003` | 60.0007, 354.8072 | n/a | 1.191 | 137 | 108 | 0.788 | 0.67 | 0.913 (91.301) | 1.080 | 19 / 22 | agrees | loftr+magsac++ | 155.3 |
+| `wacstrip_iirs20200607_1555_s004` | 59.4629, 354.8142 | n/a | 1.191 | 163 | 127 | 0.779 | 0.58 | 1.738 (173.770) | 1.427 | 20 / 27 | agrees | loftr+magsac++ | 234.5 |
+| `wacstrip_iirs20200607_1555_s005` | 58.7906, 354.8226 | n/a | 1.19 | 195 | 135 | 0.692 | 0.62 | 1.607 (160.719) | 1.303 | 19 / 24 | agrees | loftr+magsac++ | 249.9 |
+| `wacstrip_iirs20200607_1555_s006` | 58.1184, 354.8306 | n/a | 1.19 | 217 | 170 | 0.783 | 0.72 | 1.476 (147.620) | 1.342 | 23 / 18 | agrees | loftr+magsac++ | 189.4 |
+| `wacstrip_iirs20200607_1555_s007` | 57.4462, 354.8382 | n/a | 1.19 | 134 | 98 | 0.731 | 0.59 | 1.610 (161.024) | 1.389 | 14 / 27 | agrees | loftr+magsac++ | 169.1 |
+| `wacstrip_iirs20200607_1555_s008` | 56.9085, 354.8440 | n/a | 1.189 | 174 | 129 | 0.741 | 0.58 | 1.439 (143.912) | 1.451 | 20 / 26 | agrees | loftr+magsac++ | 201.7 |
+| `wacstrip_iirs20200607_1555_s009` | 56.2364, 354.8510 | n/a | 1.189 | 261 | 238 | 0.912 | 0.89 | 1.165 (116.507) | 1.216 | 30 / 7 | agrees | loftr+magsac++ | 162.6 |
+| `wacstrip_iirs20200607_1555_s010` | 55.5644, 354.8577 | n/a | 1.189 | 252 | 210 | 0.833 | 0.84 | 1.085 (108.480) | 1.181 | 31 / 10 | agrees | loftr+magsac++ | 212.9 |
+| `wacstrip_iirs20200607_1555_s011` | 55.0268, 354.8629 | n/a | 1.189 | 296 | 255 | 0.861 | 0.83 | 1.040 (103.990) | 1.356 | 34 / 11 | agrees | loftr+magsac++ | 199.6 |
+| `wacstrip_iirs20200607_1555_s012` | 54.3548, 354.8691 | n/a | 1.188 | 74 | 31 | 0.419 | 0.30 | 4.003 (400.282) | 1.803 | 2 / 45 | agrees | loftr+magsac++ | 277.8 |
+| `wacstrip_iirs20200607_1555_s013` | 53.6829, 354.8750 | n/a | 1.188 | 30 | 6 | 0.200 | 0.08 | 59.743 (5974.328) | 1.360 | 0 / 59 | contradicted | fft_phase_correlation (fallback) | 6.8 |
+| `wacstrip_iirs20200607_1555_s014` | 53.0110, 354.8807 | n/a | 1.188 | 174 | 133 | 0.764 | 0.62 | 1.699 (169.861) | 1.593 | 16 / 24 | agrees | loftr+magsac++ | 214.0 |
+| `wacstrip_iirs20200607_1555_s015` | 52.4736, 354.8851 | n/a | 1.187 | 140 | 90 | 0.643 | 0.55 | 2.390 (238.978) | 1.547 | 10 / 28 | agrees | loftr+magsac++ | 181.3 |
+| `wacstrip_iirs20200607_1555_s016` | 51.8018, 354.8904 | n/a | 1.187 | 185 | 121 | 0.654 | 0.67 | 1.583 (158.348) | 1.422 | 17 / 21 | agrees | loftr+magsac++ | 234.2 |
+| `wacstrip_iirs20200607_1555_s017` | 51.1300, 354.8955 | n/a | 1.187 | 73 | 25 | 0.342 | 0.31 | 40.023 (4002.306) | 1.163 | 1 / 44 | agrees | loftr+magsac++ | 208.0 |
+| `wacstrip_iirs20200607_1555_s018` | 50.5927, 354.8994 | n/a | 1.186 | 198 | 156 | 0.788 | 0.75 | 1.257 (125.660) | 1.198 | 24 / 16 | agrees | loftr+magsac++ | 251.7 |
+| `wacstrip_iirs20200607_1555_s019` | 49.9210, 354.9041 | n/a | 1.186 | 227 | 195 | 0.859 | 0.83 | 1.311 (131.100) | 1.411 | 31 / 10 | agrees | loftr+magsac++ | 226.9 |
+| `wacstrip_iirs20200607_1555_s020` | 49.2494, 354.9086 | n/a | 1.186 | 100 | 60 | 0.600 | 0.41 | 2.550 (254.978) | 1.834 | 9 / 39 | agrees | loftr+magsac++ | 349.7 |
+| `wacstrip_iirs20200607_1555_s021` | 48.5778, 354.9130 | n/a | 1.186 | 229 | 182 | 0.795 | 0.84 | 1.384 (138.408) | 1.419 | 26 / 10 | agrees | loftr+magsac++ | 245.0 |
+| `wacstrip_iirs20200607_1555_s022` | 48.0406, 354.9163 | n/a | 1.185 | 119 | 82 | 0.689 | 0.47 | 1.712 (171.219) | 1.708 | 10 / 35 | agrees | loftr+magsac++ | 209.1 |
+| `wacstrip_iirs20200607_1555_s023` | 47.3691, 354.9204 | n/a | 1.185 | 176 | 147 | 0.835 | 0.75 | 1.609 (160.870) | 1.541 | 25 / 16 | agrees | loftr+magsac++ | 241.8 |
+| `wacstrip_iirs20200607_1555_s024` | 46.6976, 354.9243 | n/a | 1.185 | 81 | 49 | 0.605 | 0.33 | 2.195 (219.522) | 1.630 | 5 / 43 | agrees | loftr+magsac++ | 306.0 |
+| `wacstrip_iirs20200607_1555_s025` | 46.1605, 354.9273 | n/a | 1.184 | 119 | 71 | 0.597 | 0.53 | 2.360 (236.047) | 1.281 | 8 / 30 | agrees | loftr+magsac++ | 259.6 |
+| `wacstrip_iirs20200607_1555_s026` | 45.4891, 354.9310 | n/a | 1.184 | 178 | 141 | 0.792 | 0.62 | 0.991 (99.112) | 1.293 | 22 / 23 | agrees | loftr+magsac++ | 187.9 |
+| `wacstrip_iirs20200607_1555_s027` | 44.8177, 354.9345 | n/a | 1.184 | 114 | 71 | 0.623 | 0.42 | 2.499 (249.930) | 1.686 | 11 / 38 | agrees | loftr+magsac++ | 262.8 |
+| `wacstrip_iirs20200607_1555_s028` | 44.1464, 354.9379 | n/a | 1.183 | 46 | 13 | 0.283 | 0.12 | 18.439 (1843.942) | 2.052 | 0 / 56 | contradicted | fft_phase_correlation (fallback) | 348.9 |
+| `wacstrip_iirs20200607_1555_s029` | 43.6094, 354.9405 | n/a | 1.183 | 157 | 115 | 0.732 | 0.64 | 1.202 (120.172) | 1.231 | 16 / 24 | agrees | loftr+magsac++ | 258.3 |
+| `wacstrip_iirs20200607_1555_s030` | 42.9382, 354.9437 | n/a | 1.183 | 83 | 47 | 0.566 | 0.33 | 1.455 (145.535) | 1.310 | 6 / 43 | agrees | loftr+magsac++ | 266.5 |
+| `wacstrip_iirs20200607_1555_s031` | 42.2670, 354.9467 | n/a | 1.182 | 149 | 106 | 0.711 | 0.62 | 2.042 (204.190) | 1.285 | 15 / 25 | agrees | loftr+magsac++ | 308.4 |
+| `wacstrip_iirs20200607_1555_s032` | 41.7301, 354.9491 | n/a | 1.182 | 117 | 72 | 0.615 | 0.48 | 2.217 (221.746) | 1.672 | 8 / 35 | agrees | loftr+magsac++ | 313.7 |
+| `wacstrip_iirs20200607_1555_s033` | 41.0589, 354.9519 | n/a | 1.182 | 127 | 81 | 0.638 | 0.53 | 1.951 (195.142) | 1.724 | 10 / 31 | agrees | loftr+magsac++ | 292.9 |
+| `wacstrip_iirs20200607_1555_s034` | 40.3879, 354.9547 | n/a | 1.182 | 72 | 23 | 0.319 | 0.22 | 5.431 (543.128) | 1.476 | 3 / 49 | unconfirmed | loftr+magsac++ | 502.2 |
+| `wacstrip_iirs20200607_1555_s035` | 39.7168, 354.9574 | n/a | 1.181 | 155 | 106 | 0.684 | 0.62 | 1.571 (157.092) | 1.500 | 16 / 24 | agrees | loftr+magsac++ | 382.1 |
+| `wacstrip_iirs20200607_1555_s036` | 39.1800, 354.9594 | n/a | 1.181 | 195 | 146 | 0.749 | 0.75 | 1.249 (124.945) | 1.320 | 17 / 16 | agrees | loftr+magsac++ | 370.3 |
+| `wacstrip_iirs20200607_1555_s037` | 38.5090, 354.9619 | n/a | 1.181 | 114 | 80 | 0.702 | 0.56 | 2.031 (203.078) | 1.707 | 10 / 28 | agrees | loftr+magsac++ | 276.8 |
+| `wacstrip_iirs20200607_1555_s038` | 37.8381, 354.9643 | n/a | 1.18 | 103 | 53 | 0.515 | 0.38 | 2.346 (234.602) | 1.738 | 6 / 40 | unconfirmed | loftr+magsac++ | 418.5 |
+| `wacstrip_iirs20200607_1555_s039` | 37.3013, 354.9662 | n/a | 1.18 | 137 | 95 | 0.693 | 0.61 | 1.529 (152.850) | 1.554 | 13 / 24 | agrees | loftr+magsac++ | 216.0 |
+| `wacstrip_iirs20200607_1555_s040` | 36.6305, 354.9685 | n/a | 1.18 | 68 | 20 | 0.294 | 0.19 | 20.455 (2045.550) | 2.026 | 0 / 51 | agrees | loftr+magsac++ | 320.8 |
+| `wacstrip_iirs20200607_1555_s041` | 35.9597, 354.9706 | n/a | 1.18 | 193 | 149 | 0.772 | 0.73 | 1.553 (155.311) | 1.206 | 22 / 17 | agrees | loftr+magsac++ | 328.8 |
+| `wacstrip_iirs20200607_1555_s042` | 35.2889, 354.9728 | n/a | 1.18 | 81 | 32 | 0.395 | 0.25 | 5.624 (562.384) | 1.814 | 4 / 47 | agrees | loftr+magsac++ | 234.2 |
+| `wacstrip_iirs20200607_1555_s043` | 34.7523, 354.9744 | n/a | 1.179 | 104 | 55 | 0.529 | 0.45 | 4.809 (480.864) | 1.293 | 5 / 34 | agrees | loftr+magsac++ | 312.4 |
+| `wacstrip_iirs20200607_1555_s044` | 34.0816, 354.9764 | n/a | 1.179 | 230 | 189 | 0.822 | 0.88 | 1.235 (123.542) | 1.252 | 25 / 8 | agrees | loftr+magsac++ | 326.8 |
+| `wacstrip_iirs20200607_1555_s045` | 33.4109, 354.9783 | n/a | 1.179 | 114 | 70 | 0.614 | 0.41 | 2.152 (215.189) | 1.498 | 10 / 37 | agrees | loftr+magsac++ | 293.7 |
+| `wacstrip_iirs20200607_1555_s046` | 32.7402, 354.9802 | n/a | 1.179 | 75 | 41 | 0.547 | 0.31 | 2.878 (287.814) | 1.883 | 2 / 43 | unconfirmed | loftr+magsac++ | 512.0 |
+| `wacstrip_iirs20200607_1555_s047` | 32.2038, 354.9816 | n/a | 1.178 | 112 | 71 | 0.634 | 0.45 | 1.896 (189.598) | 1.876 | 6 / 34 | agrees | loftr+magsac++ | 565.2 |
+| `wacstrip_iirs20200607_1555_s048` | 31.5332, 354.9834 | n/a | 1.178 | 65 | 36 | 0.554 | 0.34 | 3.777 (377.722) | 1.152 | 2 / 42 | agrees | loftr+magsac++ | 252.0 |
+| `wacstrip_iirs20200607_1555_s049` | 30.8626, 354.9851 | n/a | 1.177 | 193 | 144 | 0.746 | 0.66 | 1.423 (142.306) | 1.447 | 17 / 22 | agrees | loftr+magsac++ | 375.8 |
+| `wacstrip_iirs20200607_1555_s050` | 30.3263, 354.9864 | n/a | 1.176 | 136 | 68 | 0.500 | 0.55 | 3.818 (381.804) | 1.993 | 8 / 28 | agrees | loftr+magsac++ | 358.9 |
+
+## TMC-2 → SELENE TC ortho map at SAC's site, every window (cross-mission)
+
+Every window along one Chandrayaan-2 TMC-2 pass at SAC's own site (`ops/cut_tc_pairs.py`): TMC-2 nadir `ch2_tmc_ncn_20250707T1853051045_d_img_d18` onto the SELENE (Kaguya) Terrain Camera ortho map `TCO_MAP_02_S12E024S15E027SC` (JAXA; 7.40 m, a mosaic with no single Sun). Cross-sensor and cross-mission; both panchromatic visible, so NOT multi-modal. 31 windows of 2.84 km edge to edge, latitude -14.92 to -12.11° (the whole TC tile), no selection. Verdicts: agrees 31; **accepted 31/31**; verified squares per accepted window 7-35 of 64 (median 22); held-out median of the accepted windows above an inlier ratio of 0.5: 0.88-9.30 px = 6.5-68.8 m on the 7.40 m TC grid, median 1.58 px = 11.7 m (21 windows). The archive geolocations disagree by 273-315 m (median 287 m) - one steady offset along 3° of the pass, which each registration removes. Reported only here, never merged with the counts above.
+
+| pair | window (lat, lon) | Δsun az | scale | matches | inliers | ratio | coverage | held-out median px (m) | held-out RMSE ≤3 px | verified / no-evid | verdict | declared | archive offset m |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| `tcmap_tmc20250707_s001` | -12.1060, 25.1042 | n/a | 1.327 | 537 | 391 | 0.728 | 0.81 | 1.276 (9.444) | 1.308 | 35 / 12 | agrees | loftr+magsac++ | 293.0 |
+| `tcmap_tmc20250707_s002` | -12.2025, 25.1009 | n/a | 1.327 | 391 | 244 | 0.624 | 0.64 | 2.065 (15.288) | 1.170 | 24 / 23 | agrees | loftr+magsac++ | 293.3 |
+| `tcmap_tmc20250707_s003` | -12.2989, 25.0977 | n/a | 1.327 | 548 | 434 | 0.792 | 0.73 | 0.879 (6.511) | 1.156 | 34 / 17 | agrees | loftr+magsac++ | 289.5 |
+| `tcmap_tmc20250707_s004` | -12.3792, 25.0950 | n/a | 1.327 | 384 | 273 | 0.711 | 0.64 | 1.547 (11.452) | 1.354 | 25 / 23 | agrees | loftr+magsac++ | 289.0 |
+| `tcmap_tmc20250707_s005` | -12.4756, 25.0917 | n/a | 1.327 | 373 | 242 | 0.649 | 0.59 | 1.805 (13.362) | 1.365 | 24 / 27 | agrees | loftr+magsac++ | 287.5 |
+| `tcmap_tmc20250707_s006` | -12.5722, 25.0883 | n/a | 1.327 | 366 | 261 | 0.713 | 0.62 | 1.447 (10.716) | 1.404 | 27 / 24 | agrees | loftr+magsac++ | 287.5 |
+| `tcmap_tmc20250707_s007` | -12.6688, 25.0849 | n/a | 1.327 | 469 | 335 | 0.714 | 0.69 | 2.400 (17.764) | 1.391 | 32 / 20 | agrees | loftr+magsac++ | 285.9 |
+| `tcmap_tmc20250707_s008` | -12.7653, 25.0816 | n/a | 1.327 | 438 | 288 | 0.658 | 0.70 | 1.581 (11.703) | 1.451 | 31 / 19 | agrees | loftr+magsac++ | 285.7 |
+| `tcmap_tmc20250707_s009` | -12.8618, 25.0783 | n/a | 1.327 | 220 | 116 | 0.527 | 0.39 | 3.017 (22.334) | 1.588 | 13 / 39 | agrees | loftr+magsac++ | 291.1 |
+| `tcmap_tmc20250707_s010` | -12.9423, 25.0755 | n/a | 1.327 | 195 | 64 | 0.328 | 0.48 | 4.518 (33.451) | 1.968 | 8 / 32 | agrees | loftr+magsac++ | 285.1 |
+| `tcmap_tmc20250707_s011` | -13.0388, 25.0722 | n/a | 1.327 | 211 | 81 | 0.384 | 0.44 | 3.434 (25.426) | 1.558 | 9 / 36 | agrees | loftr+magsac++ | 288.7 |
+| `tcmap_tmc20250707_s012` | -13.1352, 25.0689 | n/a | 1.327 | 239 | 129 | 0.540 | 0.55 | 4.410 (32.648) | 1.522 | 16 / 29 | agrees | loftr+magsac++ | 285.4 |
+| `tcmap_tmc20250707_s013` | -13.2316, 25.0656 | n/a | 1.327 | 358 | 218 | 0.609 | 0.64 | 2.362 (17.489) | 1.626 | 23 / 24 | agrees | loftr+magsac++ | 285.4 |
+| `tcmap_tmc20250707_s014` | -13.3282, 25.0622 | n/a | 1.327 | 336 | 200 | 0.595 | 0.62 | 1.833 (13.571) | 1.287 | 23 / 24 | agrees | loftr+magsac++ | 284.4 |
+| `tcmap_tmc20250707_s015` | -13.4098, 25.0586 | n/a | 1.327 | 360 | 235 | 0.653 | 0.67 | 1.456 (10.776) | 1.368 | 26 / 21 | agrees | loftr+magsac++ | 298.5 |
+| `tcmap_tmc20250707_s016` | -13.5073, 25.0545 | n/a | 1.327 | 195 | 83 | 0.426 | 0.34 | 5.593 (41.407) | 1.526 | 7 / 42 | agrees | loftr+magsac++ | 315.3 |
+| `tcmap_tmc20250707_s017` | -13.6010, 25.0533 | n/a | 1.328 | 210 | 102 | 0.486 | 0.44 | 6.742 (49.916) | 1.504 | 16 / 36 | agrees | loftr+magsac++ | 286.5 |
+| `tcmap_tmc20250707_s018` | -13.6979, 25.0497 | n/a | 1.327 | 226 | 114 | 0.504 | 0.52 | 9.297 (68.827) | 1.690 | 17 / 31 | agrees | loftr+magsac++ | 282.4 |
+| `tcmap_tmc20250707_s019` | -13.7947, 25.0461 | n/a | 1.327 | 376 | 261 | 0.694 | 0.64 | 1.464 (10.838) | 1.241 | 22 / 24 | agrees | loftr+magsac++ | 287.8 |
+| `tcmap_tmc20250707_s020` | -13.8913, 25.0427 | n/a | 1.327 | 303 | 172 | 0.568 | 0.56 | 3.123 (23.121) | 1.516 | 19 / 27 | agrees | loftr+magsac++ | 287.6 |
+| `tcmap_tmc20250707_s021` | -13.9718, 25.0400 | n/a | 1.328 | 212 | 87 | 0.410 | 0.39 | 5.723 (42.369) | 1.468 | 8 / 39 | agrees | loftr+magsac++ | 290.9 |
+| `tcmap_tmc20250707_s022` | -14.0683, 25.0367 | n/a | 1.328 | 238 | 88 | 0.370 | 0.41 | 25.211 (186.642) | 1.558 | 11 / 39 | agrees | loftr+magsac++ | 288.5 |
+| `tcmap_tmc20250707_s023` | -14.1647, 25.0333 | n/a | 1.328 | 263 | 131 | 0.498 | 0.47 | 3.279 (24.275) | 1.601 | 15 / 34 | agrees | loftr+magsac++ | 292.4 |
+| `tcmap_tmc20250707_s024` | -14.2612, 25.0300 | n/a | 1.328 | 229 | 127 | 0.555 | 0.45 | 1.839 (13.616) | 1.277 | 15 / 35 | agrees | loftr+magsac++ | 287.0 |
+| `tcmap_tmc20250707_s025` | -14.3577, 25.0266 | n/a | 1.328 | 253 | 119 | 0.470 | 0.53 | 32.622 (241.508) | 1.147 | 13 / 30 | agrees | loftr+magsac++ | 285.0 |
+| `tcmap_tmc20250707_s026` | -14.4543, 25.0232 | n/a | 1.328 | 204 | 56 | 0.275 | 0.31 | 85.952 (636.313) | 2.097 | 8 / 44 | agrees | loftr+magsac++ | 279.6 |
+| `tcmap_tmc20250707_s027` | -14.5348, 25.0203 | n/a | 1.328 | 197 | 79 | 0.401 | 0.28 | 100.953 (747.371) | 1.179 | 9 / 46 | agrees | loftr+magsac++ | 272.5 |
+| `tcmap_tmc20250707_s028` | -14.6313, 25.0169 | n/a | 1.328 | 425 | 296 | 0.696 | 0.64 | 1.328 (9.832) | 1.368 | 26 / 22 | agrees | loftr+magsac++ | 276.8 |
+| `tcmap_tmc20250707_s029` | -14.7277, 25.0135 | n/a | 1.328 | 510 | 393 | 0.771 | 0.69 | 1.088 (8.053) | 1.168 | 35 / 20 | agrees | loftr+magsac++ | 273.5 |
+| `tcmap_tmc20250707_s030` | -14.8242, 25.0101 | n/a | 1.328 | 416 | 287 | 0.690 | 0.67 | 1.446 (10.708) | 1.283 | 27 / 21 | agrees | loftr+magsac++ | 274.0 |
+| `tcmap_tmc20250707_s031` | -14.9207, 25.0067 | n/a | 1.328 | 488 | 357 | 0.732 | 0.66 | 1.164 (8.617) | 1.257 | 26 / 22 | agrees | loftr+magsac++ | 273.2 |
+
 ## One site, every camera: OHRC, TMC-2, IIRS and an LRO NAC under matched Suns (Site N)
 
 OHRC `ch2_ohr_ncp_20250612T2031048828_d_img_d18`, TMC-2 nadir `ch2_tmc_ncn_20200607T2239162106_d_img_d18`, LRO NAC `M1282456834RE`, windows centred near 60.7°N, 4.6°W (`ops/cut_chain_pairs.py site`; found in PRADAN's footprint catalogue and WUSTL ODE by matching the Suns). The OHRC archive grid is first moved (-29, -61) m into LRO's geometry by the NAC's 4 m correction against it; the NAC is placed by LROC's corners and the TMC-2 by its archive grid, so no TMC-2 pixel enters any prior. All three legs use one set of window centres on the OHRC frame's centre line, so the OHRC -> NAC -> TMC-2 chain can be closed against the direct OHRC -> TMC-2 registration. Held-out medians are quoted only for accepted windows with an inlier ratio above 0.5.
@@ -867,6 +961,19 @@ Same instrument, same sun, seconds apart: only the viewing direction differs (~5
 | `sac_tmcfore_tmcaft_w03` | -13.5773, 25.1869 | 0.0 | 0.999 | 302 | 101 | 0.334 | 0.45 | 5.240 (31.065) | 1.934 | 5 / 32 | unconfirmed | loftr+magsac++ | 96.3 |
 | `sac_tmcfore_tmcaft_w04` | -13.7877, 25.1857 | 0.0 | 0.999 | 651 | 368 | 0.565 | 0.62 | 2.617 (15.514) | 1.847 | 28 / 22 | agrees | loftr+magsac++ | 135.6 |
 
+## Relief: TMC-2 fore → aft orthorectified on the pass's DTM (same sensor)
+
+The four windows of the real viewpoint test above, cut again with both images orthorectified (`ops/ortho_tmc.py`): the archive lattice already carries terrain at its 100-px nodes (its label: reference data SELENE), so each pixel is moved by the relief BETWEEN the nodes - ISRO's TMC-2 DTM of the same pass (`ch2_tmc_ndn_20250707T1853051045_d_dtm_d18.tif`, ~10 m posting; its label gives a height RMSE of 63 m against SELENE) minus that DTM interpolated between the nodes - times the tangent of each camera's emission, toward the spacecraft (geometry from the pass's orbit file). The DTM is made from this pass's own stereo, so this measures what the pipeline does once ISRO's terrain model is applied - the workflow SAC would run - not an independent height check. Same instrument, same Sun: NOT cross-sensor.
+
+| window | relief in window, p1-p99 (m) | without the DTM: verdict, inlier ratio, held-out median px | with the DTM: verdict, inlier ratio, held-out median px | verified squares without / with |
+|---|---|---|---|---|
+| `sac_tmcfore_tmcaft_dtm_w01` | 327.1 | contradicted (fallback), 0.222, 49.358 | unconfirmed, 0.247, 7.129 | 0 / 4 |
+| `sac_tmcfore_tmcaft_dtm_w02` | 318.6 | unconfirmed, 0.418, 4.075 | unconfirmed, 0.464, 3.363 | 10 / 8 |
+| `sac_tmcfore_tmcaft_dtm_w03` | 159.7 | unconfirmed, 0.334, 5.240 | agrees, 0.325, 3.859 | 5 / 8 |
+| `sac_tmcfore_tmcaft_dtm_w04` | 417.0 | agrees, 0.565, 2.617 | agrees, 0.562, 2.417 | 28 / 25 |
+
+Accepted: **1/4 without the DTM, 2/4 with it.**
+
 ## Kaguya TC → Kaguya MI (cross-sensor; 749 nm visible and 1548 nm infrared)
 
 Tier C rows are multi-modal (visible vs near-infrared). On them the declared method is the global-correlation fallback; the table after this one measures that fallback against the visible-band registration of the same window.
@@ -940,7 +1047,7 @@ Same windows as the TC rung. LOLA `ldem_60s_60m` rendered under the OHRC's own d
 
 ## Classical matchers on the same windows, judged by the same rule
 
-`ops/classical_real.py`: SIFT, ORB and AKAZE (OpenCV, 0.75 ratio test, on the common-grid 8-bit images - the MiLOI protocol) on exactly the windows behind each result above. Their matches then go through everything ours go through after matching: MAGSAC++, the held-out `evaluate()`, the independent area check and the fallback (`core.pipeline.run_all(matches=...)`). So *accepted* means the same for every method: the area check agrees and no fallback was needed. Rows measured at `e38a69a` (756).
+`ops/classical_real.py`: SIFT, ORB and AKAZE (OpenCV, 0.75 ratio test, on the common-grid 8-bit images - the MiLOI protocol) on exactly the windows behind each result above. Their matches then go through everything ours go through after matching: MAGSAC++, the held-out `evaluate()`, the independent area check and the fallback (`core.pipeline.run_all(matches=...)`). So *accepted* means the same for every method: the area check agrees and no fallback was needed. Rows measured at `04ed5f6` (1008).
 
 | windows behind | windows | ours accepted | SIFT accepted | ORB accepted | AKAZE accepted |
 |---|---|---|---|---|---|
@@ -955,14 +1062,17 @@ Same windows as the TC rung. LOLA `ldem_60s_60m` rendered under the OHRC's own d
 | TMC-2 -> IIRS beyond 850 nm (multi-modal) | 62 | 62/62 | 61/62 | 54/62 | 52/62 |
 | TMC-2 -> IIRS 746 nm (visible control) | 8 | 8/8 | 8/8 | 8/8 | 8/8 |
 | IIRS 1555 nm -> LRO WAC global mosaic (cross-mission, multi-modal) | 16 | 12/16 | 0/16 | 2/16 | 1/16 |
+| IIRS 1555 nm -> LRO WAC, the whole strip, 19.2 km windows | 49 | 44/49 | 23/49 | 37/49 | 18/49 |
+| TMC-2 -> SELENE TC ortho map, every window at SAC's site (cross-mission) | 31 | 31/31 | 23/31 | 28/31 | 19/31 |
+| TMC-2 fore -> aft, both orthorectified on the pass's DTM | 4 | 2/4 | 0/4 | 2/4 | 1/4 |
 
 Per method, over every window above: how often its OWN residual looked fine (at least half of the held-out matches within 3 px of its transform) and the area check still refused it.
 
 | method | windows run | accepted | own residual looked fine | of those, refused by the area check |
 |---|---|---|---|---|
-| SIFT | 252 | 154 | 162 | 9 |
-| ORB | 252 | 149 | 158 | 13 |
-| AKAZE | 252 | 147 | 159 | 14 |
+| SIFT | 336 | 200 | 201 | 11 |
+| ORB | 336 | 216 | 222 | 18 |
+| AKAZE | 336 | 185 | 202 | 24 |
 
 ## Choosing the reference by its Sun (`ops/find_reference.py`)
 
@@ -982,6 +1092,8 @@ Registration across very different Suns is the hard case (0 of 12 accepted with 
 | `ch2_iir_nci_20210726T1841109188_d_img_d32` | IIRS | 100% | 6.1° | 6.8° | 62.0° |
 
 The three images Site N's evidence uses (the next orbit's OHRC, TMC-2 `20200607T2239`, LRO NAC `M1282456834RE`) rank 4, 7, 9 of 42.
+
+**The whole OHRC archive** (`ops/reference_index.py` -> `evaluation/reference_index.json`, generated at `d03f435`; the console searches the same file): all 300 OHRC observations in PRADAN's catalogue, each ranked against every image covering at least 20% of it. **208 of 300** have an image from ANOTHER orbit lit within 5° of their Sun (234 within 10°); counting images taken alongside on the same pass (TMC-2, IIRS), 287 do. The best partner is another OHRC observation for 270, TMC-2 for 12, IIRS for 14 and an LRO NAC for 4 (the NAC list is only what this machine knows, so that count is a floor).
 
 ## Loop closure (OHRC → NAC A → NAC B vs OHRC → NAC B)
 
@@ -1089,6 +1201,23 @@ Beside the area check, what a residual check reads on the SAME planted answers: 
 
 Planted errors of 5 m or more: the residual threshold flags **0 of 384**; the area check flags **374 of 384**.
 
+### Visible against infrared (TMC-2 → IIRS 1555 nm, two orbits): 16 windows
+
+The same planted test where the two images are in different bands: TMC-2 (visible) onto IIRS at 1555 nm. |NCC| of the true alignment 0.81-0.96. The IIRS grid is 73.81-84.25 m, so the planted shifts are set in its pixels (own seed stream and file, `trust_real_calibration_ir.csv`; the populations above are untouched). Residual threshold **0.32 px**: the loosest these windows' own registrations need.
+
+| planted error (IIRS px) | ~m | trials | flagged as wrong | mean verified cells /64 | residual check: median held-out residual (px) | flagged by the residual threshold |
+|---|---|---|---|---|---|---|
+| 0 | 0 | 32 | 0.0% | 54.0 | 0.33 | 71.9% |
+| 0.5 | 39 | 128 | 0.0% | 53.7 | 0.36 | 86.7% |
+| 1 | 79 | 128 | 0.0% | 53.6 | 0.36 | 86.7% |
+| 2 | 158 | 128 | 6.2% | 37.5 | 0.35 | 83.6% |
+| 3 | 237 | 128 | 66.4% | 7.5 | 0.36 | 85.9% |
+| 5 | 395 | 128 | 85.9% | 2.6 | 0.35 | 87.5% |
+| 10 | 789 | 128 | 99.2% | 0.1 | 0.36 | 86.7% |
+| 20 | 1578 | 128 | 99.2% | 0.1 | 0.36 | 87.5% |
+
+Planted errors of 5 IIRS pixels or more: the residual threshold flags **335 of 384**; the area check flags **364 of 384**.
+
 ### Errors that are not translations: planted rotation and scale
 
 A rotation or a scale change about the frame centre leaves the centre where it was and displaces the CORNERS most, so one number describes it: how far the corners move. The frame verdict is the wrong thing to watch here - it still says `agrees` while a corner is 3 px out - because the error is not uniform over the frame. What carries the information is the 8 × 8 map, so the last two columns count cells, not frames: of the cells the planted error really moved by more than 2 px, how many the map refused to verify, and of the cells it moved by less than 1 px, how many stayed verified.
@@ -1135,14 +1264,14 @@ Rendered pairs (LOLA DEM, 60 m grid), Sun elevation fixed at 30°, Sun azimuth m
 
 | Sun azimuths apart | ours: runs | ours: median rmse_gt_px (m) | best of SIFT / ORB / AKAZE: median of the runs that scored | classical runs that scored |
 |---|---|---|---|---|
-| 0° | 61 | 0.086 (5.1) | 0.044 | 90/90 |
-| 15° | 96 | 0.086 (5.1) | 0.247 | 90/90 |
-| 30° | 60 | 0.314 (18.8) | 1.833 | 66/90 |
-| 45° | 60 | 1.096 (65.8) | 443.240 | 12/90 |
-| 60° | 55 | 2.379 (142.7) | 320.832 | 6/90 |
-| 90° | 55 | 5.805 (348.3) | 2464.972 | 6/90 |
-| 120° | 55 | 4.025 (241.5) | 718.935 | 6/90 |
-| 180° | 55 | 0.080 (4.8) | 4971.677 | 6/90 |
+| 0° | 71 | 0.086 (5.1) | 0.044 | 105/105 |
+| 15° | 112 | 0.086 (5.1) | 0.247 | 105/105 |
+| 30° | 70 | 0.314 (18.8) | 1.833 | 77/105 |
+| 45° | 70 | 1.096 (65.8) | 443.240 | 14/105 |
+| 60° | 65 | 2.379 (142.7) | 320.832 | 7/105 |
+| 90° | 65 | 5.805 (348.3) | 2464.972 | 7/105 |
+| 120° | 65 | 4.025 (241.5) | 718.935 | 7/105 |
+| 180° | 65 | 0.080 (4.8) | 4971.677 | 7/105 |
 
 ## Sub-pixel accuracy, with the pixel grid named
 
@@ -1200,11 +1329,11 @@ Classical transforms the area check accepted on the same windows, scored on the 
 
 ## Runtime and match distribution
 
-Wall time of `run_all` per window (the `seconds` column; LoFTR on CPU, tiled; no GPU), latest rows: median 9.4 s over the 89 OHRC → NAC windows at 74 °S (the loop legs and the sun sweep; 640-px NAC references), 9.0 s over all 423 registered windows (Intel64 Family 6 Model 170 Stepping 4, GenuineIntel; Windows-11-10.0.26200-SP0).
+Wall time of `run_all` per window (the `seconds` column; LoFTR on CPU, tiled; no GPU), latest rows: median 13.3 s over the 89 OHRC → NAC windows at 74 °S (the loop legs and the sun sweep; 640-px NAC references), 8.3 s over all 423 registered windows (Intel64 Family 6 Model 170 Stepping 4, GenuineIntel; Windows-11-10.0.26200-SP0).
 
 Uniform distribution (PS demand): `grid_coverage_fraction` is the share of the 8 × 8 reference cells holding at least one inlier. On the 20 OHRC → NAC windows at 74 °S it is 0.19-1.00, median 1.00; 17 of 20 windows are at 0.95 or above (the lowest: `site_ohrc_m1153871873le_w01` 0.19, `site_ohrc_m1153871873le_w05` 0.44).
 
-Archive scale, from PRADAN's own footprint catalogue (`<data>/pradan/shapefiles`, downloaded 18 Sep 2026; OHRC releases 1-11; `ops/pradan_archive.py`): 311 calibrated OHRC products (300 observations; some are listed twice, one copy per ground station) covering 23,651 km² (median frame 79.0 km²); 10,793 calibrated TMC-2 products (3,598 nadir); 2,196 calibrated IIRS products. At the whole-overlap rate measured above (13.1 km² in 6.0 min = 131 km² per hour on one laptop CPU, registration only, against a 0.931 m NAC reference), all 23,651 km² of OHRC is about 181 laptop-hours. A projection from one measured rate, not a measurement: it leaves out reading and cutting the products and assumes lit, textured ground and a reference as fine as that NAC.
+Archive scale, from PRADAN's own footprint catalogue (`<data>/pradan/shapefiles`, downloaded 18 Sep 2026; OHRC releases 1-11; `ops/pradan_archive.py`): 311 calibrated OHRC products (300 observations; some are listed twice, one copy per ground station) covering 23,651 km² (median frame 79.0 km²); 10,793 calibrated TMC-2 products (3,598 nadir); 2,196 calibrated IIRS products. At the whole-overlap rate measured above (13.1 km² in 10.5 min = 75 km² per hour on one laptop CPU, registration only, against a 0.931 m NAC reference), all 23,651 km² of OHRC is about 314 laptop-hours. A projection from one measured rate, not a measurement: it leaves out reading and cutting the products and assumes lit, textured ground and a reference as fine as that NAC.
 
 Delivered control points, uniform by construction: every accepted registration also exports `gcps_uniform.txt` / `.points` - its inliers thinned to at most 4 per cell of an 8 × 8 grid on the reference, lowest residual first. Over 351 accepted registrations the set holds a median 214 points in a median 56 of 64 cells; 152 of 351 fill 90 % of the cells or more.
 
@@ -1220,4 +1349,4 @@ python -m ops.trust_real_calibration "site_ohrc_m1153871873le_w*_t" ... --log
 python -m ops.make_report
 ```
 
-Rows in real_pairs_log.csv: 2661: 511 distinct pair ids (latest row wins) = 423 registered pairs (406 distinct windows - a window being one source image, one reference image, one place; 347 if the IIRS bands of one window count once; Known issue 2: some were cut twice under two ids); 11 instrument pairings (nac-nac, nac-tmc2, ohrc-lola, ohrc-nac, ohrc-ohrc, ohrc-tc, ohrc-tmc2, tc-iirs, tc-mi, tmc2-iirs, tmc2-tmc2) + 10 loops + 58 windows of one whole strip (their own section) + 16 IIRS → LRO WAC windows (their own section) + 4 withdrawn (INVALIDATED). Rows in results_log.csv: 6950.
+Rows in real_pairs_log.csv: 3336: 595 distinct pair ids (latest row wins) = 423 registered pairs (406 distinct windows - a window being one source image, one reference image, one place; 347 if the IIRS bands of one window count once; Known issue 2: some were cut twice under two ids); 11 instrument pairings (nac-nac, nac-tmc2, ohrc-lola, ohrc-nac, ohrc-ohrc, ohrc-tc, ohrc-tmc2, tc-iirs, tc-mi, tmc2-iirs, tmc2-tmc2) + 10 loops + 58 windows of one whole strip (their own section) + 16 IIRS → LRO WAC windows (their own section) + 49 windows of the whole IIRS strip onto WAC + 31 TMC-2 → SELENE TC windows + 4 DTM-orthorectified fore/aft windows (each its own section) + 4 withdrawn (INVALIDATED). Rows in results_log.csv: 9225.
