@@ -423,7 +423,8 @@ def section_tcmap(rows):
             + ", ".join(f"{v} {n}" for v, n in verd.most_common()) + f"; **accepted {len(acc)}/{len(rows)}**"
             + (f"; verified squares per accepted window {min(ver)}-{max(ver)} of 64 (median {st.median(ver):g})" if ver else "")
             + (f"; held-out median of the accepted windows above an inlier ratio of 0.5: {_rng(min(med), max(med), '.2f')} px "
-               f"= {_rng(min(med) * g, max(med) * g, '.1f')} m on the {g} m TC grid ({len(med)} windows)" if med else "")
+               f"= {_rng(min(med) * g, max(med) * g, '.1f')} m on the {g:.2f} m TC grid, median {st.median(med):.2f} px "
+               f"= {st.median(med) * g:.1f} m ({len(med)} windows)" if med else "")
             + (f". The archive geolocations disagree by {_rng(min(off), max(off), '.0f')} m (median {st.median(off):.0f} m) "
                f"- one steady offset along 3° of the pass, which each registration removes" if off else "")
             + ". Reported only here, never merged with the counts above.")
@@ -451,7 +452,8 @@ def section_wacstrip(rows):
             + ", ".join(f"{v} {n}" for v, n in verd.most_common()) + f"; **accepted {len(acc)}/{len(rows)}**"
             + (f"; verified squares per accepted window {min(ver)}-{max(ver)} of 64 (median {st.median(ver):g})" if ver else "")
             + (f"; held-out median of the accepted windows above an inlier ratio of 0.5: {_rng(min(med), max(med), '.2f')} px "
-               f"= {_rng(min(med) * g, max(med) * g, '.0f')} m on the 100 m WAC grid ({len(med)} windows)" if med else "")
+               f"= {_rng(min(med) * g, max(med) * g, '.0f')} m on the 100 m WAC grid, median {st.median(med):.2f} px "
+               f"= {st.median(med) * g:.0f} m ({len(med)} windows)" if med else "")
             + (f". Registration {sum(secs) / 60:.1f} min on the laptop CPU" if secs else "")
             + ". Reported only here, never merged with the counts above.")
     return section_pairs("IIRS → LRO WAC, the whole strip, region by region (cross-mission, multi-modal)", rows, note)
