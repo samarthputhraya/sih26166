@@ -53,6 +53,7 @@ AXES = (
     ("viewpoint: OHRC -> OHRC, views 40 deg apart", r"^siten_ohrc\d+_ohrc\d+_c\d+$", None),
     ("TMC-2 -> IIRS beyond 850 nm (multi-modal)", r"^chain_tmc\d{8}_iirs(999|1555|2381|3223)_w\d+$", None),
     ("TMC-2 -> IIRS 746 nm (visible control)", r"^chain_tmc\d{8}_iirs746_w\d+$", None),
+    ("IIRS 1555 nm -> LRO WAC global mosaic (cross-mission, multi-modal)", r"^wac_iirs\d{8}_\d+_w\d+$", None),
 )
 
 

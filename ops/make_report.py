@@ -363,6 +363,36 @@ def section_strip(strip, d):
     return section_pairs("A whole strip: TMC-2 → IIRS 1555 nm, every window (no selection)", strip, note)
 
 
+def section_wac(wac, reg):
+    """IIRS onto the LRO WAC global mosaic (ops/cut_wac_pairs.py): the SAME IIRS windows as the
+    TMC-2 -> IIRS chain pairs, now against NASA's Moon-wide base map. Kept out of every other count."""
+    if not wac:
+        return []
+    acc = [r for r in wac if r["verdict"] == "agrees" and "fallback" not in r["method_declared"]]
+    verd = Counter(r["verdict"] for r in wac)
+    by_id = {r["pair_id"]: r for r in reg}
+    twins = []
+    for r in wac:      # wac_iirs<day>_<nm>_wNN <-> chain_tmc<day>_iirs<nm>_wNN
+        _, day, nm, w = r["pair_id"].split("_")
+        t = by_id.get(f"chain_tmc{day[4:]}_iirs{nm}_{w}")
+        if t:
+            twins.append(t)
+    t_acc = [t for t in twins if t["verdict"] == "agrees" and "fallback" not in t["method_declared"]]
+    med = [float(r["residual_median_px"]) for r in acc if r.get("residual_median_px")]
+    note = ("Chandrayaan-2 IIRS onto NASA's Moon-wide base map, the USGS LRO WAC global morphologic mosaic "
+            "(100 m, visible 643 nm; `ops/cut_wac_pairs.py`, read by HTTP range): cross-sensor AND cross-mission, "
+            "and multi-modal at 1555 nm. The windows are exactly those of the TMC-2 → IIRS chain pairs (chosen from "
+            "the IIRS texture alone, before any matching). The mosaic is a composite with no single Sun. "
+            f"Verdicts: " + ", ".join(f"{v} {n}" for v, n in verd.most_common())
+            + f"; **accepted {len(acc)}/{len(wac)}**"
+            + (f" (the same IIRS windows onto TMC-2 of their own orbit: accepted {len(t_acc)}/{len(twins)})"
+               if twins else "")
+            + (f"; held-out median of the accepted: {_rng(min(med), max(med), '.2f')} px on the 100 m WAC grid"
+               if med else "")
+            + ". Reported only here, never merged with the counts above.")
+    return section_pairs("IIRS → LRO WAC global mosaic (cross-mission, multi-modal)", wac, note)
+
+
 def section_finder(d):
     """ops/find_reference.py on Site N's OHRC frame: the search that found Site N by hand, as a tool."""
     target = "ch2_ohr_ncp_20250612T2031048828_d_img_d18"
@@ -901,7 +931,9 @@ def main(argv=None):
     # 3 Oct 2026: one whole strip, every window (section_strip) - its own evidence, kept out of every
     # count and table below so the selected windows' numbers are exactly what they were.
     strip = sorted([r for r in reg if r["pair_id"].startswith("strip_")], key=lambda r: r["pair_id"])
-    reg = [r for r in reg if not r["pair_id"].startswith("strip_")]
+    # IIRS onto the LRO WAC global mosaic (section_wac): its own evidence too, kept out of every count.
+    wac = sorted([r for r in reg if r["pair_id"].startswith("wac_")], key=lambda r: r["pair_id"])
+    reg = [r for r in reg if not r["pair_id"].startswith(("strip_", "wac_"))]
     loops = [r for r in latest.values() if r["pair_id"].startswith("loop_") and not r["pair_id"].startswith("loop_siten")]
     site_loops = [r for r in latest.values() if r["pair_id"].startswith("loop_siten")]
     # The commit that RENDERED this file and the commit(s) the evidence rows were MEASURED at are
@@ -1049,6 +1081,7 @@ def main(argv=None):
     L += section_ladder(reg)
     L += section_chain(reg, d)
     L += section_strip(strip, d)
+    L += section_wac(wac, reg)
     L += section_site_n(reg, site_loops)
     fa = sorted([r for r in reg if _kind(r) == "tmc2-tmc2"], key=lambda r: r["pair_id"])
     if fa:
@@ -1518,7 +1551,8 @@ def main(argv=None):
           f"wins) = {len(reg)} registered pairs{_distinct_note(reg)}{_pairings_note(reg)} + "
           f"{len(loops) + len(site_loops)} loops + "
           + (f"{len(strip)} windows of one whole strip (their own section) + " if strip else "")
-          + f"{len(latest) - len(reg) - len(strip) - len(loops) - len(site_loops)} withdrawn (INVALIDATED). Rows in results_log.csv: "
+          + (f"{len(wac)} IIRS → LRO WAC windows (their own section) + " if wac else "")
+          + f"{len(latest) - len(reg) - len(strip) - len(wac) - len(loops) - len(site_loops)} withdrawn (INVALIDATED). Rows in results_log.csv: "
           f"{len(log)}.", ""]
     OUT.write_text("\n".join(L), encoding="utf-8")
     print(f"wrote {OUT} ({len(L)} lines)")
