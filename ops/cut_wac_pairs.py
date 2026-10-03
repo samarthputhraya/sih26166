@@ -98,92 +98,146 @@ def wac_reader(a, r0, c0):
     return read
 
 
-def cut(chain_stem):
-    """One WAC pair per window of `chain_stem`_w*: same centre, same window size."""
+def _cut_window(pair_id, la, lo, window_m, info_i, grid_i, read_i, shape_i, rule, iirs_sun, extra=None):
+    """One IIRS -> WAC pair centred at (la, lo): WAC on a whole number of 100 m pixels, IIRS at its own
+    resampled GSD on the same local map. Returns its folder, or None if either image does not cover it."""
     import tifffile
     from core import geometry as G
+    t0 = time.perf_counter()
+    proj = LocalEqc(la, lo)
+    src_f = frame_from_grid(grid_i, shape_i, proj, "IIRS")
+    src_gsd = round(float(np.mean(src_f.gsd())), 2)
+    ref_px = int(round(window_m / WAC_GSD))
+    window_m = ref_px * WAC_GSD
+    a, r0, c0 = wac_chunk(la, lo, window_m / 2)
+    ref_f = wac_frame(a, r0, c0, proj)
+    cx, cy = (float(v) for v in proj.fwd(la, lo))
+    x0, y1 = cx - window_m / 2, cy + window_m / 2
+    tr_r, sh_r = G.map_grid(x0, y1, window_m, window_m, WAC_GSD)
+    r_img, r_ok = G.project(ref_f, wac_reader(a, r0, c0), tr_r, sh_r, coarse=8, order="cubic")
+    s_px = int(round(window_m / src_gsd))
+    tr_s, sh_s = G.map_grid(x0, y1, s_px * src_gsd, s_px * src_gsd, src_gsd)
+    s_img, s_ok = G.project(src_f, read_i, tr_s, sh_s, coarse=8, order="cubic")
+    if r_ok.mean() < 0.998 or s_ok.mean() < 0.998:
+        print(f"  {pair_id}: not fully covered (WAC {r_ok.mean():.3f}, IIRS {s_ok.mean():.3f}) - skipped")
+        return None
+    r_img, r_fill = G.fill_invalid(r_img, r_ok)
+    s_img, s_fill = G.fill_invalid(s_img, s_ok)
+    d = PAIRS / pair_id
+    d.mkdir(parents=True, exist_ok=True)
+    src_p, ref_p = d / f"{pair_id}_source.tif", d / f"{pair_id}_ref.tif"
+    tifffile.imwrite(str(src_p), s_img.astype(np.float32), photometric="minisblack",
+                     extratags=proj.geotiff_tags(tr_s))
+    tifffile.imwrite(str(ref_p), r_img.astype(np.float32), photometric="minisblack",
+                     extratags=proj.geotiff_tags(tr_r))
+    multimodal = info_i["center_wavelength_nm"] > 850
+    meta = {
+        "pair_id": pair_id,
+        "created_utc": _dt.datetime.now(_dt.timezone.utc).isoformat(timespec="seconds"),
+        "tier": ("C (visible-infrared real, multi-modal; LRO WAC mosaic vs Chandrayaan-2 IIRS, cross-mission)"
+                 if multimodal else "B (cross-sensor real, cross-mission; LRO WAC mosaic vs Chandrayaan-2 IIRS)"),
+        "terminology": ("cross-sensor AND cross-mission (LRO WAC vs Chandrayaan-2 IIRS); "
+                        + ("MULTI-MODAL: visible 643 nm mosaic vs near-infrared" if multimodal
+                           else "NOT multi-modal: IIRS band in the visible")),
+        "crs": proj.name, "window_centre_map_m": [cx, cy], "window_centre_latlon": [la, lo],
+        "window_m": window_m, "window_rule": rule,
+        "source": {**info_i, "geometry": src_f.source, "resampled_gsd_mpp": src_gsd,
+                   "shape": list(sh_s), "transform": list(tr_s)},
+        "reference": {"instrument": "LRO WAC (global morphologic mosaic, USGS, June 2013)",
+                      "product_id": "Lunar_LRO_LROC-WAC_Mosaic_global_100m_June2013",
+                      "path": WAC_URL, "band": "643 nm (visible)", "geometry": ref_f.source,
+                      "resampled_gsd_mpp": WAC_GSD, "shape": list(sh_r), "transform": list(tr_r),
+                      "sun": None},
+        "d_sun_azimuth_deg": None, "d_incidence_deg": None,
+        "sun_note": ("the WAC mosaic is a composite of many images with no single Sun (none in the file); "
+                     f"IIRS strip Sun (TMC-2 label, same orbit): {iirs_sun}"),
+        "scale_ratio": round(WAC_GSD / src_gsd, 3),
+        "prior_H_source_to_reference": [[src_gsd / WAC_GSD, 0, 0], [0, src_gsd / WAC_GSD, 0], [0, 0, 1]],
+        "prior_note": "both files are on the same north-up local map grid over the same ground, so the "
+                      "archive-geometry prior is a pure scale; any offset the pipeline finds is "
+                      "disagreement between the IIRS geolocation and the WAC mosaic's control",
+        "edge_pixels_filled": {"source": s_fill, "reference": r_fill},
+        "files": {q.name: _sha(q) for q in (src_p, ref_p)},
+        "cut_seconds": round(time.perf_counter() - t0, 1),
+        "command": "python -m ops.cut_wac_pairs " + " ".join(sys.argv[1:]),
+        **(extra or {}),
+    }
+    (d / "geometry_prior.json").write_text(json.dumps(meta, indent=2), encoding="utf-8")
+    print(f"  {pair_id}: centre ({la:.4f}, {lo:.4f}); IIRS {sh_s} @ {src_gsd} m -> WAC {sh_r} @ "
+          f"{WAC_GSD} m ({meta['cut_seconds']} s)", flush=True)
+    return d
+
+
+def _iirs_info(chain_pair_dir):
+    m = json.loads((chain_pair_dir / "geometry_prior.json").read_text(encoding="utf-8"))
+    info_i = {k: v for k, v in m["reference"].items()
+              if k not in ("geometry", "resampled_gsd_mpp", "shape", "transform")}
+    return m, info_i
+
+
+def cut(chain_stem):
+    """One WAC pair per window of `chain_stem`_w*: same centre, same window size."""
     out = []
     for p in sorted(PAIRS.glob(f"{chain_stem}_w*")):
-        m = json.loads((p / "geometry_prior.json").read_text(encoding="utf-8"))
-        info_i = {k: v for k, v in m["reference"].items()
-                  if k not in ("geometry", "resampled_gsd_mpp", "shape", "transform")}
+        m, info_i = _iirs_info(p)
         pid, band = info_i["product_id"].split()[0], int(info_i["band_index"])
         _, grid_i, read_i, shape_i, _ = iirs_product(pid, band)
         nm = round(info_i["center_wavelength_nm"])
         pair_id = f"wac_iirs{pid[12:20]}_{nm}_{p.name.rsplit('_', 1)[1]}"
-        la, lo = m["window_centre_latlon"]
-        t0 = time.perf_counter()
-        proj = LocalEqc(la, lo)
-        src_f = frame_from_grid(grid_i, shape_i, proj, "IIRS")
-        src_gsd = round(float(np.mean(src_f.gsd())), 2)
-        ref_px = int(round(m["window_m"] / WAC_GSD))
-        window_m = ref_px * WAC_GSD
-        a, r0, c0 = wac_chunk(la, lo, window_m / 2)
-        ref_f = wac_frame(a, r0, c0, proj)
-        cx, cy = (float(v) for v in proj.fwd(la, lo))
-        x0, y1 = cx - window_m / 2, cy + window_m / 2
-        tr_r, sh_r = G.map_grid(x0, y1, window_m, window_m, WAC_GSD)
-        r_img, r_ok = G.project(ref_f, wac_reader(a, r0, c0), tr_r, sh_r, coarse=8, order="cubic")
-        s_px = int(round(window_m / src_gsd))
-        tr_s, sh_s = G.map_grid(x0, y1, s_px * src_gsd, s_px * src_gsd, src_gsd)
-        s_img, s_ok = G.project(src_f, read_i, tr_s, sh_s, coarse=8, order="cubic")
-        if r_ok.mean() < 0.998 or s_ok.mean() < 0.998:
-            print(f"  {pair_id}: not fully covered (WAC {r_ok.mean():.3f}, IIRS {s_ok.mean():.3f}) - skipped")
-            continue
-        r_img, r_fill = G.fill_invalid(r_img, r_ok)
-        s_img, s_fill = G.fill_invalid(s_img, s_ok)
-        d = PAIRS / pair_id
-        d.mkdir(parents=True, exist_ok=True)
-        src_p, ref_p = d / f"{pair_id}_source.tif", d / f"{pair_id}_ref.tif"
-        tifffile.imwrite(str(src_p), s_img.astype(np.float32), photometric="minisblack",
-                         extratags=proj.geotiff_tags(tr_s))
-        tifffile.imwrite(str(ref_p), r_img.astype(np.float32), photometric="minisblack",
-                         extratags=proj.geotiff_tags(tr_r))
-        multimodal = info_i["center_wavelength_nm"] > 850
-        meta = {
-            "pair_id": pair_id,
-            "created_utc": _dt.datetime.now(_dt.timezone.utc).isoformat(timespec="seconds"),
-            "tier": ("C (visible-infrared real, multi-modal; LRO WAC mosaic vs Chandrayaan-2 IIRS, cross-mission)"
-                     if multimodal else "B (cross-sensor real, cross-mission; LRO WAC mosaic vs Chandrayaan-2 IIRS)"),
-            "terminology": ("cross-sensor AND cross-mission (LRO WAC vs Chandrayaan-2 IIRS); "
-                            + ("MULTI-MODAL: visible 643 nm mosaic vs near-infrared" if multimodal
-                               else "NOT multi-modal: IIRS band in the visible")),
-            "crs": proj.name, "window_centre_map_m": [cx, cy], "window_centre_latlon": [la, lo],
-            "window_m": window_m,
-            "window_rule": f"the windows of {p.name} exactly (same centre; size rounded to whole WAC pixels)",
-            "source": {**info_i, "geometry": src_f.source, "resampled_gsd_mpp": src_gsd,
-                       "shape": list(sh_s), "transform": list(tr_s)},
-            "reference": {"instrument": "LRO WAC (global morphologic mosaic, USGS, June 2013)",
-                          "product_id": "Lunar_LRO_LROC-WAC_Mosaic_global_100m_June2013",
-                          "path": WAC_URL, "band": "643 nm (visible)", "geometry": ref_f.source,
-                          "resampled_gsd_mpp": WAC_GSD, "shape": list(sh_r), "transform": list(tr_r),
-                          "sun": None},
-            "d_sun_azimuth_deg": None, "d_incidence_deg": None,
-            "sun_note": ("the WAC mosaic is a composite of many images with no single Sun (none in the file); "
-                         f"IIRS strip Sun (TMC-2 label, same orbit): {m['source'].get('sun')}"),
-            "scale_ratio": round(WAC_GSD / src_gsd, 3),
-            "prior_H_source_to_reference": [[src_gsd / WAC_GSD, 0, 0], [0, src_gsd / WAC_GSD, 0], [0, 0, 1]],
-            "prior_note": "both files are on the same north-up local map grid over the same ground, so the "
-                          "archive-geometry prior is a pure scale; any offset the pipeline finds is "
-                          "disagreement between the IIRS geolocation and the WAC mosaic's control",
-            "edge_pixels_filled": {"source": s_fill, "reference": r_fill},
-            "files": {q.name: _sha(q) for q in (src_p, ref_p)},
-            "cut_seconds": round(time.perf_counter() - t0, 1),
-            "command": "python -m ops.cut_wac_pairs " + " ".join(sys.argv[1:]),
-        }
-        (d / "geometry_prior.json").write_text(json.dumps(meta, indent=2), encoding="utf-8")
-        out.append(d)
-        print(f"  {pair_id}: centre ({la:.4f}, {lo:.4f}); IIRS {sh_s} @ {src_gsd} m -> WAC {sh_r} @ "
-              f"{WAC_GSD} m ({meta['cut_seconds']} s)", flush=True)
+        d = _cut_window(pair_id, *m["window_centre_latlon"], m["window_m"], info_i, grid_i, read_i, shape_i,
+                        f"the windows of {p.name} exactly (same centre; size rounded to whole WAC pixels)",
+                        m["source"].get("sun"))
+        if d:
+            out.append(d)
+    return out
+
+
+STRIP_PX = 192      # WAC pixels: 8 x 8 squares of 24 px, the area check's smallest cell that may vote
+
+
+def cut_strip(chain_stem, lat_range=(-90.0, 90.0)):
+    """The WHOLE IIRS strip of `chain_stem` onto WAC, edge to edge, no selection: windows of STRIP_PX
+    WAC pixels (19.2 km) one window length apart along the IIRS centre line, wherever the strip
+    covers the whole window. Big enough that every one of the 8 x 8 squares can vote (24 px), so
+    each window gets the region-by-region verdict, not the whole-frame check the 16 smaller
+    `wac_` windows (16.1 km, 20-px squares) fell back to. Ids wacstrip_iirs<day>_<nm>_sNNN."""
+    import math
+    from ops.cut_chain_pairs import _centre_line
+    first = sorted(PAIRS.glob(f"{chain_stem}_w*"))[0]
+    m, info_i = _iirs_info(first)
+    pid, band = info_i["product_id"].split()[0], int(info_i["band_index"])
+    _, grid_i, read_i, shape_i, _ = iirs_product(pid, band)
+    nm = round(info_i["center_wavelength_nm"])
+    lats, lons = _centre_line(grid_i)
+    keep = (lats >= lat_range[0]) & (lats <= lat_range[1])
+    lats, lons = lats[keep], lons[keep]
+    d_km = np.r_[0, np.cumsum(np.hypot(np.diff(lats), np.diff(lons) * np.cos(np.radians(lats[1:]))))] \
+        * math.pi / 180 * 1737.4
+    win_km = STRIP_PX * WAC_GSD / 1000
+    t_start = time.perf_counter()
+    out, k = [], 0
+    for target in np.arange(win_km / 2, d_km[-1], win_km):
+        j = int(np.argmin(np.abs(d_km - target)))
+        k += 1
+        pair_id = f"wacstrip_iirs{pid[12:20]}_{nm}_s{k:03d}"
+        d = _cut_window(pair_id, float(lats[j]), float(lons[j]), STRIP_PX * WAC_GSD, info_i, grid_i, read_i,
+                        shape_i, f"the whole IIRS strip of {chain_stem}: every {win_km:.1f} km window along its "
+                                 f"centre line, edge to edge, no selection", m["source"].get("sun"),
+                        extra={"strip_window_index": k,
+                               "strip_seconds_since_start": round(time.perf_counter() - t_start, 1)})
+        if d:
+            out.append(d)
+    print(f"  {len(out)} of {k} strip windows cut in {(time.perf_counter() - t_start) / 60:.1f} min")
     return out
 
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("chain_stems", nargs="+", help="e.g. chain_tmc20200607_iirs1555")
+    ap.add_argument("--strip", action="store_true", help="the whole IIRS strip, 19.2 km windows (cut_strip)")
     a = ap.parse_args(argv)
     for s in a.chain_stems:
-        cut(s)
+        cut_strip(s) if a.strip else cut(s)
     return 0
 
 

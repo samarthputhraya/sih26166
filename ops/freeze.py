@@ -24,7 +24,8 @@ exact command that produced it:
             registration of the same window, from the bundles `real` exported.
   trust     `ops.trust_real_calibration` on the same windows the current calibration used,
             plus the pinned hard-Sun patterns (`trust_real_calibration.EXTRA_WINDOWS`), after
-            deleting its per-trial CSV (Known issue 8: every run appends to it).
+            deleting its per-trial CSV (Known issue 8: every run appends to it); then the
+            visible-infrared population (`--ir`, TMC-2 -> IIRS 1555 nm windows), its own CSV and seed.
   miloi     `evaluation.miloi --retrust --truth --score --log --table`: re-judges the stored
             matches under the current trust layer, rebuilds the truth, re-scores every method.
             Matching itself (LoFTR, SIFT/ORB/AKAZE, ~50 s a pair, ~4.5 h) is not redone: --plan
@@ -321,6 +322,12 @@ class Freeze:
             logf.write(msg + "\n")
             self.state["trust_trials_vs_previous"] = same
             self.save()
+            # The visible-infrared population (3 Oct 2026): its own windows, seed stream and CSV,
+            # run after the panchromatic calibration so nothing above changes.
+            from ops.trust_real_calibration import OUT_CSV_IR
+            if OUT_CSV_IR.exists():
+                OUT_CSV_IR.replace(_trust_prev().with_name(OUT_CSV_IR.stem + ".prev.csv"))
+            ok = _run(["-m", "ops.trust_real_calibration", "--ir", "--log"], logf) == 0
         return ok
 
     def classic(self, logf):
@@ -444,8 +451,10 @@ def plan() -> None:
         print(f"loops  {c}")
     wins = sorted({r['pair_id'] for r in _rows(TRUST_CSV)})
     from ops.trust_real_calibration import EXTRA_WINDOWS
+    from ops.trust_real_calibration import IR_WINDOWS
     print(f"trust  {len(wins)} windows (the current calibration's) + the hard-Sun patterns "
-          f"{' '.join(EXTRA_WINDOWS)}, CSV moved aside first (kept outside the repo)")
+          f"{' '.join(EXTRA_WINDOWS)}, CSV moved aside first (kept outside the repo); then the "
+          f"visible-infrared population --ir ({' '.join(IR_WINDOWS)}), its own CSV and seed")
     from ops.multimodal_check import pairings
     print(f"mmcheck {len(pairings(latest_real(rows)))} window pairings from the bundles")
     changed = miloi_matching_changed()

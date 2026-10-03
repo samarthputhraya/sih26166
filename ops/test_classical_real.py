@@ -19,7 +19,9 @@ def test_accepted_means_the_area_check_agrees_and_no_fallback_was_needed():
 def test_each_axis_takes_its_own_windows_and_the_ladder_splits_by_sun_azimuth():
     latest = {p: _row(p) for p in ("sac_ohrc_nac_w01", "sac_ohrc_nac112_w01", "sac_ohrc_nac_w01_sw",
                                    "siten_ohrc2031_tmc20200607_c00", "chain_tmc20200203_iirs1555_w01",
-                                   "chain_tmc20200203_iirs746_w01", "wac_iirs20200607_1555_w01")}
+                                   "chain_tmc20200203_iirs746_w01", "wac_iirs20200607_1555_w01",
+                                   "wacstrip_iirs20200607_1555_s002", "tcmap_tmc20250707_s001",
+                                   "sac_tmcfore_tmcaft_dtm_w01", "sac_tmcfore_tmcaft_w01")}
     latest["sac_ohrclroc_nacm1_c00"] = _row("sac_ohrclroc_nacm1_c00", d_az="12.0")
     latest["sac_ohrclroc_nacm2_c00"] = _row("sac_ohrclroc_nacm2_c00", d_az="170.0")
     got = dict(C.axis_pairs(latest))
@@ -30,6 +32,9 @@ def test_each_axis_takes_its_own_windows_and_the_ladder_splits_by_sun_azimuth():
     assert got[labels[8]] == ["chain_tmc20200203_iirs1555_w01"]    # 746 nm is the visible control
     assert got[labels[9]] == ["chain_tmc20200203_iirs746_w01"]
     assert got[labels[10]] == ["wac_iirs20200607_1555_w01"]          # IIRS onto the WAC mosaic
+    assert got[labels[11]] == ["wacstrip_iirs20200607_1555_s002"]
+    assert got[labels[12]] == ["tcmap_tmc20250707_s001"]
+    assert got[labels[13]] == ["sac_tmcfore_tmcaft_dtm_w01"]         # never the un-orthorectified pair
 
 
 def test_invalidated_rows_never_reach_an_axis(tmp_path):

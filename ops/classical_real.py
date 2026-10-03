@@ -54,6 +54,9 @@ AXES = (
     ("TMC-2 -> IIRS beyond 850 nm (multi-modal)", r"^chain_tmc\d{8}_iirs(999|1555|2381|3223)_w\d+$", None),
     ("TMC-2 -> IIRS 746 nm (visible control)", r"^chain_tmc\d{8}_iirs746_w\d+$", None),
     ("IIRS 1555 nm -> LRO WAC global mosaic (cross-mission, multi-modal)", r"^wac_iirs\d{8}_\d+_w\d+$", None),
+    ("IIRS 1555 nm -> LRO WAC, the whole strip, 19.2 km windows", r"^wacstrip_iirs\d{8}_\d+_s\d+$", None),
+    ("TMC-2 -> SELENE TC ortho map, every window at SAC's site (cross-mission)", r"^tcmap_tmc\d{8}_s\d+$", None),
+    ("TMC-2 fore -> aft, both orthorectified on the pass's DTM", r"^sac_tmcfore_tmcaft_dtm_w\d+$", None),
 )
 
 

@@ -57,6 +57,14 @@ NON_TRANSLATION_M = [0.0, 1.0, 2.0, 3.0, 5.0, 10.0, 20.0]
 # evidence freeze adds to the calibration's own window list (ops.freeze, step `trust`). Windows
 # that fail the rule above (|NCC| < 0.5, not `agrees`, < 50 inliers) are skipped and printed.
 EXTRA_WINDOWS = ("sac_ohrc_nac_w*", "sac_polar_ohrc_nac_w*")
+# VISIBLE vs INFRARED (3 Oct 2026, `--ir`): the same planted test on TMC-2 -> IIRS 1555 nm windows (16,
+# two orbits), where an SAC reviewer asks whether a correlation check still works across bands. Its
+# reference grid is ~74-84 m, so the planted shifts are set in REFERENCE PIXELS, not metres; only
+# translations; its own seed stream and its own CSV, so the panchromatic calibration above is
+# untouched - same windows, same draws, same file - and no reader of that file sees these rows.
+IR_WINDOWS = ("chain_tmc20200607_iirs1555_w*", "chain_tmc20200203_iirs1555_w*")
+IR_DISPLACEMENTS_PX = [0.0, 0.5, 1.0, 2.0, 3.0, 5.0, 10.0, 20.0]
+OUT_CSV_IR = ROOT / "evaluation" / "trust_real_calibration_ir.csv"
 
 
 def _apply(H, pts):
@@ -175,10 +183,16 @@ def main(argv=None):
     from core.reliability import reliability_map
     from ops.sun_sweep import warp_ncc
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("patterns", nargs="+")
+    ap.add_argument("patterns", nargs="*")
     ap.add_argument("--log", action="store_true")
     ap.add_argument("--seed", type=int, default=7)
+    ap.add_argument("--ir", action="store_true", help="the visible-infrared population (IR_WINDOWS), shifts in px")
     a = ap.parse_args(argv)
+    if not a.patterns and not a.ir:
+        ap.error("give window patterns, or --ir")
+    out_csv = OUT_CSV_IR if a.ir else OUT_CSV
+    patterns = a.patterns or list(IR_WINDOWS)
+    kinds = ("translation",) if a.ir else KINDS
     # Every refusal decidable from the arguments alone is decided HERE, before a single trial -
     # the same rule core.pipeline.main() follows. This run is an hour of work whose per-trial CSV
     # the freeze deletes before a retry, so discovering at the END that the log cannot be written
@@ -189,8 +203,8 @@ def main(argv=None):
         if err:
             print(f"\n{err}\n")
             return 3
-    rng = np.random.default_rng(a.seed)
-    dirs = sorted({pathlib.Path(p) for pat in a.patterns for p in glob.glob(str(ROOT / "data" / "pairs" / pat))})
+    rng = np.random.default_rng(a.seed + 1 if a.ir else a.seed)
+    dirs = sorted({pathlib.Path(p) for pat in patterns for p in glob.glob(str(ROOT / "data" / "pairs" / pat))})
     trials, used = [], []
     for d in dirs:
         sp, rp = resolve_pair(str(d))
@@ -226,8 +240,10 @@ def main(argv=None):
         # `b678272`, 130/176 at `183a54f`, 131/176 at `7dd4e5b` - about +/-4 points of sampling
         # scatter. Quote the frozen number and say "about three quarters" in speech; do not read a
         # change between freezes here as a change in behaviour.
-        for kind in KINDS:
-            for dm in (DISPLACEMENTS_M if kind == "translation" else NON_TRANSLATION_M):
+        for kind in kinds:
+            sizes = ([v * gsd_ref for v in IR_DISPLACEMENTS_PX] if a.ir else
+                     DISPLACEMENTS_M if kind == "translation" else NON_TRANSLATION_M)
+            for dm in sizes:
                 # A translation can point anywhere, so it is sampled over N_DIRECTIONS random
                 # bearings. A rotation or a scale change about the centre has only TWO shapes -
                 # one per sign - so eight iterations would re-plant four identical transforms and
@@ -244,7 +260,10 @@ def main(argv=None):
                                            warped, B, gsd_mpp=r["gsd_mpp"], H_true=None)
                     g, c = relw["global"], relw["counts"]
                     trials.append({"pair_id": d.name, "gsd_ref_m": gsd_ref, "kind": kind,
-                                   "displacement_m": dm,
+                                   **({"population": "visible-infrared (TMC-2 -> IIRS 1555 nm)",
+                                       "displacement_px_planned": IR_DISPLACEMENTS_PX[sizes.index(dm)]}
+                                      if a.ir else {}),
+                                   "displacement_m": round(dm, 4) if a.ir else dm,
                                    "displacement_px": round(dpx, 3), "direction_deg": round(np.degrees(th), 1),
                                    "contradicted": bool(g.get("contradicted")), "verdict": g.get("verdict"),
                                    "verified": c["verified"], "weak": c["weak"], "no_evidence": c["no_evidence"],
@@ -257,22 +276,24 @@ def main(argv=None):
         print("no usable windows")
         return 1
     fields = list(trials[0])
-    new = not OUT_CSV.exists() or OUT_CSV.stat().st_size == 0
+    new = not out_csv.exists() or out_csv.stat().st_size == 0
     if not new:
-        with open(OUT_CSV, encoding="utf-8-sig", newline="") as f:
+        with open(out_csv, encoding="utf-8-sig", newline="") as f:
             header = next(csv.reader(f))
         if header != fields:
             # An older CSV has fewer columns; appending under its header would put values in
             # the wrong columns. The freeze deletes the file first; do the same by hand.
-            print(f"refusing to append: {OUT_CSV.name} has columns {header}, this run writes "
+            print(f"refusing to append: {out_csv.name} has columns {header}, this run writes "
                   f"{fields}. Delete the file (ops.freeze does) and re-run.")
             return 2
-    with open(OUT_CSV, "a", newline="", encoding="utf-8") as f:
+    with open(out_csv, "a", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=fields)
         if new:
             w.writeheader()
         w.writerows(trials)
-    print(f"\n{len(used)} windows, {len(trials)} trials -> {OUT_CSV.name}")
+    print(f"\n{len(used)} windows, {len(trials)} trials -> {out_csv.name}")
+    if a.ir:
+        return _ir_summary(trials, used, a)
     print(f"{'kind':12} {'d (m)':>6} {'d (px)':>7} {'n':>4} {'contradicted':>13} {'mean verified':>13} "
           f"{'cells >2px refused':>19} {'cells <1px kept':>16}")
     rows = []
@@ -321,6 +342,39 @@ def main(argv=None):
                        + f"windows: {', '.join(used)} "
                        f"(Sun azimuth differences {', '.join(az)} deg; window selection by |NCC| >= 0.5). "
                        f"per-trial table: evaluation/trust_real_calibration.csv"))
+            print(("  " + note) if ok else f"  NOT LOGGED: {note}")
+    return 0
+
+
+def _ir_summary(trials, used, a):
+    """The visible-infrared population: one row per planted size in reference PIXELS."""
+    rows = []
+    for v in IR_DISPLACEMENTS_PX:
+        t = [x for x in trials if x["displacement_px_planned"] == v]
+        if not t:
+            continue
+        rate = float(np.mean([x["contradicted"] for x in t]))
+        ver = float(np.mean([x["verified"] for x in t]))
+        pres = [x["planted_residual_median_px"] for x in t if x["planted_residual_median_px"] is not None]
+        rows.append((v, len(t), rate, ver, pres))
+        print(f"  ir {v:5.1f} px: n {len(t):4d}  flagged {rate:6.1%}  mean verified {ver:5.1f}/64")
+    if a.log:
+        from core.pipeline import _log_row
+        for v, n, rate, ver, pres in rows:
+            seen = (f"What a residual check sees on these planted wrong answers: median held-out residual "
+                    f"{np.median(pres):.3f} px ({len(pres)} trials). " if pres else "")
+            ok, note = _log_row(
+                f"trust_real_ir_translation_d{v:g}px",
+                "C (visible-infrared real, multi-modal; TMC-2 -> IIRS 1555 nm), planted failures",
+                "reliability_real_calibration",
+                {"rmse_gt_px": None, "residual_px": None, "inlier_count": None, "inlier_ratio": None,
+                 "grid_coverage_fraction": None, "distribution_cv": None, "n_matches": n, "status": "ok"},
+                config=(f"planted confident-wrong registrations on visible-infrared windows: H_true shifted by "
+                        f"{v:g} px of the IIRS reference grid, all matches consistent with the wrong H (0.3 px "
+                        f"noise); {len(used)} real windows x {N_DIRECTIONS} directions; seed {a.seed + 1}"),
+                notes=(f"area check contradicted {rate:.1%} of {n} trials; mean verified cells {ver:.1f}/64. "
+                       f"d=0 is the false-alarm baseline. " + seen + f"windows: {', '.join(used)}. per-trial table: "
+                       f"evaluation/{OUT_CSV_IR.name}"))
             print(("  " + note) if ok else f"  NOT LOGGED: {note}")
     return 0
 

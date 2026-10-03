@@ -25,6 +25,7 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 LOG = ROOT / "evaluation" / "results_log.csv"
 REAL = ROOT / "evaluation" / "real_pairs_log.csv"
 TRUST = ROOT / "evaluation" / "trust_real_calibration.csv"
+TRUST_IR = ROOT / "evaluation" / "trust_real_calibration_ir.csv"
 MM = ROOT / "evaluation" / "multimodal_check.csv"
 OUT = ROOT / "REPORT.md"
 
@@ -393,6 +394,106 @@ def section_wac(wac, reg):
     return section_pairs("IIRS → LRO WAC global mosaic (cross-mission, multi-modal)", wac, note)
 
 
+def _accepted(rows):
+    return [r for r in rows if r["verdict"] == "agrees" and "fallback" not in (r.get("method_declared") or "")]
+
+
+def _offsets(rows):
+    return [float(r["archive_offset_m"]) for r in rows if r.get("archive_offset_m") not in (None, "", "None")]
+
+
+def section_tcmap(rows):
+    """TMC-2 onto the SELENE TC ortho map at SAC's site, every window (ops/cut_tc_pairs.py)."""
+    if not rows:
+        return []
+    acc = _accepted(rows)
+    verd = Counter(r["verdict"] for r in rows)
+    med = [float(r["residual_median_px"]) for r in _robust(acc)]
+    g = float(rows[0]["ref_gsd_m"])
+    lats = [float(r["window_lat"]) for r in rows]
+    gp = [_jsonfile(ROOT / "data" / "pairs" / r["pair_id"] / "geometry_prior.json") or {} for r in rows]
+    win_m = [x.get("window_m") for x in gp if x.get("window_m")]
+    off = _offsets(acc)
+    ver = [int(r["verified"]) for r in acc if r.get("verified") not in (None, "")]
+    note = (f"Every window along one Chandrayaan-2 TMC-2 pass at SAC's own site (`ops/cut_tc_pairs.py`): TMC-2 nadir "
+            f"`{rows[0]['source_product']}` onto the SELENE (Kaguya) Terrain Camera ortho map `{rows[0]['reference_product']}` "
+            f"(JAXA; 7.40 m, a mosaic with no single Sun). Cross-sensor and cross-mission; both panchromatic visible, so "
+            f"NOT multi-modal. {len(rows)} windows of {st.median(win_m) / 1000:.2f} km edge to edge, latitude "
+            f"{min(lats):.2f} to {max(lats):.2f}° (the whole TC tile), no selection. Verdicts: "
+            + ", ".join(f"{v} {n}" for v, n in verd.most_common()) + f"; **accepted {len(acc)}/{len(rows)}**"
+            + (f"; verified squares per accepted window {min(ver)}-{max(ver)} of 64 (median {st.median(ver):g})" if ver else "")
+            + (f"; held-out median of the accepted windows above an inlier ratio of 0.5: {_rng(min(med), max(med), '.2f')} px "
+               f"= {_rng(min(med) * g, max(med) * g, '.1f')} m on the {g} m TC grid ({len(med)} windows)" if med else "")
+            + (f". The archive geolocations disagree by {_rng(min(off), max(off), '.0f')} m (median {st.median(off):.0f} m) "
+               f"- one steady offset along 3° of the pass, which each registration removes" if off else "")
+            + ". Reported only here, never merged with the counts above.")
+    return section_pairs("TMC-2 → SELENE TC ortho map at SAC's site, every window (cross-mission)", rows, note)
+
+
+def section_wacstrip(rows):
+    """The whole IIRS strip onto the WAC global mosaic in 19.2 km windows, every square voting."""
+    if not rows:
+        return []
+    acc = _accepted(rows)
+    verd = Counter(r["verdict"] for r in rows)
+    g = float(rows[0]["ref_gsd_m"])
+    lats = [float(r["window_lat"]) for r in rows]
+    med = [float(r["residual_median_px"]) for r in _robust(acc)]
+    ver = [int(r["verified"]) for r in acc if r.get("verified") not in (None, "")]
+    secs = [float(r["seconds"]) for r in rows if r.get("seconds")]
+    note = (f"The whole Chandrayaan-2 IIRS strip `{rows[0]['source_product']}` onto NASA's Moon-wide base map, the USGS "
+            f"LRO WAC global morphologic mosaic (100 m, visible 643 nm), every window edge to edge with no selection "
+            f"(`ops/cut_wac_pairs.py --strip`): cross-sensor, cross-mission and multi-modal (1555 nm against the "
+            f"visible). The windows are 192 WAC pixels (19.2 km) so that each of the 8 × 8 squares is 24 px, the smallest "
+            f"the area check lets vote (`core/reliability.py` MIN_CELL_SIDE_PX): every verdict here is region by region, "
+            f"unlike the 16 smaller windows in the section above, whose squares were too small to vote. {len(rows)} "
+            f"windows, latitude {min(lats):.1f}-{max(lats):.1f}°. Verdicts: "
+            + ", ".join(f"{v} {n}" for v, n in verd.most_common()) + f"; **accepted {len(acc)}/{len(rows)}**"
+            + (f"; verified squares per accepted window {min(ver)}-{max(ver)} of 64 (median {st.median(ver):g})" if ver else "")
+            + (f"; held-out median of the accepted windows above an inlier ratio of 0.5: {_rng(min(med), max(med), '.2f')} px "
+               f"= {_rng(min(med) * g, max(med) * g, '.0f')} m on the 100 m WAC grid ({len(med)} windows)" if med else "")
+            + (f". Registration {sum(secs) / 60:.1f} min on the laptop CPU" if secs else "")
+            + ". Reported only here, never merged with the counts above.")
+    return section_pairs("IIRS → LRO WAC, the whole strip, region by region (cross-mission, multi-modal)", rows, note)
+
+
+def section_dtm(rows, reg):
+    """TMC-2 fore -> aft with both images orthorectified on the pass's DTM (ops/ortho_tmc.py), beside
+    the same four windows without it."""
+    if not rows:
+        return []
+    by = {r["pair_id"]: r for r in reg}
+    gp = {r["pair_id"]: _jsonfile(ROOT / "data" / "pairs" / r["pair_id"] / "geometry_prior.json") or {} for r in rows}
+    acc, before = _accepted(rows), []
+    L = ["## Relief: TMC-2 fore → aft orthorectified on the pass's DTM (same sensor)", "",
+         f"The four windows of the real viewpoint test above, cut again with both images orthorectified "
+         f"(`ops/ortho_tmc.py`): the archive lattice already carries terrain at its 100-px nodes (its label: "
+         f"reference data SELENE), so each pixel is moved by the relief BETWEEN the nodes - ISRO's TMC-2 DTM of the "
+         f"same pass (`{(gp[rows[0]['pair_id']].get('orthorectification') or {}).get('dtm')}`, ~10 m posting; its label "
+         f"gives a height RMSE of 63 m against SELENE) minus that DTM interpolated between the nodes - times the "
+         f"tangent of each camera's emission, toward the spacecraft (geometry from the pass's orbit file). The DTM is "
+         f"made from this pass's own stereo, so this measures what the pipeline does once ISRO's terrain model is "
+         f"applied - the workflow SAC would run - not an independent height check. Same instrument, same Sun: NOT "
+         f"cross-sensor.", "",
+         "| window | relief in window, p1-p99 (m) | without the DTM: verdict, inlier ratio, held-out median px | "
+         "with the DTM: verdict, inlier ratio, held-out median px | verified squares without / with |",
+         "|---|---|---|---|---|"]
+    for r in rows:
+        base_id = r["pair_id"].replace("_dtm_", "_")
+        b = by.get(base_id)
+        o = (gp[r["pair_id"]].get("orthorectification") or {})
+        if b:
+            before.append(b)
+
+        def cell(x):
+            return (f"{x['verdict']}{' (fallback)' if 'fallback' in (x.get('method_declared') or '') else ''}, "
+                    f"{_f(x['inlier_ratio'])}, {_f(x.get('residual_median_px'))}")
+        L.append(f"| `{r['pair_id']}` | {o.get('dtm_relief_in_window_m_p1_p99', 'n/a')} | {cell(b) if b else 'n/a'} | "
+                 f"{cell(r)} | {b['verified'] if b else 'n/a'} / {r['verified']} |")
+    L += ["", f"Accepted: **{len(_accepted(before))}/{len(before)} without the DTM, {len(acc)}/{len(rows)} with it.**", ""]
+    return L
+
+
 def section_finder(d):
     """ops/find_reference.py on Site N's OHRC frame: the search that found Site N by hand, as a tool."""
     target = "ch2_ohr_ncp_20250612T2031048828_d_img_d18"
@@ -422,6 +523,21 @@ def section_finder(d):
     hit = [k for k, r in enumerate(cands, 1) if r["id"] in used]
     L += ["", f"The three images Site N's evidence uses (the next orbit's OHRC, TMC-2 `20200607T2239`, LRO NAC "
               f"`M1282456834RE`) rank {', '.join(str(k) for k in hit)} of {len(cands)}." if hit else "", ""]
+    # 3 Oct 2026: the same search over the whole OHRC archive (ops/reference_index.py), read from its
+    # committed output; the console looks frames up in the same file.
+    idx = _jsonfile(ROOT / "evaluation" / "reference_index.json")
+    if idx:
+        from ops.reference_index import summary
+        s = summary(idx)
+        L += [f"**The whole OHRC archive** (`ops/reference_index.py` -> `evaluation/reference_index.json`, generated at "
+              f"`{idx.get('commit')}`; the console searches the same file): all {s['n']} OHRC observations in PRADAN's "
+              f"catalogue, each ranked against every image covering at least {idx['min_overlap']:.0%} of it. "
+              f"**{s['other_orbit_within_5']} of {s['n']}** have an image from ANOTHER orbit lit within 5° of their Sun "
+              f"({s['other_orbit_within_10']} within 10°); counting images taken alongside on the same pass "
+              f"(TMC-2, IIRS), {s['within_5']} do. The best partner is another OHRC observation for "
+              f"{s['best_instrument'].get('OHRC', 0)}, TMC-2 for {s['best_instrument'].get('TMC-2', 0)}, IIRS for "
+              f"{s['best_instrument'].get('IIRS', 0)} and an LRO NAC for {s['best_instrument'].get('LRO NAC', 0)} "
+              f"(the NAC list is only what this machine knows, so that count is a floor).", ""]
     return L
 
 
@@ -933,7 +1049,14 @@ def main(argv=None):
     strip = sorted([r for r in reg if r["pair_id"].startswith("strip_")], key=lambda r: r["pair_id"])
     # IIRS onto the LRO WAC global mosaic (section_wac): its own evidence too, kept out of every count.
     wac = sorted([r for r in reg if r["pair_id"].startswith("wac_")], key=lambda r: r["pair_id"])
-    reg = [r for r in reg if not r["pair_id"].startswith(("strip_", "wac_"))]
+    # 3 Oct 2026, evening: three more pieces of evidence, each its own section and kept out of every
+    # count - TMC-2 -> SELENE TC every window at SAC's site, the whole IIRS strip onto WAC region by
+    # region, and the fore/aft windows orthorectified on the pass's DTM.
+    tcmap = sorted([r for r in reg if r["pair_id"].startswith("tcmap_")], key=lambda r: r["pair_id"])
+    wacstrip = sorted([r for r in reg if r["pair_id"].startswith("wacstrip_")], key=lambda r: r["pair_id"])
+    dtm = sorted([r for r in reg if r["pair_id"].startswith("sac_tmcfore_tmcaft_dtm_")], key=lambda r: r["pair_id"])
+    sep = [r for r in reg if r["pair_id"].startswith(("strip_", "wac_", "wacstrip_", "tcmap_", "sac_tmcfore_tmcaft_dtm_"))]
+    reg = [r for r in reg if r not in sep]
     loops = [r for r in latest.values() if r["pair_id"].startswith("loop_") and not r["pair_id"].startswith("loop_siten")]
     site_loops = [r for r in latest.values() if r["pair_id"].startswith("loop_siten")]
     # The commit that RENDERED this file and the commit(s) the evidence rows were MEASURED at are
@@ -1082,6 +1205,8 @@ def main(argv=None):
     L += section_chain(reg, d)
     L += section_strip(strip, d)
     L += section_wac(wac, reg)
+    L += section_wacstrip(wacstrip)
+    L += section_tcmap(tcmap)
     L += section_site_n(reg, site_loops)
     fa = sorted([r for r in reg if _kind(r) == "tmc2-tmc2"], key=lambda r: r["pair_id"])
     if fa:
@@ -1090,6 +1215,7 @@ def main(argv=None):
                            "(~50°). Relief parallax between the two (~0.93 × height) is not a homography - "
                            "compare with the synthetic parallax rows below. Same sensor - NOT cross-sensor. "
                            f"Reference (aft) grid {fa[0]['ref_gsd_m']} m, source (fore) {fa[0]['src_gsd_m']} m.")
+        L += section_dtm(dtm, fa)
     mm = [r for r in reg if _kind(r) == "tc-mi"]
     if mm:
         L += section_pairs("Kaguya TC → Kaguya MI (cross-sensor; 749 nm visible and 1548 nm infrared)",
@@ -1288,6 +1414,45 @@ def main(argv=None):
                     r_flag = sum(float(r["planted_residual_median_px"]) > thr for r in big)
                     L += ["", f"Planted errors of 5 m or more: the residual threshold flags **{r_flag} of {len(big)}**; "
                               f"the area check flags **{a_flag} of {len(big)}**."]
+            L.append("")
+        # 3 Oct 2026: the visible-infrared population, from its own CSV (ops.trust_real_calibration --ir).
+        ir = _rows(TRUST_IR)
+        if ir:
+            wins = sorted({r["pair_id"] for r in ir})
+            nccs = [float(r["ncc_true"]) for r in ir if r.get("ncc_true")]
+            trs = [float(r["true_residual_median_px"]) for r in ir
+                   if r.get("true_residual_median_px") not in (None, "", "None")]
+            thr = max(trs) if trs else None
+            by = defaultdict(list)
+            for r in ir:
+                by[float(r["displacement_px_planned"])].append(r)
+            gs = sorted({float(r["gsd_ref_m"]) for r in ir})
+            L += [f"### Visible against infrared (TMC-2 → IIRS 1555 nm, two orbits): {len(wins)} windows", "",
+                  f"The same planted test where the two images are in different bands: TMC-2 (visible) onto IIRS at "
+                  f"1555 nm. |NCC| of the true alignment {min(abs(v) for v in nccs):.2f}-{max(abs(v) for v in nccs):.2f}. "
+                  f"The IIRS grid is {_rng(gs[0], gs[-1], '.2f')} m, so the planted shifts are set in its pixels (own seed "
+                  f"stream and file, `{TRUST_IR.name}`; the populations above are untouched)."
+                  + (f" Residual threshold **{thr:.2f} px**: the loosest these windows' own registrations need." if thr else ""),
+                  "", "| planted error (IIRS px) | ~m | trials | flagged as wrong | mean verified cells /64 |"
+                  + (" residual check: median held-out residual (px) | flagged by the residual threshold |" if thr else ""),
+                  "|---|---|---|---|---|" + ("---|---|" if thr else "")]
+            for v in sorted(by):
+                t = by[v]
+                rate = sum(r["contradicted"] == "True" for r in t) / len(t)
+                row = (f"| {v:g} | {st.median(float(r['displacement_m']) for r in t):.0f} | {len(t)} | {rate:.1%} | "
+                       f"{st.mean(float(r['verified']) for r in t):.1f} |")
+                if thr:
+                    pres = [float(r["planted_residual_median_px"]) for r in t
+                            if r.get("planted_residual_median_px") not in (None, "", "None")]
+                    row += (f" {st.median(pres):.2f} | {sum(x > thr for x in pres) / len(pres):.1%} |" if pres else " n/a | n/a |")
+                L.append(row)
+            big = [r for r in ir if float(r["displacement_px_planned"]) >= 5]
+            if big and thr:
+                a_flag = sum(r["contradicted"] == "True" for r in big)
+                r_flag = sum(float(r["planted_residual_median_px"]) > thr for r in big
+                             if r.get("planted_residual_median_px") not in (None, "", "None"))
+                L += ["", f"Planted errors of 5 IIRS pixels or more: the residual threshold flags **{r_flag} of "
+                          f"{len(big)}**; the area check flags **{a_flag} of {len(big)}**."]
             L.append("")
         nt = [r for r in tr if (r.get("kind") or "translation") != "translation"]
         if nt:
@@ -1552,7 +1717,10 @@ def main(argv=None):
           f"{len(loops) + len(site_loops)} loops + "
           + (f"{len(strip)} windows of one whole strip (their own section) + " if strip else "")
           + (f"{len(wac)} IIRS → LRO WAC windows (their own section) + " if wac else "")
-          + f"{len(latest) - len(reg) - len(strip) - len(wac) - len(loops) - len(site_loops)} withdrawn (INVALIDATED). Rows in results_log.csv: "
+          + (f"{len(wacstrip)} windows of the whole IIRS strip onto WAC + " if wacstrip else "")
+          + (f"{len(tcmap)} TMC-2 → SELENE TC windows + " if tcmap else "")
+          + (f"{len(dtm)} DTM-orthorectified fore/aft windows (each its own section) + " if dtm else "")
+          + f"{len(latest) - len(reg) - len(sep) - len(loops) - len(site_loops)} withdrawn (INVALIDATED). Rows in results_log.csv: "
           f"{len(log)}.", ""]
     OUT.write_text("\n".join(L), encoding="utf-8")
     print(f"wrote {OUT} ({len(L)} lines)")
