@@ -59,7 +59,7 @@ transform; held-out errors are on the 20 % of matches the fit never saw.
 | **Scale** | OHRC → Kaguya TC, 29.6×: 3 of 4 accepted, one of them on dense evidence (0.55 px = 4.0 m on TC's 7.4 m grid) and two on 1 and 7 verified cells. TMC-2 → IIRS, about 16×: every window on two orbits | *Scale rung*; *TMC-2 → IIRS* |
 | **Multi-modal** (visible → infrared) | TMC-2 → IIRS at 999–3223 nm: **62 of 62** registrations, 16 places on two orbits in four infrared bands; at 1555 nm, held-out median 0.16–0.32 IIRS px per window = 13.9–27.3 m on IIRS's 73.85 and 83.67 m grids. A whole IIRS strip (1555 nm, 30.3–60.7°N) onto NASA's LRO WAC global map, every 19.2 km window, every one of the 8 × 8 squares voting: **44 of 49** accepted, 3 unconfirmed, 2 refused | *TMC-2 → IIRS*; *IIRS → LRO WAC, the whole strip* |
 | **Cross-mission** | TMC-2 onto the SELENE (Kaguya) TC ortho map at SAC's own site, every 2.84 km window along 88 km of one pass, none chosen: **31 of 31**; the two archives disagree by a steady 287 m (median), which each registration removes | *TMC-2 → SELENE TC ortho map at SAC's site* |
-| **Accuracy against independent points** | 60 check points clicked by hand on 6 OHRC → LRO NAC windows, with a tool that never reads a registration: our transform lands **1.7–2.4 m RMSE** from them (1.46–2.56 px on the NAC grids), at the clicking precision (1.47 m median, from repeat clicks); Chandrayaan-2's own archive georeference misses the same points by 2.9–15.1 m. Not sub-pixel: the check cannot resolve finer than the clicks | *Independent check points* |
+| **Accuracy against independent points** | 60 check points clicked by hand on 6 OHRC → LRO NAC windows, with a tool that never reads a registration: our transform lands **1.7–2.4 m RMSE** from them (1.46–2.56 px on the NAC grids), at the clicking precision (1.47 m median, from repeat clicks); the placement the windows were cut at - the archives' geometry after the corrections the cut applies, so not Chandrayaan-2's raw georeference - misses the same points by 2.9–15.1 m. Not sub-pixel: the check cannot resolve finer than the clicks | *Independent check points* |
 | **OHRC, TMC and IIRS** | One site at 60.7°N with the Suns matched: OHRC → TMC-2 **10 of 10**, OHRC → LRO NAC 5 of 5, NAC → TMC-2 4 of 4. The chain OHRC → NAC → TMC-2 meets the direct OHRC → TMC-2 with a loop RMS of 1.99 m (median of 4 windows, max 4.04 m; consistency, not accuracy). IIRS onto that same TMC-2 pass, along the strip at 51.7–60.7°N rather than on the site's windows: 30 of 30 | *One site, every camera (Site N)* |
 | **Viewpoint** | OHRC → OHRC of the next orbit, viewing directions 40° apart, Sun within 2.2°: **8 of 8**, held-out median 0.91 px = 1.12 m on the 1.232 m grid. TMC-2 fore → aft, 50° apart: 1 of 4 (relief parallax, a measured limit); orthorectified first on ISRO's own TMC-2 DTM of the pass, 2 of 4 | *A real viewpoint test at Site N*; *Real viewpoint: TMC-2 fore → aft*; *Relief* |
 | **Sub-pixel, "of source image"** | Where the Chandrayaan-2 image is the coarser grid, in its own pixels: TMC-2 0.36–0.48 px = 1.6–2.2 m against a NAC (4.555 m grid); IIRS at 1555 nm 0.16–0.32 px = 13.9–27.3 m against TMC-2. OHRC → TMC-2 at the site above is 0.61–1.57 TMC-2 px = 3.2–8.1 m over 9 of its 10 windows (the 10th, at an inlier ratio of 0.48, is not quoted), so not every window is sub-pixel. Where OHRC is finer than its reference, the reference grid bounds it: 0.41–1.01 NAC px = 0.51–0.94 m at 74 °S, which is 2.0–3.7 OHRC px | *Sub-pixel accuracy, with the pixel grid named* |
@@ -99,7 +99,9 @@ measured. We planted wrong answers of known size into 30 real windows, in two Su
 that are never pooled (*Trust layer on real imagery*). For shifts:
 
 - **no false alarm** in 44 correct trials with the Suns within 10°, or in 16 with them
-  132–174° apart;
+  132–174° apart (a control: these windows were chosen because the check agreed with them, so
+  this shows the verdict is stable, not a false-alarm rate on unseen windows; on windows nobody
+  chose, the real Sun sweep refused 2 of the 53 it judged right, both at 60–120°);
 - **every 5 m shift flagged** with the Suns within 10°, and every 10 m shift with them 132–174°
   apart;
 - at 2 m or less almost nothing is caught. That is the floor, and we report it.
@@ -256,6 +258,9 @@ pairs.
 
 What these do not cover:
 
+- The false-alarm rows re-check windows chosen because the check agreed with them (step 1 of
+  `ops/trust_real_calibration.py`), so they bound instability, not false alarms on unseen windows.
+  For those, the real Sun sweep: 2 of the 53 windows it judged right were refused.
 - The planted errors are translations. Rotations and scale changes are caught cell by cell, not
   by the frame verdict (above).
 - The real sweep is judged by image evidence (|NCC| ≥ 0.30), not ground truth. Only one of the 54

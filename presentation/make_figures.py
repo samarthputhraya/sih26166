@@ -462,7 +462,9 @@ def _panel_lines(pair: str) -> list[str]:
     if g.get("benchmark"):
         lines += ["SAC's own pair", f"Sun azimuths {g['d_sun_azimuth_deg']:.0f}° apart"]
     elif "infrared" in (r.get("band") or ""):
-        lines += ["visible ↔ near-infrared", "(multi-modal)"]
+        # 4 Oct: a third cold reader took "(multi-modal) ... refused" beside slide 2's MULTI-MODAL 62/62
+        # to mean multi-modal fails; the panel now names the cameras, Kaguya's own, not Chandrayaan-2's.
+        lines += ["Kaguya's own cameras,", "visible ↔ infrared"]
     else:
         lines += [g.get("terminology", "")]
     return lines
@@ -554,7 +556,8 @@ def fig_trust_map():
                f"fallback {_fallback_vs_visible_m(pair)} m from\nthe visible-band fit",
                fontsize=11, color=INK)
         else:
-            at(tx, vy, f"{counts['verified']} of {n_cells} verified,\n{counts['weak']} weak → accepted",
+            # 4 Oct: "6 weak -> accepted" read as "unconfirmed squares accepted" (generalist reader).
+            at(tx, vy, f"{counts['verified']} of {n_cells} verified\n→ accepted",
                fontsize=12, fontweight="bold", color="#146b3c")
 
     # Legend: the same three marks the app draws, on a flat grey swatch, produced by the same
@@ -875,8 +878,10 @@ def fig_trust_real():
             + ", OHRC→NAC and NAC→NAC")
     # "every planted match agrees with the wrong answer" was a phrase a cold reader could not
     # decode (2 Oct); slide 5 now says it the same way as this line.
-    fig.text(0.008, 0.008, f"{wins}\n0 m = false-alarm rate · the planted matches fit the "
-             f"wrong answer", fontsize=11, color=MUTED, linespacing=1.25, va="bottom")
+    # 4 Oct (claim-check): the 0 m trials re-check windows chosen because the check agreed, so they are
+    # a control, not a false-alarm rate on unseen windows; the deck quotes the real Sun sweep for that.
+    fig.text(0.008, 0.008, f"{wins}\n0 m = control (right answer) · the planted matches fit the wrong "
+             f"answer", fontsize=11, color=MUTED, linespacing=1.25, va="bottom")
     fig.tight_layout(rect=(0, 0.115, 1, 1))
     out = OUT / "fig6_trust_real_calibration.png"
     _audit(fig, out.name)
@@ -1164,10 +1169,9 @@ def fig_site_n():
     arrow(left + bw + gap, bot - bh / 2, right - gap, bot - bh / 2)
     text(W / 2, bot - bh - 0.16, f"{ti_acc}/{len(ti)} accepted · {len(bands)} infrared bands (multi-modal)")
     text(W / 2, bot - bh - 0.34, f"IIRS windows along this TMC-2 pass, {min(lats):.1f}–{max(lats):.1f}°N")
-    # The loop: median AND max, and what it is.
-    text(0.04, 0.31, f"Loop via NAC vs direct, {len(loops)} windows: median {np.median(rms):.2f} m, "
-                     f"max {max(rms):.2f} m (consistency, not accuracy)", colour=DECK_ACCENT, ha="left")
-    text(0.04, 0.12, "Ranges: per-window held-out medians (matches the fit never saw), inlier ratio > 0.5",
+    # 4 Oct: the loop line ("Loop via NAC vs direct ... consistency, not accuracy") dropped - both final
+    # cold readers stopped reading there; the loop's median and max stay in REPORT and the README.
+    text(0.04, 0.22, "Ranges: per-window held-out medians (matches the fit never saw), inlier ratio > 0.5",
          colour=MUTED, ha="left")
     text(0.04, H - 0.16, f"One site, {site}, and its TMC-2 pass: Suns matched, every leg checked",
          fs_title, "bold", ha="left")

@@ -190,6 +190,14 @@ def crop_and_check(printed: pathlib.Path, final: pathlib.Path) -> int:
             fam = _family(buf)
             if fam and fam != "Calibri":
                 problems.append(f"page {i + 1}: printed in {fam}, not Calibri - export again")
+        # A ligature printed through "Microsoft Print to PDF" can come back as the wrong character in
+        # the text layer - "aft" extracted as "a" + U+014C (final cold read, 4 Oct) - and the text layer
+        # is what a screener's extraction reads. Latin Extended and private-use characters are never in
+        # our text, so any of them is a garbled glyph: reword the slide.
+        odd = sorted({c for c in page.get_text() if 0x100 <= ord(c) <= 0x24F or 0xE000 <= ord(c) <= 0xF8FF})
+        if odd:
+            problems.append(f"page {i + 1}: garbled text layer ({', '.join(f'U+{ord(c):04X}' for c in odd)})"
+                            " - reword the word PowerPoint ligates")
     # Printing to PDF drops PowerPoint's hyperlinks, so a judge reading the PDF could not click the
     # addresses on slides 3 and 6. Put the links back over the printed text (v11, 2 Oct).
     n_links = 0

@@ -482,15 +482,18 @@ HOW_ROWS = [
     # strongest measured line. SUN merges azimuth and elevation (both readers: elevation was missing).
     # REPORT "SAC's own benchmark pair (equatorial ...)" 6 agrees; "Classical matchers on the same
     # windows" first row, SIFT/ORB/AKAZE 0/6; "Sun azimuth and elevation, on SAC's own frame" 61/71.
-    ("SUN", GREEN, "6/6 at 174°", f" on SAC's pair [1], classical 0/6; Sun 41.7° higher: 61/71"),
+    # Final read (4 Oct): both readers asked "61 of 71 what?" - the noun is now there.
+    ("SUN", GREEN, "6/6 at 174°", f" on SAC's pair [1], classical 0/6; Sun up to 41.7° higher: 61/71 windows"),
     # "Independent check points": ours 1.69-2.39 m RMSE over 6 OHRC -> NAC windows x 10 points. AMBER:
-    # 1.5-2.6 px on the NAC grid is not sub-pixel (claim-check v12 #5; slide 4 says so).
-    ("ACCURACY", AMBER, "1.7–2.4 m", f" RMSE, OHRC{_TO}NAC, on 60 hand-clicked check points"),
+    # 1.5-2.6 px on the NAC grid is not sub-pixel (claim-check v12 #5; slide 4 says so). "click
+    # precision": the same section, "one click's precision is a median 1.47 m on the reference" - the
+    # SAC reader's first Q&A question was how much of the RMSE is the clicking (4 Oct).
+    ("ACCURACY", AMBER, "1.7–2.4 m", " RMSE, 60 hand-clicked check points; click precision 1.5 m"),
     # "TMC-2 -> SELENE TC ortho map at SAC's site, every window": accepted 31/31.
-    ("CROSS-MISSION", GREEN, "31/31", f" TMC-2{_TO}Kaguya TC at SAC's site, every window"),
+    ("CROSS-MISSION", GREEN, "31/31", f" TMC-2{_TO}Kaguya TC, every window"),
     # "TMC-2 -> IIRS" both orbits beyond 850 nm 62/62; "IIRS -> LRO WAC, the whole strip, region by
     # region": accepted 44/49.
-    ("MULTI-MODAL", GREEN, "62/62", f" TMC-2{_TO}IIRS infrared; whole IIRS strip onto NASA's map: 44/49"),
+    ("MULTI-MODAL", GREEN, "62/62", f" TMC-2{_TO}IIRS infrared; IIRS strip onto NASA's map: 44/49"),
 ]
 
 
@@ -531,7 +534,7 @@ def slide2(s):
     # How it addresses the problem: the three PS axes, one measured line each.
     cy = 4.50
     _tab(s, L, cy, H[2])
-    cw1 = 4.30
+    cw1 = 4.55          # 4 Oct: "61/71 windows" needs the width; the innovation card had room to spare
     _box(s, L, cy + 0.38, cw1, 6.85 - cy - 0.38, fill=FILL_GREY, line=LINE_GREY, name="card-how")
     rows = HOW_ROWS
     for k, (label, colour, bold, rest) in enumerate(rows):
@@ -557,8 +560,13 @@ def slide2(s):
           [P(R("A failure detector, calibrated on real data.", 13, True, INK))], name="inn-lead")
     # v12 final: the false-alarm count now spans both populations - "Trust layer ...": 0% at d = 0 in the
     # 30 visible windows and in the 16 "Visible against infrared" windows (46 = 30 + 16).
-    for k, (num, lab) in enumerate((("0", f"false alarms on correct answers, 46{NBSP}real{NBSP}windows"),
-                                    ("100%", "of 1,056 planted shifts ≥ 5 m caught, Suns within 10°"))):
+    # Final claim-check (4 Oct): the d = 0 trials re-check windows CHOSEN because the check agreed, so
+    # "0 false alarms" was close to true by construction. The card now pairs the two checks on the
+    # same 1,056 ("Planted errors of 5 m or more: the residual threshold flags 0 of 1056; the area
+    # check flags 1056 of 1056"), and the body quotes right answers refused on windows nobody chose
+    # for agreeing: "Real sun-angle sweep", correct but refused 1 + 1 of 51 accepted + 2 (all bins).
+    for k, (num, lab) in enumerate((("100%", "of 1,056 planted shifts ≥ 5 m caught, Suns within 10°"),
+                                    ("0%", "by the usual residual check, same shifts"))):
         ry = cy + 0.80 + k * 0.42
         _text(s, ix + 0.14, ry, 0.86, 0.40, [P(R(num, 24, True, ACCENT))], anchor="m", name="inn-num")
         _text(s, ix + 1.02, ry, RIGHT - ix - 1.16, 0.40, [P(R(lab, 12, False, MUTED))], anchor="m",
@@ -571,8 +579,8 @@ def slide2(s):
     # they are. "Visible against infrared": flagged at 5 px and 10 px (IIRS pixels). The opposite-Sun
     # head-to-head moved to the SUN row ("classical 0/6") and slide 4.
     _text(s, ix + 0.14, cy + 1.68, RIGHT - ix - 0.28, 0.62,
-          [P(R("The usual residual check flags none of them. ", 12, True, INK),
-             R("Visible against infrared: 86% caught at 5 px, 99% at 10 px.", 12, False, INK))],
+          [P(R("Right answers refused: 2 of 53, real Sun sweep. ", 12, True, INK),
+             R("Visible vs infrared: 86% of 5-pixel shifts caught, 99% of 10 (IIRS pixels).", 12, False, INK))],
           name="inn-body")
 
     # The trust map itself: SAC's OHRC -> NAC w06 (accepted) above Kaguya TC -> MI 1548 nm w01
@@ -671,8 +679,13 @@ def slide3(s):
          name="hardware")
 
     # The working prototype (pointer: "Flow Charts/Images/ working prototype"): the published
-    # console on a laptop, and the same page on a phone in Hindi (fig8, composed 2 Oct from two
-    # screenshots of web/dist/site). The caption is the address, so a judge can open it.
+    # console's result for SAC's pair (fig8). 4 Oct: both final cold readers could not read the whole
+    # laptop page with a phone inset at this size, so fig8 is now the result panel alone, cropped
+    # (552, 92, 1960, 972) from a 1600 x 1000 capture at 1.25x of web/dist/site after clicking the
+    # first saved result. The facts list and the per-square panel were hidden before the capture:
+    # they carry the cached run's counts and seconds (4,182 inliers, 8.4 s), which differ from the
+    # logged row (4,179, 8.6 s), and only REPORT's figures go on a slide (REPORT prints 58 / 0 and
+    # "all 6"). The "Try it" line names the phone and Hindi. The caption is the address.
     pic = _pic(s, "fig8_console.jpg", 0, ty, h=2.40, border=LINE_GREY)
     if pic is not None:
         pic.left = Inches(RIGHT) - pic.width
@@ -699,34 +712,33 @@ SCORECARD = [
     # "SAC's own benchmark pair (equatorial ...)" 6 agrees; "Sun azimuth and elevation ..." opposite table.
     # v12: and "Classical matchers ...": SIFT, ORB, AKAZE 0/6 each on the same windows.
     # v12 final: azimuth and elevation in one row (the freed row carries cross-mission).
-    ("Sun angle", f"SAC's pair [1], Suns 174° apart: 6/6 (SIFT,{NBSP}ORB,{NBSP}AKAZE 0/6); Sun 41.7° higher: 61/71",
+    ("Sun angle", f"SAC's pair [1], Suns 174° apart: 6/6 (SIFT/ORB/AKAZE 0/6); Sun up to 41.7° higher: 61/71",
      GREEN),
     # "Sun azimuth and elevation, on SAC's own frame": the near-azimuth table, its totals line.
     # "A real viewpoint test at Site N": agrees / windows, angle apart, held-out median, and its grid
     # (v11c: a cold reader took the 1.12 m for SAC's 1.12 m NAC grid of paper [1], 2 Oct).
-    ("Viewpoint", f"OHRC → OHRC, next orbit, 40° apart: 8/8, held-out median 1.12 m", GREEN),
+    ("Viewpoint", f"OHRC → OHRC, 40° apart: 8/8, held-out median 1.12 m", GREEN),
     # "Scale rung" 3 agrees of 4; "TMC-2 -> IIRS" scale column 16.2x, every window on both orbits.
-    # v11c names the 29.6× rung's source ("from which sensor?", cold read, 2 Oct).
+    # v11c names the 29.6× rung's source ("from which sensor?", cold read, 2 Oct). 4 Oct (claim-check):
+    # of the 3, only w01 is on dense evidence (0.55 px); w02 and w03 rest on 1 and 7 verified cells.
     ("Scale", f"16×{NBSP}TMC-2{_TO}IIRS: 62/62; 4.2×{NBSP}OHRC{_TO}TMC-2: 10/10; "
-              f"29.6×{NBSP}OHRC{_TO}Kaguya{NBSP}TC: 3/4", GREEN),
+              f"29.6×{NBSP}OHRC{_TO}Kaguya{NBSP}TC: 3/4 windows (1 strong)", GREEN),
     # "TMC-2 -> IIRS", both orbits: bands beyond 850 nm, windows accepted. (v11c: "16 places" cut to pay
     # for the words added on this slide.)
     # v12: "IIRS -> LRO WAC global mosaic": accepted 12/16 (cross-mission; its own section, not in the
     # 406 windows).
     # v12 final: "IIRS -> LRO WAC, the whole strip, region by region": 44/49, every 8x8 square voting -
     # replaces the 16 small windows' 12/16 on a whole-frame check (claim-check #7 and the cold readers).
-    ("Multi-modal", f"TMC-2{_TO}IIRS infrared: 62/62; whole IIRS strip onto NASA's WAC map: 44/49",
+    ("Multi-modal", f"TMC-2{_TO}IIRS infrared: 62/62; IIRS strip onto NASA's WAC map: 44/49",
      GREEN),
     # "TMC-2 -> SELENE TC ortho map at SAC's site, every window": 31/31 over 31 x 2.84 km.
-    ("Cross-mission", f"TMC-2{_TO}Kaguya TC at SAC's site, every window over 88 km: 31/31", GREEN),
+    ("Cross-mission", f"TMC-2{_TO}Kaguya TC, every window over 88 km: 31/31", GREEN),
     # "One site, every camera ... (Site N)": OHRC -> TMC-2 from the legs table; then "TMC-2 -> IIRS" on
     # that TMC-2's own orbit (20200607), its four infrared bands' "windows accepted" summed: 8 + 8 + 8 +
     # 6 = 30/30. v11 ended this row "chain via NAC meets direct within 2.0 m": false - the loop's median
     # is 1.99 m, its max 4.04 m, and 2 of its 4 windows are above 2.0 m (audit, 2 Oct). v11c drops the
     # two NAC legs (5/5, 4/4): fig10 beside the row draws both, and the row names the three cameras.
     # Arrows are no-break, so no instrument is cut from its arrow.
-    ("OHRC, TMC, IIRS", f"One site, Suns matched: OHRC{_TO}TMC-2 10/10, IIRS{_TO}TMC-2 30/30",
-     GREEN),
     # "Sub-pixel accuracy ... / In the Chandrayaan-2 image's own pixels" (the PS asks for the accuracy
     # "of source image"): NAC <-> TMC-2 at SAC's site, TMC-2 <-> IIRS 1555 nm on orbit 20200607, and
     # OHRC -> NAC at 74 S in OHRC pixels - OHRC is finer than any reference, so it is not sub-pixel in
@@ -735,16 +747,32 @@ SCORECARD = [
     # paper's SuperGlue number is in-sample, ours are held-out, and the two are not the same measure.
     # v11c names each number's partner: both cold readers found TMC-2's accuracy given three ways on
     # this slide (here, and fig10's two Site N legs on another TMC-2 frame), 2 Oct.
-    ("Sub-pixel, own pixels", f"Held-out medians: TMC-2 vs NAC 0.36–0.48 px{_EQ}1.6–2.2 m; IIRS 1555 nm vs TMC-2 "
-                  f"0.16–0.32 px{_EQ}13.9–27.3 m; OHRC, finer than NAC, 2.0–3.7 px{_EQ}0.51–0.94 m", AMBER),
+    # Final read (4 Oct): both readers stopped at the bare "OHRC ... 2.0-3.7 px" beside an amber dot and
+    # read it as the brief failed; the row now says why (REPORT: "the finer: bounded by the reference
+    # grid"). Same numbers.
+    # Second final read (4 Oct): both readers stopped at the one row that mixed three sensors and two
+    # units, and one asked why 4.5 m TMC-2 pixels sat beside fig10's 5.173 m grid (two TMC-2 frames). So
+    # the row is split: what is met (TMC-2 and IIRS, in their own pixels, GREEN) and what cannot be
+    # (OHRC's 0.25 m pixel against a ~0.93 m NAC: "the finer: bounded by the reference grid", AMBER,
+    # with its reference-grid medians from the 74 S rows of the same section, 0.41-1.01 px = 0.51-0.94 m).
+    # The "OHRC, TMC, IIRS" row it replaces repeated fig10, which stands beside it (the reader also
+    # could not reconcile its 30/30 with 62/62 and 58/58).
+    ("Sub-pixel: TMC-2, IIRS", "Held-out medians in their own pixels: TMC-2 0.36–0.48 px (1.6–2.2 m); "
+                               "IIRS 1555 nm 0.16–0.32 px (13.9–27.3 m)", GREEN),
+    ("Sub-pixel: OHRC", "OHRC's 0.25 m pixel is finer than its NAC reference can check: 0.51–0.94 m, "
+                        "0.41–1.01 NAC px", AMBER),
     # "Runtime and match distribution": grid coverage, and the delivered uniform set.
-    ("Uniform spread", "Inliers in ≥95% of 8×8 cells, 17/20 windows; reports: RMSE, inlier count, inlier "
-                       "ratio", GREEN),
+    ("Uniform spread", "Inliers in ≥95% of 8×8 cells, 17/20 windows; reports RMSE, inlier "
+                       "count, ratio", GREEN),
     # v12: "Independent check points": 6 windows x 10 points, ours 1.69-2.39 m RMSE, the archive prior
     # 2.9-15.1 m. Replaces v11's "Deliverables" row (slide 3's outcome box names the GeoTIFF, control
     # points and trust map); the cold readers' "RMSE appears nowhere" is answered by a measured RMSE.
-    ("Check points", f"60 hand-clicked, OHRC{_TO}NAC: 1.7–2.4 m RMSE (1.5–2.6 NAC px); Chandrayaan-2's "
-                     "georeference 2.9–15.1 m", AMBER),
+    # 4 Oct: "one click 1.5 m" - the section's click precision (median 1.47 m on the reference). The
+    # "archive prior RMSE" column is NOT Chandrayaan-2's raw georeference: the cut already applies the
+    # NAC's 4 m correction (REPORT, Site N: "first moved (-29, -61) m into LRO's geometry"), so the
+    # row now calls it the placement before matching (claim-check, 4 Oct).
+    ("Check points", f"60 hand-clicked, OHRC{_TO}NAC: 1.7–2.4 m RMSE (1.5–2.6 NAC px), click precision 1.5 m; "
+                     "before matching 2.9–15.1 m", AMBER),
 ]
 RISKS = [
     # "Real sun-angle sweep" bins 60-90 and 90-120: 0 accepted of 7 + 5, none wrongly accepted; 1 failed
@@ -755,10 +783,12 @@ RISKS = [
      # uses rank 4, 7, 9.
      # v12 final: "Choosing the reference by its Sun", the whole-archive line: 208 of 300 OHRC
      # observations have a partner from another orbit within 5 deg ("Site N" was undefined, 3 Oct).
-     ("Choose the reference by its Sun", "Built: 208 of 300 OHRC frames have a partner within 5°")),
+     ("Choose the reference by its Sun", "Built: 208 of 300 OHRC frames: a partner within 5°")),
     # "Relief: TMC-2 fore -> aft orthorectified on the pass's DTM": 1/4 without, 2/4 with.
-    (("Relief parallax", "TMC-2 fore → aft, 50° apart: 1/4"),
-     ("DTM orthorectification", "Built: 2/4 on ISRO's DTM")),
+    # 4 Oct: "aft" printed through PowerPoint comes out as "a" + U+014C in the PDF's text layer (the
+    # "ft" ligature), which a screener's text extraction reads as garbage; the row avoids the word.
+    (("Relief parallax", "TMC-2 views 50° apart: 1/4 windows"),
+     ("DTM orthorectification", "Built: 2/4 windows on ISRO's DTM")),
 ]
 
 
@@ -877,9 +907,10 @@ def slide5(s):
     # REPORT, "The planted matches agree with the wrong transform perfectly in every trial".
     _text(s, L + 1.42, py + 0.10, 5.52, 1.32,
           [P(R("Why region by region", 13, True, ACCENT)),
+           # 4 Oct: both readers could not tell whether "left ... unverified" was good or bad.
            P(R("Rotation and scale errors move the corners, not the centre, and the matches fit the "
-               "wrong answer perfectly. With corners 3 m out, a whole-frame check refused none of 120 "
-               "trials; the 8×8 map left 62–63% of the squares moved over 2 px unverified.",
+               "wrong answer perfectly. With corners 3 m out, a whole-frame check caught none of 120 "
+               "trials; the 8×8 map flagged 62–63% of the squares that moved over 2 px.",
                12, False, INK), sb=2)],
           name="per-region-text")
 
@@ -948,8 +979,8 @@ REFS = [
 # (s2, s4) only as the rows they add up from - per band, per window - so "every figure comes from
 # REPORT.md" was not literally true (audit, 2 Oct). "Result": a grid size or a place is not one.
 # v12: the 3 Oct freeze re-ran every row at e38a69a; its report step wrote REPORT.md with that code.
-PROVENANCE = ("Every result is in REPORT.md, or a count or sum of its rows, measured at the freeze "
-              "commit 04ed5f6.")
+PROVENANCE = ("Every result is in REPORT.md, or a count or sum of its rows; REPORT.md is generated at "
+              "the freeze commit 04ed5f6.")
 
 
 def slide6(s):
