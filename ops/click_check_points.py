@@ -21,6 +21,9 @@ Keys: Enter accept the pair of clicks   Backspace remove the last accepted point
       q save and quit. Every accepted point is written immediately: nothing is lost on a crash.
 --repeat N re-shows N of your accepted points WITHOUT their markers; click both images again. Do it
 at least an hour after the first pass: the difference measures how precisely features are clicked.
+A yellow circle in the reference panels says WHICH feature to re-click: it is centred 1.5-3 px away
+from the old click in a fixed random direction, so it names the feature without giving away its centre
+(3 Oct 2026: without it, 2 of the first 3 repeats landed on a neighbouring crater).
 
 Writes evaluation/check_points/<pair_id>.csv (columns: evaluation.check_points.FIELDS).
 """
@@ -61,6 +64,11 @@ TARGETS = (
 )
 HALF_REF_ZOOM = 40          # reference px each side of the magnified view
 SOURCE_SPAN_M = 150.0       # metres each side of the archive-predicted source position
+HINT_RADIUS = 8.0           # reference px: the repeat pass's "this feature" circle
+HINT_OFFSET = (1.5, 3.0)    # reference px: how far the circle's centre is from the old click
+FIRST_HELP = "Click the feature in all four panels, then ACCEPT (button or Enter)."
+REPEAT_HELP = ("Top right: click the circled feature's exact centre. Bottom left: find it. Bottom right: "
+               "its exact centre. Then ACCEPT.")
 CONTRASTS = (("whole image", 2, 98, False), ("this view", 2, 98, True), ("this view, wide", 0.5, 99.5, True))
 
 
@@ -176,7 +184,18 @@ class Clicker:
             self.buttons.append((bax, b))
         if self.queue:
             self._next_repeat()
+        try:   # open filling the screen: at 125 % scaling the full-size figure ran off it (3 Oct 2026)
+            fig.canvas.manager.window.state("zoomed")
+        except Exception:  # noqa: BLE001 - headless backends have no window
+            pass
         self.draw()
+
+    def hint(self, row):
+        """Centre of the repeat pass's circle: 1.5-3 px from the old click, in a direction fixed by the
+        point's id, so the circle names the feature without marking its centre."""
+        rng = random.Random(f"{self.pair_id}:{row['point_id']}")
+        a, d = rng.uniform(0, 2 * np.pi), rng.uniform(*HINT_OFFSET)
+        return float(row["ref_x"]) + d * np.cos(a), float(row["ref_y"]) + d * np.sin(a)
 
     def _predict(self, u, v):
         return _apply(self.H_prior_inv, u, v)
@@ -186,7 +205,7 @@ class Clicker:
 
     def _next_repeat(self):
         r = self.queue[0]
-        self.ref_focus = (float(r["ref_x"]), float(r["ref_y"]))
+        self.ref_focus = self.hint(r)     # not the old click: the zoom's centre would give it away
         self.src_view = self.src_focus = self._predict(*self.ref_focus)
         self.ref_pt = self.src_pt = None
 
@@ -228,15 +247,20 @@ class Clicker:
         self._show(self.aSz, self.src, *self.src_focus, self.src_zoom_half,
                    "source, magnified - click the same centre", True, invert=self.invert, marks=smarks,
                    cur=self.src_pt, col="cyan")
-        mode = (f"REPEAT {len(self.queue)} left (re-click point {self.queue[0]['point_id']})" if self.queue
-                else f"{len(acc)} points saved")
+        if self.queue:
+            from matplotlib.patches import Circle
+            hx, hy = self.hint(self.queue[0])
+            for ax, lw in ((self.aR, 1.2), (self.aRz, 2.0)):
+                ax.add_patch(Circle((hx, hy), HINT_RADIUS, fill=False, color="yellow", lw=lw))
+        mode = (f"REPEAT {len(self.queue)} left: re-click the feature INSIDE THE YELLOW CIRCLE (top right), "
+                f"then find it below" if self.queue else f"{len(acc)} points saved")
         warn = ""
         if self.d_sun is not None and float(self.d_sun) > 90:
             warn = (f"\nSUNS {float(self.d_sun):.0f}° APART: shadows fall on OPPOSITE sides of every crater. Click a "
                     "crater's RIM CENTRE (between its bright and dark halves) or a boulder - never a dark shadow.")
         self.fig.suptitle(f"{self.pair_id} - {mode} - confidence {self.conf} - contrast: "
                           f"{CONTRASTS[self.contrast][0]}{' - source inverted' if self.invert else ''}\n"
-                          f"{self.msg or 'Click the feature in all four panels, then ACCEPT (button or Enter).'}"
+                          f"{self.msg or (REPEAT_HELP if self.queue else FIRST_HELP)}"
                           f"{warn}", fontsize=10, color="black")
         self.fig.canvas.draw_idle()
 

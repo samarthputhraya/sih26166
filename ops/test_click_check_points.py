@@ -70,6 +70,12 @@ def test_a_simulated_session_writes_points_and_repeats(tmp_path, monkeypatch):
 
     r = T.Clicker("t_w01", "tester", repeat=1)
     first = r.queue[0]["point_id"]
+    # the repeat circle names the feature without giving away the old click: its centre (and the zoom's)
+    # sits 1.5-3 px from it, the same every time for the same point
+    old = (float(r.queue[0]["ref_x"]), float(r.queue[0]["ref_y"]))
+    off = np.hypot(r.ref_focus[0] - old[0], r.ref_focus[1] - old[1])
+    assert T.HINT_OFFSET[0] <= off <= T.HINT_OFFSET[1]
+    assert r.hint(r.queue[0]) == r.ref_focus == r.hint(dict(r.queue[0]))
     r.on_click(ev(r.aRz, 21.0, 30.0))
     r.on_click(ev(r.aSz, 41.0, 61.0))
     r.accept()

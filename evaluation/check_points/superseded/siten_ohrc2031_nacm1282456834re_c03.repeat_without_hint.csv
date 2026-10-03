@@ -1,0 +1,4 @@
+point_id,src_x,src_y,ref_x,ref_y,repeat_of,confidence,feature,clicker,utc,src_sha12,ref_sha12
+p011,345.16,547.35,328.30,533.09,p009,2,,samartha,2026-10-03T08:42:16+00:00,3f3bf1e29f5e,5cecf8c20170
+p012,83.29,52.43,80.30,52.35,p001,2,,samartha,2026-10-03T08:42:25+00:00,3f3bf1e29f5e,5cecf8c20170
+p013,251.05,317.26,239.93,309.37,p006,2,,samartha,2026-10-03T08:42:58+00:00,3f3bf1e29f5e,5cecf8c20170
