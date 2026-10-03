@@ -86,12 +86,16 @@ BEATS = [
              "degrees: sixty-one of seventy-one windows accepted. Turned to the opposite side, and "
              "raised again: forty-eight of fifty-six."),
     dict(scene="calibration",
-         cap="We tested the checker too. Shifts planted in 30 real windows: no false alarms. With the "
-             "Suns close, every shift of 5 m or more was caught, all 1,056, while the usual residual "
-             "check caught none.",
-         say="We tested the checker too. We planted wrong shifts in thirty real windows. No false "
-             "alarms. With the Suns close together, every shift of five metres or more was caught, all "
-             "one thousand and fifty-six, while the usual residual check caught none."),
+         # 4 Oct claim-check: the planted test's 0 m trials re-check windows chosen because the check
+         # agreed, so "no false alarms" was a control, not a rate; the real Sun sweep's refusals of right
+         # answers on unchosen windows (REPORT "Real sun-angle sweep": 1 + 1 of 51 + 2) replace it.
+         cap="We tested the checker too. Shifts planted in 30 real windows: with the Suns close, every "
+             "shift of 5 m or more was caught, all 1,056, while the usual residual check caught none. "
+             "On windows nobody chose, it refused 2 of 53 right answers.",
+         say="We tested the checker too. We planted wrong shifts in thirty real windows. With the Suns "
+             "close together, every shift of five metres or more was caught, all one thousand and "
+             "fifty-six, while the usual residual check caught none. And on windows nobody chose, it "
+             "refused only two of fifty-three right answers."),
     dict(scene="limits",
          cap="And it says what it cannot do: visible against near-infrared, refused 3 of 3. Sun "
              "azimuths 60–120° apart: 0 of 12 accepted, and none accepted wrongly.",
