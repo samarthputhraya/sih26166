@@ -29,7 +29,7 @@ from web.panel import jpg, panel
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 DATA = pathlib.Path((ROOT / "data_path.txt").read_text(encoding="utf-8-sig").strip())
 HERE = pathlib.Path(__file__).resolve().parent
-FREEZE = "1bb630f"
+FREEZE = "04ed5f6"
 REPO = "https://github.com/samarthputhraya/sih26166"
 sys.path.insert(0, str(ROOT))
 
@@ -312,7 +312,7 @@ for _s in ("**accepted 31/31**", "(median 287 m)", "**accepted 44/49**", "agrees
            "Accepted: **1/4 without the DTM, 2/4 with it.**", "the residual threshold flags **0 of 1056**",
            "the area check flags **1056 of 1056**", "| 6 | 6/6 | 0/6 | 0/6 | 0/6 |", "| 56 | 48/56 | 0/56 | 0/56 | 0/56 |",
            "one click's precision is a median 1.47 m", "85.9%", "99.2%",
-           "**208 of 300** have an image from ANOTHER orbit lit within 5°"):
+           "**208 of 300** have an image from ANOTHER orbit lit within 5°", "median 13.3 s over the 89"):
     _printed(_s)
 if UNPRINTED:
     raise SystemExit("Site N values that REPORT.md does not print - regenerate REPORT.md or fix the "
@@ -339,11 +339,13 @@ def _finder():
             return _dt.datetime.fromisoformat(str(s).strip().replace("Z", "").replace(" ", "T")[:26])
         except ValueError:
             return None
+    # "same pass": taken within 30 min of the frame (TMC-2 and IIRS image alongside OHRC within
+    # minutes). Chandrayaan-2's orbit is ~118 min, so the next orbit is never labelled same pass.
     out, default = [], 0
     for i, tg in enumerate(idx["targets"]):
         t0 = ts(tg["time"])
         cands = [[c["id"], c["instrument"], c["overlap"], c["sun_angle"], c["d_azimuth"], day(c["time"]),
-                  bool(t0 and ts(c["time"]) and abs((ts(c["time"]) - t0).total_seconds()) < 7200)]
+                  bool(t0 and ts(c["time"]) and abs((ts(c["time"]) - t0).total_seconds()) < 1800)]
                  for c in tg["candidates"]]
         out.append([tg["id"], day(tg["time"]), tg["centre"][0], tg["centre"][1], tg["incidence"], tg["azimuth"], cands])
         if tg["id"] == "ch2_ohr_ncp_20250612T2031048828_d_img_d18":

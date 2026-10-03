@@ -644,7 +644,7 @@ svg.net text{font-family:var(--f)}
     </ul>
 
     <div class="head" style="margin-top:clamp(56px,8vw,96px)"><h2 data-t="hrh">How it runs</h2>
-      <p data-t="hrp">core/pipeline.py, on a laptop CPU with no discrete GPU: a median of 7.7 s per 640-pixel window over 89 OHRC to NAC windows.</p></div>
+      <p data-t="hrp">core/pipeline.py, on a laptop CPU with no discrete GPU: a median of 13.3 s per 640-pixel window over 89 OHRC to NAC windows.</p></div>
     <p class="body" data-t="hrbody">Both images go to one ground scale. Lighting is reduced to gradient orientation. LoFTR matches them densely, tiled, on the CPU; each match is refined to sub-pixel by correlation; MAGSAC++ rejects outliers and fits the transform; the inliers' spread over the 8×8 grid is measured. Then the independent area check cross-correlates the warped image against the reference, square by square, and never reads a match position. It is the only step allowed to overrule the others. If it agrees, the result ships as a GeoTIFF on the reference grid with control points for GDAL and QGIS (all of them, and a set thinned to at most 4 per square so they cover the image), an ISIS match list, the metrics and the trust map. If it is unconfirmed, it is kept and labelled. If it contradicts, the matcher's answer is refused and a phase-correlation fallback is delivered, declared as such, with its uncertainty in metres.</p>
   </div></section>
 </main>
@@ -751,7 +751,7 @@ const T = {
   rf5:'<span><em>MiLOI, सूर्य-सदिश 90° या अधिक अलग</em><small>same sensor</small></span><p>किसी भी विधि ने इनमें से कोई पंजीकृत नहीं किया: हमारी, SIFT, ORB या AKAZE। सभी दृश्य S3 में।</p><b class="num">16 में 0, कोई भी विधि</b>',
   rf6:'<span><em>TMC-2 fore से aft</em><small>same sensor, 50° अलग</small></span><p>उच्चावच का लंबन homography नहीं है। पहले पास के अपने ISRO TMC-2 DTM पर ऑर्थोरेक्टिफ़ाई करने पर 4 में से 2 स्वीकार; अधिक बारीक DTM अगला कदम है।</p><b class="num">4 में 1, DTM पर 4 में 2</b>',
   rf7:'<span><em>OHRC से LOLA छायांकित उच्चावच</em><small>multi-modal, प्रकाशीय से उन्नयन</small></span><p>घोषित विफलता दिखाने के लिए रखा गया: matcher को कुछ नहीं मिलता, सिस्टम यह कहता है, और निर्णय अपुष्ट रहता है (REPORT.md, Declared-failure rung)।</p><b class="num">घोषित विफलता</b>',
-  hrh:'यह कैसे चलता है', hrp:'core/pipeline.py, बिना अलग GPU के लैपटॉप CPU पर: 89 OHRC से NAC विंडो पर प्रति 640-पिक्सेल विंडो 7.7 s की माध्यिका।',
+  hrh:'यह कैसे चलता है', hrp:'core/pipeline.py, बिना अलग GPU के लैपटॉप CPU पर: 89 OHRC से NAC विंडो पर प्रति 640-पिक्सेल विंडो 13.3 s की माध्यिका।',
   hrbody:'दोनों छवियाँ एक ज़मीनी पैमाने पर लाई जाती हैं। प्रकाश को ढलान-दिशा में बदला जाता है। LoFTR उन्हें CPU पर, टाइलों में, घने रूप से मिलाता है; हर मिलान को सहसंबंध से sub-pixel तक परिष्कृत किया जाता है; MAGSAC++ बाहरी बिंदु हटाकर रूपांतरण फ़िट करता है; 8×8 ग्रिड पर inliers का फैलाव मापा जाता है। फिर स्वतंत्र क्षेत्र-जाँच संरेखित छवि का संदर्भ से वर्ग-दर-वर्ग सहसंबंध करती है, और किसी मिलान की स्थिति कभी नहीं पढ़ती। केवल इसी चरण को बाकी को पलटने का अधिकार है। सहमति पर परिणाम संदर्भ ग्रिड पर GeoTIFF के रूप में, GDAL और QGIS के नियंत्रण बिंदुओं (सभी, और प्रति वर्ग अधिकतम 4 वाला समान रूप से फैला सेट), ISIS मिलान-सूची, मापों और trust map के साथ दिया जाता है। अपुष्ट होने पर रखा और चिह्नित किया जाता है। खंडन पर matcher का उत्तर अस्वीकार होता है और phase-correlation fallback, घोषित रूप में, मीटर में अनिश्चितता सहित दिया जाता है।',
   ft1h:'शब्द जिन पर हम टिके हैं', ft1a:'<b>Cross-sensor</b> का अर्थ है अलग उपकरण। NAC से NAC, OHRC से OHRC, और TMC-2 fore से aft एक ही सेंसर हैं और ऐसे ही लिखे जाते हैं।',
   ft1b:'<b>Multi-modal</b> का अर्थ है दृश्य से अवरक्त, या प्रकाशीय से उन्नयन। दो panchromatic कैमरे multi-modal नहीं।', ft1c:'<b>Sub-pixel</b> हमेशा अपना ग्रिड बताता है और मीटर देता है।',
@@ -774,7 +774,7 @@ const T = {
   fSq:'वर्ग', fMt:'मिलान', fInl:'{a} inliers, {b} में से', fTime:'समय', fSec:'CPU पर {s} s', fMeth:'विधि', fWhy:'जाँच कहती है',
   Lsrc:'छवि A, पहले', Lref:'छवि B, संदर्भ', Lwarp:'matcher का उत्तर', Lblink:'B के साथ बारी-बारी', Lswipe:'B से तुलना (खिसकाएँ)', Lfb:'fallback, दिया गया',
   lnBlink:'अगर संरेखित हैं, तो कुछ नहीं उछलता।', lnSwipe:'रेखा को खींचें: बाईं ओर संदर्भ, दाईं ओर संरेखित छवि।', lnRef:'वह उत्तर जिसे जाँच ने अस्वीकार किया।',
-  gridon:'वर्ग दिखाएँ', lgV:'सत्यापित: मिलान और पिक्सेल सहमत', lgW:'कमज़ोर: मापा गया, टिकता नहीं', lgN:'कोई साक्ष्य नहीं: कुछ दावा नहीं',
+  gridon:'वर्ग दिखाएँ', lgV:'सत्यापित: मिलान और पिक्सेल सहमत', lgW:'कमज़ोर: मापा गया, संरेखण पुष्ट नहीं', lgN:'कोई साक्ष्य नहीं: कुछ दावा नहीं',
   rule:'नियम ठीक-ठीक', ruleTxt:'कोई वर्ग तभी सत्यापित है जब उसमें कम से कम 3 inliers हों, स्थानीय inlier अनुपात 0.5 या अधिक हो, और सहसंबंध 2 px के भीतर 0.3 या अधिक पर शिखर दे।',
   gloss:'शब्दों का अर्थ', gHeld:'held-out', gHeldT:'मिलानों का वह 20% जिसे फ़िट ने कभी नहीं देखा; उस पर माध्यिका त्रुटि, संदर्भ ग्रिड के पिक्सेल में।',
   gInl:'inlier', gInlT:'ऐसा मिलान जो MAGSAC++ के फ़िट किए रूपांतरण से सहमत है।', gChk:'क्षेत्र-जाँच', gChkT:'संरेखित छवि को संदर्भ से हर वर्ग में सहसंबंधित करती है; मिलान कभी नहीं पढ़ती, और केवल यही बाकी को पलट सकती है।',
@@ -975,7 +975,7 @@ const VIEWER = id => `<div class="viewer">
     </div>
     <div class="tabs" role="group" aria-label="What the plate shows"></div>
     <div class="row" style="justify-content:space-between"><label class="note"><input type="checkbox" class="gridon" checked> <span data-t="gridon">Show the squares</span></label><span class="note layname"></span></div>
-    <div class="legend"><span>${SW(id, 'v')}<i data-t="lgV">verified: matches and pixels agree</i></span><span>${SW(id, 'w')}<i data-t="lgW">weak: measured, does not hold</i></span><span>${SW(id, 'n')}<i data-t="lgN">no evidence: nothing claimed</i></span></div>
+    <div class="legend"><span>${SW(id, 'v')}<i data-t="lgV">verified: matches and pixels agree</i></span><span>${SW(id, 'w')}<i data-t="lgW">weak: measured, alignment not confirmed</i></span><span>${SW(id, 'n')}<i data-t="lgN">no evidence: nothing claimed</i></span></div>
     <details class="more"><summary data-t="rule">The exact rule</summary><p data-t="ruleTxt">A square is verified only with at least 3 inliers, a local inlier ratio of 0.5 or more, and a correlation that peaks within 2 px at 0.3 or more.</p></details>
   </div>
   <div class="col">

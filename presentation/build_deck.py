@@ -660,12 +660,12 @@ def slide3(s):
     # 7.7 s per 640-px window (89 OHRC → NAC windows)" - the cold reader who reached it called it "your
     # best answer to cherry-picking, and it appears on no slide", and both asked whether "windows" are
     # tiles or scenes (2 Oct). The 7.7 s stays in the portal description.
-    # v12: the 6.0 min is REPORT's own figure at the e38a69a freeze ("Archive scale": "13.1 km² in 6.0
+    # v12: the 10.5 min is REPORT's own figure at the 04ed5f6 freeze ("Archive scale": "13.1 km² in 10.5
     # min"). "A whole strip": 58 windows = 940 km, accepted 58/58, cutting 2.9 min + registration 1.4 min.
     _box(s, L, 6.30, 8.25, 0.50,
          [P(R("Hardware: ", 12.5, True, ACCENT),
-            R("laptop CPU, offline: 13.1 km² overlap registered in 6.0 min (37/37); 940 km TMC-2 → IIRS "
-              "strip cut and registered in 4.3 min (58/58)",
+            R("laptop CPU, offline: 13.1 km² overlap registered in 10.5 min (37/37); 940 km TMC-2 → IIRS "
+              "strip cut and registered in 4.2 min (58/58)",
               12.5, False, INK))],
          fill=FILL_ORANGE, line=LINE_ORANGE, anchor="m", margins=(0.14, 0.03, 0.12, 0.03),
          name="hardware")
@@ -825,7 +825,7 @@ def slide5(s):
     _tab(s, L, 1.33, H[0])
     fy, fh = 1.74, 1.62
     # v12: "Archive scale": 311 calibrated OHRC products covering 23,651 km²; at the measured whole-
-    # overlap rate, all of it is about 181 laptop-hours ("a projection from one measured rate").
+    # overlap rate, all of it is about 314 laptop-hours ("a projection from one measured rate").
     _box(s, L, fy, 1.75, fh,
          [P(R("Chandrayaan-2 archive", 12.5, True, NAVY), align="c"),
           P(R("311 OHRC products, 23,651 km² · TMC-2 · IIRS; LRO, Kaguya references", 11, False,
@@ -835,7 +835,7 @@ def slide5(s):
     _box(s, 2.48, fy, 1.72, fh,
          [P(R("LunaXX", 16, True, WHITE), align="c"),
           P(R("the aligned image plus a verdict per region", 11.5, False, WHITE), align="c", sb=3),
-          P(R("all OHRC: ~181 laptop-hours, projected", 11, True, WHITE), align="c", sb=3)],
+          P(R("all OHRC: ~314 laptop-hours, projected", 11, True, WHITE), align="c", sb=3)],
          fill=NAVY, name="imp-core")
     targets = [
         ("Landing-site safety", " — hazard maps rest on the alignment"),
@@ -949,7 +949,7 @@ REFS = [
 # REPORT.md" was not literally true (audit, 2 Oct). "Result": a grid size or a place is not one.
 # v12: the 3 Oct freeze re-ran every row at e38a69a; its report step wrote REPORT.md with that code.
 PROVENANCE = ("Every result is in REPORT.md, or a count or sum of its rows, measured at the freeze "
-              "commit e38a69a.")
+              "commit 04ed5f6.")
 
 
 def slide6(s):
@@ -982,9 +982,9 @@ def slide6(s):
              R("python -m web.server registers your own images on a laptop.", 12, False, INK),
              sa=5),
            # v12: the whole strip is timed and the Sun finder is built (slides 3 and 4), so they leave
-           # "Next"; the archive run is REPORT's "about 181 laptop-hours" projection.
+           # "Next"; the archive run is REPORT's "about 314 laptop-hours" projection.
            P(R("Next: ", 12, True, NAVY),
-             R("run the whole OHRC archive (about 181 laptop-hours); Suns 60–120° apart against "
+             R("run the whole OHRC archive (about 314 laptop-hours); Suns 60–120° apart against "
                "DTM-relit references; relief with a finer DTM.", 12, False, INK), sa=5),
            P(R(PROVENANCE, 11, False, MUTED), sa=5),
            P(R("Every chart and screenshot is made by our own code; methods and data are credited "
