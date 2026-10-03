@@ -1,7 +1,7 @@
 """The explainer's narration: one entry per beat, shared by voice.py and render.py.
 
-v11 (2 Oct 2026). Every figure spoken or shown is one the claim-checked deck v11 carries, from
-REPORT.md at the freeze commit 51a9ad0. Live runs on screen are live: the narration never quotes
+v12 (3 Oct 2026). Every figure spoken or shown is one the claim-checked deck v12 carries, from
+REPORT.md at the freeze commit 1bb630f. Live runs on screen are live: the narration never quotes
 their counts, only what the evidence logs hold.
 
 `say` is what the voice reads (spelled for the speech engine); `cap` is the caption on screen;
@@ -62,11 +62,15 @@ BEATS = [
          say="Every result exports a GeoTIFF on the reference grid, with evenly spread control "
              "points, and match lists for standard G-I-S and planetary tools."),
     dict(scene="evidence",
-         cap="The evidence is frozen and reproducible: 400 windows, 11 instrument pairings. SAC's "
-             "benchmark pair: 6 of 6. A whole overlap: 37 of 37, held-out median 0.57 m.",
-         say="The evidence is frozen and reproducible. Four hundred windows, eleven instrument "
-             "pairings. SAC's own benchmark pair: six of six. A whole overlap: thirty-seven of "
-             "thirty-seven, held-out median just over half a metre."),
+         cap="The evidence is frozen and reproducible: 406 windows of real data. SAC's own pair, Suns "
+             "opposite: 6 of 6, where SIFT, ORB and AKAZE find none. Across missions: Kaguya's map, "
+             "31 of 31; a whole infrared strip on NASA's global map, 44 of 49. Against 60 points "
+             "clicked by hand: 1.7-2.4 m.",
+         say="The evidence is frozen and reproducible. Four hundred and six windows of real data. On "
+             "SAC's own benchmark pair, with the Suns opposite: six of six, where SIFT, ORB and AKAZE "
+             "find none. Across missions: Japan's Kaguya map, thirty-one of thirty-one; a whole "
+             "infrared strip on NASA's global map, forty-four of forty-nine. And against sixty points "
+             "clicked by hand: within about two metres."),
     dict(scene="sitn",
          cap="Every Chandrayaan-2 camera at one site, 60.7°N, Suns matched. OHRC → TMC-2: 10 of 10. "
              "Through LRO NAC, the loop closes to a median 2.0 m. IIRS infrared on TMC-2's pass: "
@@ -82,11 +86,12 @@ BEATS = [
              "degrees: sixty-one of seventy-one windows accepted. Turned to the opposite side, and "
              "raised again: forty-eight of fifty-six."),
     dict(scene="calibration",
-         cap="We tested the checker too. Shifts planted in 30 real windows: no false alarms, and "
-             "with the Suns close, every shift of 5 m or more was caught.",
+         cap="We tested the checker too. Shifts planted in 30 real windows: no false alarms. With the "
+             "Suns close, every shift of 5 m or more was caught, all 1,056, while the usual residual "
+             "check caught none.",
          say="We tested the checker too. We planted wrong shifts in thirty real windows. No false "
-             "alarms, and with the Suns close together, every shift of five metres or more was "
-             "caught."),
+             "alarms. With the Suns close together, every shift of five metres or more was caught, all "
+             "one thousand and fifty-six, while the usual residual check caught none."),
     dict(scene="limits",
          cap="And it says what it cannot do: visible against near-infrared, refused 3 of 3. Sun "
              "azimuths 60–120° apart: 0 of 12 accepted, and none accepted wrongly.",

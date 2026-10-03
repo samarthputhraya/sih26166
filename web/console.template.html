@@ -284,6 +284,21 @@ figcaption{margin-top:10px}
 .tiles .t.out{stroke:#e9e9e4;stroke-dasharray:5 3}
 
 /* ---------- ledgers ---------- */
+.finder{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2.2fr);gap:18px 36px;align-items:start;margin-top:8px}
+@media (max-width:860px){.finder{grid-template-columns:1fr}}
+.fdq{display:block;font-size:15px;color:var(--ink2)}
+.fdq input{display:block;width:100%;margin-top:6px;padding:10px 12px;font:inherit;font-size:16px;border:1.5px solid var(--ink);border-radius:0;background:transparent;color:var(--ink)}
+.fdlist{list-style:none;margin:10px 0 0;padding:0;border-top:1px solid var(--rule)}
+.fdlist li{border-bottom:1px solid var(--rule)}
+.fdlist button{all:unset;cursor:pointer;display:block;width:100%;padding:9px 2px;font-size:15px;color:var(--ink2)}
+.fdlist button[aria-pressed="true"]{color:var(--ink);font-weight:600}
+.fdlist button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.fdt{width:100%;border-collapse:collapse;font-size:15px}
+.fdt th{text-align:left;font-weight:600;border-bottom:1.5px solid var(--ink);padding:6px 8px 6px 0}
+.fdt td{border-bottom:1px solid var(--rule);padding:7px 8px 7px 0;vertical-align:baseline}
+.fdt td.num,.fdt th.num{text-align:right}
+.fdt .pid{font-size:13px;word-break:break-all}
+.fdhead{font-size:16px;margin:0 0 10px}
 .ledger{list-style:none;margin:0;padding:0;border-top:1.5px solid var(--ink)}
 .ledger li{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1.6fr) 11.5em;gap:4px 28px;padding:16px 0;border-bottom:1px solid var(--rule);align-items:baseline}
 @media (max-width:760px){.ledger li{grid-template-columns:minmax(0,1fr) auto}.ledger b{white-space:nowrap}.ledger li p{grid-column:1/-1;order:3}}
@@ -363,6 +378,7 @@ svg.net text{font-family:var(--f)}
     <a href="#suns" data-t="nav4">Sun angle</a>
     <a href="#pairs" data-t="nav5">Every pairing</a>
     <a href="#planted" data-t="nav6">The check, tested</a>
+    <a href="#finder" data-t="nav8">Find a reference</a>
     <a href="#ledgers" data-t="nav7">Results</a>
   </nav>
   <div class="barright"><span class="pill" id="pill"><i></i><span>Checking for the pipeline</span></span><span class="frozen"><span data-t="frozen">Evidence frozen at</span> <span id="fz"></span></span>
@@ -553,10 +569,27 @@ svg.net text{font-family:var(--f)}
           <p class="big num" data-t="plb2">100%<small>of planted 5 m shifts caught with the Suns within 10° (176 trials), and of 10 m shifts with them 132° to 174° apart. At 2 m or less almost nothing is caught: that is the floor.</small></p>
         </div>
         <hr class="rule" style="background:var(--white)">
+        <p class="note" data-t="plres">The usual test of a registration is its own residual: how well the matches fit the transform. On the same 1,056 planted wrong answers of 5 m or more, a residual threshold loose enough to accept every true registration flags none of them; the squares flag all 1,056. The matches fit a wrong answer perfectly, so only the pixels can say it is wrong.</p>
+        <p class="note" data-t="plir">Visible against infrared, 16 TMC-2 to IIRS windows on two orbits: no false alarms; 86% of 5-pixel shifts caught and 99% of 10-pixel shifts (IIRS pixels, 74 to 84 m).</p>
+        <hr class="rule" style="background:var(--white)">
         <p class="note" data-t="plrot">A rotation or scale change about the centre leaves the centre still and moves the corners, so a verdict for the whole frame watches the wrong place: at 3 m of corner movement it refuses 0 of 120 trials, at 5 m only 15. The squares carry it instead.</p>
         <div class="pair" id="rs"></div>
       </div>
     </div>
+  </div></section>
+
+  <section class="part" id="finder"><div class="wrap">
+    <div class="head"><h2 data-t="fdh">Find a reference by its Sun</h2>
+      <p data-t="fdp">Registration across very different Suns is the hard case, so the reference is chosen by its Sun. For every OHRC observation in ISRO's PRADAN catalogue, the images covering it, best Sun first: the angle between the two Sun directions, computed from each image's time (Meeus; within 0.04° of LROC's own published sub-solar points).</p></div>
+    <div class="finder">
+      <div>
+        <label class="fdq"><span data-t="fdq">Search a frame by date, product id, or latitude, longitude</span><input type="search" id="fdIn" placeholder="2025-06-12   or   60.6, 355.4" autocomplete="off" spellcheck="false"></label>
+        <p class="fine" id="fdSay" aria-live="polite"></p>
+        <ol class="fdlist" id="fdList"></ol>
+      </div>
+      <div id="fdOut" aria-live="polite"></div>
+    </div>
+    <p class="src" style="margin-top:14px" data-t="fdcap">From evaluation/reference_index.json (ops/reference_index.py). Candidates: every OHRC, TMC-2 nadir and IIRS product in PRADAN's footprint catalogue and the LRO NAC images this project knows, covering at least 20% of the frame. Images taken alongside on the same pass share its Sun.</p>
   </div></section>
 
   <section class="part" id="overlap"><div class="wrap">
@@ -590,6 +623,10 @@ svg.net text{font-family:var(--f)}
       <li data-t="lg9"><span><em>OHRC onto Kaguya TC ortho map</em><small>cross-sensor</small></span><p>A 29.6× scale gap, 0.25 m against 7.4 m. One window on dense evidence (0.55 px = 4.0 m), two on 1 and 7 verified squares.</p><b class="num">3 of 4</b></li>
       <li data-t="lg10"><span><em>Kaguya TC onto Kaguya MI 749 nm</em><small>cross-sensor</small></span><p>Visible against visible, a 2× scale gap. Held-out median 0.23–0.47 px on MI's 14.8 m grid.</p><b class="num">3 of 3, 3.5–6.9 m</b></li>
       <li data-t="lg11"><span><em>OHRC to NAC A to NAC B, closed loops</em><small>the A to B leg is the same sensor</small></span><p>Three registrations round a loop must return to the start: consistency, not accuracy. Median closure over 6 loops, on the 1.245 m grid of NAC B.</p><b class="num">0.107 m</b></li>
+      <li data-t="lg13"><span><em>Check points clicked by hand</em><small>independent of the matcher</small></span><p>60 points on 6 OHRC to LRO NAC windows, placed with a tool that never sees our answer. Close to how precisely a feature can be clicked (1.47 m); Chandrayaan-2's own georeference misses the same points by 2.9 to 15.1 m.</p><b class="num">1.7–2.4 m RMSE</b></li>
+      <li data-t="lg14"><span><em>TMC-2 onto Kaguya TC, SAC's site</em><small>cross-sensor, two missions</small></span><p>Every 2.84 km window along 88 km of one pass, none chosen. The two archives disagree by a steady 287 m (median), which each registration removes.</p><b class="num">31 of 31</b></li>
+      <li data-t="lg15"><span><em>IIRS onto NASA's WAC map, a whole strip</em><small>multi-modal, two missions</small></span><p>1555 nm against the visible base map, 49 windows of 19.2 km from 30° to 61°N, every square voting. 3 unconfirmed, 2 refused.</p><b class="num">44 of 49</b></li>
+      <li data-t="lg16"><span><em>SIFT, ORB and AKAZE, the same rule</em><small>the classical baseline</small></span><p>Their matches go through the same fit and the same area check. SAC's pair, Suns 174° apart: 0 of 6 each. The Sun 154–177° away on SAC's frame: 0 of 56 each.</p><b class="num">ours 6 of 6, 48 of 56</b></li>
       <li data-t="lg12"><span><em>MiLOI, LRO NAC with itself</em><small>same sensor</small></span><p>81 scored pairs (of 321 matched) from three scenes under many Suns, judged against a truth network built from other pairs.</p><b class="num">33 accepted, 33 within 3 px</b></li>
     </ul>
     <p class="note" style="margin-top:18px" data-t="lgexact">Against exact truth, a synthetic pair rendered from the LOLA model with a known transform, the error is 0.086 px = 5.1 m on the 60 m grid with the Suns 0° and 15° apart. On real imagery there is no ground truth, so the figures above are held-out residuals. The two kinds are never added together.</p>
@@ -602,7 +639,7 @@ svg.net text{font-family:var(--f)}
       <li data-t="rf3"><span><em>Kaguya TC onto MI 1548 nm</em><small>multi-modal</small></span><p>The matcher is refused on every window. The declared fallback lands 3.4 to 16.2 m from the visible-band registration of the same window.</p><b class="num">3 of 3 refused</b></li>
       <li data-t="rf4"><span><em>Kaguya TC onto Chandrayaan-2 IIRS, direct</em><small>multi-modal</small></span><p>Near-infrared at 89 m per pixel, 12× coarser than TC. None accepted; through TMC-2 of its own orbit IIRS registers.</p><b class="num">10 of 11 refused</b></li>
       <li data-t="rf5"><span><em>MiLOI, Sun vectors 90° or more apart</em><small>same sensor</small></span><p>No method registered any of them: ours, SIFT, ORB or AKAZE. All in scene S3.</p><b class="num">0 of 16, any method</b></li>
-      <li data-t="rf6"><span><em>TMC-2 fore onto aft</em><small>same sensor, 50° apart</small></span><p>Relief parallax is not a homography. The one accepted window's held-out median: 2.6 px (15.5 m) on its 5.9 m grid.</p><b class="num">1 of 4 accepted</b></li>
+      <li data-t="rf6"><span><em>TMC-2 fore onto aft</em><small>same sensor, 50° apart</small></span><p>Relief parallax is not a homography. Orthorectified first on ISRO's own TMC-2 DTM of the pass, 2 of the 4 are accepted; a finer DTM is the next step.</p><b class="num">1 of 4, 2 of 4 on the DTM</b></li>
       <li data-t="rf7"><span><em>OHRC onto LOLA shaded relief</em><small>multi-modal, optical to elevation</small></span><p>Kept to show a declared failure: the matcher finds nothing, the system says so, and the verdict stays unconfirmed (REPORT.md, Declared-failure rung).</p><b class="num">declared failure</b></li>
     </ul>
 
@@ -617,7 +654,8 @@ svg.net text{font-family:var(--f)}
     <div><h3 data-t="ft1h">Words we hold to</h3>
       <p data-t="ft1a"><b>Cross-sensor</b> means different instruments. NAC with NAC, OHRC with OHRC, and TMC-2 fore with aft are the same sensor and are labelled so.</p>
       <p data-t="ft1b"><b>Multi-modal</b> means visible with infrared, or optical with elevation. Two panchromatic cameras are not.</p>
-      <p data-t="ft1c"><b>Sub-pixel</b> always names its grid and gives metres.</p></div>
+      <p data-t="ft1c"><b>Sub-pixel</b> always names its grid and gives metres.</p>
+      <p data-t="ft1d"><b>Accepted</b> means the area check agrees with the matcher and no fallback was needed; <b>unconfirmed</b>, kept and labelled, not certified; <b>refused</b>, contradicted, and a declared fallback given instead. A square is <b>verified</b> when matches and pixels agree in it, <b>weak</b> when it was measured but the alignment is not confirmed there, <b>no evidence</b> when nothing could be measured.</p></div>
     <div><h3 data-t="ft2h">Reproduce every number</h3>
       <p><span data-t="ft2a">The evidence pages read the evidence logs, whose rows were measured at the freeze commit</span> <span id="fz2"></span><span data-t="ft2b">. The saved results come from the pipeline's cached run of each pair, which can differ from the logged row by a few inliers because MAGSAC++ samples at random; the verdicts do not. The downloads are the frozen run's exported files.</span></p>
       <p data-t="ft2c"><code>python -m ops.freeze</code> re-runs every piece of evidence on one clean commit; <code>python -m ops.make_report</code> renders REPORT.md from the logs.</p></div>
@@ -711,7 +749,7 @@ const T = {
   rf3:'<span><em>Kaguya TC से MI 1548 nm</em><small>multi-modal</small></span><p>हर विंडो पर matcher अस्वीकार। घोषित fallback उसी विंडो के दृश्य-बैंड पंजीकरण से 3.4 से 16.2 m दूर पड़ता है।</p><b class="num">3 में 3 अस्वीकार</b>',
   rf4:'<span><em>Kaguya TC से चंद्रयान-2 IIRS, सीधे</em><small>multi-modal</small></span><p>89 m प्रति पिक्सेल पर निकट-अवरक्त, TC से 12× मोटा। कोई स्वीकार नहीं; अपनी कक्षा के TMC-2 के माध्यम से IIRS पंजीकृत होता है।</p><b class="num">11 में 10 अस्वीकार</b>',
   rf5:'<span><em>MiLOI, सूर्य-सदिश 90° या अधिक अलग</em><small>same sensor</small></span><p>किसी भी विधि ने इनमें से कोई पंजीकृत नहीं किया: हमारी, SIFT, ORB या AKAZE। सभी दृश्य S3 में।</p><b class="num">16 में 0, कोई भी विधि</b>',
-  rf6:'<span><em>TMC-2 fore से aft</em><small>same sensor, 50° अलग</small></span><p>उच्चावच का लंबन homography नहीं है। एकमात्र स्वीकृत विंडो की held-out माध्यिका: उसके 5.9 m ग्रिड पर 2.6 px (15.5 m)।</p><b class="num">4 में 1 स्वीकृत</b>',
+  rf6:'<span><em>TMC-2 fore से aft</em><small>same sensor, 50° अलग</small></span><p>उच्चावच का लंबन homography नहीं है। पहले पास के अपने ISRO TMC-2 DTM पर ऑर्थोरेक्टिफ़ाई करने पर 4 में से 2 स्वीकार; अधिक बारीक DTM अगला कदम है।</p><b class="num">4 में 1, DTM पर 4 में 2</b>',
   rf7:'<span><em>OHRC से LOLA छायांकित उच्चावच</em><small>multi-modal, प्रकाशीय से उन्नयन</small></span><p>घोषित विफलता दिखाने के लिए रखा गया: matcher को कुछ नहीं मिलता, सिस्टम यह कहता है, और निर्णय अपुष्ट रहता है (REPORT.md, Declared-failure rung)।</p><b class="num">घोषित विफलता</b>',
   hrh:'यह कैसे चलता है', hrp:'core/pipeline.py, बिना अलग GPU के लैपटॉप CPU पर: 89 OHRC से NAC विंडो पर प्रति 640-पिक्सेल विंडो 7.7 s की माध्यिका।',
   hrbody:'दोनों छवियाँ एक ज़मीनी पैमाने पर लाई जाती हैं। प्रकाश को ढलान-दिशा में बदला जाता है। LoFTR उन्हें CPU पर, टाइलों में, घने रूप से मिलाता है; हर मिलान को सहसंबंध से sub-pixel तक परिष्कृत किया जाता है; MAGSAC++ बाहरी बिंदु हटाकर रूपांतरण फ़िट करता है; 8×8 ग्रिड पर inliers का फैलाव मापा जाता है। फिर स्वतंत्र क्षेत्र-जाँच संरेखित छवि का संदर्भ से वर्ग-दर-वर्ग सहसंबंध करती है, और किसी मिलान की स्थिति कभी नहीं पढ़ती। केवल इसी चरण को बाकी को पलटने का अधिकार है। सहमति पर परिणाम संदर्भ ग्रिड पर GeoTIFF के रूप में, GDAL और QGIS के नियंत्रण बिंदुओं (सभी, और प्रति वर्ग अधिकतम 4 वाला समान रूप से फैला सेट), ISIS मिलान-सूची, मापों और trust map के साथ दिया जाता है। अपुष्ट होने पर रखा और चिह्नित किया जाता है। खंडन पर matcher का उत्तर अस्वीकार होता है और phase-correlation fallback, घोषित रूप में, मीटर में अनिश्चितता सहित दिया जाता है।',
@@ -770,6 +808,20 @@ const T = {
   snOpen:'खोलें: {l}', of:'{a} में से {b}', ldSay:'दिगंश OHRC के 20° के भीतर: <b>{a} में {b} विंडो स्वीकृत</b>, सूर्य {e}° तक ऊँचा। दिगंश 90° से अधिक दूर: <b>{c} में {d}</b>। हर गोला एक LRO छवि है; भरा भाग उसकी स्वीकृत विंडो का हिस्सा।',
   axLdX:'सूर्य कितना घूमा (दिगंश में अंतर)', axLdY:'सूर्य कितना ऊँचा (उन्नयन में अंतर)',
   knownH:'ज्ञात उत्तर के विरुद्ध', twinH:'क्या अवरक्त फ्रेम केवल धुंधला है? एक ही स्रोत, एक ही मानचित्र-उत्पाद के दो बैंडों के सामने।',
+  nav8:'संदर्भ खोजें',
+  plres:'किसी पंजीकरण की सामान्य जाँच उसका अपना अवशेष (residual) है: मिलान रूपांतरण पर कितने ठीक बैठते हैं। उन्हीं 1,056 डाले गए ग़लत उत्तरों पर (5 m या अधिक), इतनी ढीली अवशेष-सीमा जो हर सही पंजीकरण स्वीकार करे, उनमें से एक को भी नहीं पकड़ती; वर्ग सभी 1,056 पकड़ते हैं। मिलान ग़लत उत्तर पर पूरी तरह बैठते हैं, इसलिए केवल पिक्सेल ही बता सकते हैं कि वह ग़लत है।',
+  plir:'दृश्य बनाम अवरक्त, दो कक्षाओं की 16 TMC-2 से IIRS विंडो: कोई झूठा अलार्म नहीं; 5-पिक्सेल खिसकाव का 86% और 10-पिक्सेल का 99% पकड़ा गया (IIRS पिक्सेल, 74 से 84 m)।',
+  fdh:'सूर्य देखकर संदर्भ खोजें',
+  fdp:'बहुत अलग सूर्यों के पार पंजीकरण कठिन है, इसलिए संदर्भ उसके सूर्य से चुना जाता है। ISRO के PRADAN कैटलॉग के हर OHRC अवलोकन के लिए, उसे ढकने वाली छवियाँ, सबसे अच्छा सूर्य पहले: दोनों सूर्य-दिशाओं के बीच का कोण, हर छवि के समय से गणना (Meeus; LROC के अपने प्रकाशित उप-सौर बिंदुओं से 0.04° के भीतर)।',
+  fdq:'फ्रेम खोजें: तिथि, उत्पाद id, या अक्षांश, देशांतर',
+  fdcap:'evaluation/reference_index.json (ops/reference_index.py) से। उम्मीदवार: PRADAN के फ़ुटप्रिंट कैटलॉग का हर OHRC, TMC-2 नादिर और IIRS उत्पाद, और इस परियोजना को ज्ञात LRO NAC छवियाँ, जो फ्रेम का कम से कम 20% ढकें। उसी पास पर साथ ली गई छवियों का सूर्य वही होता है।',
+  fdSay:'{n} में से {m} OHRC अवलोकन मिले', fdAll:'{n} OHRC अवलोकन; {k} के पास 5° के भीतर दूसरी कक्षा की छवि है', fdNone:'कोई मेल नहीं',
+  fdHead:'{d} का OHRC फ्रेम, {la}°, {lo}° पर; सूर्य का आपतन {i}°', fdImg:'छवि', fdInst:'उपकरण', fdCov:'ढकती है', fdSun:'सूर्यों में अंतर', fdAz:'दिगंश अंतर', fdDate:'तिथि', fdSame:'उसी पास पर', fdNo:'कोई छवि इस फ्रेम का 20% नहीं ढकती।',
+  lg13:'<span><em>हाथ से क्लिक किए जाँच-बिंदु</em><small>matcher से स्वतंत्र</small></span><p>6 OHRC से LRO NAC विंडो पर 60 बिंदु, ऐसे उपकरण से रखे गए जो हमारा उत्तर कभी नहीं देखता। किसी चिह्न को जितनी सटीकता से क्लिक किया जा सकता है (1.47 m), उसके क़रीब; चंद्रयान-2 का अपना भू-संदर्भ इन्हीं बिंदुओं से 2.9 से 15.1 m दूर।</p><b class="num">1.7–2.4 m RMSE</b>',
+  lg14:'<span><em>TMC-2 से Kaguya TC, SAC का स्थल</em><small>cross-sensor, दो मिशन</small></span><p>एक पास के 88 km में हर 2.84 km की विंडो, कोई चुनी नहीं गई। दोनों अभिलेखागार एक स्थिर 287 m (माध्यिका) से असहमत हैं, जिसे हर पंजीकरण हटाता है।</p><b class="num">31 में 31</b>',
+  lg15:'<span><em>IIRS से NASA का WAC मानचित्र, पूरी पट्टी</em><small>multi-modal, दो मिशन</small></span><p>दृश्य आधार-मानचित्र के सामने 1555 nm, 30° से 61°N तक 19.2 km की 49 विंडो, हर वर्ग मतदान करता है। 3 अपुष्ट, 2 अस्वीकृत।</p><b class="num">49 में 44</b>',
+  lg16:'<span><em>SIFT, ORB और AKAZE, वही नियम</em><small>पारंपरिक आधार-रेखा</small></span><p>उनके मिलान उसी फ़िट और उसी क्षेत्र-जाँच से गुज़रते हैं। SAC की जोड़ी, सूर्य 174° अलग: हर एक 6 में 0। SAC के फ्रेम पर सूर्य 154–177° दूर: हर एक 56 में 0।</p><b class="num">हमारा 6 में 6, 56 में 48</b>',
+  ft1d:'<b>स्वीकृत</b> का अर्थ है क्षेत्र-जाँच matcher से सहमत है और कोई fallback नहीं चाहिए था; <b>अपुष्ट</b>, रखा और चिह्नित, प्रमाणित नहीं; <b>अस्वीकृत</b>, खंडित, और उसकी जगह घोषित fallback। कोई वर्ग <b>सत्यापित</b> है जब उसमें मिलान और पिक्सेल सहमत हों, <b>कमज़ोर</b> जब मापा गया पर संरेखण वहाँ पुष्ट नहीं, <b>कोई साक्ष्य नहीं</b> जब कुछ मापा न जा सका।',
   netO:'चंद्रयान-2 OHRC', netN:'LRO NAC', netT:'चंद्रयान-2 TMC-2', netI:'चंद्रयान-2 IIRS', netLoop:'loop: माध्यिका {m} m, अधिकतम {x} m', netGrid:'{g} m ग्रिड', netGridO:'{g} m ग्रिड पर मिलान', netVp:'+ अगली कक्षा का OHRC, 40° अलग: {e}'
 };
 const t = (k, en) => (LANG === 'hi' && T[k] !== undefined) ? T[k] : en;
@@ -1522,6 +1574,33 @@ function drawLadder(){
     {a:sum(nr, 'n'), b:sum(nr, 'ok'), c:sum(op, 'n'), d:sum(op, 'ok'), e:Math.max(...nr.map(d => d.el)).toFixed(1)});
 }
 drawLadder(); ON_LANG.push(drawLadder);
+
+/* ================= find a reference by its Sun (evidence/reference_index.json) =================
+   D.finder.t: [id, date, lat, lon, incidence, azimuth, [[id, instrument, cover, sunApart, azApart, date, samePass], ...]]
+   Search by date or id text, or by "lat, lon" (nearest frames first). */
+{ const F = D.finder;
+  if (F && F.t && F.t.length){
+    const inp = $('#fdIn'), list = $('#fdList'), out = $('#fdOut'), say = $('#fdSay');
+    let hits = [], cur = F.def || 0;
+    const dist = (a, b, c, d) => { const r = Math.PI / 180, x = (d - b) * Math.cos((a + c) / 2 * r), y = c - a; return Math.hypot(((x + 540) % 360) - 180, y); };
+    const show = i => { cur = i; const f = F.t[i];
+      $$('#fdList button').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.i === i)));
+      const rows = f[6].map(c => `<tr><td class="pid">${esc(c[0])}${c[6] ? ` <small>(${esc(t('fdSame', 'same pass'))})</small>` : ''}</td><td>${esc(c[1])}</td><td class="num">${Math.round(c[2] * 100)}%</td><td class="num">${c[3].toFixed(1)}°</td><td class="num">${c[4].toFixed(1)}°</td><td>${esc(c[5])}</td></tr>`).join('');
+      out.innerHTML = `<p class="fdhead">${fill(t('fdHead', 'OHRC frame of {d}, at {la}°, {lo}°; Sun incidence {i}°'), {d:esc(f[1]), la:f[2].toFixed(2), lo:f[3].toFixed(2), i:f[4].toFixed(1)})}<br><small class="pid">${esc(f[0])}</small></p>`
+        + (rows ? `<div style="overflow-x:auto"><table class="fdt"><thead><tr><th>${t('fdImg', 'image')}</th><th>${t('fdInst', 'instrument')}</th><th class="num">${t('fdCov', 'covers')}</th><th class="num">${t('fdSun', 'Suns apart')}</th><th class="num">${t('fdAz', 'azimuth apart')}</th><th>${t('fdDate', 'date')}</th></tr></thead><tbody>${rows}</tbody></table></div>`
+                : `<p class="note">${t('fdNo', 'No image covers 20% of this frame.')}</p>`); };
+    const search = q => { q = q.trim();
+      const m = q.match(/^\s*(-?\d+(?:\.\d+)?)\s*[, ]\s*(-?\d+(?:\.\d+)?)\s*$/);
+      if (m){ const la = +m[1], lo = ((+m[2]) + 360) % 360; hits = F.t.map((f, i) => [dist(la, lo, f[2], f[3]), i]).sort((a, b) => a[0] - b[0]).slice(0, 8).map(x => x[1]); }
+      else { const ql = q.toLowerCase(); hits = F.t.map((f, i) => i).filter(i => !ql || F.t[i][0].toLowerCase().includes(ql) || F.t[i][1].includes(ql)).slice(0, 12); }
+      say.textContent = q ? (hits.length ? fill(t('fdSay', '{m} of {n} OHRC observations'), {m:hits.length, n:F.t.length}) : t('fdNone', 'No match'))
+                          : fill(t('fdAll', '{n} OHRC observations; {k} have an image from another orbit within 5° of their Sun'), {n:F.t.length, k:F.k5});
+      list.innerHTML = hits.map(i => `<li><button type="button" data-i="${i}" aria-pressed="${i === cur}">${esc(F.t[i][1])} · ${F.t[i][2].toFixed(1)}°, ${F.t[i][3].toFixed(1)}° · ${F.t[i][6].length ? F.t[i][6][0][3].toFixed(1) + '°' : '–'}</button></li>`).join('');
+      $$('#fdList button').forEach(b => b.addEventListener('click', () => show(+b.dataset.i))); };
+    inp.addEventListener('input', () => search(inp.value));
+    search(''); show(cur);
+    ON_LANG.push(() => { search(inp.value); show(cur); });
+  } }
 
 /* ================= two views, and where the reader is =================
    The workbench is the page; the evidence is one link away. Section links open the evidence

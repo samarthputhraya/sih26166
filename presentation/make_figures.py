@@ -547,7 +547,8 @@ def fig_trust_map():
             # window, which REPORT prints ("Fallback vs the visible band"). A cold reader took
             # this panel, beside slide 2's "62/62 accepted TMC-2 → IIRS", to mean multi-modal
             # registration fails (2 Oct).
-            at(tx, vy, f"{counts['verified']} of {n_cells} verified\n→ refused", fontsize=12,
+            # v12: "rightly" - both cold readers of 3 Oct read a bare "refused" as the method failing.
+            at(tx, vy, f"{counts['verified']} of {n_cells} verified\n→ rightly refused", fontsize=12,
                fontweight="bold", color=DECK_ACCENT)
             at(tx, vy + 2 * 12 * 1.2 / 72 + 0.06,
                f"fallback {_fallback_vs_visible_m(pair)} m from\nthe visible-band fit",

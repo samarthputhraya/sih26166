@@ -337,8 +337,12 @@ def _versions() -> dict:
 # Evidence the runs WRITE - append-only logs and regenerated outputs. A freeze regenerates
 # the calibration CSVs and miloi_truth.json mid-run; counting them as code would stamp every
 # later row "-dirty".
+# trust_real_calibration_ir.csv (3 Oct 2026): the visible-infrared population's own per-trial file. It
+# was missing here, so the first freeze that wrote it stamped every later step `-dirty` (freeze at
+# 1bb630f: 1,332 stale rows) - the 18 Sep failure again.
 EVIDENCE_LOGS = ("evaluation/results_log.csv", "evaluation/real_pairs_log.csv",
-                 "evaluation/trust_real_calibration.csv", "evaluation/miloi_log.csv",
+                 "evaluation/trust_real_calibration.csv", "evaluation/trust_real_calibration_ir.csv",
+                 "evaluation/miloi_log.csv",
                  "evaluation/miloi_truth.json", "evaluation/multimodal_check.csv",
                  "core/reliability_calibration.csv",
                  "core/reliability_calibration_summary.csv")

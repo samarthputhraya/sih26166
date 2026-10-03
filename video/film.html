@@ -474,8 +474,10 @@ SCENES.evidence = {
   async init(r){
     const s = {};
     s.top = put(mk('div', 'abs lab', r, `Evidence frozen at commit <b>${D.freeze}</b>, every figure in REPORT.md`), {left: '140px', top: '70px', fontSize: '28px'});
-    const stats = [['400', 'distinct windows: one source,<br>one reference, one place'], ['11', 'instrument pairings'], ['6 of 6', 'accepted on SAC\'s benchmark pair,<br>Sun azimuths 174° apart'],
-                   ['37 of 37', 'windows of one whole lit overlap'], ['0.57 m', 'held-out median<br>(0.61 px on the 0.93 m NAC grid)']];
+    // v12: the head-to-head, the two cross-mission results and the independent check points
+    const stats = [['406', 'windows of real data,<br>11 instrument pairings'], ['6 of 6', 'SAC\'s own pair, Suns 174° apart;<br>SIFT, ORB and AKAZE: 0 of 6'],
+                   ['31 of 31', 'TMC-2 onto Japan\'s Kaguya map,<br>every window at SAC\'s site'], ['44 of 49', 'a whole IIRS strip onto<br>NASA\'s WAC map, square by square'],
+                   ['1.7–2.4 m', 'RMSE against 60 points<br>clicked by hand']];
     s.stats = stats.map(([n, l], i) => { const e = put(mk('div', 'abs', r), {left: '120px', top: '0', display: 'flex', alignItems: 'baseline', gap: '28px', width: '880px'});
       const a = mk('div', 'big', e, n), b = mk('div', 'lab', e, l); a.style.whiteSpace = 'nowrap'; b.style.cssText = 'line-height:1.25;color:#d3d3cd;max-width:560px'; e._n = a; e._l = b; return e; });
     // right: the pairing mosaic, SAC's pair, then the 37 tiles in place
@@ -490,7 +492,7 @@ SCENES.evidence = {
     return s;
   },
   draw(s, t, dur, W){
-    const cue = [wt(W, /hundred/, 2) - .5, wt(W, /^eleven/, 4) - .3, wt(W, /benchmark/, 6) - .5, wt(W, /overlap/, 9) - .6, wt(W, /median/, 12) - .6];
+    const cue = [wt(W, /hundred/, 2) - .5, wt(W, /benchmark/, 5) - .5, wt(W, /Kaguya/, 9) - .5, wt(W, /infrared/, 12) - .5, wt(W, /clicked/, 16) - .6];
     put(s.top, {opacity: eOut(prog(t, 0, .6))});
     s.stats.forEach((e, i) => { const p = eOut(prog(t, cue[i], cue[i] + .6)), next = i < 4 ? prog(t, cue[i + 1], cue[i + 1] + .6) : 0;
       // the newest stat is large at the top; earlier ones step down the column, smaller
@@ -498,10 +500,12 @@ SCENES.evidence = {
       const y = big ? 150 : 360 + (k - 1) * 104;
       put(e, {opacity: p * (big ? 1 : .62), transform: `translateY(${y + (1 - p) * 30}px)`});
       put(e._n, {fontSize: big ? '136px' : '64px'}); put(e._l, {fontSize: big ? '32px' : '25px'}); e._l.innerHTML = big ? e._l.dataset.full || (e._l.dataset.full = e._l.innerHTML) : (e._l.dataset.full || e._l.innerHTML).replace(/<br>/g, ' '); });
-    const mosA = eOut(prog(t, cue[0], cue[0] + .7)) * (1 - eIO(prog(t, cue[2] - .3, cue[2] + .2)));
-    put(s.mos, {opacity: mosA}); s.mosTiles.forEach((e, i) => put(e, {opacity: clamp(prog(t, cue[0] + i * .08, cue[0] + .4 + i * .08)), outline: t > cue[1] && t < cue[2] ? '2px solid #f4f4f1' : '1px solid #3a3a37'}));
-    put(s.sac, {opacity: eOut(prog(t, cue[2], cue[2] + .6)) * (1 - eIO(prog(t, cue[3] - .3, cue[3] + .2)))});
-    const ta = eOut(prog(t, cue[3], cue[3] + .5)); put(s.tm, {opacity: ta});
+    // v12: the mosaic of pairings, then SAC's pair from "benchmark" to the end; the 37-tile overlap
+    // map belonged to the v11 stats and is no longer drawn here.
+    const mosA = eOut(prog(t, cue[0], cue[0] + .7)) * (1 - eIO(prog(t, cue[1] - .3, cue[1] + .2)));
+    put(s.mos, {opacity: mosA}); s.mosTiles.forEach((e, i) => put(e, {opacity: clamp(prog(t, cue[0] + i * .08, cue[0] + .4 + i * .08)), outline: '1px solid #3a3a37'}));
+    put(s.sac, {opacity: eOut(prog(t, cue[1], cue[1] + .6))});
+    const ta = 0; put(s.tm, {opacity: ta});
     if (ta > 0){
       const g = s.tm.getContext('2d'), T = D.tiles, w = T[0].w, pad = w * .8; g.clearRect(0, 0, 820, 700);
       const x0 = Math.min(...T.map(v => v.x)) - pad, x1 = Math.max(...T.map(v => v.x)) + pad, y0 = Math.min(...T.map(v => v.y)) - pad, y1 = Math.max(...T.map(v => v.y)) + pad;
@@ -527,7 +531,7 @@ SCENES.calibration = {
     s.fa.innerHTML = `<div class="big" style="font-size:120px">0 / 44</div><div class="lab" style="font-size:28px;margin:6px 0 34px">false alarms, Sun azimuths within 10° apart</div>
       <div class="big" style="font-size:120px">0 / 16</div><div class="lab" style="font-size:28px;margin-top:6px">false alarms, Sun azimuths 132–174° apart</div>`;
     s.ch = put(mk('canvas', 'abs', r), {left: '960px', top: '150px', width: '860px', height: '720px'}); s.ch.width = 860; s.ch.height = 720;
-    s.five = put(mk('div', 'abs', r, '<b>5 m and up:</b> every planted shift caught,<br>with the Suns close'), {left: '140px', top: '760px', fontSize: '34px', lineHeight: 1.3, color: '#d3d3cd'});
+    s.five = put(mk('div', 'abs', r, '<b>5 m and up:</b> all 1,056 caught, with the Suns close.<br>The usual residual check: <b>none</b>.'), {left: '140px', top: '760px', fontSize: '34px', lineHeight: 1.3, color: '#d3d3cd'});
     return s;
   },
   draw(s, t, dur, W){
