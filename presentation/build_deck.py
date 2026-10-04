@@ -483,7 +483,9 @@ HOW_ROWS = [
     # Five rows now, each a PS axis in its own words; CROSS-MISSION (31/31) stays on slide 4.
     # REPORT "SAC's own benchmark pair (equatorial ...)" 6 agrees; "Classical matchers on the same windows"
     # rows 1 and 4: SIFT/ORB/AKAZE 0/6, and "Sun 154-177 deg away" ours 48/56 vs 0/56 each.
-    ("SUN AZIMUTH", GREEN, "6/6 at 174°", f" on SAC's pair [1]; 154–177°: 48/56; classical 0/6, 0/56"),
+    # 4 Oct (an outside read: "don't let the judge find the gap"): the 60-120 deg gap is named here, on the
+    # first content slide ("Real sun-angle sweep": 0 of 7 + 5 accepted at 60-90 and 90-120).
+    ("SUN AZIMUTH", GREEN, "6/6 at 174°", f", SAC's pair [1], classical 0/6; 48/56 at 154–177°; gap 60–120°: 0/12"),
     # "Sun azimuth and elevation, on SAC's own frame": raised up to 41.7°, 61/71 windows.
     ("SUN ELEVATION", GREEN, "61/71 windows", ", Sun up to 41.7° higher"),
     # "One site, every camera (Site N)" OHRC -> TMC-2 10/10 at 4.2x; "TMC-2 -> IIRS" 62/62 at 16x.
@@ -558,7 +560,7 @@ def slide2(s):
     _box(s, ix, cy + 0.38, RIGHT - ix, 6.85 - cy - 0.38, fill=FILL_ORANGE, line=LINE_ORANGE,
          name="card-innovation")
     _text(s, ix + 0.14, cy + 0.46, RIGHT - ix - 0.28, 0.30,
-          [P(R("A failure detector, calibrated on real data.", 13, True, INK))], name="inn-lead")
+          [P(R("Failure detector, calibrated on real data.", 13, True, INK))], name="inn-lead")
     # v12 final: the false-alarm count now spans both populations - "Trust layer ...": 0% at d = 0 in the
     # 30 visible windows and in the 16 "Visible against infrared" windows (46 = 30 + 16).
     # Final claim-check (4 Oct): the d = 0 trials re-check windows CHOSEN because the check agreed, so
@@ -723,18 +725,19 @@ SCORECARD = [
     # v12 final: azimuth and elevation in one row (the freed row carries cross-mission).
     # 4 Oct review: "azimuth" and "elevation" named (an automated screen found neither); the 154-177 deg
     # head-to-head ("Classical matchers ...", 48/56 vs 0/56 each) is back.
-    ("Sun azimuth, elevation", f"Azimuth 174° apart, SAC's pair [1]: 6/6 (SIFT/ORB/AKAZE 0/6); 154–177°: "
-                               f"48/56 (0/56). Elevation up to 41.7° higher: 61/71",
+    ("Sun azimuth, elevation", f"Azimuth 0–60° apart: 41/42; 174°, SAC's pair [1]: 6/6 (SIFT/ORB/AKAZE 0/6); "
+                               f"154–177°: 48/56 (0/56). Elevation up to 41.7° higher: 61/71",
      GREEN),
     # "Sun azimuth and elevation, on SAC's own frame": the near-azimuth table, its totals line.
     # "A real viewpoint test at Site N": agrees / windows, angle apart, held-out median, and its grid
     # (v11c: a cold reader took the 1.12 m for SAC's 1.12 m NAC grid of paper [1], 2 Oct).
-    ("Viewpoint", f"OHRC → OHRC, 40° apart: 8/8, held-out median 1.12 m", GREEN),
+    # 4 Oct: the viewpoint row moved into the relief risk below (OHRC views 40 deg apart: 8/8), where it
+    # answers "relief is weak" and frees this column for the rows that grew.
     # "Scale rung" 3 agrees of 4; "TMC-2 -> IIRS" scale column 16.2x, every window on both orbits.
     # v11c names the 29.6× rung's source ("from which sensor?", cold read, 2 Oct). 4 Oct (claim-check):
     # of the 3, only w01 is on dense evidence (0.55 px); w02 and w03 rest on 1 and 7 verified cells.
     ("Scale", f"16×{NBSP}TMC-2{_TO}IIRS: 62/62; 4.2×{NBSP}OHRC{_TO}TMC-2: 10/10; "
-              f"29.6×{NBSP}OHRC{_TO}Kaguya{NBSP}TC: 3/4 windows (1 strong)", GREEN),
+              f"29.6×{NBSP}onto Kaguya{NBSP}TC: 3/4 (1 strong)", GREEN),
     # "TMC-2 -> IIRS", both orbits: bands beyond 850 nm, windows accepted. (v11c: "16 places" cut to pay
     # for the words added on this slide.)
     # v12: "IIRS -> LRO WAC global mosaic": accepted 12/16 (cross-mission; its own section, not in the
@@ -769,13 +772,15 @@ SCORECARD = [
     # with its reference-grid medians from the 74 S rows of the same section, 0.41-1.01 px = 0.51-0.94 m).
     # The "OHRC, TMC, IIRS" row it replaces repeated fig10, which stands beside it (the reader also
     # could not reconcile its 30/30 with 62/62 and 58/58).
-    ("Sub-pixel: TMC-2, IIRS", "Held-out medians in their own pixels: TMC-2 0.36–0.48 px (1.6–2.2 m); "
-                               "IIRS 1555 nm 0.16–0.32 px (13.9–27.3 m)", GREEN),
+    # 4 Oct: "0.36-0.48 px = 1.6-2.2 m implies a ~4.5 m grid, the diagram says 5.173 m" (an outside read):
+    # the row is NAC <-> TMC-2 at SAC's site, TMC-2's 4.555 m grid ("In the Chandrayaan-2 image's own
+    # pixels"); fig10's TMC-2 is another pass. Both named.
+    ("Sub-pixel: TMC-2, IIRS", "Held-out medians, own pixels: TMC-2 vs NAC 0.36–0.48 px of its 4.56 m grid "
+                               "(1.6–2.2 m); IIRS 1555 nm vs TMC-2 0.16–0.32 px (13.9–27.3 m)", GREEN),
     ("Sub-pixel: OHRC", "OHRC's 0.25 m pixel is finer than its NAC reference can check: 0.51–0.94 m, "
                         "0.41–1.01 NAC px", AMBER),
     # "Runtime and match distribution": grid coverage, and the delivered uniform set.
-    ("Uniform distribution", "Inliers in ≥95% of 8×8 cells, 17/20 windows; reports RMSE, inlier "
-                       "count, ratio", GREEN),
+    ("Uniform distribution", "Inliers in ≥95% of 8×8 cells on 17/20 windows", GREEN),
     # v12: "Independent check points": 6 windows x 10 points, ours 1.69-2.39 m RMSE, the archive prior
     # 2.9-15.1 m. Replaces v11's "Deliverables" row (slide 3's outcome box names the GeoTIFF, control
     # points and trust map); the cold readers' "RMSE appears nowhere" is answered by a measured RMSE.
@@ -783,8 +788,11 @@ SCORECARD = [
     # "archive prior RMSE" column is NOT Chandrayaan-2's raw georeference: the cut already applies the
     # NAC's 4 m correction (REPORT, Site N: "first moved (-29, -61) m into LRO's geometry"), so the
     # row now calls it the placement before matching (claim-check, 4 Oct).
-    ("Check points", f"60 hand-clicked, OHRC{_TO}NAC: 1.7–2.4 m RMSE (1.5–2.6 NAC px), click precision 1.5 m; "
-                     "before matching 2.9–15.1 m", AMBER),
+    # 4 Oct: "1.7-2.4 m is 7-10 OHRC pixels" (an outside read). The section's "plane floor" - each point
+    # against a homography fitted to the OTHER clicks - is what clicks plus relief allow any single
+    # transform; ours is at or below it on 5 of 6 windows (w04, w09, w25, c02, c04; c03 2.04 vs 1.96).
+    ("Check points", f"60 hand-clicked, OHRC{_TO}NAC: 1.7–2.4 m RMSE; a fit to the clicks themselves does no "
+                     "better on 5 of 6; click precision 1.5 m", AMBER),
 ]
 RISKS = [
     # "Real sun-angle sweep" bins 60-90 and 90-120: 0 accepted of 7 + 5, none wrongly accepted; 1 failed
@@ -797,12 +805,12 @@ RISKS = [
      # uses rank 4, 7, 9.
      # v12 final: "Choosing the reference by its Sun", the whole-archive line: 208 of 300 OHRC
      # observations have a partner from another orbit within 5 deg ("Site N" was undefined, 3 Oct).
-     ("Choose the reference by its Sun", "Built: 208 of 300 OHRC observations: a partner within 5°")),
+     ("Reference by its Sun: 287 of 300", "within 5° (208 another orbit); other 13 judged, certified only where verified")),
     # "Relief: TMC-2 fore -> aft orthorectified on the pass's DTM": 1/4 without, 2/4 with.
     # 4 Oct: "aft" printed through PowerPoint comes out as "a" + U+014C in the PDF's text layer (the
     # "ft" ligature), which a screener's text extraction reads as garbage; the row avoids the word.
-    (("Relief parallax", "TMC-2 views 50° apart: 1/4 windows"),
-     ("DTM orthorectification", "Built: 2/4 windows on ISRO's DTM")),
+    (("Relief parallax", "TMC-2 views 50° apart: 1/4 windows; OHRC views 40° apart: 8/8"),
+     ("DTM orthorectification", "Built: 2/4 windows on ISRO's DTM (label: 63 m height RMSE)")),
 ]
 
 
@@ -1166,7 +1174,9 @@ SAME_SENSOR_WORDS = ("MiLOI", "fore vs aft", "fore/aft", "NAC pairs")
 # scope, "from the visible-band fit"): 271 words against v9's 324.
 # 4 Oct: slide 2 to 190 - its fifth row puts the PS's own words (Sun azimuth, Sun elevation, scale) back
 # after an automated-screening pass found neither 'azimuth' nor 'elevation' in the text layer.
-MAX_WORDS = {2: 190, 3: 160, 4: 230, 5: 170}      # a guard, not a target (v11: slide 4 cut from 275; slide 2 gained a row)
+# Slide 4 to 245 the same day: an outside read asked for what happens to the 92 OHRC frames without a
+# 5-deg partner, the 0-60 deg sweep, the check points' plane floor and TMC-2's grid - each said in a few words.
+MAX_WORDS = {2: 190, 3: 160, 4: 245, 5: 170}      # a guard, not a target (v11: slide 4 cut from 275; slide 2 gained a row)
 TYPE_FLOOR_PT = 11                                 # v9 allowed 9 pt; the SPOC asked for bigger letters
 
 
