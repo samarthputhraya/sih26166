@@ -822,8 +822,11 @@ SCORECARD = [
     # transform; ours is at or below it on 5 of 6 windows (w04, w09, w25, c02, c04; c03 2.04 vs 1.96).
     # v13 cold read: without the click precision the RMSE "reads as a miss". It makes the plane floor's point
     # (a fit to the clicks does no better on 5 of 6) in fewer words; that line stays in the portal description.
+    # v13b (Samartha, 4 Oct): GREEN. The row's own question - does the registration agree with ground truth
+    # it never saw? - is met at the precision of that truth; the sub-pixel shortfall in OHRC's own pixels is
+    # the AMBER row above, so the limit is still on the slide.
     ("Check points", f"60 hand-clicked, OHRC{_TO}NAC: 1.7–2.4 m RMSE\n"
-                     "Close to the click precision, 1.5 m", AMBER),
+                     "Close to the click precision, 1.5 m", GREEN),
 ]
 RISKS = [
     # "Real sun-angle sweep" bins 60-90 and 90-120: 0 accepted of 7 + 5, none wrongly accepted; 1 failed
