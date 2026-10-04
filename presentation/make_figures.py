@@ -1035,9 +1035,11 @@ def fig_sun_map():
 # back at SITE_N_DPI), so every point size below IS the size on the slide. The v11 draft was drawn at
 # 6.6 x 4.1 in and shrunk to 5.45 in: its captions printed at 7.0 and 7.8 pt and its labels at 8.7-9.5 pt,
 # under the deck's 11 pt floor (pre-submission audit, 2 Oct). Nothing here is smaller than 11 pt.
-SITE_N_SIZE = (5.90, 3.50)
+# v13 (4 Oct evening): slide 4's scorecard lost its parentheticals and the diagram took the freed width
+# and height, its type 12 pt and up; the legs give metres only (the pixel ranges stay in REPORT).
+SITE_N_SIZE = (6.20, 3.55)
 SITE_N_DPI = 200
-SITE_N_MIN_PT = 11.0
+SITE_N_MIN_PT = 12.0
 REPORT_MD = ROOT / "REPORT.md"
 DECK_ACCENT = "#c24a1e"            # the deck's ACCENT (build_deck): readable at 11 pt, unlike ORANGE
 
@@ -1087,8 +1089,7 @@ def fig_site_n():
         lo, hi = min(rob), max(rob)
         need(f"{lo:.2f}-{hi:.2f} ({lo * g:.1f}-{hi * g:.1f} m) on {g:g} m")
         need(f"| {len(rows)} | agrees {len(acc)} |")
-        return (f"{len(acc)}/{len(rows)} accepted", f"{lo:.2f}–{hi:.2f} {grid} px",
-                f"({lo * g:.1f}–{hi * g:.1f} m)")
+        return f"{len(acc)}/{len(rows)} accepted", f"{lo * g:.1f}–{hi * g:.1f} m"
 
     ot, on, nt = leg(legs["ot"], "TMC-2"), leg(legs["on"], "NAC"), leg(legs["nt"], "TMC-2")
     g_ohrc, g_nac, g_tmc = (need(f"{float(legs['ot'][0]['src_gsd_m']):g} m"),
@@ -1126,15 +1127,15 @@ def fig_site_n():
     ax.set_xlim(0, W)
     ax.set_ylim(0, H)
     ax.axis("off")
-    fs, fs_name, fs_title = 11, 11.5, 12
+    fs, fs_name, fs_title = 12, 13, 13
 
     def text(x, y, s, size=fs, weight="normal", colour=INK, ha="center"):
         return ax.text(x, y, s, ha=ha, va="center", fontsize=size, fontweight=weight, color=colour,
                        zorder=3)
 
     # Nodes, in inches from the bottom-left corner: the Chandrayaan-2 cameras in blue, LRO in grey.
-    bw, bh = 2.00, 0.48
-    top, bot = H - 0.60, H - 2.12                                 # top edges of the two node rows
+    bw, bh = 2.30, 0.58
+    top, bot = H - 0.52, H - 2.24                                 # top edges of the two node rows
     left, right = 0.04, W - 0.04 - bw
     # OHRC's own pixels are ~0.25 m; every Site N leg matched it resampled to 1.232 m (src_gsd_m).
     nodes = {"O": (left, top, "Chandrayaan-2 OHRC", f"matched on a {g_ohrc} grid", BLUE),
@@ -1144,36 +1145,43 @@ def fig_site_n():
     for x, y, name, detail, col in nodes.values():
         ax.add_patch(FancyBboxPatch((x, y - bh), bw, bh, boxstyle="round,pad=0,rounding_size=0.08",
                                     fc="#eef4fb" if col == BLUE else "#f1f1ef", ec=col, lw=1.4, zorder=2))
-        text(x + bw / 2, y - bh / 2 + 0.11, name, fs_name, "bold")
-        text(x + bw / 2, y - bh / 2 - 0.11, detail)
+        text(x + bw / 2, y - bh / 2 + 0.13, name, fs_name, "bold")
+        text(x + bw / 2, y - bh / 2 - 0.13, detail)
 
     def arrow(x0, y0, x1, y1):
         ax.add_patch(FancyArrowPatch((x0, y0), (x1, y1), arrowstyle="-|>", mutation_scale=16, linewidth=2.0,
                                      color=AQUA, zorder=1, shrinkA=0, shrinkB=0))
 
     gap = 0.03
-    # OHRC -> NAC, along the top; its label above the boxes, where it may run wider than the gap.
+    # Every leg: its count, then its error in metres - no brackets, no second pixel unit (v13). Pixel
+    # ranges on two TMC-2 grids were what an outside reader could not reconcile (4 Oct).
+    # OHRC -> NAC, along the top; count above the arrow, metres below, inside the gap.
     arrow(left + bw + gap, top - bh / 2, right - gap, top - bh / 2)
-    text(W / 2, top + 0.16, f"{on[0]} · {on[1]} {on[2]}")
-    # OHRC -> TMC-2, straight down the left; three short lines beside it.
+    text(W / 2, top - bh / 2 + 0.16, on[0])
+    text(W / 2, top - bh / 2 - 0.16, on[1])
+    # OHRC -> TMC-2, straight down the left; two short lines beside it.
     cx = left + bw / 2
     arrow(cx, top - bh - gap, cx, bot + gap)
     mid = (top - bh + bot) / 2
-    for k, s in enumerate(ot):
-        text(cx + 0.12, mid + (1 - k) * 0.18, s, ha="left")
+    text(cx + 0.12, mid + 0.10, ot[0], ha="left")
+    text(cx + 0.12, mid - 0.10, ot[1], ha="left")
     # NAC -> TMC-2, the diagonal; its label right of the line and clear of it.
     arrow(right + 0.30, top - bh - gap, left + bw - 0.20, bot + gap)
-    text(right - 0.25, mid + 0.07, nt[0], ha="left")
-    text(right - 0.25, mid - 0.11, f"{nt[1]} {nt[2]}", ha="left")
+    text(right - 0.10, mid + 0.10, nt[0], ha="left")
+    text(right - 0.10, mid - 0.10, nt[1], ha="left")
     # TMC-2 -> IIRS along the bottom; the IIRS windows lie along the strip, not on the site's windows.
     arrow(left + bw + gap, bot - bh / 2, right - gap, bot - bh / 2)
-    text(W / 2, bot - bh - 0.16, f"{ti_acc}/{len(ti)} accepted · {len(bands)} infrared bands (multi-modal)")
-    text(W / 2, bot - bh - 0.34, f"IIRS windows along this TMC-2 pass, {min(lats):.1f}–{max(lats):.1f}°N")
+    text(W / 2, bot - bh / 2 + 0.16, f"{ti_acc}/{len(ti)} accepted")
+    text(W / 2, bot - bh / 2 - 0.16, f"{len(bands)} infrared bands")
+    text(W / 2, bot - bh - 0.18,
+         f"Multi-modal: IIRS windows along this TMC-2 pass, {min(lats):.1f}–{max(lats):.1f}°N")
     # 4 Oct: the loop line ("Loop via NAC vs direct ... consistency, not accuracy") dropped - both final
     # cold readers stopped reading there; the loop's median and max stay in REPORT and the README.
-    text(0.04, 0.22, "Ranges: per-window held-out medians (matches the fit never saw), inlier ratio > 0.5",
+    # The metres are REPORT's Site N ranges: accepted windows with an inlier ratio above 0.5.
+    # A residual, not an error: real pairs have no exact truth (REPORT's header; v13 claim-check).
+    text(0.04, 0.15, "Metres: held-out median residual per window, inlier ratio over 0.5",
          colour=MUTED, ha="left")
-    text(0.04, H - 0.16, f"One site, {site}, and its TMC-2 pass: Suns matched, every leg checked",
+    text(0.04, H - 0.17, f"One site, {site}, and its TMC-2 pass: Suns matched, every leg checked",
          fs_title, "bold", ha="left")
 
     out = OUT / "fig10_site_n.png"

@@ -487,19 +487,25 @@ HOW_ROWS = [
     # first content slide ("Real sun-angle sweep": 0 of 7 + 5 accepted at 60-90 and 90-120).
     # 4 Oct, freeze d5222db: "The Sun ladder": 8 of the 12 windows 60-120 deg apart accepted through NACs lit in
     # between (0 of 12 direct, still on slide 4).
-    # The line break is ours: left to PowerPoint, "60–120°" broke at its dash (4 Oct).
-    ("SUN AZIMUTH", GREEN, "6/6 at 174°", ", SAC's pair [1], classical 0/6;\n60–120°: 0/12 direct, 8/12 via the Sun ladder"),
+    # The line breaks are ours: left to PowerPoint, "60–120°" broke at its dash (4 Oct).
+    # v13 (4 Oct evening, an outside read): "via the Sun ladder" named a thing the slide never defines; it
+    # now says what the ladder does. Each row is one bold count and a few words; the second results
+    # (62/62 twice, the WAC strip, click precision) are on slide 4.
+    ("SUN AZIMUTH", GREEN, [("6/6", True), (" at 174°, SAC's pair [1]; classical 0/6\n60–120° apart: 0/12 direct,\n", False),
+                            ("8/12", True), (" by chaining through intermediate Suns", False)]),
     # "Sun azimuth and elevation, on SAC's own frame": raised up to 41.7°, 61/71 windows.
-    ("SUN ELEVATION", GREEN, "61/71 windows", ", Sun up to 41.7° higher"),
-    # "One site, every camera (Site N)" OHRC -> TMC-2 10/10 at 4.2x; "TMC-2 -> IIRS" 62/62 at 16x.
-    ("SCALE", GREEN, "10/10 at 4.2×", f" OHRC{_TO}TMC-2; 62/62 at 16× TMC-2{_TO}IIRS"),
-    # "TMC-2 -> IIRS" both orbits beyond 850 nm 62/62; "IIRS -> LRO WAC, the whole strip, region by
-    # region": accepted 44/49.
-    ("MULTI-MODAL", GREEN, "62/62", f" TMC-2{_TO}IIRS infrared; IIRS strip{_TO}NASA's map: 44/49"),
-    # "Independent check points": ours 1.69-2.39 m RMSE over 6 OHRC -> NAC windows x 10 points. AMBER:
-    # 1.5-2.6 px on the NAC grid is not sub-pixel (claim-check v12 #5; slide 4 says so). "click
-    # precision": the same section, "one click's precision is a median 1.47 m on the reference".
-    ("ACCURACY", AMBER, "1.7–2.4 m", " RMSE, 60 hand-clicked check points; click precision 1.5 m"),
+    ("SUN ELEVATION", GREEN, [("61/71", True), (" windows, Sun up to 41.7° higher", False)]),
+    # "One site, every camera (Site N)" OHRC -> TMC-2 10/10 at 4.2x.
+    ("SCALE", GREEN, [("10/10", True), (f" OHRC{_TO}TMC-2 across 4.2×", False)]),
+    # "TMC-2 -> IIRS" both orbits beyond 850 nm 62/62, at 16x.
+    ("MULTI-MODAL", GREEN, [("62/62", True), (f" TMC-2{_TO}IIRS infrared, across 16×", False)]),
+    # v13 cold read: "1.7-2.4 m" alone read as the PS's sub-pixel demand missed. So the row leads with the
+    # sub-pixel result in the Chandrayaan-2 image's own pixels ("Sub-pixel accuracy ... In the Chandrayaan-2
+    # image's own pixels": LRO NAC <-> TMC-2 at SAC's site, 0.36-0.48 px on 4.555 m = 1.6-2.2 m), then the
+    # check points: "Independent check points", 1.69-2.39 m RMSE over 6 OHRC -> NAC windows x 10 points.
+    # AMBER: 1.5-2.6 px on the NAC grid is not sub-pixel, nor is OHRC in its own (claim-check v12 #5).
+    ("ACCURACY", AMBER, [("0.36–0.48", True), (" TMC-2 px vs NAC = 1.6–2.2 m\n", False),
+                         ("1.7–2.4 m", True), (f" RMSE at 60 OHRC{_TO}NAC clicks", False)]),
 ]
 
 
@@ -511,16 +517,16 @@ def slide2(s):
     # The thesis, in the first line a judge reads (v9 wording, claim-checked).
     # v11: "Every lunar registration method returns an answer" is no longer true of the field - several
     # public SIH26166 entries refuse - so the thesis states what the matches cannot show and what we add.
-    _box(s, L, 1.75, RIGHT - L, 0.76,
+    _box(s, L, 1.75, RIGHT - L, 0.70,
          [P(R("A registration can fit its own matches and still be wrong. ", 14, True, INK),
             R("Ours registers Chandrayaan-2 across Sun, scale and sensor, and checks every region", 14, True, ACCENT),
             R(" with evidence the matcher never used.", 14, True, INK))],
          fill=FILL_BLUE, line=LINE_BLUE, anchor="m", margins=(0.16, 0.04, 0.16, 0.04), name="thesis")
 
     # Detailed explanation: the idea as one flow. The pipeline's own steps are on slide 3.
-    _tab(s, L, 2.64, H[1])
-    y0, h = 3.04, 0.94          # 4 Oct: 0.16 in shorter, for a fifth row below
-    flow = [(L, 1.30, "Image pair", "Chandrayaan-2 image + lunar reference", FILL_GREY, LINE_GREY, NAVY, MUTED),
+    _tab(s, L, 2.58, H[1])
+    y0, h = 2.98, 0.80          # v13: 0.14 in shorter again, for the three-line Sun row below
+    flow = [(L, 1.30, "Image pair", "Chandrayaan-2 + lunar reference", FILL_GREY, LINE_GREY, NAVY, MUTED),
             (2.05, 1.55, "Register", "LoFTR matching, MAGSAC++ fit [4, 5]", FILL_GREY, LINE_GREY, NAVY, MUTED),
             (3.80, 1.85, "Independent\narea check", "never reads a match", ACCENT, None, WHITE, WHITE),
             (5.85, 1.45, "Trust map", "verified · weak · no evidence", FILL_BLUE, LINE_BLUE, NAVY, MUTED)]
@@ -531,24 +537,27 @@ def slide2(s):
         if k:
             _arrow(s, x - 0.20, y0 + h / 2, x - 0.01, y0 + h / 2, colour=ACCENT if k >= 2 else MUTED)
     ox = 7.49
-    _arrow(s, 7.30, y0 + h / 2, ox - 0.01, y0 + 0.25, colour=ACCENT, w=1.25)
-    _arrow(s, 7.30, y0 + h / 2, ox - 0.01, y0 + h - 0.25, colour=ACCENT, w=1.25)
-    _box(s, ox, y0, RIGHT - ox, 0.50, [P(R("accept", 12, True, GREEN), align="c")],
-         fill=FILL_GREEN, line=LINE_GREEN, anchor="m", name="d-accept")
-    _box(s, ox, y0 + h - 0.50, RIGHT - ox, 0.50, [P(R("refuse → fallback", 12, True, ACCENT), align="c")],
-         fill=FILL_ORANGE, line=LINE_ORANGE, anchor="m", margins=(0.04, 0.02, 0.04, 0.02), name="d-refuse")
+    ob = (h - 0.04) / 2                      # v13: the two outcomes share the shorter flow's height
+    _arrow(s, 7.30, y0 + h / 2, ox - 0.01, y0 + ob / 2, colour=ACCENT, w=1.25)
+    _arrow(s, 7.30, y0 + h / 2, ox - 0.01, y0 + h - ob / 2, colour=ACCENT, w=1.25)
+    _box(s, ox, y0, RIGHT - ox, ob, [P(R("accept", 12, True, GREEN), align="c")],
+         fill=FILL_GREEN, line=LINE_GREEN, anchor="m", margins=(0.04, 0.0, 0.04, 0.0), name="d-accept")
+    _box(s, ox, y0 + h - ob, RIGHT - ox, ob, [P(R("refuse → fallback", 12, True, ACCENT), align="c")],
+         fill=FILL_ORANGE, line=LINE_ORANGE, anchor="m", margins=(0.04, 0.0, 0.04, 0.0), name="d-refuse")
     # How it addresses the problem: the three PS axes, one measured line each.
-    cy = 4.32
+    cy = 4.12
     _tab(s, L, cy, H[2])
     cw1 = 4.55          # 4 Oct: "61/71 windows" needs the width; the innovation card had room to spare
     _box(s, L, cy + 0.38, cw1, 6.85 - cy - 0.38, fill=FILL_GREY, line=LINE_GREY, name="card-how")
-    rows = HOW_ROWS
-    for k, (label, colour, bold, rest) in enumerate(rows):
-        ry = cy + 0.43 + k * 0.42
-        _box(s, L + 0.10, ry + 0.06, 1.24, 0.30, [P(R(label, 11, True, WHITE), align="c")],
+    ry = cy + 0.44
+    for label, colour, runs in HOW_ROWS:
+        n_lines = 1 + sum(t.count("\n") for t, _ in runs)
+        rh = 0.32 + 0.185 * (n_lines - 1)
+        _box(s, L + 0.10, ry + (rh - 0.27) / 2, 1.24, 0.27, [P(R(label, 11, True, WHITE), align="c")],
              fill=colour, radius=0.5, margins=(0.02, 0, 0.02, 0), name="pill")
-        _text(s, L + 1.40, ry, cw1 - 1.46, 0.42,
-              [P(R(bold, 12, True, INK), R(rest, 12, False, INK))], anchor="m", name="how-row")
+        _text(s, L + 1.40, ry, cw1 - 1.46, rh, [P(*(R(t, 12, b, INK) for t, b in runs))], anchor="m",
+              name="how-row")
+        ry += rh
 
     # Innovation and uniqueness: the calibration, both Sun populations, never pooled.
     # "Trust layer on real imagery: planted ...": 0 m row = false alarms (0 of 44 near-Sun trials, 0 of
@@ -586,7 +595,8 @@ def slide2(s):
     # head-to-head moved to the SUN row ("classical 0/6") and slide 4.
     _text(s, ix + 0.14, cy + 1.68, RIGHT - ix - 0.28, 0.62,
           # 2d3313c: the sweep's image rule judged 53 right answers and the check refused 2; at 60-120 deg, where the
-          # image cannot judge, "The Sun ladder" shows it refusing answers it cannot confirm (6 of 8 agree with a ladder).
+          # image cannot judge, "The Sun ladder" shows it refusing answers it cannot confirm (on 6 of 8 the refused
+          # direct answer lies 1.1-4.1 m from every accepted ladder).
           # The infrared detection rates (85.9 % / 99.2 %) stay in REPORT and the README.
           [P(R("Right answers refused: 2 of 53 judged; ", 12, True, INK),
              R("\nat 60–120° it refuses what it cannot confirm.", 12, False, INK))],
@@ -731,9 +741,10 @@ SCORECARD = [
     # v12 final: azimuth and elevation in one row (the freed row carries cross-mission).
     # 4 Oct review: "azimuth" and "elevation" named (an automated screen found neither); the 154-177 deg
     # head-to-head ("Classical matchers ...", 48/56 vs 0/56 each) is back.
-    ("Sun azimuth, elevation", f"Azimuth 0–60° apart: 41/42; 174°, SAC's pair [1]: 6/6 (SIFT/ORB/AKAZE 0/6); "
-                               f"154–177°: 48/56 (0/56). Elevation up to 41.7° higher: 61/71",
-     GREEN),
+    # v13 (4 Oct evening, an outside read): bare counts, no parentheticals, the line breaks set by meaning
+    # ("\n"); the freed width goes to fig10. SAC's 174° pair (6/6, classical 0/6) is slide 2's first row.
+    ("Sun azimuth, elevation", "0–60° apart: 41/42 · 154–177°: 48/56, classical 0/56\n"
+                               "Sun up to 41.7° higher: 61/71", GREEN),
     # "Sun azimuth and elevation, on SAC's own frame": the near-azimuth table, its totals line.
     # "A real viewpoint test at Site N": agrees / windows, angle apart, held-out median, and its grid
     # (v11c: a cold reader took the 1.12 m for SAC's 1.12 m NAC grid of paper [1], 2 Oct).
@@ -742,16 +753,16 @@ SCORECARD = [
     # "Scale rung" 3 agrees of 4; "TMC-2 -> IIRS" scale column 16.2x, every window on both orbits.
     # v11c names the 29.6× rung's source ("from which sensor?", cold read, 2 Oct). 4 Oct (claim-check):
     # of the 3, only w01 is on dense evidence (0.55 px); w02 and w03 rest on 1 and 7 verified cells.
-    ("Scale", f"16×{NBSP}TMC-2{_TO}IIRS: 62/62; 4.2×{NBSP}OHRC{_TO}TMC-2: 10/10; "
-              f"29.6×{NBSP}onto Kaguya{NBSP}TC: 3/4 (1 strong)", GREEN),
+    # v13: the 29.6x rung (3/4, only one on dense evidence) needs its qualifier to be true; it stays in the
+    # portal description with it, and leaves the slide.
+    ("Scale", f"4.2×{NBSP}OHRC{_TO}TMC-2: 10/10 · 16×{NBSP}TMC-2{_TO}IIRS: 62/62", GREEN),
     # "TMC-2 -> IIRS", both orbits: bands beyond 850 nm, windows accepted. (v11c: "16 places" cut to pay
     # for the words added on this slide.)
     # v12: "IIRS -> LRO WAC global mosaic": accepted 12/16 (cross-mission; its own section, not in the
     # 406 windows).
     # v12 final: "IIRS -> LRO WAC, the whole strip, region by region": 44/49, every 8x8 square voting -
     # replaces the 16 small windows' 12/16 on a whole-frame check (claim-check #7 and the cold readers).
-    ("Multi-modal", f"TMC-2{_TO}IIRS infrared: 62/62; IIRS strip onto NASA's WAC map: 44/49",
-     GREEN),
+    ("Multi-modal", f"TMC-2{_TO}IIRS infrared: 62/62\nIIRS strip{_TO}NASA's WAC map: 44/49", GREEN),
     # "TMC-2 -> SELENE TC ortho map at SAC's site, every window": 31/31 over 31 x 2.84 km.
     ("Cross-mission", f"TMC-2{_TO}Kaguya TC, every window over 88 km: 31/31", GREEN),
     # "One site, every camera ... (Site N)": OHRC -> TMC-2 from the legs table; then "TMC-2 -> IIRS" on
@@ -781,12 +792,19 @@ SCORECARD = [
     # 4 Oct: "0.36-0.48 px = 1.6-2.2 m implies a ~4.5 m grid, the diagram says 5.173 m" (an outside read):
     # the row is NAC <-> TMC-2 at SAC's site, TMC-2's 4.555 m grid ("In the Chandrayaan-2 image's own
     # pixels"); fig10's TMC-2 is another pass. Both named.
-    ("Sub-pixel: TMC-2, IIRS", "Held-out medians, own pixels: TMC-2 vs NAC 0.36–0.48 px of its 4.56 m grid "
-                               "(1.6–2.2 m); IIRS 1555 nm vs TMC-2 0.16–0.32 px (13.9–27.3 m)", GREEN),
+    # v13: Invariant 2 keeps each pixel figure's grid and metres; they are set inline ("of 4.56 m = ..."), not
+    # bracketed. The IIRS metres are REPORT's per-window values, so no grid is multiplied out beside them.
+    # v13 claim-check: each figure keeps its partner (TMC-2 vs LRO NAC - fig10 beside it shows OHRC -> TMC-2 on
+    # another TMC-2 grid) and its band (1555 nm: at 3223 nm the medians reach 1.2 px); "medians" kept.
+    ("Sub-pixel: TMC-2, IIRS", "TMC-2 vs LRO NAC: 0.36–0.48 px of 4.56 m = 1.6–2.2 m\n"
+                               "IIRS 1555 nm: 0.16–0.32 px = 13.9–27.3 m\n"
+                               "Held-out medians, own pixels", GREEN),
     # 4 Oct, d5222db: "In OHRC's own pixels, the loop closure above ... closes to a median 0.107 m RMS = 0.43 OHRC px"
-    # - precision (consistency), not accuracy; the row stays AMBER.
-    ("Sub-pixel: OHRC", "OHRC's 0.25 m pixel is finer than its NAC reference can check: 0.51–0.94 m, "
-                        "0.41–1.01 NAC px; a 3-image loop closes to 0.43 OHRC px (precision)", AMBER),
+    # - precision (consistency), not accuracy; the row stays AMBER and says "Precision" in words. v13 claim-check
+    # (Invariant 2): the metres name their grid - "OHRC (the finer: bounded by the reference grid; OHRC pixels =
+    # metres / 0.25 m)": 2.0-3.7 px = 0.51-0.94 m.
+    ("Sub-pixel: OHRC", "2.0–3.7 OHRC px = 0.51–0.94 m: the NAC limits it\n"
+                        "Precision: a 3-image loop closes to 0.43 px = 0.107 m", AMBER),
     # "Runtime and match distribution": grid coverage, and the delivered uniform set.
     ("Uniform distribution", "Inliers in ≥95% of 8×8 cells, 17/20 windows", GREEN),
     # v12: "Independent check points": 6 windows x 10 points, ours 1.69-2.39 m RMSE, the archive prior
@@ -799,8 +817,10 @@ SCORECARD = [
     # 4 Oct: "1.7-2.4 m is 7-10 OHRC pixels" (an outside read). The section's "plane floor" - each point
     # against a homography fitted to the OTHER clicks - is what clicks plus relief allow any single
     # transform; ours is at or below it on 5 of 6 windows (w04, w09, w25, c02, c04; c03 2.04 vs 1.96).
-    ("Check points", f"60 hand-clicked, OHRC{_TO}NAC: 1.7–2.4 m RMSE; a fit to the clicks themselves does no "
-                     "better on 5 of 6; click precision 1.5 m", AMBER),
+    # v13 cold read: without the click precision the RMSE "reads as a miss". It makes the plane floor's point
+    # (a fit to the clicks does no better on 5 of 6) in fewer words; that line stays in the portal description.
+    ("Check points", f"60 hand-clicked, OHRC{_TO}NAC: 1.7–2.4 m RMSE\n"
+                     "Close to the click precision, 1.5 m", AMBER),
 ]
 RISKS = [
     # "Real sun-angle sweep" bins 60-90 and 90-120: 0 accepted of 7 + 5, none wrongly accepted; 1 failed
@@ -810,74 +830,93 @@ RISKS = [
     # fails?": "A Sun moved 90° changes *which* slopes are lit"); an opposite Sun only flips the shading.
     # 2d3313c, "The Sun ladder": "on 6 the matcher's refused direct answer lies within 5 m of every accepted
     # ladder ... on 2 it lies 133-292 m away - answers the ladders contradict, rightly refused".
-    (("Sun 60–120° away: other slopes lit", "0/12 direct, refused as unconfirmable; 6 of 8 agree with a ladder"),
+    # v13 (an outside read: "say what agrees with what"): the refused DIRECT answer against the CHAINED ones.
+    # v13 cold read: "if the refused answer was within 4 m, was refusing it wrong?" - so it says why it was refused.
+    (("Sun 60–120° away: other slopes lit",
+      "0/12 direct: refused as unconfirmable.\nOn 6 of 8 the refused answer lies\n1.1–4.1 m from every accepted chain"),
      # v12: "Choosing the reference by its Sun": 42 images cover Site N's OHRC frame; the three Site N
      # uses rank 4, 7, 9.
      # v12 final: "Choosing the reference by its Sun", the whole-archive line: 208 of 300 OHRC
      # observations have a partner from another orbit within 5 deg ("Site N" was undefined, 3 Oct).
      # 4 Oct, d5222db: "The Sun ladder" 8 of 12, two ladders agree to 2.30-3.74 m; finder "296 of 300" have a partner
      # from another orbit inside the verified Sun range (azimuths <= 60 deg, Sun <= 41.7 deg higher or lower).
-     ("Sun ladder: 8 of 12 accepted", "links ≤ 60°; routes agree to 2.3–3.74 m; 296/300 OHRC: partner in tested range")),
+     # v13: slide 2's words for the ladder ("chaining through intermediate Suns"), not its jargon name.
+     ("Chain through intermediate Suns: 8/12",
+      # v13 claim-check: REPORT's 2.30-3.74 m is on the 5 windows two ladders cover, and is consistency.
+      "Steps ≤ 60°. On 5 windows two chains agree\nto 2.30–3.74 m: consistency, not accuracy.\n"
+      "296/300 OHRC: a partner in tested range")),
     # "Relief: TMC-2 fore -> aft orthorectified on the pass's DTM": 1/4 without, 2/4 with.
     # 4 Oct: "aft" printed through PowerPoint comes out as "a" + U+014C in the PDF's text layer (the
     # "ft" ligature), which a screener's text extraction reads as garbage; the row avoids the word.
     (("Relief parallax", "TMC-2 views 50° apart: 1/4; OHRC views 40° apart: 8/8"),
-     ("DTM orthorectification", "Built: 2/4 on ISRO's DTM (label: 63 m height RMSE)")),
+     ("DTM orthorectification", "Built: 2/4 on ISRO's DTM, labelled 63 m height RMSE")),
 ]
 
 
 def slide4(s):
     H = HEADINGS[4]
     L, RIGHT = 0.55, 12.78
-    ty = 1.33
-    tw0 = _tab(s, L, ty, H[0])
-    # Two lines by choice: on one, at 3.05 in, it overran its 3.01 in and v11 printed "pairings" alone.
-    _text(s, L + tw0 + 0.10, ty, 6.72 - L - tw0 - 0.10, 0.36,
-          [P(R("Real data: " + "\n".join(EVIDENCE_SCALE), 11, True, MUTED), align="r")], anchor="m",
-          name="evidence-scale")
-    y, rg = 1.76, 0.045
-    lw, tw = 1.30, 4.82
+    tw0 = _tab(s, L, 1.33, H[0])
+    # v13: the scorecard at 12 pt (it was 11), its rows one to three lines by meaning, so the column is
+    # narrower. Its freed width goes to fig10, its freed height to the evidence scale, which sat beside
+    # the tab in 11 pt grey (cold readers never quoted it); the legend takes that place beside the tab.
+    lx = L + tw0 + 0.20
+    _dot(s, lx, 1.33 + 0.11, 0.13, GREEN)
+    _text(s, lx + 0.19, 1.33, 1.5, 0.36, [P(R("met, as measured", 11, False, MUTED))], anchor="m", name="legend")
+    _dot(s, lx + 1.62, 1.33 + 0.11, 0.13, AMBER)
+    # "a measured limit" read as met to one cold reader skimming the dots (2 Oct): the amber row holds
+    # for TMC-2 and IIRS, not for OHRC.
+    _text(s, lx + 1.81, 1.33, 0.70, 0.36, [P(R("partly met", 11, False, MUTED))], anchor="m", name="legend")
+    y, rg = 1.76, 0.05
+    lw, tw = 1.30, 4.45
     for label, text, colour in SCORECARD:
-        # Each row's lines are set here (_wrap, at 97 % of the text width), never by PowerPoint,
-        # which would split a range at its en dash. Two lines of 11 pt fit 0.455 in; a further
-        # line adds one line's height (the sub-pixel row takes three).
-        lines = _wrap(text, 11, False, 0.97 * (tw - 0.08 - 0.30))
-        rh = 0.455 + 0.19 * max(0, len(lines) - 2)
+        # Each row's lines are set here (by meaning at "\n", then _wrap at 97 % of the text width as a
+        # guard), never by PowerPoint, which would split a range at its en dash.
+        lines = [ln for part in text.split("\n") for ln in _wrap(part, 12, False, 0.97 * (tw - 0.08 - 0.30))]
+        n_label = len(_wrap(label, 11.5, True, lw - 0.10))
+        rh = 0.34 + 0.19 * (max(len(lines), n_label) - 1)
         _box(s, L, y, lw, rh, [P(R(label, 11.5, True, NAVY), align="c")], fill=FILL_BLUE,
              line=LINE_BLUE, anchor="m", margins=(0.04, 0, 0.04, 0), name="req-label")
-        _box(s, L + lw + 0.05, y, tw, rh, [P(R("\n".join(lines), 11, False, INK))], fill=WHITE,
+        _box(s, L + lw + 0.05, y, tw, rh, [P(R("\n".join(lines), 12, False, INK))], fill=WHITE,
              line=LINE_GREY, anchor="m", margins=(0.08, 0.01, 0.30, 0.01), name="req-text")
         _dot(s, L + lw + 0.05 + tw - 0.24, y + rh / 2 - 0.07, 0.14, colour)
         y += rh + rg
-    ly = y + 0.01
-    _dot(s, L + lw + 0.05, ly + 0.07, 0.13, GREEN)
-    _text(s, L + lw + 0.24, ly, 1.7, 0.26, [P(R("met, as measured", 11, False, MUTED))], name="legend")
-    _dot(s, L + lw + 1.90, ly + 0.07, 0.13, AMBER)
-    # "a measured limit" read as met to one cold reader skimming the dots (2 Oct): the amber row holds
-    # for TMC-2 and IIRS, not for OHRC.
-    _text(s, L + lw + 2.09, ly, 2.6, 0.26, [P(R("partly met", 11, False, MUTED))], name="legend")
+    # The evidence scale (REPORT's "Reproduce" footer), as two figures a judge reads first.
+    sy, sw = y + 0.03, (lw + 0.05 + tw - 0.15) / 2
+    for k, (num, rest) in enumerate(n.split(" ", 1) for n in EVIDENCE_SCALE):
+        lab = "windows of real data" if rest == "windows" else rest
+        _box(s, L + k * (sw + 0.15), sy, sw, 6.85 - sy,
+             [P(R(num, 22, True, NAVY), R(" " + lab, 12.5, True, MUTED))],
+             fill=FILL_GREY, line=LINE_GREY, anchor="m", margins=(0.14, 0.02, 0.10, 0.02), name="evidence-scale")
 
     # Every Chandrayaan-2 camera the PS names, at one site, each leg checked (REPORT "Site N"). v11 draft
     # had fig9 (the Sun map on SAC's frame) here; the scorecard's two Sun rows carry those numbers.
     # fig10 is drawn at the size it is placed (make_figures SITE_N_SIZE), so it goes in at its pixel
-    # size / FIG10_DPI, never scaled: its point sizes are then the slide's, 11 pt and up. v11 shrank a
+    # size / FIG10_DPI, never scaled: its point sizes are then the slide's, 12 pt and up. v11 shrank a
     # 6.6 in drawing to 5.45 in and set its captions at 7.0 and 7.8 pt (audit, 2 Oct).
-    fx = 6.82
-    fw, fh = _native_in(FIGURES / FIG10, (5.90, 3.50))
+    fx = L + lw + 0.05 + tw + 0.20                               # 6.55
+    fw, fh = _native_in(FIGURES / FIG10, (6.20, 3.55))
     _pic(s, FIG10, fx + (RIGHT - fx - fw) / 2, 1.30, w=fw)
-    cy = 1.30 + fh + 0.05                                        # 4.85: the tabs start under the figure
-    cw0 = (RIGHT - fx - 0.30) / 2
-    sx0 = fx + cw0 + 0.30
-    _tab(s, fx, cy, H[1], colour=ACCENT, size=11.5, w=cw0, h=0.50)
-    _tab(s, sx0, cy, H[2], colour=GREEN, size=11.5, w=cw0, h=0.50)
-    ph, pg = 0.66, 0.05                                          # three lines each; ends at 6.78 in
-    for k, ((rt, rb), (st, sb)) in enumerate(RISKS):
-        y = cy + 0.56 + k * (ph + pg)
-        _box(s, fx, y, cw0, ph, [P(R(rt, 11.5, True, ACCENT)), P(R(rb, 11, False, INK))],
+    cy = 1.30 + fh + 0.04                                        # 4.89: the tabs start under the figure
+    # The strategy column is the wider: its tab's words need 3.03 in at 11 pt on one line.
+    rw, gap = 2.80, 0.30
+    sx0, sw0 = fx + rw + gap, RIGHT - (fx + rw + gap)
+    _tab(s, fx, cy, H[1], colour=ACCENT, size=11, w=rw)
+    _tab(s, sx0, cy, H[2], colour=GREEN, size=11, w=sw0)
+
+    def body(text, w):                       # our line breaks (by meaning at "\n"), never PowerPoint's
+        return [ln for part in text.split("\n") for ln in _wrap(part, 11, False, 0.97 * (w - 0.14))]
+
+    y = cy + 0.42
+    for (rt, rb), (st, sb) in RISKS:
+        rl, sl = body(rb, rw), body(sb, sw0)
+        ph = 0.24 + 0.185 * max(len(rl), len(sl))               # a bold head line plus the body's lines
+        _box(s, fx, y, rw, ph, [P(R(rt, 11.5, True, ACCENT)), P(R("\n".join(rl), 11, False, INK))],
              fill=FILL_ORANGE, line=LINE_ORANGE, anchor="m", margins=(0.08, 0.02, 0.06, 0.02), name="risk")
-        _arrow(s, fx + cw0 + 0.02, y + ph / 2, sx0 - 0.02, y + ph / 2, colour=MUTED)
-        _box(s, sx0, y, cw0, ph, [P(R(st, 11.5, True, GREEN)), P(R(sb, 11, False, INK))],
+        _arrow(s, fx + rw + 0.02, y + ph / 2, sx0 - 0.02, y + ph / 2, colour=MUTED)
+        _box(s, sx0, y, sw0, ph, [P(R(st, 11.5, True, GREEN)), P(R("\n".join(sl), 11, False, INK))],
              fill=FILL_GREEN, line=LINE_GREEN, anchor="m", margins=(0.08, 0.02, 0.06, 0.02), name="strategy")
+        y += ph + 0.06
 
 
 # ---------------------------------------------------------------------------------------------
@@ -939,14 +978,21 @@ def slide5(s):
     # verify 62–63% of the cells moved past 2 px (94% over all trials, up to 20 m)" (2 Oct). Same
     # numbers, plain words; the 94% stays in the portal description. "fit the wrong answer perfectly":
     # REPORT, "The planted matches agree with the wrong transform perfectly in every trial".
-    _text(s, L + 1.42, py + 0.10, 5.52, 1.32,
+    # 4 Oct: both readers could not tell whether "left ... unverified" was good or bad.
+    # v13: the template asks for points, not paragraphs - the two results are two figures side by side.
+    tx0 = L + 1.42
+    _text(s, tx0, py + 0.08, 5.52, 0.70,
           [P(R("Why region by region", 13, True, ACCENT)),
-           # 4 Oct: both readers could not tell whether "left ... unverified" was good or bad.
-           P(R("Rotation and scale errors move the corners, not the centre, and the matches fit the "
-               "wrong answer perfectly. With corners 3 m out, a whole-frame check caught none of 120 "
-               "trials; the 8×8 map flagged 62–63% of the squares moved over 2 px.",
-               12, False, INK), sb=2)],
+           P(R("Rotation and scale errors move the corners, not the centre,\n"
+               "and the matches fit the wrong answer perfectly.", 12, False, INK), sb=2)],
           name="per-region-text")
+    for k, (num, lab, colour) in enumerate((("0 of 120", "caught by a whole-frame\ncheck, corners 3 m out", INK),
+                                            ("62–63%", "of squares moved over 2 px\nflagged by the 8×8 map", ACCENT))):
+        x = tx0 + k * 2.72
+        nw = 1.05 if k == 0 else 1.00                            # "0 of 120" is 0.92 in, "62–63%" 0.90
+        _text(s, x, py + 0.86, nw, 0.50, [P(R(num, 20, True, colour))], anchor="m", name="per-region-num")
+        _text(s, x + nw + 0.02, py + 0.86, 1.62 if k == 0 else 1.85, 0.50, [P(R(lab, 11, False, MUTED))],
+              anchor="m", name="per-region-lab")
 
     # "Trust layer on real imagery: planted ...": the figure, both populations, never pooled. At its
     # drawn size.
@@ -1049,8 +1095,9 @@ def slide6(s):
            # v12: the whole strip is timed and the Sun finder is built (slides 3 and 4), so they leave
            # "Next"; the archive run is REPORT's "about 314 laptop-hours" projection.
            P(R("Next: ", 12, True, NAVY),
-             R("run the whole OHRC archive (about 182 laptop-hours); DTM-relit references where the "
-               "Sun ladder has no route; relief with a finer DTM.", 12, False, INK), sa=5),
+             # v13: slide 2's words for the Sun ladder, not its name.
+             R("run the whole OHRC archive, about 182 laptop-hours; DTM-relit references where no chain "
+               "of intermediate Suns exists; relief with a finer DTM.", 12, False, INK), sa=5),
            P(R(PROVENANCE, 11, False, MUTED), sa=5),
            P(R("Every chart and screenshot is made by our own code; methods and data are credited "
                "on the left.", 11, True, NAVY))],
@@ -1189,7 +1236,9 @@ SAME_SENSOR_WORDS = ("MiLOI", "fore vs aft", "fore/aft", "NAC pairs")
 # Slide 4 to 245 the same day: an outside read asked for what happens to the 92 OHRC frames without a
 # 5-deg partner, the 0-60 deg sweep, the check points' plane floor and TMC-2's grid - each said in a few words.
 # 4 Oct, freezes d5222db/2d3313c: slide 4 to 250 - its strategy row now carries a measured result (the Sun ladder).
-MAX_WORDS = {2: 190, 3: 160, 4: 250, 5: 170}      # a guard, not a target (v11: slide 4 cut from 275; slide 2 gained a row)
+# v13 (4 Oct evening): bare counts and semantic line breaks, then the v13 claim-check put back each figure's
+# partner, band and grid, and the cold read the sub-pixel line on slide 2: slide 2 stays at 190, slide 4 to 240.
+MAX_WORDS = {2: 190, 3: 160, 4: 240, 5: 170}      # a guard, not a target (v11: slide 4 cut from 275; slide 2 gained a row)
 TYPE_FLOOR_PT = 11                                 # v9 allowed 9 pt; the SPOC asked for bigger letters
 
 
