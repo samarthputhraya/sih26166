@@ -41,8 +41,8 @@ so, with its uncertainty in metres.
        alt="Trust maps for two real pairs: SAC's OHRC to LRO NAC pair, 58 of 64 cells verified and accepted; Kaguya TC to MI 1548 nm, 0 of 64 verified and refused">
 </p>
 
-Every result on this page is copied from [`REPORT.md`](REPORT.md), which is generated from the
-evidence logs by one command and never edited by hand. Each row below names the REPORT.md
+Every result on this page is copied from [`REPORT.md`](REPORT.md), which `python -m ops.make_report`
+generates from the evidence logs (on a machine with the imagery) and nobody edits by hand. Each row below names the REPORT.md
 section it comes from.
 
 ---
@@ -57,8 +57,8 @@ transform; held-out errors are on the 20 % of matches the fit never saw.
 | **Sun azimuth** | SAC's own equatorial pair [1], OHRC → LRO NAC, Sun azimuths 174° apart: **6 of 6** windows accepted; SIFT, ORB and AKAZE, judged by exactly the same rule, **0 of 6** each. The same OHRC frame against 7 NACs with the Sun 154–177° away in azimuth: 48 of 56, against 0 of 56 for each classical matcher | *SAC's own benchmark pair (equatorial)*; *Sun azimuth and elevation, on SAC's own frame*; *Classical matchers on the same windows* |
 | **Sun elevation** | The same frame against 9 NACs, Sun azimuth within 20° of the OHRC's, the Sun raised by up to 41.7°: **61 of 71** accepted; 7 of 8 at the highest Sun | *Sun azimuth and elevation, on SAC's own frame* |
 | **Scale** | OHRC → Kaguya TC, 29.6×: 3 of 4 accepted, one of them on dense evidence (0.55 px = 4.0 m on TC's 7.4 m grid) and two on 1 and 7 verified cells. TMC-2 → IIRS, about 16×: every window on two orbits | *Scale rung*; *TMC-2 → IIRS* |
-| **Multi-modal** (visible → infrared) | TMC-2 → IIRS at 999–3223 nm: **62 of 62** registrations, 16 places on two orbits in four infrared bands; at 1555 nm, held-out median 0.16–0.32 IIRS px per window = 13.9–27.3 m on IIRS's 73.85 and 83.67 m grids. A whole IIRS strip (1555 nm, 30.3–60.7°N) onto NASA's LRO WAC global map, every 19.2 km window, every one of the 8 × 8 squares voting: **44 of 49** accepted, 3 unconfirmed, 2 refused | *TMC-2 → IIRS*; *IIRS → LRO WAC, the whole strip* |
-| **Cross-mission** | TMC-2 onto the SELENE (Kaguya) TC ortho map at SAC's own site, every 2.84 km window along 88 km of one pass, none chosen: **31 of 31**; the two archives disagree by a steady 287 m (median), which each registration removes | *TMC-2 → SELENE TC ortho map at SAC's site* |
+| **Multi-modal** (visible → infrared) | TMC-2 → IIRS at 999–3223 nm: **62 of 62** registrations, 16 places on two orbits in four infrared bands; at 1555 nm, held-out median 0.16–0.32 IIRS px per window = 13.9–27.3 m on IIRS's 73.85 and 83.67 m grids. A whole IIRS strip (1555 nm, 30.3–60.7°N) onto NASA's LRO WAC global map, every 19.2 km window, judged region by region (8 × 8 squares of 2.4 km): **44 of 49** accepted, 3 unconfirmed, 2 refused; the accepted windows verify 0–34 of their 64 squares (median 15.5), held-out median 158 m on the 100 m grid | *TMC-2 → IIRS*; *IIRS → LRO WAC, the whole strip* |
+| **Cross-mission** | TMC-2 onto the SELENE (Kaguya) TC ortho map at SAC's own site, every 2.84 km window along 88 km of one pass, none chosen: **31 of 31** accepted, on 7–35 verified squares of 64 (median 22); held-out median 11.7 m on the 7.4 m TC grid over the 21 windows with an inlier ratio above 0.5 (per window 6.5–68.8 m); the two archives disagree by a steady 287 m (median), which each registration removes | *TMC-2 → SELENE TC ortho map at SAC's site* |
 | **Accuracy against independent points** | 60 check points clicked by hand on 6 OHRC → LRO NAC windows, with a tool that never reads a registration: our transform lands **1.7–2.4 m RMSE** from them (1.46–2.56 px on the NAC grids), at the clicking precision (1.47 m median, from repeat clicks); the placement the windows were cut at - the archives' geometry after the corrections the cut applies, so not Chandrayaan-2's raw georeference - misses the same points by 2.9–15.1 m. Not sub-pixel: the check cannot resolve finer than the clicks | *Independent check points* |
 | **OHRC, TMC and IIRS** | One site at 60.7°N with the Suns matched: OHRC → TMC-2 **10 of 10**, OHRC → LRO NAC 5 of 5, NAC → TMC-2 4 of 4. The chain OHRC → NAC → TMC-2 meets the direct OHRC → TMC-2 with a loop RMS of 1.99 m (median of 4 windows, max 4.04 m; consistency, not accuracy). IIRS onto that same TMC-2 pass, along the strip at 51.7–60.7°N rather than on the site's windows: 30 of 30 | *One site, every camera (Site N)* |
 | **Viewpoint** | OHRC → OHRC of the next orbit, viewing directions 40° apart, Sun within 2.2°: **8 of 8**, held-out median 0.91 px = 1.12 m on the 1.232 m grid. TMC-2 fore → aft, 50° apart: 1 of 4 (relief parallax, a measured limit); orthorectified first on ISRO's own TMC-2 DTM of the pass, 2 of 4 | *A real viewpoint test at Site N*; *Real viewpoint: TMC-2 fore → aft*; *Relief* |
@@ -348,7 +348,7 @@ never fitted to one another. All 8 windows register; held-out median 0.91 px = 1
 1.232 m grid, from 0.49 to 2.15 px per window. A single homography per window cannot absorb relief
 parallax between the two views; we have not separated that from matching error. TMC-2's fore and aft
 cameras, 50° apart, register 1 of 4 (*Real viewpoint: TMC-2 fore → aft*): that is the limit we
-report, and orthorectification with TMC-2's own DTM is the planned answer.
+report. Orthorectified first on TMC-2's own DTM of the pass, they register 2 of 4 (*Relief*).
 
 ---
 
@@ -416,12 +416,14 @@ python -m venv .venv
 .venv\Scripts\activate              # Windows;  source .venv/bin/activate elsewhere
 pip install -r requirements.txt
 python -m core.fetch_weights        # LoFTR weights into weights/, once (the only network step)
-python -m pytest -q                 # the test suite; needs no imagery
+python -m pytest -q                 # the test suite; needs no imagery and no data_path.txt
 ```
 
-Imagery is not in git. To register a real pair, download the products listed with their sha256
-under *Products downloaded* in REPORT.md (Chandrayaan-2 from PRADAN; LRO from the NASA PDS;
-Kaguya from JAXA), put their folder's path in `data_path.txt`, and cut pairs from them:
+Imagery is not in git. To register a real pair, download the products in
+[`data/products_manifest.csv`](data/products_manifest.csv) - the 262 files of REPORT.md's *Products
+downloaded*, each with its URL, size and sha256 (Chandrayaan-2 from PRADAN, which needs a free login;
+LRO from the NASA PDS; Kaguya from JAXA; the LRO WAC mosaic is read over HTTP by `ops/cut_wac_pairs.py`) -
+put their folder's path in a one-line `data_path.txt` at the repository root, and cut pairs from them:
 
 ```
 python -m ops.cut_pradan_pairs ohrc-nac              # SAC's equatorial OHRC -> LRO NAC pair

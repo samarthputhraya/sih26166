@@ -478,22 +478,23 @@ def slide1(s):
 # ---------------------------------------------------------------------------------------------
 # How it addresses the problem: the PS's named challenges, one measured line each (v11).
 HOW_ROWS = [
-    # v12 final (3 Oct, after the claim-check and the cold reads): four rows, each a PS axis with its
-    # strongest measured line. SUN merges azimuth and elevation (both readers: elevation was missing).
-    # REPORT "SAC's own benchmark pair (equatorial ...)" 6 agrees; "Classical matchers on the same
-    # windows" first row, SIFT/ORB/AKAZE 0/6; "Sun azimuth and elevation, on SAC's own frame" 61/71.
-    # Final read (4 Oct): both readers asked "61 of 71 what?" - the noun is now there.
-    ("SUN", GREEN, "6/6 at 174°", f" on SAC's pair [1], classical 0/6; Sun up to 41.7° higher: 61/71 windows"),
-    # "Independent check points": ours 1.69-2.39 m RMSE over 6 OHRC -> NAC windows x 10 points. AMBER:
-    # 1.5-2.6 px on the NAC grid is not sub-pixel (claim-check v12 #5; slide 4 says so). "click
-    # precision": the same section, "one click's precision is a median 1.47 m on the reference" - the
-    # SAC reader's first Q&A question was how much of the RMSE is the clicking (4 Oct).
-    ("ACCURACY", AMBER, "1.7–2.4 m", " RMSE, 60 hand-clicked check points; click precision 1.5 m"),
-    # "TMC-2 -> SELENE TC ortho map at SAC's site, every window": accepted 31/31.
-    ("CROSS-MISSION", GREEN, "31/31", f" TMC-2{_TO}Kaguya TC, every window"),
+    # Review of 4 Oct (deck versions + an automated-screening pass): the final's text layer had "azimuth"
+    # and "elevation" 0 times - the PS's own words - and had lost SCALE and the opposite-Sun head-to-head.
+    # Five rows now, each a PS axis in its own words; CROSS-MISSION (31/31) stays on slide 4.
+    # REPORT "SAC's own benchmark pair (equatorial ...)" 6 agrees; "Classical matchers on the same windows"
+    # rows 1 and 4: SIFT/ORB/AKAZE 0/6, and "Sun 154-177 deg away" ours 48/56 vs 0/56 each.
+    ("SUN AZIMUTH", GREEN, "6/6 at 174°", f" on SAC's pair [1]; 154–177°: 48/56; classical 0/6, 0/56"),
+    # "Sun azimuth and elevation, on SAC's own frame": raised up to 41.7°, 61/71 windows.
+    ("SUN ELEVATION", GREEN, "61/71 windows", ", Sun up to 41.7° higher"),
+    # "One site, every camera (Site N)" OHRC -> TMC-2 10/10 at 4.2x; "TMC-2 -> IIRS" 62/62 at 16x.
+    ("SCALE", GREEN, "10/10 at 4.2×", f" OHRC{_TO}TMC-2; 62/62 at 16× TMC-2{_TO}IIRS"),
     # "TMC-2 -> IIRS" both orbits beyond 850 nm 62/62; "IIRS -> LRO WAC, the whole strip, region by
     # region": accepted 44/49.
-    ("MULTI-MODAL", GREEN, "62/62", f" TMC-2{_TO}IIRS infrared; IIRS strip onto NASA's map: 44/49"),
+    ("MULTI-MODAL", GREEN, "62/62", f" TMC-2{_TO}IIRS infrared; IIRS strip{_TO}NASA's map: 44/49"),
+    # "Independent check points": ours 1.69-2.39 m RMSE over 6 OHRC -> NAC windows x 10 points. AMBER:
+    # 1.5-2.6 px on the NAC grid is not sub-pixel (claim-check v12 #5; slide 4 says so). "click
+    # precision": the same section, "one click's precision is a median 1.47 m on the reference".
+    ("ACCURACY", AMBER, "1.7–2.4 m", " RMSE, 60 hand-clicked check points; click precision 1.5 m"),
 ]
 
 
@@ -513,7 +514,7 @@ def slide2(s):
 
     # Detailed explanation: the idea as one flow. The pipeline's own steps are on slide 3.
     _tab(s, L, 2.64, H[1])
-    y0, h = 3.04, 1.10
+    y0, h = 3.04, 0.94          # 4 Oct: 0.16 in shorter, for a fifth row below
     flow = [(L, 1.30, "Image pair", "Chandrayaan-2 image + lunar reference", FILL_GREY, LINE_GREY, NAVY, MUTED),
             (2.05, 1.55, "Register", "LoFTR matching, MAGSAC++ fit [4, 5]", FILL_GREY, LINE_GREY, NAVY, MUTED),
             (3.80, 1.85, "Independent\narea check", "never reads a match", ACCENT, None, WHITE, WHITE),
@@ -532,16 +533,16 @@ def slide2(s):
     _box(s, ox, y0 + h - 0.50, RIGHT - ox, 0.50, [P(R("refuse → fallback", 12, True, ACCENT), align="c")],
          fill=FILL_ORANGE, line=LINE_ORANGE, anchor="m", margins=(0.04, 0.02, 0.04, 0.02), name="d-refuse")
     # How it addresses the problem: the three PS axes, one measured line each.
-    cy = 4.50
+    cy = 4.32
     _tab(s, L, cy, H[2])
     cw1 = 4.55          # 4 Oct: "61/71 windows" needs the width; the innovation card had room to spare
     _box(s, L, cy + 0.38, cw1, 6.85 - cy - 0.38, fill=FILL_GREY, line=LINE_GREY, name="card-how")
     rows = HOW_ROWS
     for k, (label, colour, bold, rest) in enumerate(rows):
-        ry = cy + 0.44 + k * 0.48
-        _box(s, L + 0.10, ry + 0.08, 1.24, 0.30, [P(R(label, 11, True, WHITE), align="c")],
+        ry = cy + 0.43 + k * 0.42
+        _box(s, L + 0.10, ry + 0.06, 1.24, 0.30, [P(R(label, 11, True, WHITE), align="c")],
              fill=colour, radius=0.5, margins=(0.02, 0, 0.02, 0), name="pill")
-        _text(s, L + 1.40, ry, cw1 - 1.46, 0.46,
+        _text(s, L + 1.40, ry, cw1 - 1.46, 0.42,
               [P(R(bold, 12, True, INK), R(rest, 12, False, INK))], anchor="m", name="how-row")
 
     # Innovation and uniqueness: the calibration, both Sun populations, never pooled.
@@ -565,8 +566,8 @@ def slide2(s):
     # same 1,056 ("Planted errors of 5 m or more: the residual threshold flags 0 of 1056; the area
     # check flags 1056 of 1056"), and the body quotes right answers refused on windows nobody chose
     # for agreeing: "Real sun-angle sweep", correct but refused 1 + 1 of 51 accepted + 2 (all bins).
-    for k, (num, lab) in enumerate((("100%", "of 1,056 planted shifts ≥ 5 m caught, Suns within 10°"),
-                                    ("0%", "by the usual residual check, same shifts"))):
+    for k, (num, lab) in enumerate((("100%", "of 1,056 planted shifts ≥ 5 m caught, Sun azimuths within 10°"),
+                                    ("0%", "by a residual check: the wrong fit looks perfect"))):
         ry = cy + 0.80 + k * 0.42
         _text(s, ix + 0.14, ry, 0.86, 0.40, [P(R(num, 24, True, ACCENT))], anchor="m", name="inn-num")
         _text(s, ix + 1.02, ry, RIGHT - ix - 1.16, 0.40, [P(R(lab, 12, False, MUTED))], anchor="m",
@@ -580,7 +581,7 @@ def slide2(s):
     # head-to-head moved to the SUN row ("classical 0/6") and slide 4.
     _text(s, ix + 0.14, cy + 1.68, RIGHT - ix - 0.28, 0.62,
           [P(R("Right answers refused: 2 of 53, real Sun sweep. ", 12, True, INK),
-             R("Visible vs infrared: 86% of 5-pixel shifts caught, 99% of 10 (IIRS pixels).", 12, False, INK))],
+             R("Infrared: 86% of 5 IIRS-pixel (395 m) shifts caught.", 12, False, INK))],
           name="inn-body")
 
     # The trust map itself: SAC's OHRC -> NAC w06 (accepted) above Kaguya TC -> MI 1548 nm w01
@@ -605,7 +606,7 @@ def slide3(s):
              ("LoFTR [4]", "dense matching"),
              ("Sub-pixel", "NCC refinement"),
              ("MAGSAC++ [5]", "outlier rejection"),
-             ("Coverage", "8×8 spread, uniform GCPs")]
+             ("Coverage", "uniform distribution, ≤4 GCPs/cell")]
     gap = 0.20
     cw = (RIGHT - L - gap * (len(steps) - 1)) / len(steps)
     y0, h = 1.74, 0.94
@@ -626,12 +627,12 @@ def slide3(s):
     _box(s, L, band_y, RIGHT - L, band_h,
          [P(R("INDEPENDENT AREA CHECK — ours", 15, True, WHITE), align="c"),
           P(R("cross-correlates the warped image against the reference in 8×8 cells; never reads "
-              "a match position; the only step allowed to overrule the rest; builds on [6–9]",
+              "a match; the only step allowed to overrule the rest; builds on [6–9]",
               12, False, WHITE), align="c", sb=1)],
          fill=ACCENT, anchor="m", name="areacheck")
     # v12 final: the PS's own metric words, which v12's draft lost with slide 4's Deliverables row
     # (core/export.py writes inlier_count, inlier_ratio and the held-out RMSE into every report).
-    outs = [("agrees →", " GeoTIFF, control points, trust map; report: RMSE, inlier count and ratio",
+    outs = [("agrees →", " GeoTIFF, control points, trust map; RMSE, inlier count, inlier ratio",
              FILL_GREEN, LINE_GREEN, GREEN),
             ("unconfirmed →", " kept and labelled, not certified", FILL_AMBER, LINE_AMBER, AMBER),
             ("contradicted →", " refused; declared fallback in metres", FILL_ORANGE, LINE_ORANGE, ACCENT)]
@@ -641,8 +642,16 @@ def slide3(s):
     for k, (b, rest, fill, line, colour) in enumerate(outs):
         x = L + k * (ow + og)
         _arrow(s, x + ow / 2, band_y + band_h, x + ow / 2, oy, colour=colour)
-        _box(s, x, oy, ow, 0.50, [P(R(b, 12.5, True, colour), R(rest, 12.5, False, INK), align="c")],
-             fill=fill, line=line, anchor="m", name="outcome")
+        # "unconfirmed" printed with an "fi" ligature (U+FB01 in the PDF text layer, 4 Oct claim-check):
+        # "f" and "i" go in separate runs, which PowerPoint shapes separately.
+        k_fi = b.find("fi") + 1
+        head = [R(b[:k_fi], 12.5, True, colour), R(b[k_fi:], 12.5, True, colour)] if k_fi else [R(b, 12.5, True, colour)]
+        box = _box(s, x, oy, ow, 0.50, [P(*head, R(rest, 12.5, False, INK), align="c")],
+                   fill=fill, line=line, anchor="m", name="outcome")
+        if k_fi:
+            # Identical runs are merged and shaped together, so the "f" run gets 0.01 pt of letter
+            # spacing: invisible, but a different run, and spaced text is never ligated.
+            box.text_frame.paragraphs[0].runs[0]._r.get_or_add_rPr().set("spc", "1")
 
     # Technologies to be used.
     ty = 4.46
@@ -672,8 +681,8 @@ def slide3(s):
     # min"). "A whole strip": 58 windows = 940 km, accepted 58/58, cutting 2.9 min + registration 1.4 min.
     _box(s, L, 6.30, 8.25, 0.50,
          [P(R("Hardware: ", 12.5, True, ACCENT),
-            R("laptop CPU, offline: 13.1 km² overlap registered in 10.5 min (37/37); 940 km TMC-2 → IIRS "
-              "strip cut and registered in 4.2 min (58/58)",
+            R("laptop CPU, no GPU needed, offline: 13.1 km² overlap registered in 10.5 min (37/37); 940 km TMC-2 → IIRS "
+              "strip cut and registered: 4.2 min (58/58)",
               12.5, False, INK))],
          fill=FILL_ORANGE, line=LINE_ORANGE, anchor="m", margins=(0.14, 0.03, 0.12, 0.03),
          name="hardware")
@@ -712,7 +721,10 @@ SCORECARD = [
     # "SAC's own benchmark pair (equatorial ...)" 6 agrees; "Sun azimuth and elevation ..." opposite table.
     # v12: and "Classical matchers ...": SIFT, ORB, AKAZE 0/6 each on the same windows.
     # v12 final: azimuth and elevation in one row (the freed row carries cross-mission).
-    ("Sun angle", f"SAC's pair [1], Suns 174° apart: 6/6 (SIFT/ORB/AKAZE 0/6); Sun up to 41.7° higher: 61/71",
+    # 4 Oct review: "azimuth" and "elevation" named (an automated screen found neither); the 154-177 deg
+    # head-to-head ("Classical matchers ...", 48/56 vs 0/56 each) is back.
+    ("Sun azimuth, elevation", f"Azimuth 174° apart, SAC's pair [1]: 6/6 (SIFT/ORB/AKAZE 0/6); 154–177°: "
+                               f"48/56 (0/56). Elevation up to 41.7° higher: 61/71",
      GREEN),
     # "Sun azimuth and elevation, on SAC's own frame": the near-azimuth table, its totals line.
     # "A real viewpoint test at Site N": agrees / windows, angle apart, held-out median, and its grid
@@ -762,7 +774,7 @@ SCORECARD = [
     ("Sub-pixel: OHRC", "OHRC's 0.25 m pixel is finer than its NAC reference can check: 0.51–0.94 m, "
                         "0.41–1.01 NAC px", AMBER),
     # "Runtime and match distribution": grid coverage, and the delivered uniform set.
-    ("Uniform spread", "Inliers in ≥95% of 8×8 cells, 17/20 windows; reports RMSE, inlier "
+    ("Uniform distribution", "Inliers in ≥95% of 8×8 cells, 17/20 windows; reports RMSE, inlier "
                        "count, ratio", GREEN),
     # v12: "Independent check points": 6 windows x 10 points, ours 1.69-2.39 m RMSE, the archive prior
     # 2.9-15.1 m. Replaces v11's "Deliverables" row (slide 3's outcome box names the GeoTIFF, control
@@ -778,12 +790,14 @@ RISKS = [
     # "Real sun-angle sweep" bins 60-90 and 90-120: 0 accepted of 7 + 5, none wrongly accepted; 1 failed
     # and caught, 1 + 1 correct but refused, 5 + 4 inconclusive (the image cannot judge). Both cold
     # readers asked what happened to the other 9 (2 Oct).
-    (("Sun 60–120° away", "0/12: 1 failure caught, 2 right ones refused, 9 inconclusive"),
+    # 4 Oct review: one line of physics, in the README's words ("Why does a Sun 174° away pass, when 90°
+    # fails?": "A Sun moved 90° changes *which* slopes are lit"); an opposite Sun only flips the shading.
+    (("Sun 60–120° away: other slopes lit", "0/12: 1 failure caught, 2 right ones refused, 9 inconclusive"),
      # v12: "Choosing the reference by its Sun": 42 images cover Site N's OHRC frame; the three Site N
      # uses rank 4, 7, 9.
      # v12 final: "Choosing the reference by its Sun", the whole-archive line: 208 of 300 OHRC
      # observations have a partner from another orbit within 5 deg ("Site N" was undefined, 3 Oct).
-     ("Choose the reference by its Sun", "Built: 208 of 300 OHRC frames: a partner within 5°")),
+     ("Choose the reference by its Sun", "Built: 208 of 300 OHRC observations: a partner within 5°")),
     # "Relief: TMC-2 fore -> aft orthorectified on the pass's DTM": 1/4 without, 2/4 with.
     # 4 Oct: "aft" printed through PowerPoint comes out as "a" + U+014C in the PDF's text layer (the
     # "ft" ligature), which a screener's text extraction reads as garbage; the row avoids the word.
@@ -858,7 +872,7 @@ def slide5(s):
     # overlap rate, all of it is about 314 laptop-hours ("a projection from one measured rate").
     _box(s, L, fy, 1.75, fh,
          [P(R("Chandrayaan-2 archive", 12.5, True, NAVY), align="c"),
-          P(R("311 OHRC products, 23,651 km² · TMC-2 · IIRS; LRO, Kaguya references", 11, False,
+          P(R("311 OHRC products (300 observations), 23,651 km² · TMC-2 · IIRS; LRO, Kaguya references", 11, False,
               MUTED), align="c", sb=3)],
          fill=FILL_GREY, line=LINE_GREY, name="imp-source")
     _arrow(s, L + 1.75, fy + fh / 2, 2.48, fy + fh / 2)
@@ -910,7 +924,7 @@ def slide5(s):
            # 4 Oct: both readers could not tell whether "left ... unverified" was good or bad.
            P(R("Rotation and scale errors move the corners, not the centre, and the matches fit the "
                "wrong answer perfectly. With corners 3 m out, a whole-frame check caught none of 120 "
-               "trials; the 8×8 map flagged 62–63% of the squares that moved over 2 px.",
+               "trials; the 8×8 map flagged 62–63% of the squares moved over 2 px.",
                12, False, INK), sb=2)],
           name="per-region-text")
 
@@ -1150,7 +1164,9 @@ SAME_SENSOR_WORDS = ("MiLOI", "fore vs aft", "fore/aft", "NAC pairs")
 # v10 (SPOC: "some slides feel over crowded with words"): v9 carried 230 / 195 / 330 / 230.
 # Slide 4 kept the qualifiers the v10 claim-check restored (population, azimuth vs Sun vector,
 # scope, "from the visible-band fit"): 271 words against v9's 324.
-MAX_WORDS = {2: 180, 3: 160, 4: 230, 5: 170}      # a guard, not a target (v11: slide 4 cut from 275; slide 2 gained a row)
+# 4 Oct: slide 2 to 190 - its fifth row puts the PS's own words (Sun azimuth, Sun elevation, scale) back
+# after an automated-screening pass found neither 'azimuth' nor 'elevation' in the text layer.
+MAX_WORDS = {2: 190, 3: 160, 4: 230, 5: 170}      # a guard, not a target (v11: slide 4 cut from 275; slide 2 gained a row)
 TYPE_FLOOR_PT = 11                                 # v9 allowed 9 pt; the SPOC asked for bigger letters
 
 

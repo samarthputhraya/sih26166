@@ -61,7 +61,11 @@ import numpy as np
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 PAIRS = ROOT / "data" / "pairs"
-DATA = pathlib.Path((ROOT / "data_path.txt").read_text(encoding="utf-8-sig").strip())
+# A clean clone has no data_path.txt (it names this machine's imagery folder); fall back to a folder
+# that does not exist, so importing this module - and running the test suite - needs no imagery.
+_DATA_TXT = ROOT / "data_path.txt"
+DATA = (pathlib.Path(_DATA_TXT.read_text(encoding="utf-8-sig").strip()) if _DATA_TXT.exists()
+        else ROOT / "external_data")
 P = DATA / "pradan"
 R = 1737400.0
 

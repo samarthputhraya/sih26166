@@ -1,6 +1,6 @@
-# The test suite on a clean checkout, CPU only (Invariant 3: no GPU anywhere).
+# The test suite on a clean checkout, CPU only (no GPU anywhere).
 #
-# A clean checkout has no imagery (data/pairs and the evidence products live outside git, Invariant 5)
+# A clean checkout has no imagery (data/pairs and the evidence products live outside git)
 # and no LoFTR weights (weights/ is gitignored); tests that need either skip with a reason, and the
 # weights are fetched and verified by sha256 first (core/fetch_weights.py). First green run: 2 Oct 2026,
 # 391 passed, 3 skipped (the three that need imagery).

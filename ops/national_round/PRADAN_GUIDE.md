@@ -88,7 +88,7 @@ Download tips from the FAQ:
 - **`ch2_ohr_ncp_20200824T0806596861_d_img_d18`**, 2020-08-24, ~08:06 UTC. It pairs with NAC
   `M165491149RE`. Same caveat: confirm by date and time.
 
-## 3a. What happened on 18 Sep (registered; downloads done by Claude in the logged-in browser)
+## 3a. What happened on 18 Sep (registered; downloaded in a logged-in browser session)
 
 - **No TMC-2 strip covers our 74°S site.** Checked three ways: PRADAN's own footprint shapefiles
   (`<data>/pradan/shapefiles/`, self-checked: exactly one OHRC footprint contains the site and it is
@@ -121,5 +121,5 @@ C:\Users\samar\sih26166_data\pradan\iirs\
 
 - Unzip in place and keep the zip.
 - **Never rename a file.** The labels reference the original names.
-- Then tell Claude "PRADAN files are in place". It records the checksums, reads each product's
-  geometry grid, and cuts the pairs: OHRC↔TMC-2, TMC-2 fore↔aft, OHRC↔IIRS, and SAC's pair.
+- Then record the checksums, read each product's geometry grid and cut the pairs
+  (`ops/fetch_pradan.py`, `ops/cut_pradan_pairs.py`): OHRC↔TMC-2, TMC-2 fore↔aft, OHRC↔IIRS, and SAC's pair.

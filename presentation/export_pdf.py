@@ -11,7 +11,9 @@ at the end.
 
 The printer lays each 13.33 x 7.5 in slide on a Letter-landscape page (792 x 612 pt) with
 white bands above and below; every page is then cropped to the slide band (792 x 446 pt)
-with PyMuPDF, which is how the 10 Sep college-round PDF was made. PyMuPDF is not in the
+with PyMuPDF, which is how the 10 Sep college-round PDF was made, and since 4 Oct placed as
+vector content on a page of the slide's own size (960 x 540 pt), so its font sizes are the
+deck's (11 pt and up, not 9.1). PyMuPDF is not in the
 demo venv on purpose (it is not on the demo path):
     pip install --target <some dir> pymupdf ; set PYTHONPATH=<some dir>
 
@@ -32,6 +34,7 @@ HERE = pathlib.Path(__file__).resolve().parent
 DECK = HERE / "SIH26166_LunaXX_deck.pptx"
 PDF = DECK.with_suffix(".pdf")
 POWERPNT = r"C:\Program Files\Microsoft Office\root\Office16\POWERPNT.EXE"
+SLIDE_PT = (960, 540)                     # the slide itself, 13.333 x 7.5 in
 FOOTER_TOP_IN = 6.95                      # the template's footer bar starts here (build_deck)
 # Addresses printed on the slides, made clickable again after printing (search text -> link).
 # The console's address is searched first; "github.com/samarthputhraya/sih26166" does not match
@@ -194,10 +197,21 @@ def crop_and_check(printed: pathlib.Path, final: pathlib.Path) -> int:
         # the text layer - "aft" extracted as "a" + U+014C (final cold read, 4 Oct) - and the text layer
         # is what a screener's extraction reads. Latin Extended and private-use characters are never in
         # our text, so any of them is a garbled glyph: reword the slide.
-        odd = sorted({c for c in page.get_text() if 0x100 <= ord(c) <= 0x24F or 0xE000 <= ord(c) <= 0xF8FF})
+        odd = sorted({c for c in page.get_text() if 0x100 <= ord(c) <= 0x24F or 0xE000 <= ord(c) <= 0xF8FF
+                      or 0xFB00 <= ord(c) <= 0xFB06})      # and the ligature block: "unconfirmed" came out with U+FB01
         if odd:
             problems.append(f"page {i + 1}: garbled text layer ({', '.join(f'U+{ord(c):04X}' for c in odd)})"
                             " - reword the word PowerPoint ligates")
+    # The printer lays the 13.33 in slide across Letter's 11 in, so the cropped page is 792 pt wide and
+    # every font reads at 0.825 of its size: the 11 pt floor came out as 9.1 pt to a screening script
+    # (4 Oct review). Each cropped page is placed, as vector content, on a page of the slide's own size
+    # (960 x 540 pt = 13.33 x 7.5 in), so the PDF's sizes are the deck's sizes.
+    slide = pymupdf.open()
+    for i in range(doc.page_count):
+        page = slide.new_page(width=SLIDE_PT[0], height=SLIDE_PT[1])
+        page.show_pdf_page(page.rect, doc, i)
+    doc.close()
+    doc = slide
     # Printing to PDF drops PowerPoint's hyperlinks, so a judge reading the PDF could not click the
     # addresses on slides 3 and 6. Put the links back over the printed text (v11, 2 Oct).
     n_links = 0
