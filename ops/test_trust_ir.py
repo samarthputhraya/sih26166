@@ -25,3 +25,16 @@ def test_every_file_the_trust_step_writes_is_an_evidence_log():
     root = T.ROOT
     for p in (T.OUT_CSV, T.OUT_CSV_IR):
         assert p.relative_to(root).as_posix() in EVIDENCE_LOGS
+
+
+def test_reference_index_counts_partners_inside_the_verified_band():
+    from ops.reference_index import summary
+    idx = {"targets": [
+        {"time": "2020-01-01T00:00:00Z", "incidence": 80.0, "candidates": [
+            {"time": "2020-02-01T00:00:00Z", "sun_angle": 50.0, "d_azimuth": 55.0, "incidence": 70.0,
+             "instrument": "OHRC"}]},                                   # another orbit, inside the band
+        {"time": "2020-01-01T00:00:00Z", "incidence": 80.0, "candidates": [
+            {"time": "2020-02-01T00:00:00Z", "sun_angle": 50.0, "d_azimuth": 10.0, "incidence": 30.0,
+             "instrument": "OHRC"}]}]}                                  # Sun 50 deg higher: outside it
+    s = summary(idx)
+    assert (s["other_orbit_in_band"], s["other_orbit_within_60"]) == (1, 2)

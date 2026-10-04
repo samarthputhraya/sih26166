@@ -615,11 +615,14 @@ def _tier(src_label, ref_label):
 
 
 def cut(nac_pid, n_windows=6, window_px=640, ohrc_gsd=0.25, coarse_only=False,
-        force_prior=None, src="ohrc", centres=None, tag=None, require_inside=(), window_m=None):
+        force_prior=None, src="ohrc", centres=None, tag=None, require_inside=(), window_m=None,
+        pair_ids=None):
     """Cut `src` (ohrc or a NAC pid) against the reference NAC `nac_pid`.
 
     centres: reuse these window centres [(cx, cy), ...] in map metres instead of picking
     new ones - how the three legs of a loop are cut over the same ground.
+    pair_ids: one id per centre instead of site_<src>_<ref>_wNN[_tag] (ops/sun_ladder.py names its
+    legs ladder_..., so they never join the site_ tables).
     """
     from core import geometry as G
     ref_f, ref_read, ref_info, ref_gsd, ref_label = _frame(nac_pid)
@@ -660,9 +663,9 @@ def cut(nac_pid, n_windows=6, window_px=640, ohrc_gsd=0.25, coarse_only=False,
         d_inc = round(r_inc - s_sun["incidence_deg"], 2)
     out_dirs = []
     for k, (cx, cy, lit) in enumerate(centres, 1):
-        pair_id = f"site_{src_label}_{ref_label}_w{k:02d}" + (f"_{tag}" if tag else "")
+        pair_id = (pair_ids[k - 1] if pair_ids else
+                   f"site_{src_label}_{ref_label}_w{k:02d}" + (f"_{tag}" if tag else ""))
         d = PAIRS / pair_id
-        d.mkdir(parents=True, exist_ok=True)
         x0, y1 = cx - window_m / 2, cy + window_m / 2
         tr_r, sh_r = G.map_grid(x0, y1, window_m, window_m, ref_gsd)
         r_img, r_ok = G.project(ref_f, ref_read, tr_r, sh_r, coarse=16, order="cubic")
@@ -674,6 +677,7 @@ def cut(nac_pid, n_windows=6, window_px=640, ohrc_gsd=0.25, coarse_only=False,
             print(f"  {pair_id}: window not covered (ref {r_ok.mean():.4f}, "
                   f"src {s_ok.mean():.4f}) - skipped")
             continue
+        d.mkdir(parents=True, exist_ok=True)       # only once the window is known to be covered
         r_img, r_fill = G.fill_invalid(r_img, r_ok)
         s_img, s_fill = G.fill_invalid(s_img, s_ok)
         src_p = d / f"{pair_id}_source.tif"

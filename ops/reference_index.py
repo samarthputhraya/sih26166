@@ -77,6 +77,7 @@ def _t(s):
         return None
 
 
+BAND_AZ_DEG, BAND_INC_DEG = 60.0, 41.7      # the verified Sun range (see summary())
 SAME_ORBIT_S = 2 * 3600       # Chandrayaan-2's orbit is ~2 h: closer than that is the same pass
 
 
@@ -86,6 +87,7 @@ def summary(index: dict) -> dict:
     only partners from a different orbit - the case the finder exists for."""
     n = len(index["targets"])
     best, other, inst = [], [], {}
+    in_band = within_60 = 0
     for t in index["targets"]:
         c = t["candidates"]
         best.append(c[0]["sun_angle"] if c else None)
@@ -94,11 +96,18 @@ def summary(index: dict) -> dict:
         t0 = _t(t["time"])
         o = [x for x in c if t0 and _t(x["time"]) and abs((_t(x["time"]) - t0).total_seconds()) >= SAME_ORBIT_S]
         other.append(o[0]["sun_angle"] if o else None)
+        # 4 Oct: inside the Sun range the evidence verifies - azimuths at most BAND_AZ_DEG apart (the real sweep,
+        # 0-60 deg: 41 of 42 accepted) and the Sun at most BAND_INC_DEG higher or lower (SAC's frame: raised up
+        # to 41.7 deg, 61 of 71) - and, looser, Sun directions at most 60 deg apart.
+        in_band += any(x.get("d_azimuth", 999) <= BAND_AZ_DEG
+                       and abs(x.get("incidence", 999) - t.get("incidence", 0)) <= BAND_INC_DEG for x in o)
+        within_60 += any(x["sun_angle"] <= 60 for x in o)
     have = [b for b in best if b is not None]
     oth = [b for b in other if b is not None]
     return {"n": n, "with_any": len(have), "within_5": sum(b <= 5 for b in have),
             "within_10": sum(b <= 10 for b in have), "none": n - len(have), "best_instrument": inst,
-            "other_orbit_within_5": sum(b <= 5 for b in oth), "other_orbit_within_10": sum(b <= 10 for b in oth)}
+            "other_orbit_within_5": sum(b <= 5 for b in oth), "other_orbit_within_10": sum(b <= 10 for b in oth),
+            "other_orbit_in_band": in_band, "other_orbit_within_60": within_60}
 
 
 def main(argv=None) -> int:

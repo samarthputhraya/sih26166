@@ -20,6 +20,8 @@ exact command that produced it:
   sweep     `ops.sun_sweep --rerun --log`, only for the NACs whose windows are stale.
   loops     each `ops.loop_closure` command exactly as logged (after `real`: it reads the legs'
             exported bundles).
+  ladder    `ops.sun_ladder --log`: the Sun ladder's composites over the 60-120 deg sweep windows, from
+            the legs (`ladder_*`) that `real` re-registered (4 Oct 2026).
   mmcheck   `ops.multimodal_check --log`: the infrared fallback against the visible-band
             registration of the same window, from the bundles `real` exported.
   trust     `ops.trust_real_calibration` on the same windows the current calibration used,
@@ -70,8 +72,8 @@ PY = sys.executable
 MATCHING_CODE = ["core/matcher.py", "core/subpixel.py", "core/illumination.py", "core/scale.py",
                  "core/io_loader.py", "baselines"]
 MM_CSV = ROOT / "evaluation" / "multimodal_check.csv"
-STEPS = ("real", "sweep", "loops", "mmcheck", "trust", "miloi", "classic", "viewpoint", "calib", "gate2",
-         "report")
+STEPS = ("real", "sweep", "loops", "ladder", "mmcheck", "trust", "miloi", "classic", "viewpoint", "calib",
+         "gate2", "report")
 CHUNK = 12          # pair ids per run_real_pairs process
 
 
@@ -272,6 +274,18 @@ class Freeze:
             ok &= _run(cmd.split()[1:], logf) == 0      # drop "python"
         return ok
 
+    def ladder(self, logf):
+        # Composes the legs `real` exported (and the direct sweep windows `sweep` re-ran); legs from an older
+        # commit would give ladder rows stamped with this commit and built on stale registrations.
+        stale = stale_real(self.commit)
+        legs = [p for p in stale if p.startswith("ladder_") and "_via_" not in p]
+        direct = [p for p in stale if re.fullmatch(r"site_ohrc_m\d+[lr]e_w\d+_sw", p)]
+        if legs or direct:
+            print(f"   {len(legs) + len(direct)} ladder leg(s) or sweep window(s) not at {self.commit} "
+                  f"({', '.join((legs + direct)[:3])}...) - run the `real` and `sweep` steps first")
+            return None
+        return _run(["-m", "ops.sun_ladder", "--log"], logf) == 0
+
     def mmcheck(self, logf):
         # Compares the bundles `real` exported; a bundle from an older commit would be compared
         # against one from this commit.
@@ -449,6 +463,8 @@ def plan() -> None:
     print(f"sweep  {len(p['sweep'])} NACs, {len(sw_ids)} windows; last time {_seconds(rows, sw_ids) / 60:.0f} min")
     for c in p["loops"]:
         print(f"loops  {c}")
+    lad = [k for k in latest_real(rows) if k.startswith("ladder_") and "_via_" in k]
+    print(f"ladder ops.sun_ladder --log: {len(lad)} ladder composite(s) from the legs `real` re-registers")
     wins = sorted({r['pair_id'] for r in _rows(TRUST_CSV)})
     from ops.trust_real_calibration import EXTRA_WINDOWS
     from ops.trust_real_calibration import IR_WINDOWS

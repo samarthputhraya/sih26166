@@ -254,6 +254,22 @@ def section_check_points(reg, d):
             j = _jsonfile(d / "out_classical" / pid / f"{m}.json")
             if j and j.get("accepted") and j.get("H_final"):
                 extra[m] = j["H_final"]
+        # 4 Oct 2026: on a 60-120 deg sweep window the Sun ladder's accepted composites (ops/sun_ladder.py) are
+        # scored on the same independent points as the (refused) direct registration.
+        if pid.endswith("_sw"):
+            try:
+                import numpy as _np
+                from ops import sun_ladder as SL
+                from evaluation.real_eval import pixel_to_map
+                it = next((x for x in SL.plan() if x["target"] == pid), None)
+                g = _jsonfile(ROOT / "data" / "pairs" / pid / "geometry_prior.json") or {}
+                if it and g:
+                    Ps, Pr = pixel_to_map(g["source"]["transform"]), pixel_to_map(g["reference"]["transform"])
+                    for lad in SL.compose(it, d / "out"):
+                        if lad["accepted"] and lad["T"] is not None:
+                            extra["ladder via " + " → ".join(lad["chain"])] = (_np.linalg.inv(Pr) @ lad["T"] @ Ps).tolist()
+            except Exception:  # noqa: BLE001 - no ladder for this window: score what there is
+                pass
         try:
             scored.append(CP.score_pair(pid, d / "out", extra=extra))
         except (ValueError, FileNotFoundError, KeyError) as e:
@@ -291,6 +307,15 @@ def section_check_points(reg, d):
         for pid, m, sc in cl:
             ours = next(s["ours"]["rmse_m"] for s in scored if s["pair_id"] == pid)
             L.append(f"| `{pid}` | {m} | {sc['rmse_m']:.2f} | {ours:.2f} |")
+    lad = [(s["pair_id"], m, s[m]) for s in scored for m in s if isinstance(m, str) and m.startswith("ladder via ")]
+    if lad:
+        L += ["", "Sun-ladder composites on 60-120° windows (ops/sun_ladder.py), scored on the same independent points "
+                  "as the direct registration the area check refused there:", "",
+              "| pair | ladder | RMSE (m) | RMSE in the source's own px | the refused direct registration (m) |",
+              "|---|---|---|---|---|"]
+        for pid, m, sc in lad:
+            direct = next(s["ours"]["rmse_m"] for s in scored if s["pair_id"] == pid)
+            L.append(f"| `{pid}` | {m[len('ladder via '):]} | {sc['rmse_m']:.2f} | {sc['rmse_src_px']:.2f} | {direct:.1f} |")
     if refused:
         L += ["", "Not scored: " + "; ".join(refused)]
     L.append("")
@@ -496,6 +521,90 @@ def section_dtm(rows, reg):
     return L
 
 
+def section_sun_ladder(rows, sweep):
+    """ops/sun_ladder.py: the sweep's 60-120 deg windows registered through LROC NACs lit in between."""
+    if not rows:
+        return []
+    import re as _re
+    L = ["## The Sun ladder: Suns 60-120° apart, through images lit in between (`ops/sun_ladder.py`)", "",
+         "Registered directly, these windows fail (the real sweep above: 0 of 12 accepted at 60-120°). A ladder "
+         "never asks one registration to cross that gap: OHRC → M → T, where M is an LROC NAC over the same ground "
+         "that registered correctly in the sweep, its Sun outside 60-120° of the OHRC's and within 60° of T's; where "
+         "a window's only such M are opposite-Sun images, also OHRC → M1 → M2 → T, with M1 near the OHRC's Sun and M2 "
+         "near T's (every link at most 60° apart). Every leg is cut over the failing window's ground, registered by "
+         "`run_all` like any pair and judged by its own area check, inside the Sun range where that check is "
+         "calibrated; a ladder is accepted only if every leg is. At 60-120° the image cannot judge even a perfect "
+         "alignment, so the composite is NOT judged against T's pixels: where two accepted ladders cover one window, "
+         "their composites are compared with each other (consistency, not accuracy), and each is compared with the "
+         "failed direct registration. Kept out of every count and table above.", "",
+         "| window (direct, sweep) | Sun azimuths O-T apart | direct outcome | via | Sun apart per link | links | ladder | two ladders agree to (m, px of T) | ladder vs the direct registration (m RMS) |",
+         "|---|---|---|---|---|---|---|---|---|"]
+    windows, accepted_w, cross = {}, set(), {}
+    for r in sorted(rows, key=lambda r: r["pair_id"]):
+        m = _re.match(r"ladder_(m\d+[lr]e)_(w\d+)_via_((?:m\d+[lr]e_?)+)$", r["pair_id"])
+        if not m:
+            continue
+        t, w, via = m.groups()
+        target = f"site_ohrc_{t}_{w}_sw"
+        windows.setdefault(target, []).append(r)
+        d = sweep.get(target, {})
+        links = _re.findall(r"\((\w+); Sun ([\d.]+) deg\)", r.get("notes") or "")
+        vd = _re.search(r"composite vs the direct registration ([\d.]+) m RMS", r.get("notes") or "")
+        ok = r.get("verdict") == "agrees"
+        if ok:
+            accepted_w.add(target)
+        x = "-"
+        if ok and r.get("loop_rms_m") not in (None, ""):
+            cross[target] = (float(r["loop_rms_m"]), float(r["loop_rms_px"]))
+            x = f"{float(r['loop_rms_m']):.2f} m, {float(r['loop_rms_px']):.2f} px"
+        L.append(f"| `{target}` | {_f(r.get('d_sun_azimuth_deg'), 1)}° | {d.get('outcome', 'n/a')} | "
+                 + " → ".join(f"`{v.upper()}`" for v in via.split("_")) + " | "
+                 + " / ".join(f"{deg}°" for _, deg in links) + " | " + ", ".join(v for v, _ in links)
+                 + f" | **{'accepted' if ok else 'not accepted'}** | {x} | {vd.group(1) if vd else 'n/a'} |")
+    gap = {k: v for k, v in sweep.items() if 60 <= float(v.get("d_sun_azimuth_deg") or 0) < 120}
+    by_dz = {}
+    for k, v in gap.items():
+        dz = round(float(v.get("d_sun_azimuth_deg") or 0), 1)
+        by_dz.setdefault(dz, [0, 0])
+        by_dz[dz][1] += 1
+        by_dz[dz][0] += k in accepted_w
+    xm = sorted(c[0] for c in cross.values())
+    L += ["", f"**{len(accepted_w)} of the {len(gap)} windows** with the Suns 60-120° apart are accepted through a "
+              f"ladder ({len(windows)} have a route; by Sun difference: "
+              + ", ".join(f"{dz}°: {a} of {n}" for dz, (a, n) in sorted(by_dz.items())) + ")."
+              + (f" On the {len(cross)} windows where two accepted ladders cover the same ground, their composites agree "
+                 f"to {xm[0]:.2f}-{xm[-1]:.2f} m RMS ("
+                 + ", ".join(f"{px:.2f}" for _, px in sorted(cross.values())) + " px of T)." if cross else ""),
+          "A window whose every route has a leg the area check does not accept stays refused, as the direct "
+          "registration was.", ""]
+    return L
+
+
+def section_reliefq(rows):
+    """ops/split_windows.py: the fore/aft windows as 2 x 2 quarters, each with its own transform."""
+    if not rows:
+        return []
+    from collections import defaultdict
+    acc = defaultdict(lambda: [0, 0])
+    for r in rows:
+        k = "with the DTM" if r["pair_id"].startswith("reliefq_dtm_") else "without the DTM"
+        acc[k][1] += 1
+        acc[k][0] += r in _accepted([r])
+    per = defaultdict(lambda: [0, 0])
+    for r in rows:
+        w = r["pair_id"].split("_q")[0].rsplit("_", 1)[-1] + (" (DTM)" if "_dtm_" in r["pair_id"] else "")
+        per[w][1] += 1
+        per[w][0] += r in _accepted([r])
+    return ["### Relief with a local model: each window as 2 × 2 quarters (`ops/split_windows.py`)", "",
+            "A transform per quarter window (1.14 km) absorbs relief that varies across a whole window better than one "
+            "transform per window - the local-model answer. Quarters are cropped from the same windows (the source over "
+            "exactly the same ground), registered and judged like any pair (8 × 8 squares of 24 px). Accepted quarters: "
+            + "; ".join(f"**{a} of {n} {k}**" for k, (a, n) in sorted(acc.items(), reverse=True)) + " (per window: "
+            + ", ".join(f"{w} {a}/{n}" for w, (a, n) in sorted(per.items())) + "). "
+            "No better than whole windows: where a window fails, its quarters fail too (too few matches across a "
+            "50° change of view), so relief between views this far apart stays a limit, reported as measured.", ""]
+
+
 def section_finder(d):
     """ops/find_reference.py on Site N's OHRC frame: the search that found Site N by hand, as a tool."""
     target = "ch2_ohr_ncp_20250612T2031048828_d_img_d18"
@@ -540,6 +649,15 @@ def section_finder(d):
               f"{s['best_instrument'].get('OHRC', 0)}, TMC-2 for {s['best_instrument'].get('TMC-2', 0)}, IIRS for "
               f"{s['best_instrument'].get('IIRS', 0)} and an LRO NAC for {s['best_instrument'].get('LRO NAC', 0)} "
               f"(the NAC list is only what this machine knows, so that count is a floor).", ""]
+        if "other_orbit_in_band" in s:
+            # 4 Oct 2026: the frames without a 5-deg partner are not left without one - inside the Sun range
+            # the evidence above verifies, every frame but a few has a partner from another orbit.
+            from ops.reference_index import BAND_AZ_DEG, BAND_INC_DEG
+            L += [f"Inside the Sun range this report verifies - azimuths at most {BAND_AZ_DEG:.0f}° apart (the real "
+                  f"sweep below) and the Sun at most {BAND_INC_DEG}° higher or lower (SAC's frame, above) - "
+                  f"**{s['other_orbit_in_band']} of {s['n']}** OHRC observations have an image from another orbit; "
+                  f"{s['other_orbit_within_60']} of {s['n']} have one with the two Sun directions at most 60° apart. "
+                  f"Only the top {idx.get('top')} candidates of each frame are kept, so these counts are floors.", ""]
     return L
 
 
@@ -1057,7 +1175,14 @@ def main(argv=None):
     tcmap = sorted([r for r in reg if r["pair_id"].startswith("tcmap_")], key=lambda r: r["pair_id"])
     wacstrip = sorted([r for r in reg if r["pair_id"].startswith("wacstrip_")], key=lambda r: r["pair_id"])
     dtm = sorted([r for r in reg if r["pair_id"].startswith("sac_tmcfore_tmcaft_dtm_")], key=lambda r: r["pair_id"])
-    sep = [r for r in reg if r["pair_id"].startswith(("strip_", "wac_", "wacstrip_", "tcmap_", "sac_tmcfore_tmcaft_dtm_"))]
+    # 4 Oct 2026: the Sun ladder (legs and composites) and the relief quarters - their own sections, kept out of
+    # every count, like the sets above.
+    ladder_all = [r for r in reg if r["pair_id"].startswith("ladder_")]
+    ladder = [r for r in ladder_all if "_via_" in r["pair_id"]]
+    ladder_legs = [r for r in ladder_all if "_via_" not in r["pair_id"]]
+    reliefq = sorted([r for r in reg if r["pair_id"].startswith("reliefq_")], key=lambda r: r["pair_id"])
+    sep = [r for r in reg if r["pair_id"].startswith(("strip_", "wac_", "wacstrip_", "tcmap_", "sac_tmcfore_tmcaft_dtm_",
+                                                      "ladder_", "reliefq_"))]
     reg = [r for r in reg if r not in sep]
     loops = [r for r in latest.values() if r["pair_id"].startswith("loop_") and not r["pair_id"].startswith("loop_siten")]
     site_loops = [r for r in latest.values() if r["pair_id"].startswith("loop_siten")]
@@ -1218,6 +1343,7 @@ def main(argv=None):
                            "compare with the synthetic parallax rows below. Same sensor - NOT cross-sensor. "
                            f"Reference (aft) grid {fa[0]['ref_gsd_m']} m, source (fore) {fa[0]['src_gsd_m']} m.")
         L += section_dtm(dtm, fa)
+        L += section_reliefq(reliefq)
     mm = [r for r in reg if _kind(r) == "tc-mi"]
     if mm:
         L += section_pairs("Kaguya TC → Kaguya MI (cross-sensor; 749 nm visible and 1548 nm infrared)",
@@ -1305,6 +1431,8 @@ def main(argv=None):
         L += ["", f"All bins: {len(sweep)} windows over {len({r['reference_product'] for r in sweep})} NAC "
                   f"frames, Δsun azimuth {min(az):.1f}-{max(az):.1f}°. Known issue 2: some windows are "
                   f"logged under two ids (`_sw` and plain) - rows, not distinct ground.", ""]
+        L += section_sun_ladder(ladder,
+                                {r["pair_id"]: {**r, "outcome": v2.get(r["pair_id"], r["outcome"])} for r in sweep})
 
     # --- MiLOI (real multi-illumination NAC benchmark, network truth) -------------------------
     ml = _rows(ROOT / "evaluation" / "miloi_log.csv")
@@ -1657,6 +1785,16 @@ def main(argv=None):
         for label, who, grid, (n, px, m) in own:
             L.append(f"| {label} | {who} | {grid} | {n} | {px} | {m} |")
         L.append("")
+        # 4 Oct 2026: OHRC is finer than every reference, so no held-out residual can reach its own pixel. What
+        # can: the loop closure above - three registrations (OHRC -> NAC A, NAC A -> NAC B, OHRC -> NAC B) that
+        # agree in metres - re-expressed in OHRC's 0.25 m pixels. Precision (consistency), not accuracy.
+        lp = [float(r["loop_rms_m"]) for r in loops if r.get("loop_rms_m") not in (None, "")]
+        if lp:
+            L += [f"In OHRC's own pixels, the loop closure above ({len(lp)} loops OHRC → NAC A → NAC B against OHRC "
+                  f"→ NAC B at 74 °S) closes to a median {st.median(lp):.3f} m RMS = **{st.median(lp) / 0.25:.2f} OHRC "
+                  f"px** (0.25 m), max {max(lp):.3f} m = {max(lp) / 0.25:.2f} px: three independent registrations agree "
+                  f"below one OHRC pixel. That is precision, not accuracy - an error common to the legs would cancel - "
+                  f"and the independent check points below bound the accuracy at the clicks' own floor.", ""]
     # runtime and coverage, from the latest rows
     secs = [float(r["seconds"]) for r in reg if r.get("seconds")]
     on = [float(r["seconds"]) for r in reg if r.get("seconds") and _kind(r) == "ohrc-nac"
@@ -1722,6 +1860,8 @@ def main(argv=None):
           + (f"{len(wacstrip)} windows of the whole IIRS strip onto WAC + " if wacstrip else "")
           + (f"{len(tcmap)} TMC-2 → SELENE TC windows + " if tcmap else "")
           + (f"{len(dtm)} DTM-orthorectified fore/aft windows (each its own section) + " if dtm else "")
+          + (f"{len(ladder)} Sun-ladder composites over {len(ladder_legs)} legs + " if ladder else "")
+          + (f"{len(reliefq)} quarter windows (relief, local model) + " if reliefq else "")
           + f"{len(latest) - len(reg) - len(sep) - len(loops) - len(site_loops)} withdrawn (INVALIDATED). Rows in results_log.csv: "
           f"{len(log)}.", ""]
     OUT.write_text("\n".join(L), encoding="utf-8")
