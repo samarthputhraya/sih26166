@@ -96,12 +96,15 @@ BEATS = [
              "close together, every shift of five metres or more was caught, all one thousand and "
              "fifty-six, while the usual residual check caught none. And on windows nobody chose, it "
              "refused only two of fifty-three right answers."),
+    # 4 Oct, freeze d5222db: "The Sun ladder" - 8 of the 12 windows 60-120 deg apart through images lit in between.
     dict(scene="limits",
-         cap="And it says what it cannot do: visible against near-infrared, refused 3 of 3. Sun "
-             "azimuths 60–120° apart: 0 of 12 accepted, and none accepted wrongly.",
+         cap="And it says what it cannot do: visible against near-infrared, refused 3 of 3. Suns "
+             "60–120° apart: every direct answer refused, none accepted wrongly; through a ladder of "
+             "images lit in between, 8 of 12.",
          say="And it tells you what it cannot do. Visible against near infrared: refused, three of "
-             "three. With the Suns sixty to a hundred and twenty degrees apart: none of twelve "
-             "accepted... and none accepted wrongly."),
+             "three. With the Suns sixty to a hundred and twenty degrees apart, it refuses every direct "
+             "answer, and accepts none wrongly. Through a ladder of images lit in between, eight of "
+             "twelve register."),
     dict(scene="try",
          cap="Try it in any browser or on a phone, in English or Hindi, with nothing to install: "
              "samarthputhraya.github.io/sih26166",

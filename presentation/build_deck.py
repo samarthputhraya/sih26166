@@ -485,7 +485,10 @@ HOW_ROWS = [
     # rows 1 and 4: SIFT/ORB/AKAZE 0/6, and "Sun 154-177 deg away" ours 48/56 vs 0/56 each.
     # 4 Oct (an outside read: "don't let the judge find the gap"): the 60-120 deg gap is named here, on the
     # first content slide ("Real sun-angle sweep": 0 of 7 + 5 accepted at 60-90 and 90-120).
-    ("SUN AZIMUTH", GREEN, "6/6 at 174°", f", SAC's pair [1], classical 0/6; 48/56 at 154–177°; gap 60–120°: 0/12"),
+    # 4 Oct, freeze d5222db: "The Sun ladder": 8 of the 12 windows 60-120 deg apart accepted through NACs lit in
+    # between (0 of 12 direct, still on slide 4).
+    # The line break is ours: left to PowerPoint, "60–120°" broke at its dash (4 Oct).
+    ("SUN AZIMUTH", GREEN, "6/6 at 174°", ", SAC's pair [1], classical 0/6;\n60–120°: 8/12 via the Sun ladder (slide 4)"),
     # "Sun azimuth and elevation, on SAC's own frame": raised up to 41.7°, 61/71 windows.
     ("SUN ELEVATION", GREEN, "61/71 windows", ", Sun up to 41.7° higher"),
     # "One site, every camera (Site N)" OHRC -> TMC-2 10/10 at 4.2x; "TMC-2 -> IIRS" 62/62 at 16x.
@@ -582,8 +585,8 @@ def slide2(s):
     # they are. "Visible against infrared": flagged at 5 px and 10 px (IIRS pixels). The opposite-Sun
     # head-to-head moved to the SUN row ("classical 0/6") and slide 4.
     _text(s, ix + 0.14, cy + 1.68, RIGHT - ix - 0.28, 0.62,
-          [P(R("Right answers refused: 2 of 53, real Sun sweep. ", 12, True, INK),
-             R("Infrared: 86% of 5 IIRS-pixel (395 m) shifts caught.", 12, False, INK))],
+          [P(R("Right answers refused: 2 of 53 (Sun sweep). ", 12, True, INK),
+             R("Infrared: 86% of 5 IIRS-pixel shifts caught.", 12, False, INK))],
           name="inn-body")
 
     # The trust map itself: SAC's OHRC -> NAC w06 (accepted) above Kaguya TC -> MI 1548 nm w01
@@ -683,8 +686,8 @@ def slide3(s):
     # min"). "A whole strip": 58 windows = 940 km, accepted 58/58, cutting 2.9 min + registration 1.4 min.
     _box(s, L, 6.30, 8.25, 0.50,
          [P(R("Hardware: ", 12.5, True, ACCENT),
-            R("laptop CPU, no GPU needed, offline: 13.1 km² overlap registered in 10.5 min (37/37); 940 km TMC-2 → IIRS "
-              "strip cut and registered: 4.2 min (58/58)",
+            R("laptop CPU, no GPU needed, offline: 13.1 km² overlap registered in 5.6 min (37/37); 940 km TMC-2 → IIRS "
+              "strip cut and registered: 4.3 min (58/58)",
               12.5, False, INK))],
          fill=FILL_ORANGE, line=LINE_ORANGE, anchor="m", margins=(0.14, 0.03, 0.12, 0.03),
          name="hardware")
@@ -777,8 +780,10 @@ SCORECARD = [
     # pixels"); fig10's TMC-2 is another pass. Both named.
     ("Sub-pixel: TMC-2, IIRS", "Held-out medians, own pixels: TMC-2 vs NAC 0.36–0.48 px of its 4.56 m grid "
                                "(1.6–2.2 m); IIRS 1555 nm vs TMC-2 0.16–0.32 px (13.9–27.3 m)", GREEN),
+    # 4 Oct, d5222db: "In OHRC's own pixels, the loop closure above ... closes to a median 0.107 m RMS = 0.43 OHRC px"
+    # - precision (consistency), not accuracy; the row stays AMBER.
     ("Sub-pixel: OHRC", "OHRC's 0.25 m pixel is finer than its NAC reference can check: 0.51–0.94 m, "
-                        "0.41–1.01 NAC px", AMBER),
+                        "0.41–1.01 NAC px; three registrations agree to 0.43 OHRC px", AMBER),
     # "Runtime and match distribution": grid coverage, and the delivered uniform set.
     ("Uniform distribution", "Inliers in ≥95% of 8×8 cells on 17/20 windows", GREEN),
     # v12: "Independent check points": 6 windows x 10 points, ours 1.69-2.39 m RMSE, the archive prior
@@ -800,17 +805,19 @@ RISKS = [
     # readers asked what happened to the other 9 (2 Oct).
     # 4 Oct review: one line of physics, in the README's words ("Why does a Sun 174° away pass, when 90°
     # fails?": "A Sun moved 90° changes *which* slopes are lit"); an opposite Sun only flips the shading.
-    (("Sun 60–120° away: other slopes lit", "0/12: 1 failure caught, 2 right ones refused, 9 inconclusive"),
+    (("Sun 60–120° away: other slopes lit", "0/12 direct: 1 failure caught, 2 refused, 9 inconclusive"),
      # v12: "Choosing the reference by its Sun": 42 images cover Site N's OHRC frame; the three Site N
      # uses rank 4, 7, 9.
      # v12 final: "Choosing the reference by its Sun", the whole-archive line: 208 of 300 OHRC
      # observations have a partner from another orbit within 5 deg ("Site N" was undefined, 3 Oct).
-     ("Reference by its Sun: 287 of 300", "within 5° (208 another orbit); other 13 judged, certified only where verified")),
+     # 4 Oct, d5222db: "The Sun ladder" 8 of 12, two ladders agree to 2.30-3.74 m; finder "296 of 300" have a partner
+     # from another orbit inside the verified Sun range (azimuths <= 60 deg, Sun <= 41.7 deg higher or lower).
+     ("Sun ladder: 8 of 12 accepted", "links ≤ 60°; two routes agree to 2.3–3.7 m. 296/300 OHRC have a partner ≤ 60°")),
     # "Relief: TMC-2 fore -> aft orthorectified on the pass's DTM": 1/4 without, 2/4 with.
     # 4 Oct: "aft" printed through PowerPoint comes out as "a" + U+014C in the PDF's text layer (the
     # "ft" ligature), which a screener's text extraction reads as garbage; the row avoids the word.
-    (("Relief parallax", "TMC-2 views 50° apart: 1/4 windows; OHRC views 40° apart: 8/8"),
-     ("DTM orthorectification", "Built: 2/4 windows on ISRO's DTM (label: 63 m height RMSE)")),
+    (("Relief parallax", "TMC-2 views 50° apart: 1/4; OHRC views 40° apart: 8/8"),
+     ("DTM orthorectification", "Built: 2/4 on ISRO's DTM (label: 63 m height RMSE)")),
 ]
 
 
@@ -887,7 +894,7 @@ def slide5(s):
     _box(s, 2.48, fy, 1.72, fh,
          [P(R("LunaXX", 16, True, WHITE), align="c"),
           P(R("the aligned image plus a verdict per region", 11.5, False, WHITE), align="c", sb=3),
-          P(R("all OHRC: ~314 laptop-hours, projected", 11, True, WHITE), align="c", sb=3)],
+          P(R("all OHRC: ~167 laptop-hours, projected", 11, True, WHITE), align="c", sb=3)],
          fill=NAVY, name="imp-core")
     targets = [
         ("Landing-site safety", " — hazard maps rest on the alignment"),
@@ -1002,7 +1009,7 @@ REFS = [
 # REPORT.md" was not literally true (audit, 2 Oct). "Result": a grid size or a place is not one.
 # v12: the 3 Oct freeze re-ran every row at e38a69a; its report step wrote REPORT.md with that code.
 PROVENANCE = ("Every result is in REPORT.md, or a count or sum of its rows; REPORT.md is generated at "
-              "the freeze commit 04ed5f6.")
+              "the freeze commit d5222db.")
 
 
 def slide6(s):
@@ -1037,8 +1044,8 @@ def slide6(s):
            # v12: the whole strip is timed and the Sun finder is built (slides 3 and 4), so they leave
            # "Next"; the archive run is REPORT's "about 314 laptop-hours" projection.
            P(R("Next: ", 12, True, NAVY),
-             R("run the whole OHRC archive (about 314 laptop-hours); Suns 60–120° apart against "
-               "DTM-relit references; relief with a finer DTM.", 12, False, INK), sa=5),
+             R("run the whole OHRC archive (about 167 laptop-hours); DTM-relit references where the "
+               "Sun ladder has no route; relief with a finer DTM.", 12, False, INK), sa=5),
            P(R(PROVENANCE, 11, False, MUTED), sa=5),
            P(R("Every chart and screenshot is made by our own code; methods and data are credited "
                "on the left.", 11, True, NAVY))],
@@ -1176,7 +1183,8 @@ SAME_SENSOR_WORDS = ("MiLOI", "fore vs aft", "fore/aft", "NAC pairs")
 # after an automated-screening pass found neither 'azimuth' nor 'elevation' in the text layer.
 # Slide 4 to 245 the same day: an outside read asked for what happens to the 92 OHRC frames without a
 # 5-deg partner, the 0-60 deg sweep, the check points' plane floor and TMC-2's grid - each said in a few words.
-MAX_WORDS = {2: 190, 3: 160, 4: 245, 5: 170}      # a guard, not a target (v11: slide 4 cut from 275; slide 2 gained a row)
+# 4 Oct, freeze d5222db: slide 4 to 250 - its strategy row now carries a measured result (the Sun ladder).
+MAX_WORDS = {2: 190, 3: 160, 4: 250, 5: 170}      # a guard, not a target (v11: slide 4 cut from 275; slide 2 gained a row)
 TYPE_FLOOR_PT = 11                                 # v9 allowed 9 pt; the SPOC asked for bigger letters
 
 

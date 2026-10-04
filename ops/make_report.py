@@ -521,6 +521,10 @@ def section_dtm(rows, reg):
     return L
 
 
+DIRECT_AGREES_M = 5.0      # the refused direct answer 'agrees with' the ladder within this (the two
+                           # ladders agree to 2.3-3.7 m with each other)
+
+
 def section_sun_ladder(rows, sweep):
     """ops/sun_ladder.py: the sweep's 60-120 deg windows registered through LROC NACs lit in between."""
     if not rows:
@@ -537,9 +541,9 @@ def section_sun_ladder(rows, sweep):
          "alignment, so the composite is NOT judged against T's pixels: where two accepted ladders cover one window, "
          "their composites are compared with each other (consistency, not accuracy), and each is compared with the "
          "failed direct registration. Kept out of every count and table above.", "",
-         "| window (direct, sweep) | Sun azimuths O-T apart | direct outcome | via | Sun apart per link | links | ladder | two ladders agree to (m, px of T) | ladder vs the direct registration (m RMS) |",
+         "| window (direct, sweep) | Sun azimuths O-T apart | direct outcome | via | Sun apart per link | links | ladder | two ladders agree to (m, px of T) | the direct matcher answer vs the ladder (m RMS) |",
          "|---|---|---|---|---|---|---|---|---|"]
-    windows, accepted_w, cross = {}, set(), {}
+    windows, accepted_w, cross, direct_vs = {}, set(), {}, {}
     for r in sorted(rows, key=lambda r: r["pair_id"]):
         m = _re.match(r"ladder_(m\d+[lr]e)_(w\d+)_via_((?:m\d+[lr]e_?)+)$", r["pair_id"])
         if not m:
@@ -549,10 +553,12 @@ def section_sun_ladder(rows, sweep):
         windows.setdefault(target, []).append(r)
         d = sweep.get(target, {})
         links = _re.findall(r"\((\w+); Sun ([\d.]+) deg\)", r.get("notes") or "")
-        vd = _re.search(r"composite vs the direct registration ([\d.]+) m RMS", r.get("notes") or "")
+        vd = _re.search(r"vs the composite ([\d.]+) m RMS", r.get("notes") or "")
         ok = r.get("verdict") == "agrees"
         if ok:
             accepted_w.add(target)
+            if vd:
+                direct_vs.setdefault(target, []).append(float(vd.group(1)))
         x = "-"
         if ok and r.get("loop_rms_m") not in (None, ""):
             cross[target] = (float(r["loop_rms_m"]), float(r["loop_rms_px"]))
@@ -577,6 +583,22 @@ def section_sun_ladder(rows, sweep):
                  + ", ".join(f"{px:.2f}" for _, px in sorted(cross.values())) + " px of T)." if cross else ""),
           "A window whose every route has a leg the area check does not accept stays refused, as the direct "
           "registration was.", ""]
+    if direct_vs:
+        near = sorted(t for t, v in direct_vs.items() if max(v) <= DIRECT_AGREES_M)
+        far = sorted(t for t, v in direct_vs.items() if min(v) > DIRECT_AGREES_M)
+        nv = [x for t in near for x in direct_vs[t]]
+        fv = [x for t in far for x in direct_vs[t]]
+        L += [f"What the area check did with the direct answers on these {len(direct_vs)} windows: on **{len(near)}** "
+              f"the matcher's refused direct answer lies within {DIRECT_AGREES_M:.0f} m of every accepted ladder "
+              + (f"({min(nv):.1f}-{max(nv):.1f} m RMS)" if nv else "")
+              + " - answers both ladders agree with, which the check could not confirm with the Suns this far apart, "
+              "so it refused them; on "
+              f"**{len(far)}** it lies "
+              + (f"{min(fv):.0f}-{max(fv):.0f} m away" if fv else "far away")
+              + " - answers the ladders contradict, rightly refused. The ladder recovers the first kind without "
+              "accepting the second (agreement between ladders is consistency, not a measured accuracy). "
+              "(The sweep's own image rule labels windows here as inconclusive, correct-but-refused or failure: at "
+              "60-120° the image cannot judge, and these labels are not truth.)", ""]
     return L
 
 

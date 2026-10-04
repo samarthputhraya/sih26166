@@ -216,11 +216,16 @@ def run(log=False, out_root=None, rows=None):
     summary = []
     for it in plan(rows):
         lads = compose(it, out_root)
-        direct = None
+        # The direct registration's MATCHER answer (H_matcher) - what the area check refused - not its H_final:
+        # on a refused window H_final is the declared phase-correlation fallback (claim-check, 4 Oct: the first
+        # version compared against H_final and read the fallback's distance as the refused answer's).
+        direct, declared = None, ""
         if (out_root / it["target"] / "report.json").exists():
             rd, pd = _bundle(it["target"], out_root)
-            if rd.get("H_final") is not None:
-                direct = map_transform(rd["H_final"], pd["source"]["transform"], pd["reference"]["transform"])
+            declared = (rd.get("declared") or {}).get("method") or ""
+            H = rd.get("H_matcher") if rd.get("H_matcher") is not None else rd.get("H_final")
+            if H is not None:
+                direct = map_transform(H, pd["source"]["transform"], pd["reference"]["transform"])
         gsd_t = json.loads((PAIRS / it["target"] / "geometry_prior.json").read_text(encoding="utf-8"))[
             "reference"]["resampled_gsd_mpp"]
         good = [L for L in lads if L["accepted"] and len(L["pts"]) >= 10]
@@ -237,7 +242,7 @@ def run(log=False, out_root=None, rows=None):
             line = (f"{it['target']}: via {via} (links " + ", ".join(f"{d:.1f}" for d in L["d"]) + " deg) "
                     f"{L['verdicts']} -> {'ACCEPTED' if L['accepted'] else 'not accepted'}")
             if vs_direct:
-                line += f"; vs the direct registration {vs_direct['rms_m']:.1f} m RMS"
+                line += f"; the direct matcher answer is {vs_direct['rms_m']:.1f} m RMS from it (declared there: {declared})"
             if cross and L in good:
                 line += f"; the two ladders agree to {cross['rms_m']:.2f} m RMS = {cross['rms_px']:.2f} px of T"
             print(line)
@@ -259,9 +264,10 @@ def run(log=False, out_root=None, rows=None):
                     "loop_rms_px": round(cross["rms_px"], 4) if paired else "",
                     "command": "python -m ops.sun_ladder --log",
                     "git_commit": _commit(),
-                    "notes": (f"links: {links}; bundles from commits {L['commits']}; composite vs the direct "
-                              "registration " + (f"{vs_direct['rms_m']:.2f} m RMS over {vs_direct['n']} points"
-                                                  if vs_direct else "n/a")),
+                    "notes": (f"links: {links}; bundles from commits {L['commits']}; the direct matcher answer "
+                              f"(declared: {declared or 'n/a'}) vs the composite "
+                              + (f"{vs_direct['rms_m']:.2f} m RMS over {vs_direct['n']} points"
+                                 if vs_direct else "n/a")),
                 })
     return summary
 
