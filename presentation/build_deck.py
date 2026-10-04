@@ -503,8 +503,9 @@ HOW_ROWS = [
     # sub-pixel result in the Chandrayaan-2 image's own pixels ("Sub-pixel accuracy ... In the Chandrayaan-2
     # image's own pixels": LRO NAC <-> TMC-2 at SAC's site, 0.36-0.48 px on 4.555 m = 1.6-2.2 m), then the
     # check points: "Independent check points", 1.69-2.39 m RMSE over 6 OHRC -> NAC windows x 10 points.
-    # AMBER: 1.5-2.6 px on the NAC grid is not sub-pixel, nor is OHRC in its own (claim-check v12 #5).
-    ("ACCURACY", AMBER, [("0.36–0.48", True), (" TMC-2 px vs NAC = 1.6–2.2 m\n", False),
+    # v13d (Samartha, 4 Oct): GREEN, as slide 4's rows for both lines are (Sub-pixel: TMC-2, IIRS; Check
+    # points). OHRC's own-pixel limit stays AMBER on slide 4's "Sub-pixel: OHRC" row.
+    ("ACCURACY", GREEN, [("0.36–0.48", True), (" TMC-2 px vs NAC = 1.6–2.2 m\n", False),
                          ("1.7–2.4 m", True), (f" RMSE at 60 OHRC{_TO}NAC clicks", False)]),
 ]
 
