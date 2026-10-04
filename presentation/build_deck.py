@@ -797,7 +797,10 @@ SCORECARD = [
     # v13 claim-check: each figure keeps its partner (TMC-2 vs LRO NAC - fig10 beside it shows OHRC -> TMC-2 on
     # another TMC-2 grid) and its band (1555 nm: at 3223 nm the medians reach 1.2 px); "medians" kept.
     ("Sub-pixel: TMC-2, IIRS", "TMC-2 vs LRO NAC: 0.36–0.48 px of 4.56 m = 1.6–2.2 m\n"
-                               "IIRS 1555 nm: 0.16–0.32 px = 13.9–27.3 m\n"
+                               # 3 decimals, as REPORT's window rows print them ("0.165 (13.853)", "0.325
+                               # (27.270)"): rounded to 0.16-0.32, times fig10's 83.67 m grid, gave 13.4-26.8 m
+                               # beside 13.9-27.3 - each window is on its own grid, 83.67-84.25 m (outside read).
+                               "IIRS 1555 nm: 0.165–0.325 px = 13.9–27.3 m\n"
                                "Held-out medians, own pixels", GREEN),
     # 4 Oct, d5222db: "In OHRC's own pixels, the loop closure above ... closes to a median 0.107 m RMS = 0.43 OHRC px"
     # - precision (consistency), not accuracy; the row stays AMBER and says "Precision" in words. v13 claim-check
