@@ -29,7 +29,7 @@ from web.panel import jpg, panel
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 DATA = pathlib.Path((ROOT / "data_path.txt").read_text(encoding="utf-8-sig").strip())
 HERE = pathlib.Path(__file__).resolve().parent
-FREEZE = "d5222db"
+FREEZE = "2d3313c"
 REPO = "https://github.com/samarthputhraya/sih26166"
 sys.path.insert(0, str(ROOT))
 
@@ -312,7 +312,7 @@ for _s in ("**accepted 31/31**", "(median 287 m)", "**accepted 44/49**", "agrees
            "Accepted: **1/4 without the DTM, 2/4 with it.**", "the residual threshold flags **0 of 1056**",
            "the area check flags **1056 of 1056**", "| 6 | 6/6 | 0/6 | 0/6 | 0/6 |", "| 56 | 48/56 | 0/56 | 0/56 | 0/56 |",
            "one click's precision is a median 1.47 m", "85.9%", "99.2%",
-           "**208 of 300** have an image from ANOTHER orbit lit within 5°", "**296 of 300** OHRC observations", "**8 of the 12 windows**", "median 9.0 s over the 89"):
+           "**208 of 300** have an image from ANOTHER orbit lit within 5°", "**296 of 300** OHRC observations", "**8 of the 12 windows**", "median 10.0 s over the 89"):
     _printed(_s)
 if UNPRINTED:
     raise SystemExit("Site N values that REPORT.md does not print - regenerate REPORT.md or fix the "

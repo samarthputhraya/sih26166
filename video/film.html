@@ -596,7 +596,7 @@ SCENES.limits = {
         {left: '0', top: '630px', fontSize: '58px', fontWeight: 600, color: 'var(--mag2)', letterSpacing: '-.015em', lineHeight: 1});
       return {c, b}; };
     s.a = card(290, 'Kaguya TC → MI, 1548 nm', 'visible against near-infrared', '3 of 3 refused', '', p => { mk('img', '', p).src = lay(MI15, 'warp'); });
-    s.b = card(1010, 'Sun azimuths 60–120° apart', 'real sweep: one OHRC frame, 25 LRO frames', '0 of 12 direct', 'none accepted wrongly; through a Sun ladder: 8 of 12',
+    s.b = card(1010, 'Sun azimuths 60–120° apart', 'real sweep: one OHRC frame, 25 LRO frames', '0 of 12 direct', 'none accepted wrongly<br>through a Sun ladder: 8 of 12',
       p => { const c = mk('canvas', '', p); c.width = c.height = 488; drawSweep(c.getContext('2d'), 488); });
     return s;
   },
